@@ -1,0 +1,9 @@
+[package]
+name = "md2hwp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+md2hwp-core = { path = "../../crates/md2hwp-core" }
