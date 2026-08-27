@@ -1,0 +1,37 @@
+# Workstation-local tools, caches, scratch notes, and temporary files.
+.local/
+tmp/
+
+# Language-native build and test outputs.
+target/
+**/bin/
+**/obj/
+.vs/
+TestResults/
+*.nupkg
+*.snupkg
+coverage/
+
+# Generated proof and investigation output. Keep the boundary documentation.
+artifacts/*
+!artifacts/README.md
+
+# Reference documents and templates are local inputs until their provenance,
+# license, and redistribution policy are recorded explicitly.
+reference/*
+!reference/README.md
+
+# Common editor and OS state.
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+.env
+.env.*
+!.env.example
+*.log
+*.user
+*.suo
+*.swp
+*~
