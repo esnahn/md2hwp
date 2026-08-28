@@ -1,6 +1,9 @@
-# Workstation-local tools, caches, scratch notes, and temporary files.
-.local/
+# Workstation-local scratch notes, caches, and temporary files.
 tmp/
+
+# Official Hancom Automation security module downloaded and hash-verified by
+# dependencies/install-hancom-security-module.ps1.
+/dependencies/FilePathCheckerModuleExample.dll
 
 # Language-native build and test outputs.
 target/

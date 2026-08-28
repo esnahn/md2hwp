@@ -1,0 +1,25 @@
+{
+  "$schema": "../schemas/dependencies-lock-v0.1.schema.json",
+  "schema": "md2hwp.dependencies-lock",
+  "lock_version": "0.1",
+  "dependencies": [
+    {
+      "name": "hancom-automation",
+      "consumer": "backends/hancom-automation",
+      "pins": [
+        {
+          "name": "hancom-office-hwp-reference",
+          "kind": "system-reference",
+          "version": "11.0.0.9136",
+          "identifier": "HWPFrame.HwpObject"
+        },
+        {
+          "name": "file-path-checker-module-example",
+          "kind": "content",
+          "url": "https://github.com/hancom-io/devcenter-archive/raw/main/hwp-automation/%EB%B3%B4%EC%95%88%EB%AA%A8%EB%93%88%28Automation%29.zip",
+          "sha256": "9AC5B97C47AC8AED1E8BCA27A3EEF39411361D8F68C262509F0C40A8F9D21BB6"
+        }
+      ]
+    }
+  ]
+}
