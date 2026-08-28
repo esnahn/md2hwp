@@ -12,14 +12,13 @@
 - C#/.NET will implement the separate Hancom Automation worker, but the SDK,
   target framework, solution/project files, and COM interop strategy are not
   declared yet.
-- Pandoc is the parser boundary, but its supported version and exact invocation
-  are not declared yet. It is an external Haskell CLI, invoked directly by the
-  application; its eventual executable and source-submodule pins belong in
-  `dependencies/lock.json`.
+- Pandoc 3.10.1 is the pinned parser boundary. The official Windows x86_64 zip
+  and SHA-256 are declared in `dependencies/lock.json`, and explicit setup
+  installs it under `.local/dependencies/pandoc/3.10.1/`.
 
-Do not install or pin guessed .NET SDK or Pandoc versions merely to make an
-empty workspace appear complete. Record those choices in documentation and
-tests first.
+Do not install or pin a guessed .NET SDK merely to make an empty backend
+boundary appear complete. Pandoc changes require a new lock, decision, and
+compatibility fixture.
 
 ## Rust toolchain
 
@@ -81,6 +80,8 @@ were installed and verified on 2026-08-27.
   `rustfmt 1.9.0-stable`, `clippy 0.1.98`, and `rust-analyzer 1.98.0` are
   installed, and `%USERPROFILE%\.cargo\bin` is on the user `PATH`;
 - `pandoc` is not on `PATH`;
+- the pinned portable Pandoc 3.10.1 is installed under the ignored repository
+  dependency tree and is invoked by explicit path;
 - the .NET host and runtime 8.0.30 are present, but no .NET SDK is installed;
 - `HWPFrame.HwpObject` resolves as a registered COM ProgID;
 - the security-module registration is per-user runtime state and is never
