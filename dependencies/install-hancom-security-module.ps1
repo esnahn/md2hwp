@@ -1,4 +1,4 @@
-# Explicit dependency setup; never invoke this as a build side effect.
+﻿# Explicit dependency setup; never invoke this as a build side effect.
 [CmdletBinding()]
 param()
 
