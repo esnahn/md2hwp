@@ -1,0 +1,273 @@
+{
+  "schema": "md2hwp.ir",
+  "ir_version": "0.1",
+  "metadata": {},
+  "blocks": [
+    {
+      "type": "heading",
+      "level": 1,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "IR"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "v0.1"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "예제"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "일반"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "strong",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "굵게와"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "emph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "굵고"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "기울임"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "emph",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "기울임"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": "."
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "Unicode:"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "가"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "가"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "도시🏙️"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "link",
+          "target": "https://example.com/reports/auri",
+          "title": null,
+          "inlines": [
+            {
+              "type": "strong",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "AURI"
+                }
+              ]
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "보고서"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "verbatim_block",
+      "lines": [
+        "박스의 첫째 줄",
+        "",
+        "빈 줄 다음 줄",
+        ""
+      ]
+    },
+    {
+      "type": "list",
+      "kind": "bullet",
+      "tight": false,
+      "items": [
+        {
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "첫째"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "항목"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "둘째"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "항목"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "kind": "ordered",
+              "start": 3,
+              "tight": true,
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "inlines": [
+                        {
+                          "type": "text",
+                          "value": "중첩"
+                        },
+                        {
+                          "type": "space"
+                        },
+                        {
+                          "type": "text",
+                          "value": "3번"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "image": {
+        "path": "../assets/sample-urban-context.png",
+        "alt": [
+          {
+            "type": "text",
+            "value": "도시"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "맥락"
+          }
+        ],
+        "title": null
+      },
+      "caption": [
+        {
+          "type": "strong",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "도시"
+            }
+          ]
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "맥락"
+        }
+      ],
+      "source": [
+        {
+          "type": "text",
+          "value": "작성자"
+        }
+      ]
+    }
+  ]
+}
