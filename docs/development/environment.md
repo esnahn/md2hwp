@@ -113,6 +113,11 @@ checks were reverified on 2026-08-28:
 - `Open=True` for `tests\fixtures\templates\minimal.hwp`,
   both with the HWP window hidden and explicitly visible.
 
+The same environment also passed the documented
+[HWP Unicode save/reopen investigation](hwp-unicode-roundtrip.md), preserving
+both `U+AC00` and the decomposed sequence `U+1100 U+1161` after TEXT-transport
+decoding.
+
 All Hancom COM investigation, security-module installation or re-registration,
 and backend verification on this workstation must run under the same Windows
 identity/profile in a logged-in interactive session using that exact Windows
