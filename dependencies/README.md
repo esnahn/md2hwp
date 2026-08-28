@@ -5,10 +5,25 @@ closed [`lock.json`](lock.json), validated by
 [`schemas/dependencies-lock-v0.1.schema.json`](../schemas/dependencies-lock-v0.1.schema.json).
 Do not create one directory or lock file per dependency.
 
-The lock currently records only the verified Hancom Automation reference
-environment and security-module archive. Pandoc and rhwp are intentionally
-absent until an exact release/revision passes the repository's compatibility
-fixtures. A floating branch or guessed version is not a pin.
+The lock records the verified Hancom Automation environment and the official
+Pandoc 3.10.1 Windows x86_64 release. rhwp remains absent until an exact
+revision passes compatibility fixtures. A floating branch or guessed version
+is not a pin.
+
+## Pandoc
+
+Install or verify the pinned portable Pandoc under the ignored local dependency
+tree with:
+
+```powershell
+pwsh -NoProfile -File .\dependencies\install-pandoc.ps1
+```
+
+The installer downloads the official zip, verifies its locked SHA-256, checks
+the exact `pandoc 3.10.1` version line, and installs it at
+`.local/dependencies/pandoc/3.10.1/pandoc.exe`. The archive is retained beside
+the executable so repeat runs can revalidate the adopted payload. This script
+is explicit setup and is never run by Cargo or conversion commands.
 
 ## Upstream source
 
@@ -34,16 +49,16 @@ git submodule update --init --recursive -- upstream/pandoc upstream/rhwp
 ```
 
 Pandoc's source is for inspection only. Pandoc is a Haskell application and
-md2hwp consumes its installed executable, not a Rust crate. The official simple
-Windows install command is:
+md2hwp consumes its installed executable, not a Rust crate. A system-wide
+alternative install command is:
 
 ```powershell
 winget install --source winget --exact --id JohnMacFarlane.Pandoc
 ```
 
-That command alone does not declare compatibility. Production conversion must
-also require the exact Pandoc version adopted in `lock.json`; add a pinned
-installer or verifier when that version is selected.
+That command alone does not declare compatibility. Conversion still requires
+the exact version adopted in `lock.json`; the repository-local installer above
+is the reproducible reference path.
 
 rhwp source is both inspectable and a candidate for a future path dependency or
 CLI build. Which interface md2hwp adopts remains a backend decision. The

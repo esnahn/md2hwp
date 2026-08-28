@@ -4,6 +4,20 @@
   "lock_version": "0.1",
   "dependencies": [
     {
+      "name": "pandoc",
+      "consumer": "apps/md2hwp",
+      "pins": [
+        {
+          "name": "pandoc-windows-x86-64",
+          "kind": "release-artifact",
+          "version": "3.10.1",
+          "platform": "windows-x86_64",
+          "url": "https://github.com/jgm/pandoc/releases/download/3.10.1/pandoc-3.10.1-windows-x86_64.zip",
+          "sha256": "4725A1883E2171C2E181E6FD45003ACB59CA4E9CBE031FDD3B79EF0D697D36AA"
+        }
+      ]
+    },
+    {
       "name": "hancom-automation",
       "consumer": "backends/hancom-automation",
       "pins": [
