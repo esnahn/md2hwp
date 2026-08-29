@@ -41,6 +41,16 @@ internal static class Program
                         Console.WriteLine(JsonSerializer.Serialize(result, JsonOutput.Options));
                         break;
                     }
+                case OperationMode.ExportImages:
+                    {
+                        var result = HancomPreviewWriter.ExportImages(
+                            options.DocumentPath!,
+                            options.OutputPath!,
+                            repositoryRoot,
+                            options.Visible);
+                        Console.WriteLine(JsonSerializer.Serialize(result, JsonOutput.Options));
+                        break;
+                    }
                 default:
                     throw new InvalidOperationException($"Unknown mode: {options.Mode}");
             }
@@ -90,12 +100,14 @@ internal enum OperationMode
     Plan,
     Probe,
     Render,
+    ExportImages,
 }
 
 internal sealed record CommandLine(
     OperationMode Mode,
     string? IrPath,
     string? TemplatePath,
+    string? DocumentPath,
     string? OutputPath,
     bool Visible)
 {
@@ -111,10 +123,12 @@ internal sealed record CommandLine(
             "plan" => OperationMode.Plan,
             "probe" => OperationMode.Probe,
             "render" => OperationMode.Render,
+            "export-images" => OperationMode.ExportImages,
             _ => throw new ArgumentException(Usage),
         };
         string? ir = null;
         string? template = null;
+        string? document = null;
         string? output = null;
         var visible = false;
 
@@ -128,6 +142,9 @@ internal sealed record CommandLine(
                 case "--template":
                     template = ReadValue(args, ref index, "--template");
                     break;
+                case "--document":
+                    document = ReadValue(args, ref index, "--document");
+                    break;
                 case "--output":
                     output = ReadValue(args, ref index, "--output");
                     break;
@@ -139,9 +156,15 @@ internal sealed record CommandLine(
             }
         }
 
-        if (mode is OperationMode.Plan && (ir is null || template is not null || output is not null || visible) ||
-            mode is OperationMode.Probe && (template is null || ir is not null || output is not null) ||
-            mode is OperationMode.Render && (ir is null || template is null || output is null))
+        var valid = mode switch
+        {
+            OperationMode.Plan => ir is not null && template is null && document is null && output is null && !visible,
+            OperationMode.Probe => ir is null && template is not null && document is null && output is null,
+            OperationMode.Render => ir is not null && template is not null && document is null && output is not null,
+            OperationMode.ExportImages => ir is null && template is null && document is not null && output is not null,
+            _ => false,
+        };
+        if (!valid)
         {
             throw new ArgumentException(Usage);
         }
@@ -150,6 +173,7 @@ internal sealed record CommandLine(
             mode,
             ResolveOptionalPath(ir),
             ResolveOptionalPath(template),
+            ResolveOptionalPath(document),
             ResolveOptionalPath(output),
             visible);
     }
@@ -172,6 +196,7 @@ internal sealed record CommandLine(
           hancom-ir-preview plan --ir <validated.ir.json>
           hancom-ir-preview probe --template <input.hwp> [--visible]
           hancom-ir-preview render --ir <validated.ir.json> --template <input.hwp> --output <new.hwp> [--visible]
+          hancom-ir-preview export-images --document <input.hwp> --output <new-directory> [--visible]
         """;
 }
 

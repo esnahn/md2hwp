@@ -23,6 +23,18 @@ internal sealed record RenderResult(
     bool TextMarkerVerified,
     bool TemplateUnchanged);
 
+internal sealed record ExportedPage(
+    string Path,
+    int PixelWidth,
+    int PixelHeight,
+    string Sha256);
+
+internal sealed record ImageExportResult(
+    string Document,
+    string OutputDirectory,
+    IReadOnlyList<ExportedPage> Pages,
+    bool DocumentUnchanged);
+
 internal static class HancomPreviewWriter
 {
     private const string ProgId = "HWPFrame.HwpObject";
@@ -146,6 +158,83 @@ internal static class HancomPreviewWriter
             if (File.Exists(temporaryOutput))
             {
                 File.Delete(temporaryOutput);
+            }
+        }
+    }
+
+    public static ImageExportResult ExportImages(
+        string documentPath,
+        string outputDirectoryPath,
+        string repositoryRoot,
+        bool visible)
+    {
+        var document = ValidateTemplate(documentPath);
+        var outputDirectory = Path.GetFullPath(outputDirectoryPath);
+        if (File.Exists(outputDirectory) || Directory.Exists(outputDirectory))
+        {
+            throw new IOException($"Image output path already exists: {outputDirectory}");
+        }
+        var outputParent = Path.GetDirectoryName(outputDirectory)!;
+        if (!Directory.Exists(outputParent))
+        {
+            throw new DirectoryNotFoundException($"Missing image output parent: {outputParent}");
+        }
+
+        EnsureInteractiveContext();
+        EnsureNoExistingHwpProcess();
+        var module = SecurityModuleRegistration.ReadAndValidate(repositoryRoot);
+        var documentHashBefore = HashFile(document);
+        var temporaryDirectory = Path.Combine(
+            outputParent,
+            $".md2hwp-image-export-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(temporaryDirectory);
+
+        try
+        {
+            var requestedImage = Path.Combine(temporaryDirectory, "page.png");
+            WithHwp(module, hwp =>
+            {
+                Open(hwp, document, visible);
+                object? saveResult = hwp.SaveAs(requestedImage, "PNG", string.Empty);
+                if (!IndicatesSuccess(saveResult))
+                {
+                    var resultType = saveResult?.GetType().FullName ?? "null";
+                    throw new InvalidOperationException(
+                        $"Hancom returned an unsuccessful PNG SaveAs result ({resultType}).");
+                }
+                return true;
+            });
+
+            var imagePaths = Directory.GetFiles(temporaryDirectory, "*.png", SearchOption.TopDirectoryOnly)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (imagePaths.Length == 0)
+            {
+                throw new InvalidOperationException("Hancom PNG SaveAs produced no page images.");
+            }
+
+            var pages = imagePaths.Select(path =>
+            {
+                var (width, height) = PngDimensions.Read(path);
+                return new ExportedPage(
+                    Path.Combine(outputDirectory, Path.GetFileName(path)),
+                    width,
+                    height,
+                    HashFile(path));
+            }).ToArray();
+            if (!string.Equals(documentHashBefore, HashFile(document), StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("The source document changed during PNG export.");
+            }
+
+            Directory.Move(temporaryDirectory, outputDirectory);
+            return new ImageExportResult(document, outputDirectory, pages, true);
+        }
+        finally
+        {
+            if (Directory.Exists(temporaryDirectory))
+            {
+                Directory.Delete(temporaryDirectory, recursive: true);
             }
         }
     }
@@ -289,13 +378,7 @@ internal static class HancomPreviewWriter
             0,
             operation.ImageWidthMillimeters.Value,
             operation.ImageHeightMillimeters.Value);
-        var inserted = insertionResult switch
-        {
-            bool value => value,
-            null => false,
-            _ => Marshal.IsComObject(insertionResult),
-        };
-        if (!inserted)
+        if (!IndicatesSuccess(insertionResult))
         {
             var resultType = insertionResult?.GetType().FullName ?? "null";
             throw new InvalidOperationException(
@@ -326,6 +409,13 @@ internal static class HancomPreviewWriter
             throw new InvalidOperationException($"Hancom action failed: {action}");
         }
     }
+
+    private static bool IndicatesSuccess(object? result) => result switch
+    {
+        bool value => value,
+        null => false,
+        _ => Marshal.IsComObject(result),
+    };
 
     private static int CountPictures(dynamic hwp)
     {

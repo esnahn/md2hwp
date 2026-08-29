@@ -4,7 +4,7 @@ This is an investigation program, not the production Hancom Automation
 backend. It shows how validated IR can drive a safe edit of an HWP copy before
 the template-profile and lowering contracts are implemented.
 
-It has three modes:
+It has four modes:
 
 - `plan` parses the closed IR v0.1 shape without COM and emits the exact preview
   operations as JSON;
@@ -13,6 +13,12 @@ It has three modes:
 - `render` copies an HWP to a temporary sibling, appends diagnostic text and
   repository-local PNG figures from IR, saves and reopens it, verifies a text
   marker and picture count, then publishes the requested output path.
+- `export-images` opens an HWP read-only, uses Hancom's PNG `SaveAs` support to
+  render every page into a new output directory, validates every PNG header and
+  records its dimensions and hash, and verifies that the HWP did not change.
+
+The whole-document PNG call follows Hancom's documented Automation example:
+[`SaveAs(path, "PNG", "")`](https://forum.developer.hancom.com/t/createpageimage/1861).
 
 The preview deliberately flattens symbolic styles, character marks, links, and
 native list semantics into labeled diagnostic paragraphs. It also previews IR
@@ -73,3 +79,25 @@ and failed rendering leaves neither the requested output nor a temporary copy.
 HWP 2020 returned a COM object from `InsertPicture` in the adopted .NET
 late-binding context; the preview accepts that result but still requires the
 saved-and-reopened picture count to increase by the exact expected amount.
+
+For visual review, export all pages from a completed preview into a directory
+that does not already exist:
+
+```powershell
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe `
+  -NoProfile -ExecutionPolicy Bypass -Sta `
+  -File .\tools\investigation\hancom-automation\ir-preview\run-ir-preview.ps1 `
+  -Mode export-images `
+  -Document .\artifacts\csharp-ir-preview.hwp `
+  -Output .\artifacts\csharp-ir-preview-pages
+```
+
+The first reference-workstation export was checked on 2026-08-29. Hancom 2020
+produced `page001.png` through `page003.png`, each 992 by 1403 pixels, and left
+the HWP unchanged. The images confirmed that the template cover and page
+decorations survived and that the 142 mm figure retained its 3:2 ratio. They
+also made the preview's non-production behavior visible: diagnostic content
+starts at the document end, the figure label can be separated from the image by
+pagination, symbolic formatting remains flattened, and the template's current
+font renders the city emoji as missing-glyph boxes. Generated page images stay
+under ignored `artifacts/`; they are evidence for human review, not fixtures.

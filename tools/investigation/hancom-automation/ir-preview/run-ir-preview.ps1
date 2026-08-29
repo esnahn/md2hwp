@@ -3,11 +3,12 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("probe", "render")]
+    [ValidateSet("probe", "render", "export-images")]
     [string]$Mode,
 
-    [Parameter(Mandatory = $true)]
     [string]$Template,
+
+    [string]$Document,
 
     [string]$Ir,
 
@@ -54,19 +55,42 @@ function Resolve-InvocationPath([string]$Path) {
     return [IO.Path]::GetFullPath((Join-Path (Get-Location) $Path))
 }
 
-$templatePath = Resolve-InvocationPath $Template
-$previewArguments = @($assemblyPath, $Mode, "--template", $templatePath)
-if ($Mode -eq "render") {
-    if ([string]::IsNullOrWhiteSpace($Ir) -or [string]::IsNullOrWhiteSpace($Output)) {
-        throw "Render mode requires -Ir and -Output."
+$previewArguments = @($assemblyPath, $Mode)
+switch ($Mode) {
+    "probe" {
+        if ([string]::IsNullOrWhiteSpace($Template) -or
+            -not [string]::IsNullOrWhiteSpace($Document) -or
+            -not [string]::IsNullOrWhiteSpace($Ir) -or
+            -not [string]::IsNullOrWhiteSpace($Output)) {
+            throw "Probe mode requires only -Template."
+        }
+        $previewArguments += @("--template", (Resolve-InvocationPath $Template))
     }
-    $previewArguments += @(
-        "--ir", (Resolve-InvocationPath $Ir),
-        "--output", (Resolve-InvocationPath $Output)
-    )
-}
-elseif (-not [string]::IsNullOrWhiteSpace($Ir) -or -not [string]::IsNullOrWhiteSpace($Output)) {
-    throw "Probe mode does not accept -Ir or -Output."
+    "render" {
+        if ([string]::IsNullOrWhiteSpace($Template) -or
+            [string]::IsNullOrWhiteSpace($Ir) -or
+            [string]::IsNullOrWhiteSpace($Output) -or
+            -not [string]::IsNullOrWhiteSpace($Document)) {
+            throw "Render mode requires -Template, -Ir, and -Output."
+        }
+        $previewArguments += @(
+            "--template", (Resolve-InvocationPath $Template),
+            "--ir", (Resolve-InvocationPath $Ir),
+            "--output", (Resolve-InvocationPath $Output)
+        )
+    }
+    "export-images" {
+        if ([string]::IsNullOrWhiteSpace($Document) -or
+            [string]::IsNullOrWhiteSpace($Output) -or
+            -not [string]::IsNullOrWhiteSpace($Template) -or
+            -not [string]::IsNullOrWhiteSpace($Ir)) {
+            throw "Export-images mode requires -Document and -Output."
+        }
+        $previewArguments += @(
+            "--document", (Resolve-InvocationPath $Document),
+            "--output", (Resolve-InvocationPath $Output)
+        )
+    }
 }
 if ($Visible) {
     $previewArguments += "--visible"

@@ -445,7 +445,7 @@ internal static class PngDimensions
 {
     private static readonly byte[] Signature = [137, 80, 78, 71, 13, 10, 26, 10];
 
-    public static (double Width, double Height) Read(string path)
+    public static (int Width, int Height) Read(string path)
     {
         Span<byte> header = stackalloc byte[24];
         using var stream = File.OpenRead(path);
