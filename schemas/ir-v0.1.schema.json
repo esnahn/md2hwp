@@ -3,6 +3,7 @@
   "$id": "urn:md2hwp:schema:ir:0.1",
   "title": "md2hwp project IR v0.1",
   "description": "Closed structural serialization contract for md2hwp IR version 0.1.",
+  "$comment": "Human-readable string values must use Unicode NFC. Opaque link targets and image paths retain exact scalar values and are exempt. This semantic invariant is enforced by typed validation because JSON Schema cannot express it.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "ir_version", "metadata", "blocks"],

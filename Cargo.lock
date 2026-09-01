@@ -374,6 +374,7 @@ dependencies = [
 name = "md2hwp-core"
 version = "0.1.0"
 dependencies = [
+ "icu_normalizer",
  "jsonschema",
  "serde",
  "serde_json",

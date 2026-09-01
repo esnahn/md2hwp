@@ -88,10 +88,12 @@ Backend verification must therefore distinguish:
 - the TEXT export's escaped transport representation; and
 - the decoded string used for ordinal code-point comparison.
 
-Do not call `Normalize()` in the converter or backend unless a later explicit
-policy requires it. This result covers only the tested two-value fixture; it
-does not prove preservation of every Unicode sequence, every template, HWPX,
-or another Hancom release.
+The source-to-IR boundary now has an explicit NFC policy. This probe deliberately
+injects a decomposed value outside canonical production IR to test HWP's own
+behavior. Backends receive NFC human-readable content and scalar-exact opaque
+identifiers and must not call `Normalize()` again. This result covers only the
+tested two-value fixture; it does not prove preservation of every Unicode
+sequence, every template, HWPX, or another Hancom release.
 
 ## PowerShell source encoding
 

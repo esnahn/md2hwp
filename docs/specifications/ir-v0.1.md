@@ -42,6 +42,27 @@ IR version numbers and product milestone names are independent. Adding a table
 or footnote node would require a new IR version even if the product calls that
 work “v2”.
 
+### 1.1 Unicode canonical form
+
+Every human-readable string value in a valid IR document MUST use Unicode
+Normalization Form C (NFC). This applies independently to each `text.value`,
+verbatim-block line, link title, image title, and to text reached through a link
+label, image alt text, caption, or figure source. The fixed ASCII envelope, node
+tags, and enum values are inherently NFC.
+
+- A source normalizer converts human-readable text, titles, and verbatim
+  content to NFC before constructing IR.
+- Link targets and image paths are opaque identifiers outside the NFC
+  invariant. Readers and normalizers preserve their scalar values exactly,
+  including NFD, and never normalize them to select a different URL or file.
+- A direct IR reader rejects a covered non-NFC human-readable value as
+  `invalid_ir_semantics`; it does not silently rewrite persisted input.
+- NFC is checked per covered serialized string value. It does not perform NFKC
+  or NFKD, case folding, percent decoding, replacement-character repair, or
+  path resolution.
+- Backends consume validated NFC human-readable content and do not normalize it
+  again.
+
 ## 2. Type model
 
 ```text
@@ -111,9 +132,7 @@ Inline =
 - `text.value` is non-empty and contains neither U+0020 SPACE nor a C0/DEL
   control character (U+0000 through U+001F and U+007F). U+0020 is represented
   by a `space` node.
-- A normalizer MUST NOT apply NFC, NFD, compatibility normalization, case
-  folding, or replacement-character repair. Unicode scalar values are
-  preserved exactly.
+- Source normalizers convert `text.value` to NFC as required by section 1.1.
 - Adjacent `text` nodes at the same nesting level SHOULD be merged by writers.
 - Pandoc `SoftBreak` is normalized to `space` before IR construction. IR does
   not preserve whether prose whitespace originated as a source newline or a
@@ -150,7 +169,8 @@ error.
 An absent title is serialized as `null`; an empty title string is not
 canonical and is rejected. A link target is non-empty, so a CommonMark empty
 destination such as `[label]()` is outside v0.1 rather than guessed. Targets
-and titles contain no C0 control or DEL.
+and titles contain no C0 control or DEL. Titles satisfy the NFC invariant;
+targets retain their exact scalar values.
 
 The AURI v0.1 template profile deliberately renders only the recursively
 lowered label text and formatting. Other template profiles or backends may
@@ -171,7 +191,7 @@ create an active hyperlink. The target is not discarded from IR.
 A verbatim block is a general line-preserving block, not a
 programming-language or law-specific type.
 
-- Every `lines` element contains no CR or LF.
+- Every `lines` element is NFC and contains no CR or LF.
 - TAB (U+0009) is allowed in a verbatim-block line. Other C0 controls and DEL are
   rejected.
 - Joining elements with LF reconstructs the logical block text. Empty elements
@@ -216,12 +236,14 @@ programming-language or law-specific type.
   directory. Writers use `/` as the canonical separator. A leading `/`, drive
   prefix, URI scheme, UNC form, backslash, C0 control, or DEL is invalid.
 - `image.title` is `null` when absent; otherwise it is a non-empty string with
-  no C0 control or DEL. An empty title is rejected rather than treated as a
-  second spelling of absence.
+  no C0 control or DEL and is NFC. An empty title is rejected rather than
+  treated as a second spelling of absence.
 - `.` and `..` segments are allowed in serialized form so an IR file may refer
   to a sibling project asset, as the example does. Job preflight resolves the
-  normalized path, including symlinks or Windows reparse points, and requires
-  the final path to remain inside the configured project/input root.
+  serialized path for containment checking without rewriting the IR value or
+  its Unicode normalization form. It follows symlinks or Windows reparse points
+  and requires the final path to remain inside the configured project/input
+  root.
 - Before output is written, preflight resolves the path and verifies that it is
   inside the configured project/input root, readable, and supported. Remote
   fetches are outside v0.1.
@@ -314,6 +336,7 @@ IR decoding and self-contained semantic validation perform:
 3. Validate the closed JSON structure against the v0.1 schema.
 4. Decode into closed typed variants.
 5. Enforce IR-local semantic invariants, including:
+   - NFC for every human-readable string value covered by section 1.1;
    - no nested links;
    - canonical path syntax and list shape;
    - configured parser nesting and document-size limits.

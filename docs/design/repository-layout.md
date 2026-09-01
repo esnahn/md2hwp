@@ -90,6 +90,7 @@ md2hwp/
 │   ├── [tracked] commonmark-v0.1.md
 │   ├── [tracked] commonmark-v0.1.expected.ir.json
 │   ├── [tracked] ir-v0.1.json
+│   ├── [tracked] ir-v0.1-rejected-non-nfc.json
 │   ├── [tracked] ir-v0.1-rejected-page-break.json
 │   └── [tracked] ir-v0.1-rejected-soft-break.json
 ├── tests/

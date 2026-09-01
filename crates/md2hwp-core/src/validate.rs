@@ -2,9 +2,13 @@
 
 use std::fmt;
 
+use icu_normalizer::ComposingNormalizerBorrowed;
+
 use crate::ir::{
     Block, Document, IR_VERSION, Inline, ListItem, ListItemBlock, ListKind, SCHEMA_NAME,
 };
+
+const NFC: ComposingNormalizerBorrowed<'static> = ComposingNormalizerBorrowed::new_nfc();
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ValidationLimits {
@@ -155,6 +159,7 @@ impl State<'_> {
                 )?;
                 for (index, line) in lines.iter().enumerate() {
                     let line_path = format!("{path}/lines/{index}");
+                    self.require_nfc(line, &line_path, "verbatim-block line")?;
                     self.require(
                         !line.chars().any(is_forbidden_verbatim_control),
                         &line_path,
@@ -177,7 +182,7 @@ impl State<'_> {
             } => {
                 self.image_path(&image.path, &format!("{path}/image/path"))?;
                 if let Some(title) = &image.title {
-                    self.nonempty_control_free(
+                    self.nonempty_nfc_control_free(
                         title,
                         &format!("{path}/image/title"),
                         "image title",
@@ -290,6 +295,7 @@ impl State<'_> {
                     &format!("{path}/value"),
                     "text must not be empty",
                 )?;
+                self.require_nfc(value, &format!("{path}/value"), "text")?;
                 self.require(
                     !value.chars().any(|ch| ch == ' ' || is_control(ch)),
                     &format!("{path}/value"),
@@ -317,7 +323,7 @@ impl State<'_> {
                 self.require(!inside_link, path, "links must not be nested")?;
                 self.nonempty_control_free(target, &format!("{path}/target"), "link target")?;
                 if let Some(title) = title {
-                    self.nonempty_control_free(title, &format!("{path}/title"), "link title")?;
+                    self.nonempty_nfc_control_free(title, &format!("{path}/title"), "link title")?;
                 }
                 self.require(
                     !inlines.is_empty(),
@@ -349,6 +355,24 @@ impl State<'_> {
             &format!("{label} contains a control character"),
         )?;
         self.add_limited("text bytes", path, value.len())
+    }
+
+    fn nonempty_nfc_control_free(
+        &mut self,
+        value: &str,
+        path: &str,
+        label: &str,
+    ) -> Result<(), SemanticError> {
+        self.require_nfc(value, path, label)?;
+        self.nonempty_control_free(value, path, label)
+    }
+
+    fn require_nfc(&self, value: &str, path: &str, label: &str) -> Result<(), SemanticError> {
+        self.require(
+            NFC.is_normalized(value),
+            path,
+            &format!("{label} must use Unicode NFC"),
+        )
     }
 
     fn image_path(&mut self, value: &str, path: &str) -> Result<(), SemanticError> {
@@ -472,6 +496,144 @@ mod tests {
             .unwrap_err();
             assert_eq!(error.path, "/blocks/0/image/path");
         }
+    }
+
+    #[test]
+    fn rejects_non_nfc_human_readable_strings_at_exact_paths() {
+        let cases = vec![
+            (
+                Block::Paragraph {
+                    inlines: vec![text("가")],
+                },
+                "/blocks/0/inlines/0/value",
+            ),
+            (
+                Block::VerbatimBlock {
+                    lines: vec!["가".to_owned()],
+                },
+                "/blocks/0/lines/0",
+            ),
+            (
+                Block::Paragraph {
+                    inlines: vec![Inline::Link {
+                        target: "https://example.test".to_owned(),
+                        title: Some("가".to_owned()),
+                        inlines: vec![text("label")],
+                    }],
+                },
+                "/blocks/0/inlines/0/title",
+            ),
+            (
+                Block::Paragraph {
+                    inlines: vec![Inline::Link {
+                        target: "https://example.test".to_owned(),
+                        title: None,
+                        inlines: vec![text("가")],
+                    }],
+                },
+                "/blocks/0/inlines/0/inlines/0/value",
+            ),
+            (
+                Block::Figure {
+                    image: ImageRef {
+                        path: "assets/image.png".to_owned(),
+                        alt: vec![],
+                        title: Some("가".to_owned()),
+                    },
+                    caption: vec![text("caption")],
+                    source: None,
+                },
+                "/blocks/0/image/title",
+            ),
+            (
+                Block::Figure {
+                    image: ImageRef {
+                        path: "assets/image.png".to_owned(),
+                        alt: vec![text("가")],
+                        title: None,
+                    },
+                    caption: vec![text("caption")],
+                    source: None,
+                },
+                "/blocks/0/image/alt/0/value",
+            ),
+            (
+                Block::Figure {
+                    image: ImageRef {
+                        path: "assets/image.png".to_owned(),
+                        alt: vec![],
+                        title: None,
+                    },
+                    caption: vec![text("가")],
+                    source: None,
+                },
+                "/blocks/0/caption/0/value",
+            ),
+            (
+                Block::Figure {
+                    image: ImageRef {
+                        path: "assets/image.png".to_owned(),
+                        alt: vec![],
+                        title: None,
+                    },
+                    caption: vec![text("caption")],
+                    source: Some(vec![text("가")]),
+                },
+                "/blocks/0/source/0/value",
+            ),
+        ];
+
+        for (block, expected_path) in cases {
+            let error = validate(document(vec![block]), &ValidationLimits::default()).unwrap_err();
+            assert_eq!(error.path, expected_path);
+            assert!(error.message.contains("Unicode NFC"));
+        }
+    }
+
+    #[test]
+    fn preserves_non_nfc_link_targets_and_image_paths() {
+        let target = "https://example.test/가";
+        let image_path = "assets/가.png";
+        let validated = validate(
+            document(vec![
+                Block::Paragraph {
+                    inlines: vec![Inline::Link {
+                        target: target.to_owned(),
+                        title: None,
+                        inlines: vec![text("label")],
+                    }],
+                },
+                Block::Figure {
+                    image: ImageRef {
+                        path: image_path.to_owned(),
+                        alt: vec![],
+                        title: None,
+                    },
+                    caption: vec![text("caption")],
+                    source: None,
+                },
+            ]),
+            &ValidationLimits::default(),
+        )
+        .unwrap()
+        .into_document();
+
+        let Block::Paragraph { inlines } = &validated.blocks[0] else {
+            panic!("expected paragraph")
+        };
+        let Inline::Link {
+            target: validated_target,
+            ..
+        } = &inlines[0]
+        else {
+            panic!("expected link")
+        };
+        assert_eq!(validated_target, target);
+
+        let Block::Figure { image, .. } = &validated.blocks[1] else {
+            panic!("expected figure")
+        };
+        assert_eq!(image.path, image_path);
     }
 
     #[test]

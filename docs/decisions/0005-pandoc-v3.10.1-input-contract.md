@@ -27,11 +27,18 @@ open, so application code could not safely invoke or interpret Pandoc.
 - Pass source bytes through stdin and consume JSON from stdout. A nonzero exit
   status or nonempty unsupported AST constructor is a conversion failure, and
   no IR output is written.
-- Neither the application nor `md2hwp-core` performs Unicode normalization.
-  The pinned Pandoc CommonMark reader was nevertheless observed composing the
+- The application does not normalize source bytes before Pandoc. After strict
+  Pandoc JSON decoding, `md2hwp-core` converts human-readable text, titles, and
+  verbatim content to NFC before constructing IR. Opaque link targets and image
+  paths are exempt: their scalar values are preserved exactly, including NFD,
+  so normalization cannot redirect a URL or select another file. Direct IR
+  readers reject non-NFC human-readable content without applying compatibility
+  normalization.
+- The pinned Pandoc CommonMark reader was independently observed composing the
   literal sequence `U+1100 U+1161` to `U+AC00` before JSON reaches the core.
-  This is recorded as an observed parser-boundary behavior, not an md2hwp
-  normalization policy; see `docs/development/pandoc-unicode-normalization.md`.
+  This parser-boundary behavior is recorded in
+  `docs/development/pandoc-unicode-normalization.md`; canonical IR does not rely
+  on it.
 
 The official release asset and checksum are published on the
 [Pandoc 3.10.1 release](https://github.com/jgm/pandoc/releases/tag/3.10.1).

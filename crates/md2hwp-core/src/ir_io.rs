@@ -320,9 +320,13 @@ mod tests {
     use crate::ir::{Block, Inline};
 
     const EXAMPLE: &[u8] = include_bytes!("../../../examples/ir-v0.1.json");
+    const COMMONMARK_EXAMPLE: &[u8] =
+        include_bytes!("../../../examples/commonmark-v0.1.expected.ir.json");
+    const NON_NFC_EXAMPLE: &[u8] =
+        include_bytes!("../../../examples/ir-v0.1-rejected-non-nfc.json");
 
     #[test]
-    fn reads_and_writes_normative_example_without_unicode_normalization() {
+    fn reads_and_writes_normative_nfc_example() {
         let limits = ValidationLimits::default();
         let document = read_ir(EXAMPLE, &limits).expect("normative example must decode");
         let Block::Paragraph { inlines, .. } = &document.as_document().blocks[1] else {
@@ -331,9 +335,56 @@ mod tests {
         assert!(inlines.contains(&Inline::Text {
             value: "가".to_owned()
         }));
-        assert!(inlines.contains(&Inline::Text {
+        assert!(!inlines.contains(&Inline::Text {
             value: "가".to_owned()
         }));
+        let encoded = write_ir(&document).expect("validated IR must serialize");
+        assert_eq!(read_ir(&encoded, &limits).unwrap(), document);
+    }
+
+    #[test]
+    fn rejects_literal_and_escaped_non_nfc_text_as_invalid_ir_semantics() {
+        let escaped = br#"{"schema":"md2hwp.ir","ir_version":"0.1","metadata":{},"blocks":[{"type":"paragraph","inlines":[{"type":"text","value":"\u1100\u1161"}]}]}"#;
+        for input in [NON_NFC_EXAMPLE, escaped] {
+            let error = read_ir(input, &ValidationLimits::default()).unwrap_err();
+            assert_eq!(error.code, IrReadErrorCode::InvalidIrSemantics);
+            assert_eq!(error.path, "/blocks/0/inlines/0/value");
+            assert!(error.message.contains("Unicode NFC"));
+        }
+    }
+
+    #[test]
+    fn preserves_non_nfc_link_targets_and_image_paths() {
+        let input = br#"{"schema":"md2hwp.ir","ir_version":"0.1","metadata":{},"blocks":[{"type":"paragraph","inlines":[{"type":"link","target":"https://example.test/\u1100\u1161","title":null,"inlines":[{"type":"text","value":"label"}]}]},{"type":"figure","image":{"path":"assets/\u1100\u1161.png","alt":[],"title":null},"caption":[{"type":"text","value":"caption"}],"source":null}]}"#;
+        let limits = ValidationLimits::default();
+        let document = read_ir(input, &limits).expect("NFD identifiers must remain valid");
+
+        let Block::Paragraph { inlines } = &document.as_document().blocks[0] else {
+            panic!("expected paragraph")
+        };
+        let Inline::Link { target, .. } = &inlines[0] else {
+            panic!("expected link")
+        };
+        assert_eq!(target, "https://example.test/가");
+
+        let Block::Figure { image, .. } = &document.as_document().blocks[1] else {
+            panic!("expected figure")
+        };
+        assert_eq!(image.path, "assets/가.png");
+
+        let encoded = write_ir(&document).expect("validated IR must serialize");
+        assert_eq!(read_ir(&encoded, &limits).unwrap(), document);
+    }
+
+    #[test]
+    fn reads_and_writes_commonmark_golden_example() {
+        let limits = ValidationLimits::default();
+        let document = read_ir(COMMONMARK_EXAMPLE, &limits)
+            .expect("CommonMark golden example must satisfy the IR contract");
+        assert!(matches!(
+            document.as_document().blocks[2],
+            Block::VerbatimBlock { .. }
+        ));
         let encoded = write_ir(&document).expect("validated IR must serialize");
         assert_eq!(read_ir(&encoded, &limits).unwrap(), document);
     }

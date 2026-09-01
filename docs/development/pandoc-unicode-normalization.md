@@ -1,7 +1,7 @@
 # Pandoc Unicode normalization observation
 
-Status: observed on the pinned reference parser; not an md2hwp normalization
-policy.
+Status: observed on the pinned reference parser. The separate md2hwp NFC
+contract is defined in `docs/specifications/ir-v0.1.md`.
 
 ## Scope
 
@@ -26,21 +26,28 @@ The following readers produced different Pandoc JSON `Str` values:
 | `rst` | `U+1100 U+1161` |
 
 Using numeric CommonMark character references (`&#x1100;&#x1161;`) also
-produced `U+1100 U+1161`, but md2hwp does not require or automatically rewrite
-source text into that spelling.
+produced `U+1100 U+1161`. md2hwp does not rewrite source notation before
+Pandoc, but source-to-IR normalization subsequently converts human-readable
+content to NFC.
 
 The CommonMark compatibility fixture intentionally uses the literal decomposed
 sequence. Its generated IR therefore contains the composed value observed at
 the Pandoc boundary. This makes the behavior visible in byte/code-point tests
-even though the two strings appear equivalent in ordinary visual inspection.
+even though canonical IR would also compose a decomposed AST value.
 
 ## Boundary conclusion
 
 `apps/md2hwp` sends UTF-8 source to Pandoc without normalization.
-`md2hwp-core` does not apply NFC, NFD, NFKC, or NFKD and preserves the scalar
-values present in Pandoc JSON. Composition observed before that boundary is a
-property of the selected Pandoc reader/version, not a transformation requested
-or implemented by md2hwp.
+`md2hwp-core` converts human-readable text, titles, and verbatim content from
+Pandoc JSON to NFC before constructing IR. Opaque link targets and image paths
+are excluded: their scalar values are preserved exactly, including NFD, so
+normalization cannot redirect a URL or select another file. Direct IR input
+containing non-NFC human-readable content is invalid. md2hwp does not apply
+NFD, NFKC, or NFKD.
 
-Changing Pandoc versions or readers requires rerunning this probe because the
-observed behavior is not generalized into a compatibility guarantee.
+Composition observed before the core boundary remains a property of the
+selected Pandoc reader/version. The IR result no longer depends on that
+property because NFC is an explicit project invariant.
+
+Changing Pandoc versions or readers requires rerunning this probe to keep the
+boundary observation accurate; the explicit IR NFC invariant remains stable.
