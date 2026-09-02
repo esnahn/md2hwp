@@ -1,7 +1,6 @@
 # md2hwp Project IR v0.1
 
-Status: normative pre-implementation serialization contract for IR version
-`0.1`. The pre-release `SoftBreak` correction is recorded in ADR 0002.
+Status: normative serialization contract for IR version `0.1`.
 
 The project IR is the stable boundary between source-language normalization and
 document lowering. It represents document meaning, not Pandoc constructors,
@@ -380,9 +379,7 @@ preserve the source template format (HWP to HWP, HWPX to HWPX).
 - Readers explicitly enumerate supported versions; an unknown minor version is
   rejected during the v0.x period.
 - After the first public release, adding, removing, or changing a serialized
-  field or union variant requires a new IR version. Before any converter or
-  persisted consumer existed, the unreleased v0.1 contract removed
-  `soft_break`; ADR 0002 records that one-time correction.
+  field or union variant requires a new IR version.
 - Editorial clarification that does not change accepted JSON may update this
   document without changing `ir_version`.
 - There is no `unknown`, `extension`, or untyped escape hatch in v0.1.
