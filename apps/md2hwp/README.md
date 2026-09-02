@@ -14,8 +14,21 @@ package is warranted. The application does not implement AST normalization,
 template interpretation, or backend lowering. Its internal worker protocol
 remains an open decision.
 
-This directory is a Cargo binary package in the root workspace. The initial
-functional slice will accept serialized, validated project IR through an
-explicit `--from ir` mode; source parsing through Pandoc follows later. The
-current `src/main.rs` is deliberately compile-only and does not expose a CLI
-contract yet.
+This directory is a Cargo binary package in the root workspace. Serialized,
+validated project IR replay remains planned through an explicit `--from ir`
+mode.
+
+The first implemented command converts the adopted CommonMark subset to
+validated IR through the pinned Pandoc executable:
+
+```powershell
+cargo run -p md2hwp -- md2ir `
+  --from commonmark `
+  --input .\examples\commonmark-v0.1.md `
+  --output .\artifacts\commonmark-v0.1.ir.json
+```
+
+It checks the exact Pandoc 3.10.1 version, captures JSON/stdout and diagnostics,
+normalizes only allowlisted constructors through the built-in ruleset, and
+writes only validated IR. Existing output requires `--force`. Backend
+invocation and serialized-IR replay remain unimplemented.
