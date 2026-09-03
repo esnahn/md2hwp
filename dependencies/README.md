@@ -83,11 +83,12 @@ identity/profile and interactive Windows PowerShell context recorded in
 to an absolute, present DLL with the pinned hash is authoritative regardless of
 its install directory. The installer validates it before any download or write
 and preserves it as `Action=AlreadyValid`; a Hancom rejection at that point
-also fails without mutation. Only an invalid or missing registration enters the
-transactional fallback, which downloads and verifies the official archive
-before replacing the managed DLL and registration. A failed fallback restores
-the previous file and registry value. Any other downloaded executable/archive
-payload added later requires its own explicitly documented ignored destination.
+also fails without mutation. With an invalid or missing registration, the
+installer first reuses the ignored managed DLL when its hash matches the content
+pin. It downloads and verifies the official archive only when that local copy
+is absent or invalid. A failed fallback restores the previous file and registry
+value. Any other downloaded executable/archive payload added later requires its
+own explicitly documented ignored destination.
 
 The HKCU value points directly to the ignored DLL in this working tree. After
 moving or deleting the repository, or after a cleanup that removes ignored

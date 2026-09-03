@@ -183,8 +183,11 @@ process they create. The open probe additionally requires `Open=true` and never
 saves. Before any download or write, the installer preserves any valid pinned
 REG_SZ registration as `Action=AlreadyValid`, regardless of install directory.
 If Hancom rejects that otherwise-valid registration it fails without mutation.
-A fallback installation snapshots and restores the previous registry value/type
-and managed file if validation fails.
+If registration needs repair, the installer reuses the ignored managed DLL
+without downloading when its hash matches the content pin. Otherwise, a
+fallback installation downloads the official archive. Both paths snapshot and
+restore the previous registry value/type, and the download path also restores
+the previous managed file if validation fails.
 
 Live verification remains an explicit workstation operation, never a build
 side effect. The current repeatable sequence is: wrong-host rejection, installer

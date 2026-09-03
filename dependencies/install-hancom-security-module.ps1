@@ -147,51 +147,66 @@ if ($currentModuleIsPinned) {
     return
 }
 
-$temporaryRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
-$temporaryLeaf = "md2hwp-security-" + [guid]::NewGuid().ToString("N")
-$temporaryDirectory = [IO.Path]::GetFullPath((Join-Path $temporaryRoot $temporaryLeaf))
-if (-not $temporaryDirectory.StartsWith($temporaryRoot, [StringComparison]::OrdinalIgnoreCase) -or
-    $temporaryLeaf -notmatch '^md2hwp-security-[0-9a-f]{32}$') {
-    throw "Unsafe temporary directory: $temporaryDirectory"
-}
-
-$archivePath = Join-Path $temporaryDirectory "security-module.zip"
-$extractDirectory = Join-Path $temporaryDirectory "extracted"
-$backupPath = Join-Path $temporaryDirectory "previous-module.dll"
 $installedModuleExisted = Test-Path -LiteralPath $installedModulePath -PathType Leaf
 $previousInstalledHash = $null
 if ($installedModuleExisted) {
     $previousInstalledHash = (Get-FileHash -LiteralPath $installedModulePath -Algorithm SHA256).Hash
 }
-$mutationStarted = $false
+$localModuleIsPinned = $installedModuleExisted -and $previousInstalledHash -ceq $expectedSha256
+
+$temporaryRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+$temporaryLeaf = $null
+$temporaryDirectory = $null
+$backupPath = $null
+$fileMutationStarted = $false
+$registryMutationStarted = $false
 $action = $null
 
 try {
-    $null = New-Item -ItemType Directory -Path $extractDirectory
-    Invoke-WebRequest -UseBasicParsing -Uri $downloadUri -OutFile $archivePath
-    Expand-Archive -LiteralPath $archivePath -DestinationPath $extractDirectory
-
-    $moduleFiles = @(Get-ChildItem -LiteralPath $extractDirectory -Filter $moduleFileName -File -Recurse)
-    if ($moduleFiles.Count -ne 1) {
-        throw "Expected exactly one $moduleFileName in the official archive; found $($moduleFiles.Count)."
+    if ($localModuleIsPinned) {
+        # Recheck immediately before registration in case the ignored local file changed.
+        if ((Get-FileHash -LiteralPath $installedModulePath -Algorithm SHA256).Hash -cne $expectedSha256) {
+            throw "The local Hancom security-module changed after it was selected."
+        }
     }
-    if ((Get-FileHash -LiteralPath $moduleFiles[0].FullName -Algorithm SHA256).Hash -ne $expectedSha256) {
-        throw "The downloaded Hancom security-module hash does not match lock.json."
-    }
+    else {
+        $temporaryLeaf = "md2hwp-security-" + [guid]::NewGuid().ToString("N")
+        $temporaryDirectory = [IO.Path]::GetFullPath((Join-Path $temporaryRoot $temporaryLeaf))
+        if (-not $temporaryDirectory.StartsWith($temporaryRoot, [StringComparison]::OrdinalIgnoreCase) -or
+            $temporaryLeaf -notmatch '^md2hwp-security-[0-9a-f]{32}$') {
+            throw "Unsafe temporary directory: $temporaryDirectory"
+        }
 
-    if ($installedModuleExisted) {
-        Copy-Item -LiteralPath $installedModulePath -Destination $backupPath
-        if ((Get-FileHash -LiteralPath $backupPath -Algorithm SHA256).Hash -ne $previousInstalledHash) {
-            throw "Could not verify the previous managed DLL backup."
+        $archivePath = Join-Path $temporaryDirectory "security-module.zip"
+        $extractDirectory = Join-Path $temporaryDirectory "extracted"
+        $backupPath = Join-Path $temporaryDirectory "previous-module.dll"
+        $null = New-Item -ItemType Directory -Path $extractDirectory
+        Invoke-WebRequest -UseBasicParsing -Uri $downloadUri -OutFile $archivePath
+        Expand-Archive -LiteralPath $archivePath -DestinationPath $extractDirectory
+
+        $moduleFiles = @(Get-ChildItem -LiteralPath $extractDirectory -Filter $moduleFileName -File -Recurse)
+        if ($moduleFiles.Count -ne 1) {
+            throw "Expected exactly one $moduleFileName in the official archive; found $($moduleFiles.Count)."
+        }
+        if ((Get-FileHash -LiteralPath $moduleFiles[0].FullName -Algorithm SHA256).Hash -cne $expectedSha256) {
+            throw "The downloaded Hancom security-module hash does not match lock.json."
+        }
+
+        if ($installedModuleExisted) {
+            Copy-Item -LiteralPath $installedModulePath -Destination $backupPath
+            if ((Get-FileHash -LiteralPath $backupPath -Algorithm SHA256).Hash -cne $previousInstalledHash) {
+                throw "Could not verify the previous managed DLL backup."
+            }
+        }
+
+        $fileMutationStarted = $true
+        Copy-Item -LiteralPath $moduleFiles[0].FullName -Destination $installedModulePath -Force
+        if ((Get-FileHash -LiteralPath $installedModulePath -Algorithm SHA256).Hash -cne $expectedSha256) {
+            throw "The installed Hancom security-module hash does not match lock.json."
         }
     }
 
-    $mutationStarted = $true
-    Copy-Item -LiteralPath $moduleFiles[0].FullName -Destination $installedModulePath -Force
-    if ((Get-FileHash -LiteralPath $installedModulePath -Algorithm SHA256).Hash -ne $expectedSha256) {
-        throw "The installed Hancom security-module hash does not match lock.json."
-    }
-
+    $registryMutationStarted = $true
     $registryKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($registrySubKey)
     try {
         $registryKey.SetValue($moduleName, $installedModulePath,
@@ -212,7 +227,7 @@ catch {
     $primaryFailure = $_
     $rollbackFailures = @()
 
-    if ($mutationStarted) {
+    if ($registryMutationStarted) {
         try {
             if ($previousRegistryValueExisted) {
                 $registryKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($registrySubKey)
@@ -243,7 +258,9 @@ catch {
         catch {
             $rollbackFailures += "registry: $($_.Exception.Message)"
         }
+    }
 
+    if ($fileMutationStarted) {
         try {
             if ($installedModuleExisted) {
                 Copy-Item -LiteralPath $backupPath -Destination $installedModulePath -Force
@@ -266,7 +283,8 @@ catch {
     throw $primaryFailure
 }
 finally {
-    if (Test-Path -LiteralPath $temporaryDirectory) {
+    if ($null -ne $temporaryDirectory -and
+        (Test-Path -LiteralPath $temporaryDirectory)) {
         if (-not $temporaryDirectory.StartsWith($temporaryRoot, [StringComparison]::OrdinalIgnoreCase) -or
             $temporaryLeaf -notmatch '^md2hwp-security-[0-9a-f]{32}$') {
             Write-Warning "Refusing to remove unsafe temporary path: $temporaryDirectory"
