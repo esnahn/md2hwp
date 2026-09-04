@@ -130,8 +130,10 @@ checks were reverified on 2026-08-28:
 
 The same environment also passed the documented
 [HWP Unicode save/reopen investigation](hwp-unicode-roundtrip.md), preserving
-both `U+AC00` and the decomposed sequence `U+1100 U+1161` after TEXT-transport
-decoding.
+`U+AC00`, the decomposed sequence `U+1100 U+1161`, and the emoji sequence
+`U+1F3D9 U+FE0F` after TEXT-transport decoding. The emoji's storage
+preservation is distinct from its missing-glyph appearance in the current PNG
+render.
 
 The C# investigation child process was adopted on 2026-08-28 for the preview
 program only. The exact Windows PowerShell host above launched the pinned .NET

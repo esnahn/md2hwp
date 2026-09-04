@@ -67,9 +67,23 @@ function Get-DelimitedText(
 }
 
 function Format-CodePoints([string]$Text) {
-    return @( $Text.ToCharArray() | ForEach-Object {
-            "U+{0:X4}" -f [int]$_
-        }) -join " "
+    $formatted = @()
+    for ($index = 0; $index -lt $Text.Length; $index++) {
+        $first = [int]$Text[$index]
+        if ($first -ge 0xD800 -and $first -le 0xDBFF -and
+            $index + 1 -lt $Text.Length) {
+            $second = [int]$Text[$index + 1]
+            if ($second -ge 0xDC00 -and $second -le 0xDFFF) {
+                $scalar = 0x10000 + (($first - 0xD800) * 0x400) +
+                    ($second - 0xDC00)
+                $formatted += "U+{0:X}" -f $scalar
+                $index++
+                continue
+            }
+        }
+        $formatted += "U+{0:X4}" -f $first
+    }
+    return $formatted -join " "
 }
 
 function Get-HwpPlainText($Hwp) {
@@ -155,11 +169,16 @@ Copy-Item -LiteralPath $templatePath -Destination $outputPath -Force
 
 $nfcExpected = [string][char]0xAC00
 $decomposedExpected = [string][char]0x1100 + [string][char]0x1161
+$emojiExpected = [string][char]0xD83C +
+    [string][char]0xDFD9 +
+    [string][char]0xFE0F
 $runId = [guid]::NewGuid().ToString("N")
 $nfcBegin = "MD2HWP_${runId}_NFC_BEGIN"
 $nfcEnd = "MD2HWP_${runId}_NFC_END"
 $decomposedBegin = "MD2HWP_${runId}_DECOMPOSED_BEGIN"
 $decomposedEnd = "MD2HWP_${runId}_DECOMPOSED_END"
+$emojiBegin = "MD2HWP_${runId}_EMOJI_BEGIN"
+$emojiEnd = "MD2HWP_${runId}_EMOJI_END"
 
 $hwp = $null
 $documentOpen = $false
@@ -194,6 +213,10 @@ try {
     Insert-HwpText $hwp (
         $decomposedBegin + $decomposedExpected + $decomposedEnd
     )
+    if (-not $hwp.HAction.Run("BreakPara")) {
+        throw "HWP failed to separate the Unicode probe values."
+    }
+    Insert-HwpText $hwp ($emojiBegin + $emojiExpected + $emojiEnd)
 
     $beforeSaveText = Get-HwpPlainText $hwp
     $nfcBeforeSaveTransport = Get-DelimitedText (
@@ -202,8 +225,12 @@ try {
     $decomposedBeforeSaveTransport = Get-DelimitedText (
         $beforeSaveText
     ) $decomposedBegin $decomposedEnd
+    $emojiBeforeSaveTransport = Get-DelimitedText (
+        $beforeSaveText
+    ) $emojiBegin $emojiEnd
     $nfcBeforeSave = Decode-HwpTextValue $nfcBeforeSaveTransport
     $decomposedBeforeSave = Decode-HwpTextValue $decomposedBeforeSaveTransport
+    $emojiBeforeSave = Decode-HwpTextValue $emojiBeforeSaveTransport
 
     if (-not $hwp.HAction.Run("FileSave")) {
         throw "HWP failed to save the Unicode probe document."
@@ -227,8 +254,12 @@ try {
     $decomposedAfterReopenTransport = Get-DelimitedText (
         $afterReopenText
     ) $decomposedBegin $decomposedEnd
+    $emojiAfterReopenTransport = Get-DelimitedText (
+        $afterReopenText
+    ) $emojiBegin $emojiEnd
     $nfcAfterReopen = Decode-HwpTextValue $nfcAfterReopenTransport
     $decomposedAfterReopen = Decode-HwpTextValue $decomposedAfterReopenTransport
+    $emojiAfterReopen = Decode-HwpTextValue $emojiAfterReopenTransport
 
     $nfcPreserved = [string]::Equals(
         $nfcExpected,
@@ -238,6 +269,11 @@ try {
     $decomposedPreserved = [string]::Equals(
         $decomposedExpected,
         $decomposedAfterReopen,
+        [StringComparison]::Ordinal
+    )
+    $emojiPreserved = [string]::Equals(
+        $emojiExpected,
+        $emojiAfterReopen,
         [StringComparison]::Ordinal
     )
 
@@ -255,10 +291,17 @@ try {
         DecomposedAfterReopenTransport = $decomposedAfterReopenTransport
         DecomposedAfterReopen = Format-CodePoints $decomposedAfterReopen
         DecomposedPreserved = $decomposedPreserved
+        EmojiExpected = Format-CodePoints $emojiExpected
+        EmojiBeforeSaveTransport = $emojiBeforeSaveTransport
+        EmojiBeforeSave = Format-CodePoints $emojiBeforeSave
+        EmojiAfterReopenTransport = $emojiAfterReopenTransport
+        EmojiAfterReopen = Format-CodePoints $emojiAfterReopen
+        EmojiPreserved = $emojiPreserved
     }
 
-    if (-not $nfcPreserved -or -not $decomposedPreserved) {
-        throw "HWP changed Unicode code points during the save/reopen round trip. NFC=$nfcPreserved; decomposed=$decomposedPreserved; expected=$($result.DecomposedExpected); actual=$($result.DecomposedAfterReopen)"
+    if (-not $nfcPreserved -or -not $decomposedPreserved -or
+        -not $emojiPreserved) {
+        throw "HWP changed Unicode scalar values during the save/reopen round trip. NFC=$nfcPreserved; decomposed=$decomposedPreserved; emoji=$emojiPreserved; emoji expected=$($result.EmojiExpected); emoji actual=$($result.EmojiAfterReopen)"
     }
 }
 catch {

@@ -99,5 +99,7 @@ decorations survived and that the 142 mm figure retained its 3:2 ratio. They
 also made the preview's non-production behavior visible: diagnostic content
 starts at the document end, the figure label can be separated from the image by
 pagination, symbolic formatting remains flattened, and the template's current
-font renders the city emoji as missing-glyph boxes. Generated page images stay
-under ignored `artifacts/`; they are evidence for human review, not fixtures.
+font renders the city emoji as missing-glyph boxes. A separate save/reopen
+probe confirmed that this is a rendering limitation in the tested path, not
+loss of the underlying `U+1F3D9 U+FE0F` values. Generated page images stay under
+ignored `artifacts/`; they are evidence for human review, not fixtures.
