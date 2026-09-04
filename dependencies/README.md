@@ -5,10 +5,10 @@ closed [`lock.json`](lock.json), validated by
 [`schemas/dependencies-lock-v0.1.schema.json`](../schemas/dependencies-lock-v0.1.schema.json).
 Do not create one directory or lock file per dependency.
 
-The lock records the verified Hancom Automation environment and the official
-Pandoc 3.10.1 Windows x86_64 release. rhwp remains absent until an exact
-revision passes compatibility fixtures. A floating branch or guessed version
-is not a pin.
+The lock records the verified Hancom Automation environment, the official
+Pandoc 3.10.1 Windows x86_64 release, and the official .NET SDK 10.0.400
+Windows x64 release. rhwp remains absent until an exact revision passes
+compatibility fixtures. A floating branch or guessed version is not a pin.
 
 ## Pandoc
 
@@ -24,6 +24,20 @@ the exact `pandoc 3.10.1` version line, and installs it at
 `.local/dependencies/pandoc/3.10.1/pandoc.exe`. The archive is retained beside
 the executable so repeat runs can revalidate the adopted payload. This script
 is explicit setup and is never run by Cargo or conversion commands.
+
+## .NET SDK
+
+Install or verify the pinned portable .NET SDK with:
+
+```powershell
+pwsh -NoProfile -File .\dependencies\install-dotnet-sdk.ps1
+```
+
+The installer verifies the official Microsoft SHA-512 and installs the exact
+Windows x64 SDK under `.local/dependencies/dotnet/<version>`. It does not modify
+the system SDK or `PATH`. Invoke the pinned SDK through
+`tools/development/dotnet.ps1`; that wrapper also keeps CLI state and NuGet
+caches under the ignored `.local/state/` tree.
 
 ## Upstream source
 

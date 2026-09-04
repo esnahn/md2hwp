@@ -105,6 +105,21 @@ Run its direct-input smoke test with:
 pwsh -NoProfile -File .\tools\smoke\test-pandoc-json-to-ir.ps1
 ```
 
+## C# Hancom investigation preview
+
+The first C# investigation program reads validated IR and produces an explicit
+preview plan before any COM call. It uses the pinned repository-local .NET SDK:
+
+```powershell
+pwsh -NoProfile -File .\dependencies\install-dotnet-sdk.ps1
+pwsh -NoProfile -File .\tools\smoke\test-hancom-ir-preview-plan.ps1
+```
+
+The manually gated HWP open-only and diagnostic render commands are documented
+in
+[`tools/investigation/hancom-automation/ir-preview/README.md`](tools/investigation/hancom-automation/ir-preview/README.md).
+They are investigation aids, not template-profile or backend lowering.
+
 ## Hancom Automation security module
 
 Use `dependencies/install-hancom-security-module.ps1`; manual download is not

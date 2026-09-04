@@ -18,6 +18,20 @@
       ]
     },
     {
+      "name": "dotnet-sdk",
+      "consumer": "backends/hancom-automation",
+      "pins": [
+        {
+          "name": "dotnet-sdk-windows-x86-64",
+          "kind": "release-artifact",
+          "version": "10.0.400",
+          "platform": "windows-x86_64",
+          "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.400/dotnet-sdk-10.0.400-win-x64.zip",
+          "sha512": "9B8B88590E4DA131BFD0DA7AA089D0FC04D5418D5F8607EC13D55DC5A17B4399AFD54D496C12657FA05C6C6546DC5EAB930F26AC6C50F2D3A7712C0FB378C366"
+        }
+      ]
+    },
+    {
       "name": "hancom-automation",
       "consumer": "backends/hancom-automation",
       "pins": [

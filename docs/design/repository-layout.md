@@ -1,7 +1,7 @@
 # Repository layout
 
-Status: accepted repository contract. ADRs 0001 through 0004 record the
-decisions; this document is the authoritative current map.
+Status: accepted repository contract. The ADRs record the decisions; this
+document is the authoritative current map.
 
 The repository uses product boundaries only where code or data has a distinct
 owner. A one-command external process does not receive its own package, and
@@ -28,6 +28,7 @@ md2hwp/
 ├── [tracked] Cargo.toml                Rust workspace and shared metadata
 ├── [tracked] Cargo.lock                Application dependency graph
 ├── [tracked] rust-toolchain.toml       Exact Rust toolchain and components
+├── [tracked] global.json               Exact repository-local .NET SDK
 │
 ├── apps/
 │   ├── [tracked] README.md
@@ -69,8 +70,11 @@ md2hwp/
 │   ├── [tracked] lock.json              All adopted external pins
 │   ├── [tracked] install-hancom-security-module.ps1
 │   ├── [tracked] install-pandoc.ps1
+│   ├── [tracked] install-dotnet-sdk.ps1
 │   └── [local] FilePathCheckerModuleExample.dll  Ignored pinned payload
 ├── .local/dependencies/pandoc/          Ignored locked portable parser
+├── .local/dependencies/dotnet/          Ignored locked portable SDK
+├── .local/state/                        Ignored tool state and caches
 │
 ├── rules/
 │   ├── [tracked] README.md
@@ -102,16 +106,18 @@ md2hwp/
 │   └── [planned] visual/
 ├── tools/
 │   ├── [tracked] README.md
-│   ├── development/show-environment.ps1
+│   ├── development/{show-environment.ps1,dotnet.ps1}
 │   ├── investigation/auri/{README.md,build-format-examples.ps1}
+│   ├── investigation/hancom-automation/ir-preview/
+│   │   └── [tracked] investigation C# project and launcher
 │   └── smoke/{test-contracts.ps1,test-commonmark-to-ir.ps1,
-│              test-pandoc-json-to-ir.ps1}
+│              test-pandoc-json-to-ir.ps1,test-hancom-ir-preview-plan.ps1}
 ├── docs/
 │   ├── [tracked] README.md
 │   ├── design/repository-layout.md
 │   ├── development/environment.md
 │   ├── specifications/{ast2ir-rules-v0.1.md,ir-v0.1.md}
-│   └── decisions/0001 ... 0004
+│   └── decisions/0001 ... 0006
 ├── assets/
 │   ├── [tracked] README.md
 │   └── [tracked] sample-urban-context.png
@@ -207,7 +213,7 @@ promotion until provenance is resolved.
 ## Open decisions that block planned files
 
 - remote policy and exact Pandoc/rhwp submodule revisions;
-- .NET SDK, target framework, projects, and COM interop strategy;
+- production Hancom worker projects, protocol, and COM interop strategy;
 - exact reStructuredText invocation and compatibility fixtures;
 - rhwp path-library versus CLI integration and compatibility contract;
 - backend invocation envelope, AURI template profile, installer format, and

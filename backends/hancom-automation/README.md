@@ -7,12 +7,13 @@ actual template, performs Hancom-specific lowering, edits a template copy, and
 verifies the result. Fixture coordinates and investigation scripts do not
 belong here.
 
-The .NET SDK, target framework, solution/project files, COM interop strategy,
-and internal invocation protocol remain open decisions. Once decided, each
-production or test project owns its `.csproj` and C# source files and generated
-`bin/` and `obj/` output remains ignored. No empty project is scaffolded merely
-to make this boundary look implemented, and no exploratory PowerShell script
-should be promoted into this directory merely by moving it.
+The repository pins a portable .NET 10.0.400 Windows x64 SDK. The investigation
+preview under `tools/investigation/hancom-automation/ir-preview` targets
+`net10.0-windows`, but it does not decide the production solution/project
+shape, COM interop strategy, or internal invocation protocol. Once decided,
+each production or test project owns its `.csproj` and C# source files and
+generated `bin/` and `obj/` output remains ignored. No exploratory program is
+promoted into this directory merely by moving it.
 
 The backend must register the official file-access security module immediately
 after creating `HWPFrame.HwpObject`, process one document at a time in an

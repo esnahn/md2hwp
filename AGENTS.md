@@ -38,8 +38,10 @@ Keep parsing, document generation, and verification separate.
   implements the pinned Pandoc JSON input contract, built-in AST2IR rules, and
   normalization handlers.
 - The Hancom Automation worker implementation language is C#/.NET under
-  `backends/hancom-automation`. The .NET SDK, target framework, project files,
-  and COM interop details are not declared yet.
+  `backends/hancom-automation`. C# work uses the pinned repository-local .NET
+  10.0.400 SDK. The investigation preview targets `net10.0-windows` x64; the
+  production worker project shape, COM interop strategy, and protocol remain
+  open decisions.
 - Do not impose repository-wide `src/`, `bin/`, `dist/`, or `share/` roots.
   Rust packages use Cargo's package layout, C# projects use .NET project and
   test-project conventions, and declarative assets remain in domain-named
@@ -306,7 +308,7 @@ surrounding content, and passes structural and visual verification.
 
 ## Open decisions
 
-- .NET SDK, target framework, solution/project files, and COM interop strategy;
+- production worker solution/project shape and COM interop strategy;
 - Hancom Automation licensing;
 - internal backend invocation envelope and process protocol;
 - template insertion contract;

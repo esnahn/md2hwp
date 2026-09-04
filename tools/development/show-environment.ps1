@@ -6,6 +6,12 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+$repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\.."))
+$globalJson = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $repositoryRoot "global.json") |
+    ConvertFrom-Json
+$repositoryDotNetVersion = [string]$globalJson.sdk.version
+$repositoryDotNet = Join-Path $repositoryRoot ".local\dependencies\dotnet\$repositoryDotNetVersion\dotnet.exe"
+
 function Find-CommandPath([string]$Name) {
     $command = Get-Command $Name -ErrorAction SilentlyContinue
     if ($null -eq $command) {
@@ -61,6 +67,9 @@ if ($IsWindows) {
     Cargo = Find-CommandPath "cargo"
     DotNet = $dotnetPath
     DotNetSdks = $dotnetSdks
+    RepositoryDotNet = $repositoryDotNet
+    RepositoryDotNetExists = Test-Path -LiteralPath $repositoryDotNet -PathType Leaf
+    RepositoryDotNetVersion = $repositoryDotNetVersion
     Pandoc = Find-CommandPath "pandoc"
     HancomComRegistered = $hancomComRegistered
     SecurityRegistryPath = $securityRegistryPath

@@ -72,6 +72,10 @@
       "type": "string",
       "pattern": "^[0-9A-F]{64}$"
     },
+    "sha512": {
+      "type": "string",
+      "pattern": "^[0-9A-F]{128}$"
+    },
     "systemReferencePin": {
       "type": "object",
       "additionalProperties": false,
@@ -116,7 +120,15 @@
     "releaseArtifactPin": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "kind", "version", "platform", "url", "sha256"],
+      "required": ["name", "kind", "version", "platform", "url"],
+      "anyOf": [
+        {
+          "required": ["sha256"]
+        },
+        {
+          "required": ["sha512"]
+        }
+      ],
       "properties": {
         "name": {
           "$ref": "#/$defs/kebabName"
@@ -138,6 +150,9 @@
         },
         "sha256": {
           "$ref": "#/$defs/sha256"
+        },
+        "sha512": {
+          "$ref": "#/$defs/sha512"
         }
       }
     },

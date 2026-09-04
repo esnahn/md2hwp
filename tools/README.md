@@ -26,3 +26,10 @@ that unsupported syntax leaves no partial output.
 `smoke/test-pandoc-json-to-ir.ps1` enters through the direct Pandoc JSON CLI
 path without launching Pandoc, compares the result with the same golden IR,
 and proves that an unsupported Pandoc API version leaves no partial output.
+
+`development/dotnet.ps1` invokes the pinned repository-local .NET SDK with
+repository-local CLI and NuGet state. The C# investigation project under
+`investigation/hancom-automation/ir-preview` turns validated IR into an
+explicit preview plan and contains manually gated open-only/render COM modes.
+`smoke/test-hancom-ir-preview-plan.ps1` builds it and validates the full IR
+example without invoking COM.

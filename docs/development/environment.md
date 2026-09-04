@@ -9,16 +9,28 @@
 - Rust implements the backend-neutral core and user-facing application. The
   repository pins Rust 1.98.0, uses edition 2024 and Cargo resolver 3, and sets
   the initial MSRV to Rust 1.98.0 (`rust-version = "1.98"`).
-- C#/.NET will implement the separate Hancom Automation worker, but the SDK,
-  target framework, solution/project files, and COM interop strategy are not
-  declared yet.
+- C#/.NET will implement the separate Hancom Automation worker. Repository C#
+  work uses the pinned portable .NET 10.0.400 Windows x64 SDK; the investigation
+  preview targets `net10.0-windows`. Production project shape, protocol, and
+  COM interop strategy remain open.
 - Pandoc 3.10.1 is the pinned parser boundary. The official Windows x86_64 zip
   and SHA-256 are declared in `dependencies/lock.json`, and explicit setup
   installs it under `.local/dependencies/pandoc/3.10.1/`.
 
-Do not install or pin a guessed .NET SDK merely to make an empty backend
-boundary appear complete. Pandoc changes require a new lock, decision, and
-compatibility fixture.
+.NET and Pandoc changes require a new lock, decision, and compatibility check.
+
+## .NET toolchain
+
+Install the official locked SDK without changing the system SDK or `PATH`:
+
+```powershell
+pwsh -NoProfile -File .\dependencies\install-dotnet-sdk.ps1
+pwsh -NoProfile -File .\tools\development\dotnet.ps1 --info
+```
+
+`global.json` disables SDK roll-forward. The wrapper keeps CLI state, NuGet
+packages, and the effective user NuGet configuration under ignored
+`.local/state/`; the investigation project has no external package dependency.
 
 ## Rust toolchain
 
@@ -82,7 +94,9 @@ were installed and verified on 2026-08-27.
 - `pandoc` is not on `PATH`;
 - the pinned portable Pandoc 3.10.1 is installed under the ignored repository
   dependency tree and is invoked by explicit path;
-- the .NET host and runtime 8.0.30 are present, but no .NET SDK is installed;
+- the system .NET host and runtime 8.0.30 are present, but no system .NET SDK is
+  installed; repository C# work uses the installed pinned portable .NET
+  10.0.400 SDK, which reports C# 14, runtime 10.0.11, and RID `win-x64`;
 - `HWPFrame.HwpObject` resolves as a registered COM ProgID;
 - the security-module registration is per-user runtime state and is never
   assumed from repository contents; a prior successful live probe in the
@@ -118,6 +132,23 @@ The same environment also passed the documented
 [HWP Unicode save/reopen investigation](hwp-unicode-roundtrip.md), preserving
 both `U+AC00` and the decomposed sequence `U+1100 U+1161` after TEXT-transport
 decoding.
+
+The C# investigation child process was adopted on 2026-08-28 for the preview
+program only. The exact Windows PowerShell host above launched the pinned .NET
+10.0.400 x64 runtime as the same logged-in interactive identity and passed its
+open-only `probe`: module registration, HWP open, and input-template hash
+preservation were all true. Its `render` mode then copied the minimal HWP
+fixture, applied the six diagnostic text operations and one figure operation
+from `examples/ir-v0.1.json`, saved and reopened the copy, found its text
+marker and one added picture, and confirmed that the source template was
+unchanged. No HWP process remained after either operation.
+
+In this C# late-bound COM context, HWP 2020 returned a non-null COM object from
+`InsertPicture`, rather than the Boolean result assumed by the initial
+implementation. The preview accepts either Boolean true or a COM object as the
+immediate result, then treats the saved-and-reopened picture-count check as the
+structural proof of insertion. This observation does not settle the production
+worker's COM interop strategy or template lowering contract.
 
 All Hancom COM investigation, security-module installation or re-registration,
 and backend verification on this workstation must run under the same Windows

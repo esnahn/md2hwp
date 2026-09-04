@@ -4,6 +4,9 @@ tmp/
 # Hash-verified external CLI payloads installed explicitly by dependency setup.
 /.local/dependencies/
 
+# Repository-local CLI state and package caches.
+/.local/state/
+
 # Official Hancom Automation security module downloaded and hash-verified by
 # dependencies/install-hancom-security-module.ps1.
 /dependencies/FilePathCheckerModuleExample.dll
