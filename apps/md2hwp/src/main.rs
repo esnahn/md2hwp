@@ -54,17 +54,26 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
     let options = Options::parse(arguments)?;
     let source = fs::read(&options.input)
         .map_err(|error| format!("could not read {}: {error}", options.input.display()))?;
-    std::str::from_utf8(&source)
-        .map_err(|error| format!("source is not UTF-8 at byte {}", error.valid_up_to()))?;
     ensure_distinct_paths(&options.input, &options.output)?;
-    verify_pandoc(&options.pandoc)?;
-    let pandoc_json = invoke_pandoc(&options.pandoc, &source)?;
+    let (pandoc_json, reader) = match options.input_format {
+        InputFormat::CommonMark => {
+            std::str::from_utf8(&source)
+                .map_err(|error| format!("source is not UTF-8 at byte {}", error.valid_up_to()))?;
+            let pandoc = options
+                .pandoc
+                .as_deref()
+                .ok_or_else(|| "internal error: CommonMark requires Pandoc".to_owned())?;
+            verify_pandoc(pandoc)?;
+            (invoke_pandoc(pandoc, &source)?, "commonmark")
+        }
+        InputFormat::PandocJson => (source, "pandoc-json"),
+    };
 
     let limits = ValidationLimits::default();
     let pandoc = read_pandoc_json(&pandoc_json, &limits).map_err(|error| error.to_string())?;
     let rules = load_builtin_rules().map_err(|error| error.to_string())?;
-    let ir = normalize_pandoc(pandoc, &rules, "commonmark", &limits)
-        .map_err(|error| error.to_string())?;
+    let ir =
+        normalize_pandoc(pandoc, &rules, reader, &limits).map_err(|error| error.to_string())?;
     let serialized = write_ir(&ir).map_err(|error| error.to_string())?;
 
     if options.output.exists() && !options.force {
@@ -153,8 +162,15 @@ fn ensure_distinct_paths(input: &Path, output: &Path) -> Result<(), String> {
 struct Options {
     input: PathBuf,
     output: PathBuf,
-    pandoc: PathBuf,
+    input_format: InputFormat,
+    pandoc: Option<PathBuf>,
     force: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum InputFormat {
+    CommonMark,
+    PandocJson,
 }
 
 impl Options {
@@ -166,16 +182,22 @@ impl Options {
         let mut input = None;
         let mut output = None;
         let mut pandoc = None;
-        let mut reader_selected = false;
+        let mut input_format = None;
         let mut force = false;
         while let Some(argument) = arguments.next() {
             match argument.to_str() {
                 Some("--from") => {
                     let reader = arguments.next().ok_or_else(usage)?;
-                    if reader != "commonmark" {
-                        return Err("only --from commonmark is implemented".to_owned());
-                    }
-                    reader_selected = true;
+                    input_format = Some(match reader.to_str() {
+                        Some("commonmark") => InputFormat::CommonMark,
+                        Some("pandoc-json") => InputFormat::PandocJson,
+                        Some(reader) => {
+                            return Err(format!(
+                                "unsupported --from value {reader:?}; expected commonmark or pandoc-json"
+                            ));
+                        }
+                        None => return Err(usage()),
+                    });
                 }
                 Some("--input") => input = Some(PathBuf::from(arguments.next().ok_or_else(usage)?)),
                 Some("--output") => {
@@ -188,13 +210,18 @@ impl Options {
                 _ => return Err(usage()),
             }
         }
-        if !reader_selected {
-            return Err(usage());
+        let input_format = input_format.ok_or_else(usage)?;
+        if input_format == InputFormat::PandocJson && pandoc.is_some() {
+            return Err("--pandoc is only valid with --from commonmark".to_owned());
         }
         Ok(Self {
             input: input.ok_or_else(usage)?,
             output: output.ok_or_else(usage)?,
-            pandoc: pandoc.unwrap_or_else(default_pandoc_path),
+            input_format,
+            pandoc: match input_format {
+                InputFormat::CommonMark => Some(pandoc.unwrap_or_else(default_pandoc_path)),
+                InputFormat::PandocJson => None,
+            },
             force,
         })
     }
@@ -212,12 +239,52 @@ fn default_pandoc_path() -> PathBuf {
 }
 
 fn usage() -> String {
-    "usage: md2hwp md2ir --from commonmark --input <file.md> --output <file.ir.json> [--pandoc <pandoc.exe>] [--force]".to_owned()
+    "usage: md2hwp md2ir --from <commonmark|pandoc-json> --input <file> --output <file.ir.json> [--pandoc <pandoc.exe>] [--force]".to_owned()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn arguments(values: &[&str]) -> Vec<std::ffi::OsString> {
+        values.iter().map(std::ffi::OsString::from).collect()
+    }
+
+    #[test]
+    fn direct_pandoc_json_does_not_select_an_executable() {
+        let options = Options::parse(arguments(&[
+            "md2ir",
+            "--from",
+            "pandoc-json",
+            "--input",
+            "input.json",
+            "--output",
+            "output.json",
+        ]))
+        .unwrap();
+
+        assert_eq!(options.input_format, InputFormat::PandocJson);
+        assert!(options.pandoc.is_none());
+    }
+
+    #[test]
+    fn direct_pandoc_json_rejects_a_pandoc_override() {
+        let error = Options::parse(arguments(&[
+            "md2ir",
+            "--from",
+            "pandoc-json",
+            "--input",
+            "input.json",
+            "--output",
+            "output.json",
+            "--pandoc",
+            "pandoc.exe",
+        ]))
+        .err()
+        .unwrap();
+
+        assert_eq!(error, "--pandoc is only valid with --from commonmark");
+    }
 
     #[test]
     fn preserves_a_pandoc_exit_code() {

@@ -19,6 +19,10 @@ by the pinned Pandoc 3.10.1 CommonMark reader for
 `examples/commonmark-v0.1.md`; the corresponding golden project IR is
 `examples/commonmark-v0.1.expected.ir.json`.
 
+The same Pandoc JSON fixture is also the direct-input CLI fixture. Its smoke
+test bypasses Pandoc process invocation, requires the golden IR result, and
+checks that an unsupported Pandoc API version leaves no partial output.
+
 Every AST-to-IR ruleset needs fixtures for each declared handler and for
 unlisted-constructor rejection. Equivalent backends are compared by semantic
 postconditions, not by requiring identical native operation sequences.

@@ -22,3 +22,7 @@ for further HWP work.
 Rust CLI, validates the generated IR, compares it with the golden example,
 checks the documented CommonMark Unicode composition observation, and proves
 that unsupported syntax leaves no partial output.
+
+`smoke/test-pandoc-json-to-ir.ps1` enters through the direct Pandoc JSON CLI
+path without launching Pandoc, compares the result with the same golden IR,
+and proves that an unsupported Pandoc API version leaves no partial output.

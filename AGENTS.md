@@ -28,14 +28,15 @@ Keep parsing, document generation, and verification separate.
   types, strict validated I/O, semantic/resource validation, and Rust unit
   tests. The contract smoke test validates the AST-to-IR ruleset, the external
   dependencies lock, and accepted/rejected IR schema examples; there is no
-  converter or Hancom end-to-end smoke suite yet.
+  HWP/HWPX converter or Hancom end-to-end smoke suite yet.
 - The canonical core implementation language is Rust. The shared crate is
   `crates/md2hwp-core`, and the user-facing application boundary is
   `apps/md2hwp`. The workspace pins Rust 1.98.0 for
   `x86_64-pc-windows-msvc`, uses edition 2024 and Cargo resolver 3, and sets
-  the initial MSRV to Rust 1.98.0. `apps/md2hwp` now exposes the first
-  CommonMark-to-IR command, and `crates/md2hwp-core` implements the pinned
-  Pandoc JSON input contract, built-in AST2IR rules, and normalization handlers.
+  the initial MSRV to Rust 1.98.0. `apps/md2hwp` now exposes CommonMark source
+  and direct Pandoc JSON input modes for IR output, and `crates/md2hwp-core`
+  implements the pinned Pandoc JSON input contract, built-in AST2IR rules, and
+  normalization handlers.
 - The Hancom Automation worker implementation language is C#/.NET under
   `backends/hancom-automation`. The .NET SDK, target framework, project files,
   and COM interop details are not declared yet.

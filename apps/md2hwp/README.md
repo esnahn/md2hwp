@@ -32,3 +32,17 @@ It checks the exact Pandoc 3.10.1 version, captures JSON/stdout and diagnostics,
 normalizes only allowlisted constructors through the built-in ruleset, and
 writes only validated IR. Existing output requires `--force`. Backend
 invocation and serialized-IR replay remain unimplemented.
+
+To start from an existing Pandoc JSON file, select `pandoc-json`. This path does
+not locate, launch, or version-check a Pandoc executable:
+
+```powershell
+cargo run -p md2hwp -- md2ir `
+  --from pandoc-json `
+  --input .\tests\fixtures\pandoc-json\commonmark-v0.1.json `
+  --output .\artifacts\pandoc-json-v0.1.ir.json
+```
+
+The JSON envelope and API version are still checked before the same rules,
+normalization handlers, semantic validation, and validated-only writer run.
+`--pandoc` is rejected in this mode rather than silently ignored.

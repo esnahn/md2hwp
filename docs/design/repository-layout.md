@@ -104,7 +104,8 @@ md2hwp/
 │   ├── [tracked] README.md
 │   ├── development/show-environment.ps1
 │   ├── investigation/auri/{README.md,build-format-examples.ps1}
-│   └── smoke/{test-contracts.ps1,test-commonmark-to-ir.ps1}
+│   └── smoke/{test-contracts.ps1,test-commonmark-to-ir.ps1,
+│              test-pandoc-json-to-ir.ps1}
 ├── docs/
 │   ├── [tracked] README.md
 │   ├── design/repository-layout.md

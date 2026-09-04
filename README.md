@@ -89,6 +89,22 @@ The observed Pandoc reader behavior for normalization-sensitive Unicode is
 recorded in
 [`docs/development/pandoc-unicode-normalization.md`](docs/development/pandoc-unicode-normalization.md).
 
+An existing Pandoc JSON file can enter at the parser boundary without installing
+or launching Pandoc:
+
+```powershell
+cargo run -p md2hwp -- md2ir `
+  --from pandoc-json `
+  --input .\tests\fixtures\pandoc-json\commonmark-v0.1.json `
+  --output .\artifacts\pandoc-json-v0.1.ir.json
+```
+
+Run its direct-input smoke test with:
+
+```powershell
+pwsh -NoProfile -File .\tools\smoke\test-pandoc-json-to-ir.ps1
+```
+
 ## Hancom Automation security module
 
 Use `dependencies/install-hancom-security-module.ps1`; manual download is not
