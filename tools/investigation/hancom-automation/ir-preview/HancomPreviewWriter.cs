@@ -24,12 +24,14 @@ internal sealed record RenderResult(
     int BoxesAdded,
     int CaptionsAdded,
     int PicturesAdded,
+    int NativeListParagraphs,
     IReadOnlyList<StyleBinding> StyleBindings,
     bool TextVerified,
     bool StylesVerified,
     bool CharacterMarksVerified,
     bool BoxesVerified,
     bool CaptionsVerified,
+    bool ListsVerified,
     bool TemplateUnchanged);
 
 internal sealed record StyleBinding(
@@ -41,6 +43,7 @@ internal sealed record PreviewRendering(
     int BoxesAdded,
     int CaptionsAdded,
     int PicturesAdded,
+    int NativeListParagraphs,
     IReadOnlyList<StyleBinding> StyleBindings);
 
 internal sealed record SavedParagraph(
@@ -49,7 +52,14 @@ internal sealed record SavedParagraph(
     bool ContainsPicture,
     bool ContainsTable,
     int FigureAutoNumbers,
+    SavedNativeList? NativeList,
     IReadOnlyList<SavedTextRun> Runs);
+
+internal sealed record SavedNativeList(
+    string Kind,
+    int Level,
+    int DefinitionId,
+    int LeftMargin);
 
 internal sealed record SavedTextRun(
     string Text,
@@ -62,6 +72,7 @@ internal sealed record ExpectedParagraph(
     bool ContainsPicture,
     bool ContainsTable,
     int FigureAutoNumbers,
+    PreviewListMarker? ListMarker,
     IReadOnlyList<PreviewTextRun>? FormattedRuns);
 
 internal sealed record ExportedPage(
@@ -78,6 +89,7 @@ internal sealed record ImageExportResult(
 
 internal static class HancomPreviewWriter
 {
+    internal const int ListDepthIndentHwpUnits = 2000;
     private const string ProgId = "HWPFrame.HwpObject";
     private const string ModuleName = "FilePathCheckerModuleExample";
     private const string OpenOptions = "lock:false;forceopen:true;suspendpassword:true;versionwarning:false";
@@ -154,19 +166,26 @@ internal static class HancomPreviewWriter
                     : AuriMinimalCaptionPrototype.Bind(hwp, styles);
                 int picturesBefore = CountPictures(hwp);
                 int captionsBefore = CountFigureAutoNumbers(hwp);
+                int nativeListsBefore = CountNativeListParagraphs(hwp);
                 IReadOnlyList<SavedParagraph> existingParagraphs = ReadParagraphs(hwp);
                 var paragraphsBefore = existingParagraphs.Count;
                 Run(hwp, "MoveDocEnd");
                 Run(hwp, "BreakPara");
 
+                int? activeListId = null;
                 foreach (var operation in plan.Operations)
                 {
-                    RenderOperation(
+                    activeListId = RenderOperation(
                         hwp,
                         operation,
                         styles,
                         boxPrototype,
-                        captionPrototype);
+                        captionPrototype,
+                        activeListId);
+                }
+                if (activeListId is not null)
+                {
+                    ClearNativeListAtCaret(hwp, styles.Resolve("body"));
                 }
 
                 Run(hwp, "FileSave");
@@ -178,6 +197,7 @@ internal static class HancomPreviewWriter
                 VerifyCharacterMarks(hwp, plan, styles, paragraphsBefore);
                 VerifyBoxes(hwp, plan, styles, boxPrototype, paragraphsBefore);
                 VerifyCaptions(hwp, plan, styles, captionPrototype, paragraphsBefore);
+                VerifyLists(hwp, plan, paragraphsBefore);
                 var picturesAfter = CountPictures(hwp);
                 var picturesAdded = picturesAfter - picturesBefore;
                 if (picturesAdded != plan.Summary.FigureOperations)
@@ -193,10 +213,18 @@ internal static class HancomPreviewWriter
                         $"Expected {plan.Summary.FigureOperations} inserted figure captions, " +
                         $"observed {captionsAdded}.");
                 }
+                var nativeListParagraphs = CountNativeListParagraphs(hwp) - nativeListsBefore;
+                if (nativeListParagraphs != plan.Summary.ListItems)
+                {
+                    throw new InvalidOperationException(
+                        $"Expected {plan.Summary.ListItems} native list paragraphs, " +
+                        $"observed {nativeListParagraphs}.");
+                }
                 return new PreviewRendering(
                     plan.Summary.BoxOperations,
                     captionsAdded,
                     picturesAdded,
+                    nativeListParagraphs,
                     styles.Bindings);
             });
 
@@ -218,7 +246,9 @@ internal static class HancomPreviewWriter
                 rendering.BoxesAdded,
                 rendering.CaptionsAdded,
                 rendering.PicturesAdded,
+                rendering.NativeListParagraphs,
                 rendering.StyleBindings,
+                true,
                 true,
                 true,
                 true,
@@ -419,27 +449,54 @@ internal static class HancomPreviewWriter
         _ = hwp.Clear(1);
     }
 
-    private static void RenderOperation(
+    private static int? RenderOperation(
         dynamic hwp,
         PreviewOperation operation,
         AuriPreviewStyleBindings styles,
         AuriMinimalBoxPrototype? boxPrototype,
-        AuriMinimalCaptionPrototype? captionPrototype)
+        AuriMinimalCaptionPrototype? captionPrototype,
+        int? activeListId)
     {
         if (operation.Kind == "text")
         {
             var style = styles.Resolve(operation.ParagraphStyle ??
                 throw new InvalidOperationException($"Missing paragraph style for {operation.Label}."));
+            var marker = operation.ListMarker;
             for (var index = 0; index < operation.Lines.Count; index++)
             {
-                ApplyParagraphStyle(hwp, style);
+                if (index == 0 && marker is not null)
+                {
+                    if (activeListId != marker.ListId)
+                    {
+                        if (activeListId is null)
+                        {
+                            ApplyParagraphStyle(hwp, style);
+                        }
+                        ApplyNativeListMarker(hwp, marker, style);
+                    }
+                }
+                else
+                {
+                    if (activeListId is not null)
+                    {
+                        ApplyParagraphStyleAfterNativeList(hwp, styles, style);
+                    }
+                    else
+                    {
+                        ApplyParagraphStyle(hwp, style);
+                    }
+                }
                 InsertFormattedLine(hwp, FormattedLine(operation, index), style);
                 Run(hwp, "BreakPara");
             }
-            return;
+            return marker?.ListId;
         }
         if (operation.Kind == "box")
         {
+            if (activeListId is not null)
+            {
+                ClearNativeListAtCaret(hwp, styles.Resolve("body"));
+            }
             if (boxPrototype is null ||
                 !string.Equals(operation.ParagraphStyle, "block.box", StringComparison.Ordinal))
             {
@@ -447,7 +504,7 @@ internal static class HancomPreviewWriter
                     $"No minimal-fixture box prototype is bound for {operation.Label}.");
             }
             _ = boxPrototype.Insert(hwp, styles, operation.Lines);
-            return;
+            return null;
         }
         if (operation.Kind != "figure" || operation.ImagePath is null ||
             operation.ImageWidthMillimeters is null || operation.ImageHeightMillimeters is null)
@@ -455,7 +512,15 @@ internal static class HancomPreviewWriter
             throw new InvalidOperationException($"Invalid preview operation: {operation.Kind}");
         }
 
-        ApplyParagraphStyle(hwp, styles.Resolve("figure"));
+        var figureStyle = styles.Resolve("figure");
+        if (activeListId is not null)
+        {
+            ApplyParagraphStyleAfterNativeList(hwp, styles, figureStyle);
+        }
+        else
+        {
+            ApplyParagraphStyle(hwp, figureStyle);
+        }
         object? insertionResult = hwp.InsertPicture(
             operation.ImagePath,
             true,
@@ -491,6 +556,164 @@ internal static class HancomPreviewWriter
         sourceRuns.AddRange(FormattedLine(operation, 2));
         InsertFormattedLine(hwp, PreviewRunBuilder.Coalesce(sourceRuns), sourceStyle);
         Run(hwp, "BreakPara");
+        return null;
+    }
+
+    private static void ClearNativeListAtCaret(dynamic hwp, NativeStyle bodyStyle)
+    {
+        _ = hwp.HAction.GetDefault(
+            "ParagraphShape",
+            hwp.HParameterSet.HParaShape.HSet);
+        hwp.HParameterSet.HParaShape.HeadingType = 0;
+        hwp.HParameterSet.HParaShape.Level = 0;
+        hwp.HParameterSet.HParaShape.LeftMargin = bodyStyle.BaseLeftMargin;
+        if (!(bool)hwp.HAction.Execute(
+                "ParagraphShape",
+                hwp.HParameterSet.HParaShape.HSet))
+        {
+            throw new InvalidOperationException(
+                "Hancom failed to clear native list state at the current paragraph.");
+        }
+    }
+
+    private static void ApplyParagraphStyleAfterNativeList(
+        dynamic hwp,
+        AuriPreviewStyleBindings styles,
+        NativeStyle targetStyle)
+    {
+        var bodyStyle = styles.Resolve("body");
+        ClearNativeListAtCaret(hwp, bodyStyle);
+        if (targetStyle.Id == bodyStyle.Id)
+        {
+            ApplyParagraphStyle(hwp, styles.ResetStyle);
+        }
+        ApplyParagraphStyle(hwp, targetStyle);
+    }
+
+    private static void ApplyNativeListMarker(
+        dynamic hwp,
+        PreviewListMarker marker,
+        NativeStyle bodyStyle)
+    {
+        if (marker.Depth is < 0 or > 6)
+        {
+            throw new InvalidOperationException(
+                $"Native list depth is outside Hancom's supported range: {marker.Depth}");
+        }
+        if (string.Equals(marker.Kind, "bullet", StringComparison.Ordinal))
+        {
+            Run(hwp, "PutBullet");
+            _ = hwp.HAction.GetDefault(
+                "ParagraphShape",
+                hwp.HParameterSet.HParaShape.HSet);
+            hwp.HParameterSet.HParaShape.HeadingType = 3;
+            hwp.HParameterSet.HParaShape.Level = marker.Depth;
+            hwp.HParameterSet.HParaShape.LeftMargin =
+                bodyStyle.BaseLeftMargin + (marker.Depth * ListDepthIndentHwpUnits);
+            if (!(bool)hwp.HAction.Execute(
+                    "ParagraphShape",
+                    hwp.HParameterSet.HParaShape.HSet))
+            {
+                throw new InvalidOperationException(
+                    $"Hancom failed to apply a native bullet at depth {marker.Depth}.");
+            }
+            return;
+        }
+        if (!string.Equals(marker.Kind, "ordered", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"Unsupported native list kind: {marker.Kind}");
+        }
+        Run(hwp, "PutParaNumber");
+        _ = hwp.HAction.GetDefault(
+            "ParagraphShape",
+            hwp.HParameterSet.HParaShape.HSet);
+        hwp.HParameterSet.HParaShape.HeadingType = 2;
+        hwp.HParameterSet.HParaShape.Level = marker.Depth;
+        hwp.HParameterSet.HParaShape.LeftMargin =
+            bodyStyle.BaseLeftMargin + (marker.Depth * ListDepthIndentHwpUnits);
+        hwp.HParameterSet.HParaShape.Numbering.NewList = 1;
+        hwp.HParameterSet.HParaShape.Numbering.StartNumber = marker.Number;
+        SetNativeListLevelStart(
+            hwp.HParameterSet.HParaShape.Numbering,
+            marker.Depth,
+            marker.Number);
+        SetNativeListLevelNumberFormat(
+            hwp.HParameterSet.HParaShape.Numbering,
+            marker.Depth);
+        if (!(bool)hwp.HAction.Execute(
+                "ParagraphShape",
+                hwp.HParameterSet.HParaShape.HSet))
+        {
+            throw new InvalidOperationException(
+            $"Hancom failed to start a native ordered list at {marker.Number}.");
+        }
+    }
+
+    private static void SetNativeListLevelStart(
+        dynamic numbering,
+        int depth,
+        int number)
+    {
+        switch (depth)
+        {
+            case 0:
+                numbering.StartNumber0 = number;
+                break;
+            case 1:
+                numbering.StartNumber1 = number;
+                break;
+            case 2:
+                numbering.StartNumber2 = number;
+                break;
+            case 3:
+                numbering.StartNumber3 = number;
+                break;
+            case 4:
+                numbering.StartNumber4 = number;
+                break;
+            case 5:
+                numbering.StartNumber5 = number;
+                break;
+            case 6:
+                numbering.StartNumber6 = number;
+                break;
+            default:
+                throw new InvalidOperationException(
+                    $"Native list depth is outside Hancom's supported range: {depth}");
+        }
+    }
+
+    private static void SetNativeListLevelNumberFormat(
+        dynamic numbering,
+        int depth)
+    {
+        switch (depth)
+        {
+            case 0:
+                numbering.NumFormatLevel0 = 0;
+                break;
+            case 1:
+                numbering.NumFormatLevel1 = 0;
+                break;
+            case 2:
+                numbering.NumFormatLevel2 = 0;
+                break;
+            case 3:
+                numbering.NumFormatLevel3 = 0;
+                break;
+            case 4:
+                numbering.NumFormatLevel4 = 0;
+                break;
+            case 5:
+                numbering.NumFormatLevel5 = 0;
+                break;
+            case 6:
+                numbering.NumFormatLevel6 = 0;
+                break;
+            default:
+                throw new InvalidOperationException(
+                    $"Native list depth is outside Hancom's supported range: {depth}");
+        }
     }
 
     private static IReadOnlyList<PreviewTextRun> FormattedLine(
@@ -670,6 +893,7 @@ internal static class HancomPreviewWriter
                 actual.ContainsPicture != expected.ContainsPicture ||
                 actual.ContainsTable != expected.ContainsTable ||
                 actual.FigureAutoNumbers != expected.FigureAutoNumbers ||
+                !NativeListMatches(actual.NativeList, expected.ListMarker, nativeStyle) ||
                 !actual.Text.Contains(expected.Text, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
@@ -677,6 +901,21 @@ internal static class HancomPreviewWriter
             }
         }
     }
+
+    private static bool NativeListMatches(
+        SavedNativeList? actual,
+        PreviewListMarker? expected,
+        NativeStyle nativeStyle) =>
+        (actual, expected) switch
+        {
+            (null, null) => true,
+            (not null, not null) =>
+                string.Equals(actual.Kind, expected.Kind, StringComparison.Ordinal) &&
+                actual.Level == expected.Depth &&
+                actual.LeftMargin == nativeStyle.BaseLeftMargin +
+                    (expected.Depth * ListDepthIndentHwpUnits),
+            _ => false,
+        };
 
     private static void VerifyCharacterMarks(
         dynamic hwp,
@@ -839,6 +1078,101 @@ internal static class HancomPreviewWriter
         }
     }
 
+    private static void VerifyLists(
+        dynamic hwp,
+        IrPreviewPlan plan,
+        int paragraphsBefore)
+    {
+        var expected = ExpectedParagraphs(plan).ToArray();
+        IReadOnlyList<SavedParagraph> savedParagraphs = ReadParagraphs(hwp);
+        var appended = savedParagraphs.Skip(paragraphsBefore).ToArray();
+        if (appended.Length < expected.Length)
+        {
+            throw new InvalidOperationException(
+                "Saved preview lost paragraphs before native-list verification.");
+        }
+
+        var document = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        int? activeListId = null;
+        int? activeDefinitionId = null;
+        var verified = 0;
+        for (var index = 0; index < expected.Length; index++)
+        {
+            var marker = expected[index].ListMarker;
+            if (marker is null)
+            {
+                activeListId = null;
+                activeDefinitionId = null;
+                continue;
+            }
+            var actual = appended[index].NativeList ??
+                throw new InvalidOperationException(
+                    $"Saved preview paragraph {index} lost its native {marker.Kind} marker.");
+            if (activeListId == marker.ListId)
+            {
+                if (actual.DefinitionId != activeDefinitionId)
+                {
+                    throw new InvalidOperationException(
+                        $"Native list {marker.ListId} changed definition between adjacent items.");
+                }
+            }
+            else
+            {
+                VerifyListDefinition(document, actual, marker);
+                activeListId = marker.ListId;
+                activeDefinitionId = actual.DefinitionId;
+            }
+            verified++;
+        }
+        if (verified != plan.Summary.ListItems)
+        {
+            throw new InvalidOperationException(
+                $"Expected {plan.Summary.ListItems} verified native list items, observed {verified}.");
+        }
+    }
+
+    private static void VerifyListDefinition(
+        XDocument document,
+        SavedNativeList actual,
+        PreviewListMarker marker)
+    {
+        var definitionName = marker.Kind == "bullet" ? "BULLET" : "NUMBERING";
+        var definitions = document.Descendants()
+            .Where(element => element.Name.LocalName == definitionName)
+            .Where(element => int.TryParse(element.Attribute("Id")?.Value, out var id) &&
+                id == actual.DefinitionId)
+            .ToArray();
+        if (definitions.Length != 1)
+        {
+            throw new InvalidOperationException(
+                $"Expected one native {definitionName} definition {actual.DefinitionId}, " +
+                $"found {definitions.Length}.");
+        }
+        if (marker.Kind == "bullet")
+        {
+            return;
+        }
+
+        var definition = definitions[0];
+        var level = definition.Elements()
+            .Where(element => element.Name.LocalName == "PARAHEAD")
+            .SingleOrDefault(element =>
+                int.TryParse(element.Attribute("Level")?.Value, out var parsedLevel) &&
+                parsedLevel == marker.Depth + 1);
+        if (!int.TryParse(definition.Attribute("Start")?.Value, out var start) ||
+            start != marker.Number ||
+            level is null ||
+            !int.TryParse(level.Attribute("Start")?.Value, out var levelStart) ||
+            levelStart != marker.Number ||
+            !string.Equals(level.Attribute("NumFormat")?.Value, "Digit", StringComparison.Ordinal) ||
+            !string.Equals(level.Value, $"^{marker.Depth + 1}.", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"Native ordered list {marker.ListId} did not start at " +
+                $"{marker.Number} for depth {marker.Depth}.");
+        }
+    }
+
     private static IEnumerable<(string Symbolic, string Text)> StyledTexts(IrPreviewPlan plan)
     {
         foreach (var operation in plan.Operations)
@@ -893,6 +1227,7 @@ internal static class HancomPreviewWriter
                             false,
                             false,
                             0,
+                            index == 0 ? operation.ListMarker : null,
                             FormattedLine(operation, index));
                     }
                     break;
@@ -903,6 +1238,7 @@ internal static class HancomPreviewWriter
                         false,
                         true,
                         0,
+                        null,
                         null);
                     break;
                 case "figure":
@@ -912,6 +1248,7 @@ internal static class HancomPreviewWriter
                         true,
                         false,
                         0,
+                        null,
                         null);
                     var captionRuns = new List<PreviewTextRun>
                     {
@@ -924,6 +1261,7 @@ internal static class HancomPreviewWriter
                         false,
                         false,
                         1,
+                        null,
                         PreviewRunBuilder.Coalesce(captionRuns));
                     var sourceRuns = new List<PreviewTextRun>
                     {
@@ -938,6 +1276,7 @@ internal static class HancomPreviewWriter
                         false,
                         false,
                         0,
+                        null,
                         PreviewRunBuilder.Coalesce(sourceRuns));
                     break;
                 default:
@@ -978,26 +1317,65 @@ internal static class HancomPreviewWriter
         AuriMinimalCaptionPrototype.CountFigureAutoNumbers(
             XDocument.Parse((string)hwp.GetTextFile("HWPML2X", "")));
 
+    private static int CountNativeListParagraphs(dynamic hwp)
+    {
+        IReadOnlyList<SavedParagraph> paragraphs = ReadParagraphs(hwp);
+        return paragraphs.Count(paragraph => paragraph.NativeList is not null);
+    }
+
     private static IReadOnlyList<SavedParagraph> ReadParagraphs(dynamic hwp)
     {
         var document = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
         var characterShapes = HwpmlCharacterShapes.Read(document);
+        var paragraphShapes = document.Descendants()
+            .Where(element => element.Name.LocalName == "PARASHAPE")
+            .Where(element => int.TryParse(element.Attribute("Id")?.Value, out _))
+            .ToDictionary(
+                element => int.Parse(element.Attribute("Id")!.Value),
+                element => element);
         return document.Descendants()
             .Where(element => element.Name.LocalName == "SECTION")
             .SelectMany(section => section.Elements()
                 .Where(element => element.Name.LocalName == "P"))
-            .Select(element => new SavedParagraph(
-                int.TryParse(element.Attribute("Style")?.Value, out var style) ? style : -1,
-                element.Value,
-                element.Descendants().Any(descendant => descendant.Name.LocalName == "PICTURE"),
-                element.Descendants().Any(descendant => descendant.Name.LocalName == "TABLE"),
-                element.Descendants().Count(descendant =>
-                    descendant.Name.LocalName == "AUTONUM" &&
-                    string.Equals(
-                        descendant.Attribute("NumberType")?.Value,
-                        "Figure",
-                        StringComparison.Ordinal)),
-                ReadSavedRuns(element, characterShapes)))
+            .Select(element =>
+            {
+                var paragraphShapeId = int.TryParse(
+                    element.Attribute("ParaShape")?.Value,
+                    out var parsedParagraphShapeId)
+                    ? parsedParagraphShapeId
+                    : -1;
+                paragraphShapes.TryGetValue(paragraphShapeId, out var paragraphShape);
+                SavedNativeList? nativeList = null;
+                var headingType = paragraphShape?.Attribute("HeadingType")?.Value;
+                if (headingType is "Bullet" or "Number" &&
+                    int.TryParse(paragraphShape?.Attribute("Level")?.Value, out var level) &&
+                    int.TryParse(paragraphShape?.Attribute("Heading")?.Value, out var definitionId) &&
+                    int.TryParse(
+                        paragraphShape?.Elements()
+                            .SingleOrDefault(child => child.Name.LocalName == "PARAMARGIN")?
+                            .Attribute("Left")?.Value,
+                        out var leftMargin))
+                {
+                    nativeList = new SavedNativeList(
+                        headingType == "Bullet" ? "bullet" : "ordered",
+                        level,
+                        definitionId,
+                        leftMargin);
+                }
+                return new SavedParagraph(
+                    int.TryParse(element.Attribute("Style")?.Value, out var style) ? style : -1,
+                    element.Value,
+                    element.Descendants().Any(descendant => descendant.Name.LocalName == "PICTURE"),
+                    element.Descendants().Any(descendant => descendant.Name.LocalName == "TABLE"),
+                    element.Descendants().Count(descendant =>
+                        descendant.Name.LocalName == "AUTONUM" &&
+                        string.Equals(
+                            descendant.Attribute("NumberType")?.Value,
+                            "Figure",
+                            StringComparison.Ordinal)),
+                    nativeList,
+                    ReadSavedRuns(element, characterShapes));
+            })
             .ToArray();
     }
 
@@ -1136,10 +1514,12 @@ internal sealed record NativeStyle(
     int Id,
     string Name,
     bool BaseBold,
-    bool BaseItalic);
+    bool BaseItalic,
+    int BaseLeftMargin);
 
 internal sealed class AuriPreviewStyleBindings
 {
+    private const string ResetNativeStyleName = "바탕글";
     private static readonly (string Symbolic, string NativeName)[] Required =
     [
         ("body", "본문"),
@@ -1157,9 +1537,12 @@ internal sealed class AuriPreviewStyleBindings
 
     private readonly IReadOnlyDictionary<string, NativeStyle> styles;
 
-    private AuriPreviewStyleBindings(IReadOnlyDictionary<string, NativeStyle> styles)
+    private AuriPreviewStyleBindings(
+        IReadOnlyDictionary<string, NativeStyle> styles,
+        NativeStyle resetStyle)
     {
         this.styles = styles;
+        ResetStyle = resetStyle;
         Bindings = Required
             .Select(required => new StyleBinding(
                 required.Symbolic,
@@ -1169,6 +1552,8 @@ internal sealed class AuriPreviewStyleBindings
     }
 
     public IReadOnlyList<StyleBinding> Bindings { get; }
+
+    public NativeStyle ResetStyle { get; }
 
     public static AuriPreviewStyleBindings Bind(dynamic hwp)
     {
@@ -1182,30 +1567,64 @@ internal sealed class AuriPreviewStyleBindings
             .Where(element => element.Name.LocalName == "STYLE")
             .ToArray();
         var characterShapes = HwpmlCharacterShapes.Read(document);
+        var paragraphShapes = document.Descendants()
+            .Where(element => element.Name.LocalName == "PARASHAPE")
+            .Where(element => int.TryParse(element.Attribute("Id")?.Value, out _))
+            .ToDictionary(
+                element => int.Parse(element.Attribute("Id")!.Value),
+                element => element);
         var bindings = new Dictionary<string, NativeStyle>(StringComparer.Ordinal);
 
         foreach (var required in Required)
         {
-            var matches = styleElements.Where(element =>
-                    string.Equals(element.Attribute("Type")?.Value, "Para", StringComparison.Ordinal) &&
-                    string.Equals(element.Attribute("Name")?.Value, required.NativeName, StringComparison.Ordinal))
-                .ToArray();
-            if (matches.Length != 1 ||
-                !int.TryParse(matches[0].Attribute("Id")?.Value, out var nativeId) ||
-                !int.TryParse(matches[0].Attribute("CharShape")?.Value, out var characterShapeId) ||
-                !characterShapes.TryGetValue(characterShapeId, out var characterMarks))
-            {
-                throw new InvalidOperationException(
-                    $"Expected one complete AURI paragraph style named {required.NativeName}, found {matches.Length}.");
-            }
-            bindings.Add(required.Symbolic, new NativeStyle(
-                nativeId,
-                required.NativeName,
-                characterMarks.Bold,
-                characterMarks.Italic));
+            bindings.Add(
+                required.Symbolic,
+                BindNativeStyle(
+                    styleElements,
+                    characterShapes,
+                    paragraphShapes,
+                    required.NativeName));
         }
 
-        return new AuriPreviewStyleBindings(bindings);
+        var resetStyle = BindNativeStyle(
+            styleElements,
+            characterShapes,
+            paragraphShapes,
+            ResetNativeStyleName);
+        return new AuriPreviewStyleBindings(bindings, resetStyle);
+    }
+
+    private static NativeStyle BindNativeStyle(
+        IReadOnlyList<XElement> styleElements,
+        IReadOnlyDictionary<int, CharacterMarks> characterShapes,
+        IReadOnlyDictionary<int, XElement> paragraphShapes,
+        string nativeName)
+    {
+        var matches = styleElements.Where(element =>
+                string.Equals(element.Attribute("Type")?.Value, "Para", StringComparison.Ordinal) &&
+                string.Equals(element.Attribute("Name")?.Value, nativeName, StringComparison.Ordinal))
+            .ToArray();
+        if (matches.Length != 1 ||
+            !int.TryParse(matches[0].Attribute("Id")?.Value, out var nativeId) ||
+            !int.TryParse(matches[0].Attribute("CharShape")?.Value, out var characterShapeId) ||
+            !characterShapes.TryGetValue(characterShapeId, out var characterMarks) ||
+            !int.TryParse(matches[0].Attribute("ParaShape")?.Value, out var paragraphShapeId) ||
+            !paragraphShapes.TryGetValue(paragraphShapeId, out var paragraphShape) ||
+            !int.TryParse(
+                paragraphShape.Elements()
+                    .SingleOrDefault(child => child.Name.LocalName == "PARAMARGIN")?
+                    .Attribute("Left")?.Value,
+                out var baseLeftMargin))
+        {
+            throw new InvalidOperationException(
+                $"Expected one complete AURI paragraph style named {nativeName}, found {matches.Length}.");
+        }
+        return new NativeStyle(
+            nativeId,
+            nativeName,
+            characterMarks.Bold,
+            characterMarks.Italic,
+            baseLeftMargin);
     }
 
     public NativeStyle Resolve(string symbolic)

@@ -114,6 +114,9 @@ checks were reverified on 2026-08-28:
   may change after sign-in or RDP reconnect);
 - host: `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`;
 - Windows PowerShell `5.1.26100.9168`, `PSEdition=Desktop`, x64, STA;
+  the updated `5.1.26100.9278` host passed the hidden open-only probe and
+  native-list preview save/reopen checks on 2026-09-07 in the same interactive
+  identity/session, with the pinned module hash and template preservation;
 - COM ProgID `HWPFrame.HwpObject`, launching 32-bit HWP
   `11.0.0.9136` from
   `C:\Program Files (x86)\Hnc\Office 2020\HOffice110\bin\hwp.exe`;
@@ -225,8 +228,37 @@ hash stayed unchanged, and no HWP process remained after render or export.
 This remains a minimal-fixture result. The full AURI reference document's
 observed caption is nested in a picture object rather than represented by this
 root-paragraph shape, so the investigation selector rejects it instead of
-guessing. A production profile must define and test that binding. Native list
-markers are the remaining visible structural gap in this preview.
+guessing. A production profile must define and test that binding.
+
+On 2026-08-31, the same context passed the native-list investigation. The local
+Hancom [action table](../../reference/hwpautomation/ActionTable_2504.pdf)
+identifies `PutBullet`, `PutParaNumber`, and `PutNewParaNumber`, while the
+[parameter-set table](../../reference/hwpautomation/ParameterSetTable_2504.pdf)
+documents `ParaShape` heading type, level, numbering, and bullet fields. The
+accepted render applied `PutBullet` to two body-style items. It started a nested
+ordered segment at 3 with `PutParaNumber`, followed by `ParagraphShape` fields
+`HeadingType=Number`, `Level=1`, `Numbering.NewList=1`, root `StartNumber=3`,
+current-level `StartNumber1=3`, and decimal number format. The tested
+`PutNewParaNumber` path reset the requested start to 1 and was rejected.
+
+Save/reopen verification reported three added native-list paragraphs, stable
+definition identity for the adjacent bullets, ordered root and level starts of
+3, expected body style and character marks, and an unchanged template hash.
+The page export showed two native black bullets and an indented `3.` item. This
+preview uses 2,000 HWPUNIT (about 7.06 mm) of additional left margin per depth
+and decimal-period numbering at every ordered depth; those display choices are
+investigation policy, not yet a production template-profile contract.
+
+One rejected transition is important for future automation. Reapplying
+`StyleEx("본문")` to the directly indented empty paragraph after a list opened a
+modal question asking whether to overwrite it with the `본문` style shape. The
+worker timed out and the exact automation HWP process was closed without
+answering the prompt. Following the observed interactive workaround, the
+accepted path uniquely binds `바탕글`, clears the native heading state, restores
+the bound body left margin, applies `바탕글`, and then returns to `본문`. The
+subsequent render, reopen, and PNG export completed with no prompt and left no
+HWP process. Its page PNG hashes matched the earlier same-style-skip render, so
+the reset detour did not change the visible result.
 
 In this C# late-bound COM context, HWP 2020 returned a non-null COM object from
 `InsertPicture`, rather than the Boolean result assumed by the initial

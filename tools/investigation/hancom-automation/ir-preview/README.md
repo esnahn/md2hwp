@@ -12,10 +12,11 @@ It has four modes:
   it, and verifies that the input hash did not change;
 - `render` copies an HWP to a temporary sibling, binds supported symbolic
   paragraph styles to unique AURI native style names, appends text, cloned box
-  structures, and repository-local PNG figures from IR, saves and reopens it,
+  structures, native bullet/numbered lists, and repository-local PNG figures
+  from IR, saves and reopens it,
   verifies the appended paragraph order, text, paragraph styles,
-  character-mark runs, box and automatic-number caption structures, and
-  picture count, then publishes the requested output path.
+  character-mark runs, list definitions, box and automatic-number caption
+  structures, and picture count, then publishes the requested output path.
 - `export-images` opens an HWP read-only, uses Hancom's PNG `SaveAs` support to
   render every page into a new output directory, validates every PNG header and
   records its dimensions and hash, and verifies that the HWP did not change.
@@ -27,8 +28,10 @@ The preview currently binds `body`, headings 1 through 6, `block.box`, figure
 anchors, captions, and source lines by exact native style name. Nested
 `strong`/`emph` nodes are lowered to character-shape runs, including marks in a
 link label; the link target and title are intentionally not rendered by this
-AURI preview. It does not yet apply native list semantics. A `verbatim_block`
-is lowered to one typed `block.box` plan operation and,
+AURI preview. List paragraphs retain typed marker data and render with Hancom's
+native bullet or paragraph-numbering feature over the bound `body` style; no
+literal marker is inserted. A `verbatim_block` is lowered to one typed
+`block.box` plan operation and,
 during render, clones the uniquely matched box prototype from
 `tests/fixtures/templates/minimal.hwp`. Its logical lines remain inside one
 native box paragraph as HWP line breaks, including empty and trailing lines. IR
@@ -177,9 +180,34 @@ boxes with content-dependent heights. The template hash remained unchanged.
 An additional two-figure render used captions identical to the source prototype
 to exercise adjacent-root ambiguity. It reported `CaptionsAdded=2`, reopened
 with two new Figure `AUTONUM` controls, and the PNG pages showed `[그림 1]` and
-`[그림 2]`. The remaining visible structural gap is native list markers. The
-template's current font also renders the city
+`[그림 2]`. A later native-list render added two bullet items and a nested
+ordered item starting at `3`. The template's current font also renders the city
 emoji as missing-glyph boxes; a separate save/reopen probe confirmed that this
 is a rendering limitation in the tested path, not loss of the underlying
 `U+1F3D9 U+FE0F` values. Generated page images stay under ignored `artifacts/`;
 they are evidence for human review, not fixtures.
+
+The native-list path follows the action and `ParaShape` fields documented in
+Hancom's local [action table](../../../../reference/hwpautomation/ActionTable_2504.pdf)
+and [parameter-set table](../../../../reference/hwpautomation/ParameterSetTable_2504.pdf).
+The plan preserves list identity, kind, depth, start, current number, and
+segment start. Rendering applies `PutBullet` for bullets. Ordered segments use
+`PutParaNumber`, then `ParagraphShape` with `HeadingType=Number`, the IR depth,
+`Numbering.NewList=1`, both the root and current-level start number, and decimal
+number format. The tested `PutNewParaNumber` path reset the requested start to
+1, so it is not used. Save/reopen verification requires one native list
+paragraph per IR item, stable definition identity across adjacent items, the
+requested ordered start, and the expected paragraph level and margin.
+
+For this investigation preview only, every ordered depth displays decimal
+digits followed by a period, and each depth adds 2,000 HWPUNIT (about 7.06 mm)
+to the bound `body` left margin. The display sequence and indentation must move
+to a production template profile before backend adoption. HWP 2020 displayed a
+modal style-overwrite question when `StyleEx("본문")` was redundantly applied to
+the directly indented list successor. The adopted transition uniquely binds
+the fixture's `바탕글` reset style, clears the native heading state, restores the
+bound body margin, then applies `바탕글` before returning to `본문`. This follows
+the observed HWP behavior that visiting a different style suppresses the
+same-style overwrite question; it never accepts that prompt. The preview
+currently rejects list depth above 6 and a `line_break` inside the
+marker-bearing paragraph rather than guessing a lowering.

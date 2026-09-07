@@ -67,7 +67,16 @@ internal sealed record PreviewOperation(
     double? ImageWidthMillimeters = null,
     double? ImageHeightMillimeters = null,
     string? ParagraphStyle = null,
-    IReadOnlyList<IReadOnlyList<PreviewTextRun>>? FormattedLines = null);
+    IReadOnlyList<IReadOnlyList<PreviewTextRun>>? FormattedLines = null,
+    PreviewListMarker? ListMarker = null);
+
+internal sealed record PreviewListMarker(
+    int ListId,
+    string Kind,
+    int Depth,
+    int Start,
+    int Number,
+    bool StartsList);
 
 internal sealed record PreviewTextRun(
     string Text,
@@ -108,6 +117,7 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
     private const double FigureWidthMillimeters = 142.0;
     private readonly List<PreviewOperation> operations = [];
     private int listItems;
+    private int nextListId;
 
     public void AddBlock(JsonElement block, string path)
     {
@@ -155,7 +165,7 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
             [
                 "This is an investigation preview, not backend lowering.",
                 "AURI paragraph styles are bound by unique native names during render.",
-                "Strong/emphasis marks are retained as character-shape runs; link targets and native list semantics remain flattened.",
+                "Strong/emphasis marks are retained as character-shape runs; link targets remain flattened.",
                 "verbatim_block maps to one prototype-backed block.box operation; render accepts only the uniquely matched minimal-fixture box structure.",
                 "The minimal-fixture box prototype's source placeholder remains template decoration; its production metadata contract is unresolved.",
                 "Figure captions remain one prototype-backed native AUTONUM operation; render accepts only the uniquely matched minimal-fixture root-caption structure.",
@@ -178,10 +188,26 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
 
     private void AddParagraph(JsonElement block, string path, string? listLabel)
     {
+        AddParagraph(block, path, listLabel, null);
+    }
+
+    private void AddParagraph(
+        JsonElement block,
+        string path,
+        string? listLabel,
+        PreviewListMarker? listMarker)
+    {
         JsonContract.ExpectObject(block, path, ["type", "inlines"]);
         const string style = "body";
         var label = listLabel ?? "body";
-        operations.Add(Text(label, style, InlineText.Read(block.GetProperty("inlines"), path + "/inlines")));
+        var content = InlineText.Read(block.GetProperty("inlines"), path + "/inlines");
+        if (listMarker is not null && content.Lines.Count != 1)
+        {
+            throw JsonContract.Error(
+                path + "/inlines",
+                "the native-list investigation preview does not support line_break in a list marker paragraph");
+        }
+        operations.Add(Text(label, style, content, listMarker));
     }
 
     private void AddVerbatimBlock(JsonElement block, string path)
@@ -217,6 +243,10 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
 
     private void AddList(JsonElement block, string path, int depth)
     {
+        if (depth > 6)
+        {
+            throw JsonContract.Error(path, "the Hancom native-list preview supports depths 0 through 6");
+        }
         JsonContract.ExpectObject(block, path, ["type", "kind", "tight", "items"], ["start"]);
         var kind = JsonContract.RequiredString(block, "kind", path);
         if (kind is not ("bullet" or "ordered"))
@@ -237,6 +267,8 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
         }
 
         var items = JsonContract.ExpectArray(block.GetProperty("items"), path + "/items");
+        var listId = nextListId++;
+        var listStart = nextNumber;
         var itemIndex = 0;
         foreach (var item in items.EnumerateArray())
         {
@@ -245,6 +277,7 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
             var itemNumber = kind == "ordered" ? nextNumber++ : itemIndex + 1;
             var label = $"list.{kind}.depth-{depth}.item-{itemNumber}";
             listItems++;
+            var markerPending = true;
 
             var itemBlocks = JsonContract.ExpectArray(item.GetProperty("blocks"), itemPath + "/blocks");
             var blockIndex = 0;
@@ -255,7 +288,20 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
                 switch (blockType)
                 {
                     case "paragraph":
-                        AddParagraph(itemBlock, blockPath, label);
+                        AddParagraph(
+                            itemBlock,
+                            blockPath,
+                            label,
+                            markerPending
+                                ? new PreviewListMarker(
+                                    listId,
+                                    kind,
+                                    depth,
+                                    listStart,
+                                    itemNumber,
+                                    itemIndex == 0)
+                                : null);
+                        markerPending = false;
                         break;
                     case "list":
                         AddList(itemBlock, blockPath, depth + 1);
@@ -264,6 +310,12 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
                         throw JsonContract.Error(blockPath + "/type", "list items may contain only paragraph or list blocks");
                 }
                 blockIndex++;
+            }
+            if (markerPending)
+            {
+                throw JsonContract.Error(
+                    itemPath + "/blocks",
+                    "the native-list investigation preview requires a paragraph to carry each item marker");
             }
             itemIndex++;
         }
@@ -321,13 +373,15 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
     private static PreviewOperation Text(
         string label,
         string paragraphStyle,
-        PreviewInlineContent content) =>
+        PreviewInlineContent content,
+        PreviewListMarker? listMarker = null) =>
         new(
             "text",
             label,
             content.Lines.Select(line => line.Text).ToArray(),
             ParagraphStyle: paragraphStyle,
-            FormattedLines: content.Lines.Select(line => line.Runs).ToArray());
+            FormattedLines: content.Lines.Select(line => line.Runs).ToArray(),
+            ListMarker: listMarker);
 }
 
 internal static class InlineText

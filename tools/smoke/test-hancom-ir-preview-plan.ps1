@@ -107,6 +107,31 @@ try {
         throw "List context must not be inferred from a style-name prefix; every list paragraph must bind body explicitly."
     }
 
+    $firstBullet = $listParagraphs[0].ListMarker
+    $secondBullet = $listParagraphs[1].ListMarker
+    $nestedOrdered = $listParagraphs[2].ListMarker
+    if ($null -eq $firstBullet -or
+        $null -eq $secondBullet -or
+        $null -eq $nestedOrdered -or
+        [string]$firstBullet.Kind -cne "bullet" -or
+        [string]$secondBullet.Kind -cne "bullet" -or
+        [int]$firstBullet.ListId -ne [int]$secondBullet.ListId -or
+        [int]$firstBullet.Depth -ne 0 -or
+        [int]$secondBullet.Depth -ne 0 -or
+        [int]$firstBullet.Start -ne 1 -or
+        [int]$firstBullet.Number -ne 1 -or
+        [int]$secondBullet.Number -ne 2 -or
+        -not [bool]$firstBullet.StartsList -or
+        [bool]$secondBullet.StartsList -or
+        [string]$nestedOrdered.Kind -cne "ordered" -or
+        [int]$nestedOrdered.ListId -eq [int]$firstBullet.ListId -or
+        [int]$nestedOrdered.Depth -ne 1 -or
+        [int]$nestedOrdered.Start -ne 3 -or
+        [int]$nestedOrdered.Number -ne 3 -or
+        -not [bool]$nestedOrdered.StartsList) {
+        throw "The C# preview plan did not preserve typed native-list markers, nesting, or ordered start values."
+    }
+
     $verbatim = @($plan.Operations | Where-Object { $_.Label -eq "verbatim_block" })
     if ($verbatim.Count -ne 1 -or $verbatim[0].ParagraphStyle -cne "block.box") {
         throw "Expected one verbatim-block preview operation."
@@ -225,6 +250,7 @@ try {
         FigureOperations = $plan.Summary.FigureOperations
         ListItems = $plan.Summary.ListItems
         ExplicitListBodyStyles = $true
+        NativeListMarkersPreserved = $true
         StrongEmphasisRunsPreserved = $true
         FigureCaptionRunsPreserved = $true
         NfcUnicodePreserved = $true
