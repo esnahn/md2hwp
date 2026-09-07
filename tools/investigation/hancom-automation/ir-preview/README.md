@@ -1,13 +1,14 @@
 # C# Hancom IR preview investigation
 
 This is an investigation program, not the production Hancom Automation
-backend. It shows how validated IR can drive a safe edit of an HWP copy before
-the template-profile and lowering contracts are implemented.
+backend. It shows how validated IR plus a closed investigation template profile
+can drive a safe edit of an HWP copy before the production lowering contract is
+implemented.
 
 It has four modes:
 
 - `plan` parses the closed IR v0.1 shape without COM and emits the exact preview
-  operations as JSON;
+  operations and selected profile ID as JSON;
 - `probe` registers the security module, opens an HWP without saving, closes
   it, and verifies that the input hash did not change;
 - `render` copies an HWP to a temporary sibling, binds supported symbolic
@@ -101,6 +102,7 @@ C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe `
   -File .\tools\investigation\hancom-automation\ir-preview\run-ir-preview.ps1 `
   -Mode render `
   -Ir .\examples\ir-v0.1.json `
+  -Profile .\profiles\templates\auri-basic\investigation-v0.1.json `
   -Template .\tests\fixtures\templates\minimal.hwp `
   -Output .\artifacts\csharp-ir-box-preview.hwp `
   -Visible
@@ -108,7 +110,11 @@ C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe `
 
 The visible render above is for a human-run diagnostic only.
 An automated invocation can omit `-Visible` and keep HWP hidden.
-The source template is never opened for writing. Existing output is rejected,
+The profile is required by `plan` and `render`. Its exact fixture byte length
+and SHA-256 are checked before COM starts, and its closed values supply native
+style names, reset style, prototype selectors, figure width/source label, and
+list depth/indentation policy. The source template is never opened for writing.
+Existing output is rejected,
 and failed rendering leaves neither the requested output nor a temporary copy.
 Before editing, the preview requires exactly one paragraph style with each
 expected native name. After reopening, it checks the newly appended paragraph

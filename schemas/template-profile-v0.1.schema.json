@@ -1,0 +1,272 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:md2hwp:schema:template-profile:0.1",
+  "title": "md2hwp template profile v0.1",
+  "description": "Closed backend-binding contract for one investigated template fixture or adopted template family.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "profile_version",
+    "id",
+    "status",
+    "target_ir",
+    "backend",
+    "template",
+    "styles",
+    "selectors",
+    "layout",
+    "capabilities"
+  ],
+  "properties": {
+    "schema": {
+      "const": "md2hwp.template-profile"
+    },
+    "profile_version": {
+      "const": "0.1"
+    },
+    "id": {
+      "$ref": "#/$defs/symbolic_name"
+    },
+    "status": {
+      "enum": ["investigation", "production"]
+    },
+    "target_ir": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "version"],
+      "properties": {
+        "schema": {
+          "const": "md2hwp.ir"
+        },
+        "version": {
+          "const": "0.1"
+        }
+      }
+    },
+    "backend": {
+      "const": "hancom-automation"
+    },
+    "template": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "identity"],
+      "properties": {
+        "format": {
+          "enum": ["hwp", "hwpx"]
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "sha256", "bytes"],
+          "properties": {
+            "kind": {
+              "const": "exact_sha256"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9A-F]{64}$"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "styles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["paragraphs", "reset"],
+      "properties": {
+        "paragraphs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "body",
+            "heading.1",
+            "heading.2",
+            "heading.3",
+            "heading.4",
+            "heading.5",
+            "heading.6",
+            "block.box",
+            "figure",
+            "figure.caption",
+            "figure.source"
+          ],
+          "properties": {
+            "body": { "$ref": "#/$defs/native_style_name" },
+            "heading.1": { "$ref": "#/$defs/native_style_name" },
+            "heading.2": { "$ref": "#/$defs/native_style_name" },
+            "heading.3": { "$ref": "#/$defs/native_style_name" },
+            "heading.4": { "$ref": "#/$defs/native_style_name" },
+            "heading.5": { "$ref": "#/$defs/native_style_name" },
+            "heading.6": { "$ref": "#/$defs/native_style_name" },
+            "block.box": { "$ref": "#/$defs/native_style_name" },
+            "figure": { "$ref": "#/$defs/native_style_name" },
+            "figure.caption": { "$ref": "#/$defs/native_style_name" },
+            "figure.source": { "$ref": "#/$defs/native_style_name" }
+          }
+        },
+        "reset": {
+          "$ref": "#/$defs/native_style_name"
+        }
+      }
+    },
+    "selectors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["insertion_target", "box_prototype", "caption_prototype"],
+      "properties": {
+        "insertion_target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": {
+              "const": "document_end"
+            }
+          }
+        },
+        "box_prototype": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "root_style",
+            "table_count",
+            "content_style",
+            "content_paragraphs",
+            "source_style",
+            "source_paragraphs",
+            "prototype_text_marker",
+            "source_text"
+          ],
+          "properties": {
+            "kind": { "const": "root_inline_table" },
+            "root_style": { "$ref": "#/$defs/symbolic_name" },
+            "table_count": { "const": 1 },
+            "content_style": { "$ref": "#/$defs/symbolic_name" },
+            "content_paragraphs": { "type": "integer", "minimum": 1 },
+            "source_style": { "$ref": "#/$defs/symbolic_name" },
+            "source_paragraphs": { "type": "integer", "minimum": 0 },
+            "prototype_text_marker": { "type": "string", "minLength": 1 },
+            "source_text": { "type": "string" }
+          }
+        },
+        "caption_prototype": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "paragraph_style",
+            "prefix_before_number",
+            "prefix_after_number",
+            "prototype_caption",
+            "number_type",
+            "number_format"
+          ],
+          "properties": {
+            "kind": { "const": "root_figure_autonum" },
+            "paragraph_style": { "$ref": "#/$defs/symbolic_name" },
+            "prefix_before_number": { "type": "string", "minLength": 1 },
+            "prefix_after_number": { "type": "string", "minLength": 1 },
+            "prototype_caption": { "type": "string", "minLength": 1 },
+            "number_type": { "const": "Figure" },
+            "number_format": { "const": "Digit" }
+          }
+        }
+      }
+    },
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["figure", "lists"],
+      "properties": {
+        "figure": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_width_mm", "placement", "source_line", "source_label"],
+          "properties": {
+            "max_width_mm": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "placement": {
+              "const": "inline_character"
+            },
+            "source_line": {
+              "const": "immediately_after_caption"
+            },
+            "source_label": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "lists": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "body_style",
+            "max_depth",
+            "depth_indent_hwp_units",
+            "ordered_number_format",
+            "ordered_delimiter"
+          ],
+          "properties": {
+            "body_style": {
+              "const": "body"
+            },
+            "max_depth": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6
+            },
+            "depth_indent_hwp_units": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ordered_number_format": {
+              "const": "decimal"
+            },
+            "ordered_delimiter": {
+              "const": "period"
+            }
+          }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "native_bullets",
+        "native_numbering",
+        "inline_pictures",
+        "figure_autonum",
+        "saveblock_insertion"
+      ],
+      "properties": {
+        "native_bullets": { "const": true },
+        "native_numbering": { "const": true },
+        "inline_pictures": { "const": true },
+        "figure_autonum": { "const": true },
+        "saveblock_insertion": { "const": true }
+      }
+    }
+  },
+  "$defs": {
+    "symbolic_name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "native_style_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  }
+}

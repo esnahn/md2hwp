@@ -83,12 +83,13 @@ md2hwp/
 │   ├── [tracked] README.md
 │   ├── [tracked] ast2ir-rules-v0.1.schema.json
 │   ├── [tracked] dependencies-lock-v0.1.schema.json
-│   └── [tracked] ir-v0.1.schema.json
+│   ├── [tracked] ir-v0.1.schema.json
+│   └── [tracked] template-profile-v0.1.schema.json
 ├── profiles/
 │   ├── [tracked] README.md
 │   └── templates/auri-basic/
 │       ├── [tracked] README.md
-│       └── [planned] machine-readable template profile
+│       └── [tracked] investigation-v0.1.json
 │
 ├── examples/
 │   ├── [tracked] commonmark-v0.1.md

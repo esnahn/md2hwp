@@ -16,7 +16,10 @@ internal static class Program
             {
                 case OperationMode.Plan:
                     {
-                        var plan = IrPreviewPlan.Load(options.IrPath!, repositoryRoot);
+                        var profile = InvestigationTemplateProfile.Load(
+                            options.ProfilePath!,
+                            repositoryRoot);
+                        var plan = IrPreviewPlan.Load(options.IrPath!, repositoryRoot, profile);
                         Console.WriteLine(JsonSerializer.Serialize(plan, JsonOutput.Options));
                         break;
                     }
@@ -31,9 +34,13 @@ internal static class Program
                     }
                 case OperationMode.Render:
                     {
-                        var plan = IrPreviewPlan.Load(options.IrPath!, repositoryRoot);
+                        var profile = InvestigationTemplateProfile.Load(
+                            options.ProfilePath!,
+                            repositoryRoot);
+                        var plan = IrPreviewPlan.Load(options.IrPath!, repositoryRoot, profile);
                         var result = HancomPreviewWriter.Render(
                             plan,
+                            profile,
                             options.TemplatePath!,
                             options.OutputPath!,
                             repositoryRoot,
@@ -106,6 +113,7 @@ internal enum OperationMode
 internal sealed record CommandLine(
     OperationMode Mode,
     string? IrPath,
+    string? ProfilePath,
     string? TemplatePath,
     string? DocumentPath,
     string? OutputPath,
@@ -127,6 +135,7 @@ internal sealed record CommandLine(
             _ => throw new ArgumentException(Usage),
         };
         string? ir = null;
+        string? profile = null;
         string? template = null;
         string? document = null;
         string? output = null;
@@ -138,6 +147,9 @@ internal sealed record CommandLine(
             {
                 case "--ir":
                     ir = ReadValue(args, ref index, "--ir");
+                    break;
+                case "--profile":
+                    profile = ReadValue(args, ref index, "--profile");
                     break;
                 case "--template":
                     template = ReadValue(args, ref index, "--template");
@@ -158,10 +170,10 @@ internal sealed record CommandLine(
 
         var valid = mode switch
         {
-            OperationMode.Plan => ir is not null && template is null && document is null && output is null && !visible,
-            OperationMode.Probe => ir is null && template is not null && document is null && output is null,
-            OperationMode.Render => ir is not null && template is not null && document is null && output is not null,
-            OperationMode.ExportImages => ir is null && template is null && document is not null && output is not null,
+            OperationMode.Plan => ir is not null && profile is not null && template is null && document is null && output is null && !visible,
+            OperationMode.Probe => ir is null && profile is null && template is not null && document is null && output is null,
+            OperationMode.Render => ir is not null && profile is not null && template is not null && document is null && output is not null,
+            OperationMode.ExportImages => ir is null && profile is null && template is null && document is not null && output is not null,
             _ => false,
         };
         if (!valid)
@@ -172,6 +184,7 @@ internal sealed record CommandLine(
         return new CommandLine(
             mode,
             ResolveOptionalPath(ir),
+            ResolveOptionalPath(profile),
             ResolveOptionalPath(template),
             ResolveOptionalPath(document),
             ResolveOptionalPath(output),
@@ -193,9 +206,9 @@ internal sealed record CommandLine(
 
     private const string Usage = """
         usage:
-          hancom-ir-preview plan --ir <validated.ir.json>
+          hancom-ir-preview plan --ir <validated.ir.json> --profile <template-profile.json>
           hancom-ir-preview probe --template <input.hwp> [--visible]
-          hancom-ir-preview render --ir <validated.ir.json> --template <input.hwp> --output <new.hwp> [--visible]
+          hancom-ir-preview render --ir <validated.ir.json> --profile <template-profile.json> --template <input.hwp> --output <new.hwp> [--visible]
           hancom-ir-preview export-images --document <input.hwp> --output <new-directory> [--visible]
         """;
 }

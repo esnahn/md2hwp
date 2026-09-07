@@ -13,6 +13,11 @@ Use these subtrees as the suite grows:
 Generated output belongs in `artifacts/`, never beside immutable fixtures.
 Examples may be reused by tests, but a test should not mutate them.
 
+`fixtures/templates/minimal.hwp` is identified by exact byte length and SHA-256
+in the non-production AURI investigation profile. Contract smoke validates the
+closed profile and identity, while the C# preview smoke verifies that a changed
+template is rejected before COM and leaves no output.
+
 The first parser-contract fixture is
 `fixtures/pandoc-json/commonmark-v0.1.json`. It is the exact JSON shape emitted
 by the pinned Pandoc 3.10.1 CommonMark reader for

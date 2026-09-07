@@ -6,11 +6,15 @@ namespace Md2Hwp.HancomIrPreview;
 
 internal sealed record IrPreviewPlan(
     string IrPath,
+    string ProfileId,
     PreviewSummary Summary,
     IReadOnlyList<PreviewOperation> Operations,
     IReadOnlyList<string> Limitations)
 {
-    public static IrPreviewPlan Load(string irPath, string repositoryRoot)
+    public static IrPreviewPlan Load(
+        string irPath,
+        string repositoryRoot,
+        InvestigationTemplateProfile profile)
     {
         if (!File.Exists(irPath))
         {
@@ -41,7 +45,10 @@ internal sealed record IrPreviewPlan(
         JsonContract.ExpectObject(metadata, "/metadata", []);
         var blocks = JsonContract.ExpectArray(document.RootElement.GetProperty("blocks"), "/blocks");
 
-        var builder = new PlanBuilder(Path.GetFullPath(irPath), Path.GetFullPath(repositoryRoot));
+        var builder = new PlanBuilder(
+            Path.GetFullPath(irPath),
+            Path.GetFullPath(repositoryRoot),
+            profile);
         var index = 0;
         foreach (var block in blocks.EnumerateArray())
         {
@@ -112,9 +119,11 @@ internal sealed record PreviewInlineContent(
     }
 }
 
-internal sealed class PlanBuilder(string irPath, string repositoryRoot)
+internal sealed class PlanBuilder(
+    string irPath,
+    string repositoryRoot,
+    InvestigationTemplateProfile profile)
 {
-    private const double FigureWidthMillimeters = 142.0;
     private readonly List<PreviewOperation> operations = [];
     private int listItems;
     private int nextListId;
@@ -155,6 +164,7 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
         var figureOperations = operations.Count(operation => operation.Kind == "figure");
         return new IrPreviewPlan(
             irPath,
+            profile.Id,
             new PreviewSummary(
                 sourceBlocks,
                 textOperations,
@@ -170,7 +180,7 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
                 "The minimal-fixture box prototype's source placeholder remains template decoration; its production metadata contract is unresolved.",
                 "Figure captions remain one prototype-backed native AUTONUM operation; render accepts only the uniquely matched minimal-fixture root-caption structure.",
                 "IR line_break nodes outside verbatim blocks are previewed as separate HWP paragraphs.",
-                "Only trusted repository-local PNG figures are inserted; width is limited to 142 mm and aspect ratio is preserved.",
+                $"Only trusted repository-local PNG figures are inserted; width is limited to {profile.Figure.MaxWidthMillimeters} mm by the investigation profile and aspect ratio is preserved.",
             ]);
     }
 
@@ -243,9 +253,11 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
 
     private void AddList(JsonElement block, string path, int depth)
     {
-        if (depth > 6)
+        if (depth > profile.Lists.MaxDepth)
         {
-            throw JsonContract.Error(path, "the Hancom native-list preview supports depths 0 through 6");
+            throw JsonContract.Error(
+                path,
+                $"template profile {profile.Id} supports list depths 0 through {profile.Lists.MaxDepth}");
         }
         JsonContract.ExpectObject(block, path, ["type", "kind", "tight", "items"], ["start"]);
         var kind = JsonContract.RequiredString(block, "kind", path);
@@ -346,7 +358,8 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
         }
 
         var (pixelWidth, pixelHeight) = PngDimensions.Read(imagePath);
-        var height = FigureWidthMillimeters * pixelHeight / pixelWidth;
+        var width = profile.Figure.MaxWidthMillimeters;
+        var height = width * pixelHeight / pixelWidth;
         var alt = InlineText.Read(image.GetProperty("alt"), path + "/image/alt");
         var caption = InlineText.Read(block.GetProperty("caption"), path + "/caption");
         var sourceElement = block.GetProperty("source");
@@ -364,7 +377,7 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
             "figure",
             figureLines.Select(line => line.Text).ToArray(),
             imagePath,
-            FigureWidthMillimeters,
+            width,
             height,
             "body",
             figureLines.Select(line => line.Runs).ToArray()));

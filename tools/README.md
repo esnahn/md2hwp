@@ -30,6 +30,7 @@ and proves that an unsupported Pandoc API version leaves no partial output.
 `development/dotnet.ps1` invokes the pinned repository-local .NET SDK with
 repository-local CLI and NuGet state. The C# investigation project under
 `investigation/hancom-automation/ir-preview` turns validated IR into an
-explicit preview plan and contains manually gated open-only/render COM modes.
-`smoke/test-hancom-ir-preview-plan.ps1` builds it and validates the full IR
-example without invoking COM.
+explicit preview plan using the closed AURI minimal-fixture investigation
+profile, and contains manually gated open-only/render COM modes.
+`smoke/test-hancom-ir-preview-plan.ps1` builds it, validates the full IR example,
+and rejects a profile/template identity mismatch without invoking COM.

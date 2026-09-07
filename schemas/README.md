@@ -12,3 +12,8 @@ JSON Schemas remain here.
 `dependencies-lock-v0.1.schema.json` defines the single closed manifest at
 `dependencies/lock.json`. A dependency absent from that manifest is not yet
 adopted; floating or guessed values must not be represented as pins.
+
+`template-profile-v0.1.schema.json` defines backend-facing symbolic style,
+selector, layout, capability, and template-identity declarations. The initial
+consumer is an explicitly non-production AURI minimal-fixture investigation
+profile.

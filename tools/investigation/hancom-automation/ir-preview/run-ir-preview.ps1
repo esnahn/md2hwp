@@ -12,6 +12,9 @@ param(
 
     [string]$Ir,
 
+    [Alias("Profile")]
+    [string]$ProfilePath,
+
     [string]$Output,
 
     [ValidateSet("Debug", "Release")]
@@ -59,6 +62,7 @@ $previewArguments = @($assemblyPath, $Mode)
 switch ($Mode) {
     "probe" {
         if ([string]::IsNullOrWhiteSpace($Template) -or
+            -not [string]::IsNullOrWhiteSpace($ProfilePath) -or
             -not [string]::IsNullOrWhiteSpace($Document) -or
             -not [string]::IsNullOrWhiteSpace($Ir) -or
             -not [string]::IsNullOrWhiteSpace($Output)) {
@@ -69,19 +73,22 @@ switch ($Mode) {
     "render" {
         if ([string]::IsNullOrWhiteSpace($Template) -or
             [string]::IsNullOrWhiteSpace($Ir) -or
+            [string]::IsNullOrWhiteSpace($ProfilePath) -or
             [string]::IsNullOrWhiteSpace($Output) -or
             -not [string]::IsNullOrWhiteSpace($Document)) {
-            throw "Render mode requires -Template, -Ir, and -Output."
+            throw "Render mode requires -Template, -Ir, -Profile, and -Output."
         }
         $previewArguments += @(
             "--template", (Resolve-InvocationPath $Template),
             "--ir", (Resolve-InvocationPath $Ir),
+            "--profile", (Resolve-InvocationPath $ProfilePath),
             "--output", (Resolve-InvocationPath $Output)
         )
     }
     "export-images" {
         if ([string]::IsNullOrWhiteSpace($Document) -or
             [string]::IsNullOrWhiteSpace($Output) -or
+            -not [string]::IsNullOrWhiteSpace($ProfilePath) -or
             -not [string]::IsNullOrWhiteSpace($Template) -or
             -not [string]::IsNullOrWhiteSpace($Ir)) {
             throw "Export-images mode requires -Document and -Output."

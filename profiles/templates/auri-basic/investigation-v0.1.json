@@ -1,0 +1,82 @@
+{
+  "schema": "md2hwp.template-profile",
+  "profile_version": "0.1",
+  "id": "auri-basic-minimal-investigation",
+  "status": "investigation",
+  "target_ir": {
+    "schema": "md2hwp.ir",
+    "version": "0.1"
+  },
+  "backend": "hancom-automation",
+  "template": {
+    "format": "hwp",
+    "identity": {
+      "kind": "exact_sha256",
+      "sha256": "5CAEABF6C3BF1EE10B68FF810678374B0C775CB6A27B423F5326F3ED97080D55",
+      "bytes": 23552
+    }
+  },
+  "styles": {
+    "paragraphs": {
+      "body": "본문",
+      "heading.1": "장제목 (개요 1)",
+      "heading.2": "1. (개요 2)",
+      "heading.3": "1) (개요 3)",
+      "heading.4": "① (개요 4)",
+      "heading.5": "□ (개요 5)",
+      "heading.6": "․ (개요 6)",
+      "block.box": "박스내용",
+      "figure": "본문",
+      "figure.caption": "표그림_캡션",
+      "figure.source": "출처 및 하단설명"
+    },
+    "reset": "바탕글"
+  },
+  "selectors": {
+    "insertion_target": {
+      "kind": "document_end"
+    },
+    "box_prototype": {
+      "kind": "root_inline_table",
+      "root_style": "body",
+      "table_count": 1,
+      "content_style": "block.box",
+      "content_paragraphs": 1,
+      "source_style": "figure.source",
+      "source_paragraphs": 1,
+      "prototype_text_marker": "스타일 블록 예시:",
+      "source_text": "출처: "
+    },
+    "caption_prototype": {
+      "kind": "root_figure_autonum",
+      "paragraph_style": "figure.caption",
+      "prefix_before_number": "[그림 ",
+      "prefix_after_number": "] ",
+      "prototype_caption": "스타일 대응 예시",
+      "number_type": "Figure",
+      "number_format": "Digit"
+    }
+  },
+  "layout": {
+    "figure": {
+      "max_width_mm": 142,
+      "placement": "inline_character",
+      "source_line": "immediately_after_caption",
+      "source_label": "출처:"
+    },
+    "lists": {
+      "body_style": "body",
+      "max_depth": 6,
+      "depth_indent_hwp_units": 2000,
+      "ordered_number_format": "decimal",
+      "ordered_delimiter": "period"
+    }
+  },
+  "capabilities": {
+    "native_bullets": true,
+    "native_numbering": true,
+    "inline_pictures": true,
+    "figure_autonum": true,
+    "saveblock_insertion": true
+  }
+}

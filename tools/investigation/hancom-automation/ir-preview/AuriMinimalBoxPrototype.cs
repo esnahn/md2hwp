@@ -6,7 +6,6 @@ internal sealed record BoxInsertion(int RootParagraphIndex);
 
 internal sealed class AuriMinimalBoxPrototype
 {
-    private const string PrototypeTextMarker = "스타일 블록 예시:";
     private readonly int originalRootParagraphIndex;
     private readonly string originalRootXml;
     private readonly string originalRootStructureXml;
@@ -58,7 +57,9 @@ internal sealed class AuriMinimalBoxPrototype
         }
 
         var selectedDocument = XDocument.Parse(selectedBlock);
-        var selectedStyles = AuriPreviewStyleBindings.BindDocument(selectedDocument);
+        var selectedStyles = AuriPreviewStyleBindings.BindDocument(
+            selectedDocument,
+            styles.Profile);
         var selectedRoots = RootParagraphs(selectedDocument);
         var selectedCandidates = FindCandidates(
             selectedRoots,
@@ -267,7 +268,7 @@ internal sealed class AuriMinimalBoxPrototype
         }
 
         MoveToRoot(hwp, cloneRootParagraphIndex);
-        FindNext(hwp, PrototypeTextMarker);
+        FindNext(hwp, styles.Profile.BoxSelector.PrototypeTextMarker);
         Run(hwp, "MoveParaBegin");
         Run(hwp, "MoveSelParaEnd");
         InsertText(hwp, sentinel);
@@ -339,7 +340,8 @@ internal sealed class AuriMinimalBoxPrototype
         out BoxParts parts)
     {
         parts = null!;
-        if (ReadStyle(root) != styles.Resolve("body").Id ||
+        var selector = styles.Profile.BoxSelector;
+        if (ReadStyle(root) != styles.Resolve(selector.RootStyle).Id ||
             root.Descendants().Any(element =>
                 element.Name.LocalName is "PICTURE" or "AUTONUM"))
         {
@@ -372,24 +374,27 @@ internal sealed class AuriMinimalBoxPrototype
             .SelectMany(element => element.Elements()
                 .Where(child => child.Name.LocalName == "P"))
             .ToArray();
-        if (innerParagraphs.Length != 2)
+        if (innerParagraphs.Length != selector.ContentParagraphs + selector.SourceParagraphs)
         {
             return false;
         }
         var content = innerParagraphs
-            .Where(paragraph => ReadStyle(paragraph) == styles.Resolve("block.box").Id)
+            .Where(paragraph => ReadStyle(paragraph) == styles.Resolve(selector.ContentStyle).Id)
             .ToArray();
         var source = innerParagraphs
-            .Where(paragraph => ReadStyle(paragraph) == styles.Resolve("figure.source").Id)
+            .Where(paragraph => ReadStyle(paragraph) == styles.Resolve(selector.SourceStyle).Id)
             .ToArray();
-        if (content.Length != 1 || source.Length != 1 ||
+        if (content.Length != selector.ContentParagraphs ||
+            source.Length != selector.SourceParagraphs ||
             !TryReadLogicalLines(content.ElementAtOrDefault(0), out var contentLines) ||
             !TryReadLogicalLines(source.ElementAtOrDefault(0), out var sourceLines) ||
             sourceLines.Count != 1 ||
-            !string.Equals(sourceLines[0], "출처: ", StringComparison.Ordinal) ||
+            !string.Equals(sourceLines[0], selector.SourceText, StringComparison.Ordinal) ||
             (requirePrototypeLineBreak &&
              (contentLines.Count < 2 ||
-              CountOccurrences(string.Concat(contentLines), PrototypeTextMarker) != 1)))
+              CountOccurrences(
+                  string.Concat(contentLines),
+                  selector.PrototypeTextMarker) != 1)))
         {
             return false;
         }

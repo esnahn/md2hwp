@@ -18,6 +18,7 @@ internal sealed record ProbeResult(
 
 internal sealed record RenderResult(
     string Output,
+    string Profile,
     int TextOperations,
     int BoxOperations,
     int FigureOperations,
@@ -89,7 +90,6 @@ internal sealed record ImageExportResult(
 
 internal static class HancomPreviewWriter
 {
-    internal const int ListDepthIndentHwpUnits = 2000;
     private const string ProgId = "HWPFrame.HwpObject";
     private const string ModuleName = "FilePathCheckerModuleExample";
     private const string OpenOptions = "lock:false;forceopen:true;suspendpassword:true;versionwarning:false";
@@ -118,12 +118,19 @@ internal static class HancomPreviewWriter
 
     public static RenderResult Render(
         IrPreviewPlan plan,
+        InvestigationTemplateProfile profile,
         string templatePath,
         string outputPath,
         string repositoryRoot,
         bool visible)
     {
         var template = ValidateTemplate(templatePath);
+        if (!string.Equals(plan.ProfileId, profile.Id, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"Preview plan profile {plan.ProfileId} does not match render profile {profile.Id}.");
+        }
+        profile.ValidateTemplate(template);
         var output = Path.GetFullPath(outputPath);
         if (!string.Equals(Path.GetExtension(output), ".hwp", StringComparison.OrdinalIgnoreCase))
         {
@@ -157,7 +164,7 @@ internal static class HancomPreviewWriter
             var rendering = WithHwp(module, hwp =>
             {
                 Open(hwp, temporaryOutput, visible);
-                AuriPreviewStyleBindings styles = AuriPreviewStyleBindings.Bind(hwp);
+                AuriPreviewStyleBindings styles = AuriPreviewStyleBindings.Bind(hwp, profile);
                 AuriMinimalBoxPrototype? boxPrototype = plan.Summary.BoxOperations == 0
                     ? null
                     : AuriMinimalBoxPrototype.Bind(hwp, styles);
@@ -192,12 +199,12 @@ internal static class HancomPreviewWriter
                 CloseDocument(hwp);
                 Open(hwp, temporaryOutput, visible);
 
-                VerifyText(hwp, plan);
+                VerifyText(hwp, plan, profile);
                 VerifyStyles(hwp, plan, styles, paragraphsBefore);
                 VerifyCharacterMarks(hwp, plan, styles, paragraphsBefore);
                 VerifyBoxes(hwp, plan, styles, boxPrototype, paragraphsBefore);
                 VerifyCaptions(hwp, plan, styles, captionPrototype, paragraphsBefore);
-                VerifyLists(hwp, plan, paragraphsBefore);
+                VerifyLists(hwp, plan, profile, paragraphsBefore);
                 var picturesAfter = CountPictures(hwp);
                 var picturesAdded = picturesAfter - picturesBefore;
                 if (picturesAdded != plan.Summary.FigureOperations)
@@ -240,6 +247,7 @@ internal static class HancomPreviewWriter
             File.Move(temporaryOutput, output);
             return new RenderResult(
                 output,
+                profile.Id,
                 plan.Summary.TextOperations,
                 plan.Summary.BoxOperations,
                 plan.Summary.FigureOperations,
@@ -472,7 +480,7 @@ internal static class HancomPreviewWriter
                         {
                             ApplyParagraphStyle(hwp, style);
                         }
-                        ApplyNativeListMarker(hwp, marker, style);
+                        ApplyNativeListMarker(hwp, marker, style, styles.Profile.Lists);
                     }
                 }
                 else
@@ -549,9 +557,10 @@ internal static class HancomPreviewWriter
             FormattedLine(operation, 1));
         var sourceStyle = styles.Resolve("figure.source");
         ApplyParagraphStyle(hwp, sourceStyle);
+        var sourceLabel = styles.Profile.Figure.SourceLabel;
         var sourceRuns = new List<PreviewTextRun>
         {
-            new(operation.Lines[2].Length == 0 ? "출처:" : "출처: ", false, false),
+            new(operation.Lines[2].Length == 0 ? sourceLabel : sourceLabel + " ", false, false),
         };
         sourceRuns.AddRange(FormattedLine(operation, 2));
         InsertFormattedLine(hwp, PreviewRunBuilder.Coalesce(sourceRuns), sourceStyle);
@@ -593,12 +602,13 @@ internal static class HancomPreviewWriter
     private static void ApplyNativeListMarker(
         dynamic hwp,
         PreviewListMarker marker,
-        NativeStyle bodyStyle)
+        NativeStyle bodyStyle,
+        ProfileListLayout listLayout)
     {
-        if (marker.Depth is < 0 or > 6)
+        if (marker.Depth < 0 || marker.Depth > listLayout.MaxDepth)
         {
             throw new InvalidOperationException(
-                $"Native list depth is outside Hancom's supported range: {marker.Depth}");
+                $"Native list depth {marker.Depth} exceeds profile maximum {listLayout.MaxDepth}.");
         }
         if (string.Equals(marker.Kind, "bullet", StringComparison.Ordinal))
         {
@@ -609,7 +619,7 @@ internal static class HancomPreviewWriter
             hwp.HParameterSet.HParaShape.HeadingType = 3;
             hwp.HParameterSet.HParaShape.Level = marker.Depth;
             hwp.HParameterSet.HParaShape.LeftMargin =
-                bodyStyle.BaseLeftMargin + (marker.Depth * ListDepthIndentHwpUnits);
+                bodyStyle.BaseLeftMargin + (marker.Depth * listLayout.DepthIndentHwpUnits);
             if (!(bool)hwp.HAction.Execute(
                     "ParagraphShape",
                     hwp.HParameterSet.HParaShape.HSet))
@@ -630,7 +640,7 @@ internal static class HancomPreviewWriter
         hwp.HParameterSet.HParaShape.HeadingType = 2;
         hwp.HParameterSet.HParaShape.Level = marker.Depth;
         hwp.HParameterSet.HParaShape.LeftMargin =
-            bodyStyle.BaseLeftMargin + (marker.Depth * ListDepthIndentHwpUnits);
+            bodyStyle.BaseLeftMargin + (marker.Depth * listLayout.DepthIndentHwpUnits);
         hwp.HParameterSet.HParaShape.Numbering.NewList = 1;
         hwp.HParameterSet.HParaShape.Numbering.StartNumber = marker.Number;
         SetNativeListLevelStart(
@@ -857,10 +867,13 @@ internal static class HancomPreviewWriter
         _ => Marshal.IsComObject(result),
     };
 
-    private static void VerifyText(dynamic hwp, IrPreviewPlan plan)
+    private static void VerifyText(
+        dynamic hwp,
+        IrPreviewPlan plan,
+        InvestigationTemplateProfile profile)
     {
         var extracted = DecodeHwpTextTransport((string)hwp.GetTextFile("TEXT", ""));
-        foreach (var expected in StyledTexts(plan).Select(item => item.Text).Where(text => text.Length > 0))
+        foreach (var expected in StyledTexts(plan, profile).Select(item => item.Text).Where(text => text.Length > 0))
         {
             if (!extracted.Contains(expected, StringComparison.Ordinal))
             {
@@ -877,7 +890,7 @@ internal static class HancomPreviewWriter
     {
         IReadOnlyList<SavedParagraph> savedParagraphs = ReadParagraphs(hwp);
         var appended = savedParagraphs.Skip(paragraphsBefore).ToArray();
-        var expectedParagraphs = ExpectedParagraphs(plan).ToArray();
+        var expectedParagraphs = ExpectedParagraphs(plan, styles.Profile).ToArray();
         if (appended.Length < expectedParagraphs.Length)
         {
             throw new InvalidOperationException(
@@ -893,7 +906,11 @@ internal static class HancomPreviewWriter
                 actual.ContainsPicture != expected.ContainsPicture ||
                 actual.ContainsTable != expected.ContainsTable ||
                 actual.FigureAutoNumbers != expected.FigureAutoNumbers ||
-                !NativeListMatches(actual.NativeList, expected.ListMarker, nativeStyle) ||
+                !NativeListMatches(
+                    actual.NativeList,
+                    expected.ListMarker,
+                    nativeStyle,
+                    styles.Profile.Lists) ||
                 !actual.Text.Contains(expected.Text, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
@@ -905,7 +922,8 @@ internal static class HancomPreviewWriter
     private static bool NativeListMatches(
         SavedNativeList? actual,
         PreviewListMarker? expected,
-        NativeStyle nativeStyle) =>
+        NativeStyle nativeStyle,
+        ProfileListLayout listLayout) =>
         (actual, expected) switch
         {
             (null, null) => true,
@@ -913,7 +931,7 @@ internal static class HancomPreviewWriter
                 string.Equals(actual.Kind, expected.Kind, StringComparison.Ordinal) &&
                 actual.Level == expected.Depth &&
                 actual.LeftMargin == nativeStyle.BaseLeftMargin +
-                    (expected.Depth * ListDepthIndentHwpUnits),
+                    (expected.Depth * listLayout.DepthIndentHwpUnits),
             _ => false,
         };
 
@@ -925,7 +943,7 @@ internal static class HancomPreviewWriter
     {
         IReadOnlyList<SavedParagraph> savedParagraphs = ReadParagraphs(hwp);
         var appended = savedParagraphs.Skip(paragraphsBefore).ToArray();
-        var expectedParagraphs = ExpectedParagraphs(plan).ToArray();
+        var expectedParagraphs = ExpectedParagraphs(plan, styles.Profile).ToArray();
         for (var index = 0; index < expectedParagraphs.Length; index++)
         {
             var expected = expectedParagraphs[index];
@@ -1081,9 +1099,10 @@ internal static class HancomPreviewWriter
     private static void VerifyLists(
         dynamic hwp,
         IrPreviewPlan plan,
+        InvestigationTemplateProfile profile,
         int paragraphsBefore)
     {
-        var expected = ExpectedParagraphs(plan).ToArray();
+        var expected = ExpectedParagraphs(plan, profile).ToArray();
         IReadOnlyList<SavedParagraph> savedParagraphs = ReadParagraphs(hwp);
         var appended = savedParagraphs.Skip(paragraphsBefore).ToArray();
         if (appended.Length < expected.Length)
@@ -1173,7 +1192,9 @@ internal static class HancomPreviewWriter
         }
     }
 
-    private static IEnumerable<(string Symbolic, string Text)> StyledTexts(IrPreviewPlan plan)
+    private static IEnumerable<(string Symbolic, string Text)> StyledTexts(
+        IrPreviewPlan plan,
+        InvestigationTemplateProfile profile)
     {
         foreach (var operation in plan.Operations)
         {
@@ -1199,8 +1220,8 @@ internal static class HancomPreviewWriter
                     yield return (
                         "figure.source",
                         operation.Lines[2].Length == 0
-                            ? "출처:"
-                            : $"출처: {operation.Lines[2]}");
+                            ? profile.Figure.SourceLabel
+                            : $"{profile.Figure.SourceLabel} {operation.Lines[2]}");
                     break;
                 default:
                     throw new InvalidOperationException(
@@ -1209,7 +1230,9 @@ internal static class HancomPreviewWriter
         }
     }
 
-    private static IEnumerable<ExpectedParagraph> ExpectedParagraphs(IrPreviewPlan plan)
+    private static IEnumerable<ExpectedParagraph> ExpectedParagraphs(
+        IrPreviewPlan plan,
+        InvestigationTemplateProfile profile)
     {
         foreach (var operation in plan.Operations)
         {
@@ -1265,14 +1288,19 @@ internal static class HancomPreviewWriter
                         PreviewRunBuilder.Coalesce(captionRuns));
                     var sourceRuns = new List<PreviewTextRun>
                     {
-                        new(operation.Lines[2].Length == 0 ? "출처:" : "출처: ", false, false),
+                        new(
+                            operation.Lines[2].Length == 0
+                                ? profile.Figure.SourceLabel
+                                : profile.Figure.SourceLabel + " ",
+                            false,
+                            false),
                     };
                     sourceRuns.AddRange(FormattedLine(operation, 2));
                     yield return new ExpectedParagraph(
                         "figure.source",
                         operation.Lines[2].Length == 0
-                            ? "출처:"
-                            : $"출처: {operation.Lines[2]}",
+                            ? profile.Figure.SourceLabel
+                            : $"{profile.Figure.SourceLabel} {operation.Lines[2]}",
                         false,
                         false,
                         0,
@@ -1519,31 +1547,17 @@ internal sealed record NativeStyle(
 
 internal sealed class AuriPreviewStyleBindings
 {
-    private const string ResetNativeStyleName = "바탕글";
-    private static readonly (string Symbolic, string NativeName)[] Required =
-    [
-        ("body", "본문"),
-        ("heading.1", "장제목 (개요 1)"),
-        ("heading.2", "1. (개요 2)"),
-        ("heading.3", "1) (개요 3)"),
-        ("heading.4", "① (개요 4)"),
-        ("heading.5", "□ (개요 5)"),
-        ("heading.6", "․ (개요 6)"),
-        ("block.box", "박스내용"),
-        ("figure", "본문"),
-        ("figure.caption", "표그림_캡션"),
-        ("figure.source", "출처 및 하단설명"),
-    ];
-
     private readonly IReadOnlyDictionary<string, NativeStyle> styles;
 
     private AuriPreviewStyleBindings(
+        InvestigationTemplateProfile profile,
         IReadOnlyDictionary<string, NativeStyle> styles,
         NativeStyle resetStyle)
     {
+        Profile = profile;
         this.styles = styles;
         ResetStyle = resetStyle;
-        Bindings = Required
+        Bindings = profile.ParagraphStyles
             .Select(required => new StyleBinding(
                 required.Symbolic,
                 required.NativeName,
@@ -1553,15 +1567,21 @@ internal sealed class AuriPreviewStyleBindings
 
     public IReadOnlyList<StyleBinding> Bindings { get; }
 
+    public InvestigationTemplateProfile Profile { get; }
+
     public NativeStyle ResetStyle { get; }
 
-    public static AuriPreviewStyleBindings Bind(dynamic hwp)
+    public static AuriPreviewStyleBindings Bind(
+        dynamic hwp,
+        InvestigationTemplateProfile profile)
     {
         var document = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
-        return BindDocument(document);
+        return BindDocument(document, profile);
     }
 
-    public static AuriPreviewStyleBindings BindDocument(XDocument document)
+    public static AuriPreviewStyleBindings BindDocument(
+        XDocument document,
+        InvestigationTemplateProfile profile)
     {
         var styleElements = document.Descendants()
             .Where(element => element.Name.LocalName == "STYLE")
@@ -1575,7 +1595,7 @@ internal sealed class AuriPreviewStyleBindings
                 element => element);
         var bindings = new Dictionary<string, NativeStyle>(StringComparer.Ordinal);
 
-        foreach (var required in Required)
+        foreach (var required in profile.ParagraphStyles)
         {
             bindings.Add(
                 required.Symbolic,
@@ -1590,8 +1610,8 @@ internal sealed class AuriPreviewStyleBindings
             styleElements,
             characterShapes,
             paragraphShapes,
-            ResetNativeStyleName);
-        return new AuriPreviewStyleBindings(bindings, resetStyle);
+            profile.ResetNativeStyle);
+        return new AuriPreviewStyleBindings(profile, bindings, resetStyle);
     }
 
     private static NativeStyle BindNativeStyle(

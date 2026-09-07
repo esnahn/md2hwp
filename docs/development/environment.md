@@ -260,6 +260,17 @@ subsequent render, reopen, and PNG export completed with no prompt and left no
 HWP process. Its page PNG hashes matched the earlier same-style-skip render, so
 the reset detour did not change the visible result.
 
+The preview was then rerun with
+`profiles/templates/auri-basic/investigation-v0.1.json` as an explicit input.
+Before COM, the worker matched the minimal fixture's declared byte length and
+SHA-256. The profile supplied all symbolic/native paragraph names, the
+`바탕글` reset style, box and caption selectors, 142 mm figure width, source
+label, list depth limit, and 2,000-HWPUNIT depth indentation. The resulting HWP
+again reported one box, one picture, one Figure automatic number, three native
+list paragraphs, all structural/style/text checks true, and an unchanged
+template. A byte-modified HWP was separately rejected on profile identity
+before the interactive-context/COM boundary and left no output.
+
 In this C# late-bound COM context, HWP 2020 returned a non-null COM object from
 `InsertPicture`, rather than the Boolean result assumed by the initial
 implementation. The preview accepts either Boolean true or a COM object as the

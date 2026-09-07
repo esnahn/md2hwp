@@ -10,12 +10,19 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\.."))
 $dotnetWrapper = Join-Path $repositoryRoot "tools\development\dotnet.ps1"
 $project = Join-Path $repositoryRoot "tools\investigation\hancom-automation\ir-preview\Md2Hwp.HancomIrPreview.csproj"
 $ir = Join-Path $repositoryRoot "examples\ir-v0.1.json"
+$templateProfilePath = Join-Path $repositoryRoot "profiles\templates\auri-basic\investigation-v0.1.json"
+$minimalTemplate = Join-Path $repositoryRoot "tests\fixtures\templates\minimal.hwp"
 $twoBoxesIr = Join-Path $repositoryRoot "tests\fixtures\ir\two-boxes-v0.1.json"
 $twoFiguresIr = Join-Path $repositoryRoot "tests\fixtures\ir\two-figures-v0.1.json"
 $image = Join-Path $repositoryRoot "assets\sample-urban-context.png"
 $nullableSourceIr = Join-Path `
     (Split-Path -Parent $ir) `
     (".ir-preview-null-source-" + [guid]::NewGuid().ToString("N") + ".json")
+
+$temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) ("md2hwp-profile-" + [guid]::NewGuid().ToString("N"))
+$mismatchedTemplate = Join-Path $temporaryRoot "mismatched-template.hwp"
+$mismatchedOutput = Join-Path $temporaryRoot "must-not-exist.hwp"
+[IO.Directory]::CreateDirectory($temporaryRoot) | Out-Null
 
 try {
     & pwsh -NoProfile -File $dotnetWrapper build $project --configuration Debug
@@ -28,13 +35,15 @@ try {
         --no-build `
         -- `
         plan `
-        --ir $ir
+        --ir $ir `
+        --profile $templateProfilePath
     if ($LASTEXITCODE -ne 0) {
         throw "The C# IR preview plan command failed."
     }
     $plan = $planJson | ConvertFrom-Json -Depth 100
 
-    if ($plan.Summary.SourceBlocks -ne 5 -or
+    if ([string]$plan.ProfileId -cne "auri-basic-minimal-investigation" -or
+        $plan.Summary.SourceBlocks -ne 5 -or
         $plan.Summary.TextOperations -ne 5 -or
         $plan.Summary.BoxOperations -ne 1 -or
         $plan.Summary.FigureOperations -ne 1 -or
@@ -164,7 +173,8 @@ try {
         --no-build `
         -- `
         plan `
-        --ir $twoBoxesIr
+        --ir $twoBoxesIr `
+        --profile $templateProfilePath
     if ($LASTEXITCODE -ne 0) {
         throw "The two-box C# preview plan command failed."
     }
@@ -197,7 +207,8 @@ try {
         --no-build `
         -- `
         plan `
-        --ir $twoFiguresIr
+        --ir $twoFiguresIr `
+        --profile $templateProfilePath
     if ($LASTEXITCODE -ne 0) {
         throw "The two-figure C# preview plan command failed."
     }
@@ -228,7 +239,8 @@ try {
         --no-build `
         -- `
         plan `
-        --ir $nullableSourceIr
+        --ir $nullableSourceIr `
+        --profile $templateProfilePath
     if ($LASTEXITCODE -ne 0) {
         throw "The C# IR preview rejected a nullable figure source."
     }
@@ -238,9 +250,32 @@ try {
         throw "The C# figure preview did not preserve the empty source placeholder."
     }
 
+
+    $templateBytes = [IO.File]::ReadAllBytes($minimalTemplate)
+    $mismatchedBytes = [byte[]]::new($templateBytes.Length + 1)
+    [Array]::Copy($templateBytes, $mismatchedBytes, $templateBytes.Length)
+    $mismatchedBytes[$mismatchedBytes.Length - 1] = 0
+    [IO.File]::WriteAllBytes($mismatchedTemplate, $mismatchedBytes)
+    $templateRejection = @(& pwsh -NoProfile -File $dotnetWrapper run `
+        --project $project `
+        --no-build `
+        -- `
+        render `
+        --ir $ir `
+        --profile $templateProfilePath `
+        --template $mismatchedTemplate `
+        --output $mismatchedOutput 2>&1)
+    if ($LASTEXITCODE -eq 0 -or (Test-Path -LiteralPath $mismatchedOutput)) {
+        throw "The C# preview accepted a template outside the profile identity or left partial output."
+    }
+    if (-not (($templateRejection -join "`n").Contains("Template byte length does not match profile"))) {
+        throw "The template-identity rejection did not explain the mismatched byte length."
+    }
     [pscustomobject]@{
         DotNet = (& pwsh -NoProfile -File $dotnetWrapper --version)
         ProjectBuild = $true
+        Profile = $plan.ProfileId
+        TemplateIdentityMismatchRejected = $true
         SourceBlocks = $plan.Summary.SourceBlocks
         TextOperations = $plan.Summary.TextOperations
         BoxOperations = $plan.Summary.BoxOperations
@@ -258,8 +293,17 @@ try {
         NullableFigureSourceAccepted = $true
         ComInvoked = $false
     }
+
 }
 finally {
+    if (Test-Path -LiteralPath $mismatchedTemplate) {
+        Remove-Item -LiteralPath $mismatchedTemplate -Force
+    }
+    if (Test-Path -LiteralPath $mismatchedOutput) {
+        Remove-Item -LiteralPath $mismatchedOutput -Force
+    }
+    [IO.Directory]::Delete($temporaryRoot)
+
     if (Test-Path -LiteralPath $nullableSourceIr) {
         Remove-Item -LiteralPath $nullableSourceIr -Force
     }

@@ -42,6 +42,12 @@ Keep parsing, document generation, and verification separate.
   10.0.400 SDK. The investigation preview targets `net10.0-windows` x64; the
   production worker project shape, COM interop strategy, and protocol remain
   open decisions.
+- The C# investigation preview consumes the closed, explicitly non-production
+  `profiles/templates/auri-basic/investigation-v0.1.json` profile. It identifies
+  only `tests/fixtures/templates/minimal.hwp` by exact hash and declares the
+  proven style, selector, list, and figure policies. It is not the full AURI
+  template profile; that template's insertion target and distinct box/caption
+  bindings remain open.
 - Do not impose repository-wide `src/`, `bin/`, `dist/`, or `share/` roots.
   Rust packages use Cargo's package layout, C# projects use .NET project and
   test-project conventions, and declarative assets remain in domain-named

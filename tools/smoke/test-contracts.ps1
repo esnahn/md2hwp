@@ -11,8 +11,11 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\.."))
 $schemaPath = Join-Path $repositoryRoot "schemas\ir-v0.1.schema.json"
 $rulesSchemaPath = Join-Path $repositoryRoot "schemas\ast2ir-rules-v0.1.schema.json"
 $dependencySchemaPath = Join-Path $repositoryRoot "schemas\dependencies-lock-v0.1.schema.json"
+$profileSchemaPath = Join-Path $repositoryRoot "schemas\template-profile-v0.1.schema.json"
 $rulesPath = Join-Path $repositoryRoot "rules\ast2ir\ir-v0.1.json"
 $dependencyLockPath = Join-Path $repositoryRoot "dependencies\lock.json"
+$profilePath = Join-Path $repositoryRoot "profiles\templates\auri-basic\investigation-v0.1.json"
+$profileTemplatePath = Join-Path $repositoryRoot "tests\fixtures\templates\minimal.hwp"
 $acceptedPath = Join-Path $repositoryRoot "examples\ir-v0.1.json"
 $twoBoxesPath = Join-Path $repositoryRoot "tests\fixtures\ir\two-boxes-v0.1.json"
 $twoFiguresPath = Join-Path $repositoryRoot "tests\fixtures\ir\two-figures-v0.1.json"
@@ -25,8 +28,11 @@ foreach ($path in @(
         $schemaPath,
         $rulesSchemaPath,
         $dependencySchemaPath,
+        $profileSchemaPath,
         $rulesPath,
         $dependencyLockPath,
+        $profilePath,
+        $profileTemplatePath,
         $acceptedPath,
         $twoBoxesPath,
         $twoFiguresPath
@@ -63,6 +69,25 @@ if ($dependencyNames.Count -ne $uniqueDependencyNames.Count) {
     throw "The external dependencies lock contains duplicate dependency names."
 }
 
+$profileJson = Get-Content -Raw -LiteralPath $profilePath
+$profileValid = $profileJson | Test-Json -SchemaFile $profileSchemaPath
+if (-not $profileValid) {
+    throw "The AURI investigation template profile failed schema validation."
+}
+$profileDocument = $profileJson | ConvertFrom-Json
+$profileWithUnknownMember = $profileJson | ConvertFrom-Json -Depth 100
+$profileWithUnknownMember | Add-Member -NotePropertyName "unknown" -NotePropertyValue $true
+$profileWithUnknownJson = $profileWithUnknownMember | ConvertTo-Json -Depth 100
+if ($profileWithUnknownJson | Test-Json -SchemaFile $profileSchemaPath -ErrorAction SilentlyContinue) {
+    throw "The closed template-profile schema accepted an unknown root member."
+}
+$profileTemplate = Get-Item -LiteralPath $profileTemplatePath
+$profileTemplateHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $profileTemplatePath).Hash
+if ([int64]$profileDocument.template.identity.bytes -ne $profileTemplate.Length -or
+    [string]$profileDocument.template.identity.sha256 -cne $profileTemplateHash) {
+    throw "The AURI investigation profile no longer identifies the minimal HWP fixture."
+}
+
 $acceptedJson = Get-Content -Raw -LiteralPath $acceptedPath
 $accepted = $acceptedJson | Test-Json -SchemaFile $schemaPath
 if (-not $accepted) {
@@ -95,6 +120,10 @@ foreach ($rejectedPath in $rejectedPaths) {
     IrSchema = $schemaPath
     Ast2IrRules = $rulesValid
     ExternalDependencies = $dependencyDocument.dependencies.Count
+    TemplateProfile = $profileDocument.id
+    TemplateProfileValid = $profileValid
+    TemplateIdentityValid = $true
+    RejectedTemplateProfiles = 1
     AcceptedIrExample = $accepted
     AcceptedTwoBoxesFixture = $twoBoxesAccepted
     AcceptedTwoFiguresFixture = $twoFiguresAccepted

@@ -6,9 +6,6 @@ internal sealed record CaptionInsertion(int RootParagraphIndex);
 
 internal sealed class AuriMinimalCaptionPrototype
 {
-    private const string PrototypeCaption = "스타일 대응 예시";
-    private const string PrefixBeforeNumber = "[그림 ";
-    private const string PrefixAfterNumber = "] ";
     private readonly int originalRootParagraphIndex;
     private readonly string originalRootXml;
     private readonly string originalStructureXml;
@@ -60,7 +57,7 @@ internal sealed class AuriMinimalCaptionPrototype
         }
 
         var selectedDocument = XDocument.Parse(selectedBlock);
-        ValidateSelectedBlock(selectedDocument);
+        ValidateSelectedBlock(selectedDocument, styles.Profile.CaptionSelector);
 
         return new AuriMinimalCaptionPrototype(
             candidate.RootParagraphIndex,
@@ -239,7 +236,7 @@ internal sealed class AuriMinimalCaptionPrototype
         }
 
         MoveToRoot(hwp, cloneRootParagraphIndex);
-        FindNext(hwp, PrototypeCaption);
+        FindNext(hwp, styles.Profile.CaptionSelector.PrototypeCaption);
         InsertText(hwp, sentinel);
 
         XDocument sentinelDocument = ReadDocument(hwp);
@@ -264,7 +261,7 @@ internal sealed class AuriMinimalCaptionPrototype
         HancomPreviewWriter.InsertFormattedLine(
             hwp,
             captionRuns,
-            styles.Resolve("figure.caption"));
+            styles.Resolve(styles.Profile.CaptionSelector.ParagraphStyle));
 
         var caption = string.Concat(captionRuns.Select(run => run.Text));
         XDocument finalDocument = ReadDocument(hwp);
@@ -303,7 +300,8 @@ internal sealed class AuriMinimalCaptionPrototype
         out CaptionParts parts)
     {
         parts = null!;
-        if (ReadStyle(root) != styles.Resolve("figure.caption").Id ||
+        var selector = styles.Profile.CaptionSelector;
+        if (ReadStyle(root) != styles.Resolve(selector.ParagraphStyle).Id ||
             root.Descendants().Any(element =>
                 element.Name.LocalName is "TABLE" or "PICTURE" or "LINEBREAK"))
         {
@@ -351,18 +349,21 @@ internal sealed class AuriMinimalCaptionPrototype
         }
         if (!string.Equals(
                 beforeNumber.ToString(),
-                PrefixBeforeNumber,
+                selector.PrefixBeforeNumber,
                 StringComparison.Ordinal) ||
             !afterNumber.ToString().StartsWith(
-                PrefixAfterNumber,
+                selector.PrefixAfterNumber,
                 StringComparison.Ordinal))
         {
             return false;
         }
-        var caption = afterNumber.ToString()[PrefixAfterNumber.Length..];
+        var caption = afterNumber.ToString()[selector.PrefixAfterNumber.Length..];
         if (caption.Length == 0 ||
             (requirePrototypeCaption &&
-             !string.Equals(caption, PrototypeCaption, StringComparison.Ordinal)))
+             !string.Equals(
+                 caption,
+                 selector.PrototypeCaption,
+                 StringComparison.Ordinal)))
         {
             return false;
         }
@@ -398,7 +399,9 @@ internal sealed class AuriMinimalCaptionPrototype
                    string.Equals(attribute.Value, "Digit", StringComparison.Ordinal));
     }
 
-    private static void ValidateSelectedBlock(XDocument selectedDocument)
+    private static void ValidateSelectedBlock(
+        XDocument selectedDocument,
+        ProfileCaptionSelector selector)
     {
         var sections = selectedDocument.Descendants()
             .Where(element => element.Name.LocalName == "SECTION")
@@ -433,11 +436,11 @@ internal sealed class AuriMinimalCaptionPrototype
             siblings[autoIndex + 1].Name.LocalName != "CHAR" ||
             !string.Equals(
                 siblings[autoIndex - 1].Value,
-                PrefixBeforeNumber,
+                selector.PrefixBeforeNumber,
                 StringComparison.Ordinal) ||
             !string.Equals(
                 siblings[autoIndex + 1].Value,
-                PrefixAfterNumber + PrototypeCaption,
+                selector.PrefixAfterNumber + selector.PrototypeCaption,
                 StringComparison.Ordinal))
         {
             throw new InvalidOperationException(
