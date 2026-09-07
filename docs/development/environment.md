@@ -278,6 +278,30 @@ immediate result, then treats the saved-and-reopened picture-count check as the
 structural proof of insertion. This observation does not settle the production
 worker's COM interop strategy or template lowering contract.
 
+The full local AURI reference HWP was also inventoried read-only on 2026-08-31
+with `tools/investigation/auri/inspect-template-structure.ps1`. The exact file
+was 3,219,968 bytes with SHA-256
+`0BA84133775B182C76ACE779082ED77E4BCE0743C00733FB6C7AF7CD43B3BAF1`;
+the open/inspect/close operation preserved that hash and left no HWP process.
+Its HWPML contained 6 sections, 538 section-root paragraphs, 1,306 paragraphs,
+49 tables, 13 pictures, and 4 Figure automatic-number controls. No element name
+containing `field` or `bookmark` was present. This does not prove that every
+possible Hancom targeting facility is absent, but it does rule out adopting a
+named field/bookmark from the inspected HWPML as the current insertion target.
+
+The inspected native figure root was `바탕글` with one inline
+`TreatAsChar=true` picture. The picture's bottom `CAPTION` contained one
+`표그림_캡션` paragraph and one decimal Figure `AUTONUM`; the chosen example
+then had two `출처 및 하단설명` paragraphs. The inspected native box root was
+also `바탕글`, with one inline `TreatAsChar=true`, one-cell table. Its internal
+paragraphs were one `박스제목` and four `박스내용`; its bottom `CAPTION`
+contained one `출처 및 하단설명`. The root indexes used to request these details
+were diagnostic coordinates for that exact file only and are not a converter
+selector. The result confirms why the minimal fixture's root-caption and
+one-content-paragraph box selectors must reject the full file. It does not yet
+resolve the full-template insertion region, box-title/source policy, or nested
+picture-caption cloning path.
+
 All Hancom COM investigation, security-module installation or re-registration,
 and backend verification on this workstation must run under the same Windows
 identity/profile in a logged-in interactive session using that exact Windows
