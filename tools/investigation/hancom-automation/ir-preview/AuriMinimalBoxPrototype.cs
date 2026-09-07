@@ -542,7 +542,7 @@ internal sealed class AuriMinimalBoxPrototype
         return StableBoxCloneXml(clone);
     }
 
-    private static string StableRootSequenceXml(
+    internal static string StableRootSequenceXml(
         XElement root,
         AuriPreviewStyleBindings styles) =>
         TryReadParts(root, styles, requirePrototypeLineBreak: false, out _)

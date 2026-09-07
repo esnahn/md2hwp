@@ -15,6 +15,7 @@ $rulesPath = Join-Path $repositoryRoot "rules\ast2ir\ir-v0.1.json"
 $dependencyLockPath = Join-Path $repositoryRoot "dependencies\lock.json"
 $acceptedPath = Join-Path $repositoryRoot "examples\ir-v0.1.json"
 $twoBoxesPath = Join-Path $repositoryRoot "tests\fixtures\ir\two-boxes-v0.1.json"
+$twoFiguresPath = Join-Path $repositoryRoot "tests\fixtures\ir\two-figures-v0.1.json"
 $rejectedPaths = @(
     (Join-Path $repositoryRoot "examples\ir-v0.1-rejected-page-break.json"),
     (Join-Path $repositoryRoot "examples\ir-v0.1-rejected-soft-break.json")
@@ -27,7 +28,8 @@ foreach ($path in @(
         $rulesPath,
         $dependencyLockPath,
         $acceptedPath,
-        $twoBoxesPath
+        $twoBoxesPath,
+        $twoFiguresPath
     ) + $rejectedPaths) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Missing smoke-test input: $path"
@@ -73,6 +75,12 @@ if (-not $twoBoxesAccepted) {
     throw "The two-box IR v0.1 fixture failed schema validation."
 }
 
+$twoFiguresJson = Get-Content -Raw -LiteralPath $twoFiguresPath
+$twoFiguresAccepted = $twoFiguresJson | Test-Json -SchemaFile $schemaPath
+if (-not $twoFiguresAccepted) {
+    throw "The two-figure IR v0.1 fixture failed schema validation."
+}
+
 $rejectedCount = 0
 foreach ($rejectedPath in $rejectedPaths) {
     $rejectedJson = Get-Content -Raw -LiteralPath $rejectedPath
@@ -89,5 +97,6 @@ foreach ($rejectedPath in $rejectedPaths) {
     ExternalDependencies = $dependencyDocument.dependencies.Count
     AcceptedIrExample = $accepted
     AcceptedTwoBoxesFixture = $twoBoxesAccepted
+    AcceptedTwoFiguresFixture = $twoFiguresAccepted
     RejectedIrExamples = $rejectedCount
 }

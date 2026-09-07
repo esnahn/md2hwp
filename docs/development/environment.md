@@ -197,7 +197,36 @@ decoration; verbatim-block IR has no corresponding source field, so production
 lowering must resolve that policy before adoption. This selector intentionally
 does not bind the full AURI reference document, whose box has a different root
 style and four internal `박스내용` paragraphs. Native list markers and caption
-automatic numbering remain unresolved after this probe.
+automatic numbering remained unresolved after this box probe.
+
+The same 2026-08-30 reference context then passed the minimal-fixture native
+figure-caption clone. The unique source was a root `표그림_캡션` paragraph with
+literal `[그림 ` text, one decimal `AUTONUM NumberType=Figure` control, and the
+literal `] 스타일 대응 예시` suffix. The investigation captured a native HWP
+`saveblock`, inserted it with `SetTextFile(..., "HWP", "insertfile")`, and
+replaced only the human suffix. The reopened result retained the caption style,
+control shape, IR strong/emphasis character runs, and one added Figure automatic
+number per inserted picture. The ordinary full-document HWPML root remained the
+structural comparison source. HWP 2020 exposed the selected block's inspection
+HWPML differently: the caption content followed `SECDEF` inside its
+section-definition `TEXT`. Preflight therefore verifies the exact `CHAR`
+siblings around that unique control instead of pretending the saveblock is an
+ordinary caption root.
+
+Inserting the native block also materialized a just-inserted picture's derived
+`ROTATIONINFO CenterX` and `CenterY` values from zero. Caption insertion
+identity excludes only that lazy pair; the picture geometry and transform stay
+in the root comparison. A separate two-figure fixture used captions identical
+to the source prototype. It reported two pictures and two Figure controls
+added, reopened with exact caption content, and its 992-by-1403 PNG pages showed
+the new native labels in sequence as `[그림 1]` and `[그림 2]`. The template
+hash stayed unchanged, and no HWP process remained after render or export.
+
+This remains a minimal-fixture result. The full AURI reference document's
+observed caption is nested in a picture object rather than represented by this
+root-paragraph shape, so the investigation selector rejects it instead of
+guessing. A production profile must define and test that binding. Native list
+markers are the remaining visible structural gap in this preview.
 
 In this C# late-bound COM context, HWP 2020 returned a non-null COM object from
 `InsertPicture`, rather than the Boolean result assumed by the initial

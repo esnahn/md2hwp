@@ -22,12 +22,14 @@ internal sealed record RenderResult(
     int BoxOperations,
     int FigureOperations,
     int BoxesAdded,
+    int CaptionsAdded,
     int PicturesAdded,
     IReadOnlyList<StyleBinding> StyleBindings,
     bool TextVerified,
     bool StylesVerified,
     bool CharacterMarksVerified,
     bool BoxesVerified,
+    bool CaptionsVerified,
     bool TemplateUnchanged);
 
 internal sealed record StyleBinding(
@@ -37,6 +39,7 @@ internal sealed record StyleBinding(
 
 internal sealed record PreviewRendering(
     int BoxesAdded,
+    int CaptionsAdded,
     int PicturesAdded,
     IReadOnlyList<StyleBinding> StyleBindings);
 
@@ -45,6 +48,7 @@ internal sealed record SavedParagraph(
     string Text,
     bool ContainsPicture,
     bool ContainsTable,
+    int FigureAutoNumbers,
     IReadOnlyList<SavedTextRun> Runs);
 
 internal sealed record SavedTextRun(
@@ -57,6 +61,7 @@ internal sealed record ExpectedParagraph(
     string Text,
     bool ContainsPicture,
     bool ContainsTable,
+    int FigureAutoNumbers,
     IReadOnlyList<PreviewTextRun>? FormattedRuns);
 
 internal sealed record ExportedPage(
@@ -144,7 +149,11 @@ internal static class HancomPreviewWriter
                 AuriMinimalBoxPrototype? boxPrototype = plan.Summary.BoxOperations == 0
                     ? null
                     : AuriMinimalBoxPrototype.Bind(hwp, styles);
+                AuriMinimalCaptionPrototype? captionPrototype = plan.Summary.FigureOperations == 0
+                    ? null
+                    : AuriMinimalCaptionPrototype.Bind(hwp, styles);
                 int picturesBefore = CountPictures(hwp);
+                int captionsBefore = CountFigureAutoNumbers(hwp);
                 IReadOnlyList<SavedParagraph> existingParagraphs = ReadParagraphs(hwp);
                 var paragraphsBefore = existingParagraphs.Count;
                 Run(hwp, "MoveDocEnd");
@@ -152,7 +161,12 @@ internal static class HancomPreviewWriter
 
                 foreach (var operation in plan.Operations)
                 {
-                    RenderOperation(hwp, operation, styles, boxPrototype);
+                    RenderOperation(
+                        hwp,
+                        operation,
+                        styles,
+                        boxPrototype,
+                        captionPrototype);
                 }
 
                 Run(hwp, "FileSave");
@@ -163,14 +177,27 @@ internal static class HancomPreviewWriter
                 VerifyStyles(hwp, plan, styles, paragraphsBefore);
                 VerifyCharacterMarks(hwp, plan, styles, paragraphsBefore);
                 VerifyBoxes(hwp, plan, styles, boxPrototype, paragraphsBefore);
+                VerifyCaptions(hwp, plan, styles, captionPrototype, paragraphsBefore);
                 var picturesAfter = CountPictures(hwp);
-                var added = picturesAfter - picturesBefore;
-                if (added != plan.Summary.FigureOperations)
+                var picturesAdded = picturesAfter - picturesBefore;
+                if (picturesAdded != plan.Summary.FigureOperations)
                 {
                     throw new InvalidOperationException(
-                        $"Expected {plan.Summary.FigureOperations} inserted pictures, observed {added}.");
+                        $"Expected {plan.Summary.FigureOperations} inserted pictures, " +
+                        $"observed {picturesAdded}.");
                 }
-                return new PreviewRendering(plan.Summary.BoxOperations, added, styles.Bindings);
+                var captionsAdded = CountFigureAutoNumbers(hwp) - captionsBefore;
+                if (captionsAdded != plan.Summary.FigureOperations)
+                {
+                    throw new InvalidOperationException(
+                        $"Expected {plan.Summary.FigureOperations} inserted figure captions, " +
+                        $"observed {captionsAdded}.");
+                }
+                return new PreviewRendering(
+                    plan.Summary.BoxOperations,
+                    captionsAdded,
+                    picturesAdded,
+                    styles.Bindings);
             });
 
             var templateUnchanged = string.Equals(
@@ -189,8 +216,10 @@ internal static class HancomPreviewWriter
                 plan.Summary.BoxOperations,
                 plan.Summary.FigureOperations,
                 rendering.BoxesAdded,
+                rendering.CaptionsAdded,
                 rendering.PicturesAdded,
                 rendering.StyleBindings,
+                true,
                 true,
                 true,
                 true,
@@ -394,7 +423,8 @@ internal static class HancomPreviewWriter
         dynamic hwp,
         PreviewOperation operation,
         AuriPreviewStyleBindings styles,
-        AuriMinimalBoxPrototype? boxPrototype)
+        AuriMinimalBoxPrototype? boxPrototype,
+        AuriMinimalCaptionPrototype? captionPrototype)
     {
         if (operation.Kind == "text")
         {
@@ -443,10 +473,15 @@ internal static class HancomPreviewWriter
         }
         Run(hwp, "MoveParaEnd");
         Run(hwp, "BreakPara");
-        var captionStyle = styles.Resolve("figure.caption");
-        ApplyParagraphStyle(hwp, captionStyle);
-        InsertFormattedLine(hwp, FormattedLine(operation, 1), captionStyle);
-        Run(hwp, "BreakPara");
+        if (captionPrototype is null)
+        {
+            throw new InvalidOperationException(
+                $"No minimal-fixture figure-caption prototype is bound for {operation.Label}.");
+        }
+        _ = captionPrototype.Insert(
+            hwp,
+            styles,
+            FormattedLine(operation, 1));
         var sourceStyle = styles.Resolve("figure.source");
         ApplyParagraphStyle(hwp, sourceStyle);
         var sourceRuns = new List<PreviewTextRun>
@@ -503,7 +538,7 @@ internal static class HancomPreviewWriter
         }
     }
 
-    private static void InsertFormattedLine(
+    internal static void InsertFormattedLine(
         dynamic hwp,
         IReadOnlyList<PreviewTextRun> runs,
         NativeStyle baseStyle)
@@ -634,6 +669,7 @@ internal static class HancomPreviewWriter
             if (actual.Style != nativeStyle.Id ||
                 actual.ContainsPicture != expected.ContainsPicture ||
                 actual.ContainsTable != expected.ContainsTable ||
+                actual.FigureAutoNumbers != expected.FigureAutoNumbers ||
                 !actual.Text.Contains(expected.Text, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
@@ -740,6 +776,69 @@ internal static class HancomPreviewWriter
         }
     }
 
+    private static void VerifyCaptions(
+        dynamic hwp,
+        IrPreviewPlan plan,
+        AuriPreviewStyleBindings styles,
+        AuriMinimalCaptionPrototype? prototype,
+        int paragraphsBefore)
+    {
+        if (plan.Summary.FigureOperations == 0)
+        {
+            if (prototype is not null)
+            {
+                throw new InvalidOperationException(
+                    "A caption prototype was bound without a figure operation.");
+            }
+            return;
+        }
+        if (prototype is null)
+        {
+            throw new InvalidOperationException(
+                "Missing minimal-fixture figure-caption prototype verification.");
+        }
+
+        XDocument document = AuriMinimalCaptionPrototype.ReadDocument(hwp);
+        IReadOnlyList<XElement> roots = AuriMinimalCaptionPrototype.RootParagraphs(document);
+        prototype.VerifyOriginal(roots);
+        var appended = roots.Skip(paragraphsBefore).ToArray();
+        var rootIndex = 0;
+        var verified = 0;
+        foreach (var operation in plan.Operations)
+        {
+            switch (operation.Kind)
+            {
+                case "text":
+                    rootIndex += operation.Lines.Count;
+                    break;
+                case "box":
+                    rootIndex++;
+                    break;
+                case "figure":
+                    if (rootIndex + 1 >= appended.Length)
+                    {
+                        throw new InvalidOperationException(
+                            "Saved preview lost an expected automatic-number caption root.");
+                    }
+                    prototype.VerifyRenderedRoot(
+                        appended[rootIndex + 1],
+                        styles,
+                        operation.Lines[1]);
+                    rootIndex += 3;
+                    verified++;
+                    break;
+                default:
+                    throw new InvalidOperationException(
+                        $"Unknown preview operation during caption verification: {operation.Kind}");
+            }
+        }
+        if (verified != plan.Summary.FigureOperations)
+        {
+            throw new InvalidOperationException(
+                $"Expected {plan.Summary.FigureOperations} verified captions, observed {verified}.");
+        }
+    }
+
     private static IEnumerable<(string Symbolic, string Text)> StyledTexts(IrPreviewPlan plan)
     {
         foreach (var operation in plan.Operations)
@@ -793,6 +892,7 @@ internal static class HancomPreviewWriter
                             operation.Lines[index],
                             false,
                             false,
+                            0,
                             FormattedLine(operation, index));
                     }
                     break;
@@ -802,16 +902,29 @@ internal static class HancomPreviewWriter
                         string.Concat(operation.Lines),
                         false,
                         true,
+                        0,
                         null);
                     break;
                 case "figure":
-                    yield return new ExpectedParagraph("figure", string.Empty, true, false, null);
+                    yield return new ExpectedParagraph(
+                        "figure",
+                        string.Empty,
+                        true,
+                        false,
+                        0,
+                        null);
+                    var captionRuns = new List<PreviewTextRun>
+                    {
+                        new("[그림 ] ", false, false),
+                    };
+                    captionRuns.AddRange(FormattedLine(operation, 1));
                     yield return new ExpectedParagraph(
                         "figure.caption",
                         operation.Lines[1],
                         false,
                         false,
-                        FormattedLine(operation, 1));
+                        1,
+                        PreviewRunBuilder.Coalesce(captionRuns));
                     var sourceRuns = new List<PreviewTextRun>
                     {
                         new(operation.Lines[2].Length == 0 ? "출처:" : "출처: ", false, false),
@@ -824,6 +937,7 @@ internal static class HancomPreviewWriter
                             : $"출처: {operation.Lines[2]}",
                         false,
                         false,
+                        0,
                         PreviewRunBuilder.Coalesce(sourceRuns));
                     break;
                 default:
@@ -860,6 +974,10 @@ internal static class HancomPreviewWriter
             .Count(element => element.Name.LocalName == "PICTURE");
     }
 
+    private static int CountFigureAutoNumbers(dynamic hwp) =>
+        AuriMinimalCaptionPrototype.CountFigureAutoNumbers(
+            XDocument.Parse((string)hwp.GetTextFile("HWPML2X", "")));
+
     private static IReadOnlyList<SavedParagraph> ReadParagraphs(dynamic hwp)
     {
         var document = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
@@ -873,6 +991,12 @@ internal static class HancomPreviewWriter
                 element.Value,
                 element.Descendants().Any(descendant => descendant.Name.LocalName == "PICTURE"),
                 element.Descendants().Any(descendant => descendant.Name.LocalName == "TABLE"),
+                element.Descendants().Count(descendant =>
+                    descendant.Name.LocalName == "AUTONUM" &&
+                    string.Equals(
+                        descendant.Attribute("NumberType")?.Value,
+                        "Figure",
+                        StringComparison.Ordinal)),
                 ReadSavedRuns(element, characterShapes)))
             .ToArray();
     }

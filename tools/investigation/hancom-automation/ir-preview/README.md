@@ -14,8 +14,8 @@ It has four modes:
   paragraph styles to unique AURI native style names, appends text, cloned box
   structures, and repository-local PNG figures from IR, saves and reopens it,
   verifies the appended paragraph order, text, paragraph styles,
-  character-mark runs, box structure, and picture count, then publishes the
-  requested output path.
+  character-mark runs, box and automatic-number caption structures, and
+  picture count, then publishes the requested output path.
 - `export-images` opens an HWP read-only, uses Hancom's PNG `SaveAs` support to
   render every page into a new output directory, validates every PNG header and
   records its dimensions and hash, and verifies that the HWP did not change.
@@ -27,8 +27,8 @@ The preview currently binds `body`, headings 1 through 6, `block.box`, figure
 anchors, captions, and source lines by exact native style name. Nested
 `strong`/`emph` nodes are lowered to character-shape runs, including marks in a
 link label; the link target and title are intentionally not rendered by this
-AURI preview. It does not yet apply native list semantics or preserve automatic
-figure numbering. A `verbatim_block` is lowered to one typed `block.box` plan operation and,
+AURI preview. It does not yet apply native list semantics. A `verbatim_block`
+is lowered to one typed `block.box` plan operation and,
 during render, clones the uniquely matched box prototype from
 `tests/fixtures/templates/minimal.hwp`. Its logical lines remain inside one
 native box paragraph as HWP line breaks, including empty and trailing lines. IR
@@ -44,6 +44,17 @@ source metadata. The full AURI reference template has a different root style
 and four internal `박스내용` paragraphs, so this selector fails preflight there
 instead of guessing. A production profile must define that separate structure
 and the source-line policy first.
+
+Figure captions use a second fixture-specific prototype. The preview requires
+exactly one root `표그림_캡션` paragraph whose direct text content is
+`[그림 `, one native `AUTONUM` with `NumberType=Figure` and decimal formatting,
+then `] 스타일 대응 예시`. It captures that paragraph as a native HWP
+`saveblock`, inserts the control without the clipboard, and replaces only the
+human caption suffix. The literal label and the automatic-number control remain
+native; nested IR strong/emphasis marks are applied only to the replacement
+suffix. The full AURI reference document instead nests the observed caption in
+a picture object, so this minimal-root selector rejects it. Production lowering
+needs a separate profile-backed selector for that structure.
 
 ## Setup and non-COM verification
 
@@ -119,6 +130,17 @@ the final structure comparison, and compares the remaining prototype XML.
 Direct HWPML2X insertion was rejected after it produced no inserted control in
 this environment.
 
+The caption path uses the same native `saveblock`/`insertfile` mechanism. HWP
+2020 serializes the selected caption's HWPML inspection form inside the
+section-definition `TEXT`, not as the ordinary root paragraph seen in the full
+document, so preflight validates the exact `CHAR` siblings around its unique
+Figure `AUTONUM`. After native insertion, the ordinary root paragraph must be
+an exact structural clone except for the regenerated automatic number and
+replacement suffix. `InsertFile` also materializes the preceding picture's
+previously-zero derived rotation centre; root-sequence comparison excludes only
+that lazy `CenterX`/`CenterY` pair while retaining the picture geometry and
+transform checks.
+
 The character-mark implementation deliberately uses the dedicated
 `CharShapeBold` and `CharShapeItalic` transitions while inserting a paragraph,
 with the base state taken from the bound style's HWPML character shape. In the
@@ -152,8 +174,11 @@ An additional two-box render used prototype-identical content to exercise the
 otherwise ambiguous adjacent-root case and reported `BoxesAdded=2`. Both clones
 reopened with exact logical lines, and a two-page PNG export showed both native
 boxes with content-dependent heights. The template hash remained unchanged.
-The remaining visible structural gaps are native list markers and the figure
-caption's `AUTONUM` control. The template's current font also renders the city
+An additional two-figure render used captions identical to the source prototype
+to exercise adjacent-root ambiguity. It reported `CaptionsAdded=2`, reopened
+with two new Figure `AUTONUM` controls, and the PNG pages showed `[그림 1]` and
+`[그림 2]`. The remaining visible structural gap is native list markers. The
+template's current font also renders the city
 emoji as missing-glyph boxes; a separate save/reopen probe confirmed that this
 is a rendering limitation in the tested path, not loss of the underlying
 `U+1F3D9 U+FE0F` values. Generated page images stay under ignored `artifacts/`;

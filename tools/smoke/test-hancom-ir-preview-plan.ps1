@@ -11,6 +11,7 @@ $dotnetWrapper = Join-Path $repositoryRoot "tools\development\dotnet.ps1"
 $project = Join-Path $repositoryRoot "tools\investigation\hancom-automation\ir-preview\Md2Hwp.HancomIrPreview.csproj"
 $ir = Join-Path $repositoryRoot "examples\ir-v0.1.json"
 $twoBoxesIr = Join-Path $repositoryRoot "tests\fixtures\ir\two-boxes-v0.1.json"
+$twoFiguresIr = Join-Path $repositoryRoot "tests\fixtures\ir\two-figures-v0.1.json"
 $image = Join-Path $repositoryRoot "assets\sample-urban-context.png"
 $nullableSourceIr = Join-Path `
     (Split-Path -Parent $ir) `
@@ -166,6 +167,31 @@ try {
     }
 
 
+    $twoFiguresPlanJson = & pwsh -NoProfile -File $dotnetWrapper run `
+        --project $project `
+        --no-build `
+        -- `
+        plan `
+        --ir $twoFiguresIr
+    if ($LASTEXITCODE -ne 0) {
+        throw "The two-figure C# preview plan command failed."
+    }
+    $twoFiguresPlan = $twoFiguresPlanJson | ConvertFrom-Json -Depth 100
+    $twoFigureOperations = @($twoFiguresPlan.Operations | Where-Object { $_.Kind -eq "figure" })
+    if ($twoFiguresPlan.Summary.SourceBlocks -ne 2 -or
+        $twoFiguresPlan.Summary.TextOperations -ne 0 -or
+        $twoFiguresPlan.Summary.FigureOperations -ne 2 -or
+        $twoFigureOperations.Count -ne 2) {
+        throw "The C# preview plan did not preserve two independent figure operations."
+    }
+    foreach ($operation in $twoFigureOperations) {
+        if ([string]$operation.Lines[1] -cne "스타일 대응 예시" -or
+            @($operation.FormattedLines[1] | Where-Object { $_.Strong -or $_.Emphasis }).Count -ne 0) {
+            throw "The repeated-figure fixture no longer exercises prototype-identical captions."
+        }
+    }
+
+
     $nullableDocument = Get-Content -Raw -Encoding UTF8 -LiteralPath $ir |
         ConvertFrom-Json -Depth 100
     ($nullableDocument.blocks | Where-Object { $_.type -eq "figure" }).source = $null
@@ -195,6 +221,7 @@ try {
         BoxOperations = $plan.Summary.BoxOperations
         TypedBoxPreserved = $true
         MultipleBoxesPreserved = $true
+        MultipleFiguresPreserved = $true
         FigureOperations = $plan.Summary.FigureOperations
         ListItems = $plan.Summary.ListItems
         ExplicitListBodyStyles = $true

@@ -158,6 +158,7 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
                 "Strong/emphasis marks are retained as character-shape runs; link targets and native list semantics remain flattened.",
                 "verbatim_block maps to one prototype-backed block.box operation; render accepts only the uniquely matched minimal-fixture box structure.",
                 "The minimal-fixture box prototype's source placeholder remains template decoration; its production metadata contract is unresolved.",
+                "Figure captions remain one prototype-backed native AUTONUM operation; render accepts only the uniquely matched minimal-fixture root-caption structure.",
                 "IR line_break nodes outside verbatim blocks are previewed as separate HWP paragraphs.",
                 "Only trusted repository-local PNG figures are inserted; width is limited to 142 mm and aspect ratio is preserved.",
             ]);

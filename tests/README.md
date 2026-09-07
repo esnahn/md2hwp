@@ -30,6 +30,12 @@ The non-COM preview smoke test requires two independent typed box operations.
 On the adopted HWP 2020 workstation it is also the manual render input for
 checking two successive prototype clones and their reopened logical content.
 
+`fixtures/ir/two-figures-v0.1.json` repeats the minimal template's exact
+caption text with the same image. It exercises adjacent prototype-identical
+caption clones: the non-COM plan must retain two independent figure operations,
+and the adopted HWP 2020 render must reopen with two new native Figure
+automatic-number controls in sequence.
+
 Every AST-to-IR ruleset needs fixtures for each declared handler and for
 unlisted-constructor rejection. Equivalent backends are compared by semantic
 postconditions, not by requiring identical native operation sequences.
