@@ -42,8 +42,46 @@ try {
     if ($body.Count -ne 1) {
         throw "Expected one body preview operation."
     }
+    if ([string]$body[0].ParagraphStyle -cne "body") {
+        throw "The body operation lost its explicit paragraph-style binding."
+    }
+    $formattedBody = @($body[0].FormattedLines)
+    if ($formattedBody.Count -ne @($body[0].Lines).Count) {
+        throw "The body operation lost its formatted line structure."
+    }
+    for ($lineIndex = 0; $lineIndex -lt $formattedBody.Count; $lineIndex++) {
+        $runText = -join @($formattedBody[$lineIndex] | ForEach-Object { [string]$_.Text })
+        if ($runText -cne [string]$body[0].Lines[$lineIndex]) {
+            throw "Formatted runs do not reconstruct body line $lineIndex."
+        }
+    }
+    $bodyRuns = @($formattedBody | ForEach-Object { $_ })
+    $strongOnly = @($bodyRuns | Where-Object {
+        ([string]$_.Text).Trim() -ceq "굵게와" -and $_.Strong -and -not $_.Emphasis
+    })
+    $strongEmphasis = @($bodyRuns | Where-Object {
+        ([string]$_.Text).Trim() -ceq "굵고 기울임" -and $_.Strong -and $_.Emphasis
+    })
+    $emphasisOnly = @($bodyRuns | Where-Object {
+        ([string]$_.Text).Trim() -ceq "기울임" -and -not $_.Strong -and $_.Emphasis
+    })
+    $markedLinkLabel = @($bodyRuns | Where-Object {
+        [string]$_.Text -ceq "AURI" -and $_.Strong -and -not $_.Emphasis
+    })
+    if ($strongOnly.Count -ne 1 -or
+        $strongEmphasis.Count -ne 1 -or
+        $emphasisOnly.Count -ne 1 -or
+        $markedLinkLabel.Count -ne 1) {
+        throw "Nested strong/emphasis or recursively formatted link-label runs were not preserved."
+    }
+    $listParagraphs = @($plan.Operations | Where-Object { ([string]$_.Label).StartsWith("list.") })
+    if ($listParagraphs.Count -ne 3 -or
+        @($listParagraphs | Where-Object { [string]$_.ParagraphStyle -cne "body" }).Count -ne 0) {
+        throw "List context must not be inferred from a style-name prefix; every list paragraph must bind body explicitly."
+    }
+
     $verbatim = @($plan.Operations | Where-Object { $_.Label -eq "verbatim_block" })
-    if ($verbatim.Count -ne 1) {
+    if ($verbatim.Count -ne 1 -or $verbatim[0].ParagraphStyle -cne "block.box") {
         throw "Expected one verbatim-block preview operation."
     }
     $nfcUnicode = "Unicode: 가 가 도시🏙️"
@@ -57,6 +95,17 @@ try {
         [Math]::Abs([double]$figure[0].ImageHeightMillimeters - (142 / 1.5)) -gt 0.000001) {
         throw "The C# figure preview plan is incorrect."
     }
+
+    $figureLines = @($figure[0].FormattedLines)
+    $captionRuns = @($figureLines[1])
+    if ($figureLines.Count -ne 3 -or
+        $captionRuns.Count -lt 1 -or
+        [string]$captionRuns[0].Text -cne "도시" -or
+        -not $captionRuns[0].Strong -or
+        $captionRuns[0].Emphasis) {
+        throw "The figure caption lost its strong character-mark run."
+    }
+
 
     $nullableDocument = Get-Content -Raw -Encoding UTF8 -LiteralPath $ir |
         ConvertFrom-Json -Depth 100
@@ -75,7 +124,7 @@ try {
     }
     $nullablePlan = $nullablePlanJson | ConvertFrom-Json -Depth 100
     $nullableFigure = @($nullablePlan.Operations | Where-Object { $_.Kind -eq "figure" })
-    if ($nullableFigure.Count -ne 1 -or $nullableFigure[0].Lines[-1] -cne "source: ") {
+    if ($nullableFigure.Count -ne 1 -or $nullableFigure[0].Lines[-1] -cne "") {
         throw "The C# figure preview did not preserve the empty source placeholder."
     }
 
@@ -86,6 +135,9 @@ try {
         TextOperations = $plan.Summary.TextOperations
         FigureOperations = $plan.Summary.FigureOperations
         ListItems = $plan.Summary.ListItems
+        ExplicitListBodyStyles = $true
+        StrongEmphasisRunsPreserved = $true
+        FigureCaptionRunsPreserved = $true
         NfcUnicodePreserved = $true
         FigureAspectRatioPreserved = $true
         NullableFigureSourceAccepted = $true

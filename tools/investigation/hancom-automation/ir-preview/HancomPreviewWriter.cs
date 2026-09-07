@@ -3,6 +3,7 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.Win32;
 
@@ -20,8 +21,37 @@ internal sealed record RenderResult(
     int TextOperations,
     int FigureOperations,
     int PicturesAdded,
-    bool TextMarkerVerified,
+    IReadOnlyList<StyleBinding> StyleBindings,
+    bool TextVerified,
+    bool StylesVerified,
+    bool CharacterMarksVerified,
     bool TemplateUnchanged);
+
+internal sealed record StyleBinding(
+    string Symbolic,
+    string NativeName,
+    int NativeId);
+
+internal sealed record PreviewRendering(
+    int PicturesAdded,
+    IReadOnlyList<StyleBinding> StyleBindings);
+
+internal sealed record SavedParagraph(
+    int Style,
+    string Text,
+    bool ContainsPicture,
+    IReadOnlyList<SavedTextRun> Runs);
+
+internal sealed record SavedTextRun(
+    string Text,
+    bool Bold,
+    bool Italic);
+
+internal sealed record ExpectedParagraph(
+    string SymbolicStyle,
+    string Text,
+    bool ContainsPicture,
+    IReadOnlyList<PreviewTextRun>? FormattedRuns);
 
 internal sealed record ExportedPage(
     string Path,
@@ -101,30 +131,28 @@ internal static class HancomPreviewWriter
 
         try
         {
-            var marker = $"MD2HWP_IR_PREVIEW_{Guid.NewGuid():N}";
-            var picturesAdded = WithHwp(module, hwp =>
+            var rendering = WithHwp(module, hwp =>
             {
                 Open(hwp, temporaryOutput, visible);
-                var picturesBefore = CountPictures(hwp);
+                AuriPreviewStyleBindings styles = AuriPreviewStyleBindings.Bind(hwp);
+                int picturesBefore = CountPictures(hwp);
+                IReadOnlyList<SavedParagraph> existingParagraphs = ReadParagraphs(hwp);
+                var paragraphsBefore = existingParagraphs.Count;
                 Run(hwp, "MoveDocEnd");
-                Run(hwp, "BreakPara");
-                InsertText(hwp, marker);
                 Run(hwp, "BreakPara");
 
                 foreach (var operation in plan.Operations)
                 {
-                    RenderOperation(hwp, operation);
+                    RenderOperation(hwp, operation, styles);
                 }
 
                 Run(hwp, "FileSave");
                 CloseDocument(hwp);
                 Open(hwp, temporaryOutput, visible);
 
-                var extracted = WebUtility.HtmlDecode((string)hwp.GetTextFile("TEXT", ""));
-                if (!extracted.Contains(marker, StringComparison.Ordinal))
-                {
-                    throw new InvalidOperationException("Saved preview did not contain its verification marker.");
-                }
+                VerifyText(hwp, plan);
+                VerifyStyles(hwp, plan, styles, paragraphsBefore);
+                VerifyCharacterMarks(hwp, plan, styles, paragraphsBefore);
                 var picturesAfter = CountPictures(hwp);
                 var added = picturesAfter - picturesBefore;
                 if (added != plan.Summary.FigureOperations)
@@ -132,7 +160,7 @@ internal static class HancomPreviewWriter
                     throw new InvalidOperationException(
                         $"Expected {plan.Summary.FigureOperations} inserted pictures, observed {added}.");
                 }
-                return added;
+                return new PreviewRendering(added, styles.Bindings);
             });
 
             var templateUnchanged = string.Equals(
@@ -149,7 +177,10 @@ internal static class HancomPreviewWriter
                 output,
                 plan.Summary.TextOperations,
                 plan.Summary.FigureOperations,
-                picturesAdded,
+                rendering.PicturesAdded,
+                rendering.StyleBindings,
+                true,
+                true,
                 true,
                 true);
         }
@@ -346,17 +377,19 @@ internal static class HancomPreviewWriter
         _ = hwp.Clear(1);
     }
 
-    private static void RenderOperation(dynamic hwp, PreviewOperation operation)
+    private static void RenderOperation(
+        dynamic hwp,
+        PreviewOperation operation,
+        AuriPreviewStyleBindings styles)
     {
         if (operation.Kind == "text")
         {
+            var style = styles.Resolve(operation.ParagraphStyle ??
+                throw new InvalidOperationException($"Missing paragraph style for {operation.Label}."));
             for (var index = 0; index < operation.Lines.Count; index++)
             {
-                InsertText(hwp, $"[{operation.Label}{(index == 0 ? string.Empty : $".line-{index + 1}")}] ");
-                if (operation.Lines[index].Length > 0)
-                {
-                    InsertText(hwp, operation.Lines[index]);
-                }
+                ApplyParagraphStyle(hwp, style);
+                InsertFormattedLine(hwp, FormattedLine(operation, index), style);
                 Run(hwp, "BreakPara");
             }
             return;
@@ -367,8 +400,7 @@ internal static class HancomPreviewWriter
             throw new InvalidOperationException($"Invalid preview operation: {operation.Kind}");
         }
 
-        InsertText(hwp, "[figure] " + operation.Lines[0]);
-        Run(hwp, "BreakPara");
+        ApplyParagraphStyle(hwp, styles.Resolve("figure"));
         object? insertionResult = hwp.InsertPicture(
             operation.ImagePath,
             true,
@@ -386,10 +418,54 @@ internal static class HancomPreviewWriter
         }
         Run(hwp, "MoveParaEnd");
         Run(hwp, "BreakPara");
-        InsertText(hwp, "[figure.caption] " + operation.Lines[1]);
+        var captionStyle = styles.Resolve("figure.caption");
+        ApplyParagraphStyle(hwp, captionStyle);
+        InsertFormattedLine(hwp, FormattedLine(operation, 1), captionStyle);
         Run(hwp, "BreakPara");
-        InsertText(hwp, "[figure.source] " + operation.Lines[2]);
+        var sourceStyle = styles.Resolve("figure.source");
+        ApplyParagraphStyle(hwp, sourceStyle);
+        var sourceRuns = new List<PreviewTextRun>
+        {
+            new(operation.Lines[2].Length == 0 ? "출처:" : "출처: ", false, false),
+        };
+        sourceRuns.AddRange(FormattedLine(operation, 2));
+        InsertFormattedLine(hwp, PreviewRunBuilder.Coalesce(sourceRuns), sourceStyle);
         Run(hwp, "BreakPara");
+    }
+
+    private static IReadOnlyList<PreviewTextRun> FormattedLine(
+        PreviewOperation operation,
+        int index)
+    {
+        var formatted = operation.FormattedLines ??
+            throw new InvalidOperationException($"Missing formatted lines for {operation.Label}.");
+        if (formatted.Count != operation.Lines.Count)
+        {
+            throw new InvalidOperationException(
+                $"Formatted-line count does not match plain lines for {operation.Label}.");
+        }
+        var runs = formatted[index];
+        if (!string.Equals(
+                string.Concat(runs.Select(run => run.Text)),
+                operation.Lines[index],
+                StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"Formatted runs do not match plain line {index} for {operation.Label}.");
+        }
+        return runs;
+    }
+
+    private static void ApplyParagraphStyle(dynamic hwp, NativeStyle style)
+    {
+        _ = hwp.HAction.GetDefault("StyleEx", hwp.HParameterSet.HStyle.HSet);
+        hwp.HParameterSet.HStyle.Apply = style.Id;
+        object? result = hwp.HAction.Execute("StyleEx", hwp.HParameterSet.HStyle.HSet);
+        if (!IndicatesSuccess(result))
+        {
+            throw new InvalidOperationException(
+                $"Hancom failed to apply paragraph style {style.Name} ({style.Id}).");
+        }
     }
 
     private static void InsertText(dynamic hwp, string text)
@@ -399,6 +475,87 @@ internal static class HancomPreviewWriter
         if (!(bool)hwp.HAction.Execute("InsertText", hwp.HParameterSet.HInsertText.HSet))
         {
             throw new InvalidOperationException("Hancom failed to insert preview text.");
+        }
+    }
+
+    private static void InsertFormattedLine(
+        dynamic hwp,
+        IReadOnlyList<PreviewTextRun> runs,
+        NativeStyle baseStyle)
+    {
+        if (runs.Count == 0)
+        {
+            return;
+        }
+
+        var baseBold = baseStyle.BaseBold;
+        var baseItalic = baseStyle.BaseItalic;
+        var currentBold = baseBold;
+        var currentItalic = baseItalic;
+        Exception? primaryFailure = null;
+        try
+        {
+            foreach (var run in runs)
+            {
+                SetCharacterMarks(
+                    hwp,
+                    baseBold || run.Strong,
+                    baseItalic || run.Emphasis,
+                    ref currentBold,
+                    ref currentItalic);
+                InsertText(hwp, run.Text);
+            }
+        }
+        catch (Exception error)
+        {
+            primaryFailure = error;
+        }
+
+        Exception? resetFailure = null;
+        try
+        {
+            SetCharacterMarks(
+                hwp,
+                baseBold,
+                baseItalic,
+                ref currentBold,
+                ref currentItalic);
+        }
+        catch (Exception error)
+        {
+            resetFailure = error;
+        }
+
+        if (primaryFailure is not null)
+        {
+            throw new InvalidOperationException(
+                "Hancom failed to insert formatted preview text.",
+                Combine(primaryFailure, resetFailure));
+        }
+        if (resetFailure is not null)
+        {
+            throw new InvalidOperationException(
+                "Hancom failed to restore the base character shape.",
+                resetFailure);
+        }
+    }
+
+    private static void SetCharacterMarks(
+        dynamic hwp,
+        bool bold,
+        bool italic,
+        ref bool currentBold,
+        ref bool currentItalic)
+    {
+        if (currentBold != bold)
+        {
+            Run(hwp, "CharShapeBold");
+            currentBold = bold;
+        }
+        if (currentItalic != italic)
+        {
+            Run(hwp, "CharShapeItalic");
+            currentItalic = italic;
         }
     }
 
@@ -417,12 +574,230 @@ internal static class HancomPreviewWriter
         _ => Marshal.IsComObject(result),
     };
 
+    private static void VerifyText(dynamic hwp, IrPreviewPlan plan)
+    {
+        var extracted = DecodeHwpTextTransport((string)hwp.GetTextFile("TEXT", ""));
+        foreach (var expected in StyledTexts(plan).Select(item => item.Text).Where(text => text.Length > 0))
+        {
+            if (!extracted.Contains(expected, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"Saved preview did not contain expected text: {expected}");
+            }
+        }
+    }
+
+    private static void VerifyStyles(
+        dynamic hwp,
+        IrPreviewPlan plan,
+        AuriPreviewStyleBindings styles,
+        int paragraphsBefore)
+    {
+        IReadOnlyList<SavedParagraph> savedParagraphs = ReadParagraphs(hwp);
+        var appended = savedParagraphs.Skip(paragraphsBefore).ToArray();
+        var expectedParagraphs = ExpectedParagraphs(plan).ToArray();
+        if (appended.Length < expectedParagraphs.Length)
+        {
+            throw new InvalidOperationException(
+                $"Saved preview appended {appended.Length} paragraphs; expected at least {expectedParagraphs.Length}.");
+        }
+
+        for (var index = 0; index < expectedParagraphs.Length; index++)
+        {
+            var expected = expectedParagraphs[index];
+            var actual = appended[index];
+            var nativeStyle = styles.Resolve(expected.SymbolicStyle);
+            if (actual.Style != nativeStyle.Id ||
+                actual.ContainsPicture != expected.ContainsPicture ||
+                !actual.Text.Contains(expected.Text, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"Saved preview paragraph {index} did not match {expected.SymbolicStyle}/{nativeStyle.Name}: {expected.Text}");
+            }
+        }
+    }
+
+    private static void VerifyCharacterMarks(
+        dynamic hwp,
+        IrPreviewPlan plan,
+        AuriPreviewStyleBindings styles,
+        int paragraphsBefore)
+    {
+        IReadOnlyList<SavedParagraph> savedParagraphs = ReadParagraphs(hwp);
+        var appended = savedParagraphs.Skip(paragraphsBefore).ToArray();
+        var expectedParagraphs = ExpectedParagraphs(plan).ToArray();
+        for (var index = 0; index < expectedParagraphs.Length; index++)
+        {
+            var expected = expectedParagraphs[index];
+            if (expected.FormattedRuns is null)
+            {
+                continue;
+            }
+            var nativeStyle = styles.Resolve(expected.SymbolicStyle);
+            var expectedRuns = CoalesceSavedRuns(expected.FormattedRuns.Select(run => new SavedTextRun(
+                run.Text,
+                nativeStyle.BaseBold || run.Strong,
+                nativeStyle.BaseItalic || run.Emphasis)));
+            var actualRuns = appended[index].Runs;
+            if (actualRuns.Count != expectedRuns.Count ||
+                actualRuns.Where((run, runIndex) => run != expectedRuns[runIndex]).Any())
+            {
+                throw new InvalidOperationException(
+                    $"Saved preview character marks did not match paragraph {index} ({expected.SymbolicStyle}); " +
+                    $"expected {DescribeRuns(expectedRuns)}, actual {DescribeRuns(actualRuns)}.");
+            }
+        }
+    }
+
+    private static string DescribeRuns(IEnumerable<SavedTextRun> runs) =>
+        "[" + string.Join(
+            ", ",
+            runs.Select(run =>
+                $"{JsonSerializer.Serialize(run.Text)}:bold={run.Bold}:italic={run.Italic}")) + "]";
+
+    private static IEnumerable<(string Symbolic, string Text)> StyledTexts(IrPreviewPlan plan)
+    {
+        foreach (var operation in plan.Operations)
+        {
+            if (operation.Kind == "text")
+            {
+                var symbolicStyle = operation.ParagraphStyle ??
+                    throw new InvalidOperationException($"Missing paragraph style for {operation.Label}.");
+                foreach (var line in operation.Lines)
+                {
+                    yield return (symbolicStyle, line);
+                }
+                continue;
+            }
+
+            yield return ("figure.caption", operation.Lines[1]);
+            yield return (
+                "figure.source",
+                operation.Lines[2].Length == 0 ? "출처:" : $"출처: {operation.Lines[2]}");
+        }
+    }
+
+    private static IEnumerable<ExpectedParagraph> ExpectedParagraphs(IrPreviewPlan plan)
+    {
+        foreach (var operation in plan.Operations)
+        {
+            if (operation.Kind == "text")
+            {
+                var symbolicStyle = operation.ParagraphStyle ??
+                    throw new InvalidOperationException($"Missing paragraph style for {operation.Label}.");
+                for (var index = 0; index < operation.Lines.Count; index++)
+                {
+                    yield return new ExpectedParagraph(
+                        symbolicStyle,
+                        operation.Lines[index],
+                        false,
+                        FormattedLine(operation, index));
+                }
+                continue;
+            }
+
+            yield return new ExpectedParagraph("figure", string.Empty, true, null);
+            yield return new ExpectedParagraph(
+                "figure.caption",
+                operation.Lines[1],
+                false,
+                FormattedLine(operation, 1));
+            var sourceRuns = new List<PreviewTextRun>
+            {
+                new(operation.Lines[2].Length == 0 ? "출처:" : "출처: ", false, false),
+            };
+            sourceRuns.AddRange(FormattedLine(operation, 2));
+            yield return new ExpectedParagraph(
+                "figure.source",
+                operation.Lines[2].Length == 0 ? "출처:" : $"출처: {operation.Lines[2]}",
+                false,
+                PreviewRunBuilder.Coalesce(sourceRuns));
+        }
+    }
+
+    private static string DecodeHwpTextTransport(string transport)
+    {
+        var codeUnitsDecoded = Regex.Replace(
+            transport,
+            @"&#([0-9]+);",
+            match =>
+            {
+                if (!int.TryParse(match.Groups[1].Value, out var value) ||
+                    value is < 0 or > 0x10FFFF)
+                {
+                    return match.Value;
+                }
+                return value <= char.MaxValue
+                    ? new string((char)value, 1)
+                    : char.ConvertFromUtf32(value);
+            });
+        return WebUtility.HtmlDecode(codeUnitsDecoded);
+    }
+
     private static int CountPictures(dynamic hwp)
     {
         var xml = (string)hwp.GetTextFile("HWPML2X", "");
         return XDocument.Parse(xml)
             .Descendants()
             .Count(element => element.Name.LocalName == "PICTURE");
+    }
+
+    private static IReadOnlyList<SavedParagraph> ReadParagraphs(dynamic hwp)
+    {
+        var document = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var characterShapes = HwpmlCharacterShapes.Read(document);
+        return document.Descendants()
+            .Where(element => element.Name.LocalName == "P")
+            .Select(element => new SavedParagraph(
+                int.TryParse(element.Attribute("Style")?.Value, out var style) ? style : -1,
+                element.Value,
+                element.Descendants().Any(descendant => descendant.Name.LocalName == "PICTURE"),
+                ReadSavedRuns(element, characterShapes)))
+            .ToArray();
+    }
+
+    private static IReadOnlyList<SavedTextRun> ReadSavedRuns(
+        XElement paragraph,
+        IReadOnlyDictionary<int, CharacterMarks> characterShapes)
+    {
+        var runs = new List<SavedTextRun>();
+        foreach (var textElement in paragraph.Elements()
+                     .Where(element => element.Name.LocalName == "TEXT"))
+        {
+            if (!int.TryParse(textElement.Attribute("CharShape")?.Value, out var characterShapeId) ||
+                !characterShapes.TryGetValue(characterShapeId, out var marks))
+            {
+                throw new InvalidOperationException(
+                    "HWPML TEXT did not reference a known character shape.");
+            }
+            var text = string.Concat(textElement.Elements()
+                .Where(element => element.Name.LocalName == "CHAR")
+                .Select(element => element.Value));
+            if (text.Length > 0)
+            {
+                runs.Add(new SavedTextRun(text, marks.Bold, marks.Italic));
+            }
+        }
+        return CoalesceSavedRuns(runs);
+    }
+
+    private static IReadOnlyList<SavedTextRun> CoalesceSavedRuns(
+        IEnumerable<SavedTextRun> source)
+    {
+        var result = new List<SavedTextRun>();
+        foreach (var run in source.Where(run => run.Text.Length > 0))
+        {
+            if (result.Count > 0 &&
+                result[^1].Bold == run.Bold &&
+                result[^1].Italic == run.Italic)
+            {
+                result[^1] = result[^1] with { Text = result[^1].Text + run.Text };
+            }
+            else
+            {
+                result.Add(run);
+            }
+        }
+        return result;
     }
 
     private static string ValidateTemplate(string path)
@@ -480,6 +855,114 @@ internal static class HancomPreviewWriter
     private static string HashFile(string path) =>
         Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
 
+}
+
+internal sealed record CharacterMarks(bool Bold, bool Italic);
+
+internal static class HwpmlCharacterShapes
+{
+    public static IReadOnlyDictionary<int, CharacterMarks> Read(XDocument document)
+    {
+        var result = new Dictionary<int, CharacterMarks>();
+        foreach (var element in document.Descendants()
+                     .Where(element => element.Name.LocalName == "CHARSHAPE"))
+        {
+            if (!int.TryParse(element.Attribute("Id")?.Value, out var id) ||
+                !result.TryAdd(
+                    id,
+                    new CharacterMarks(
+                        element.Elements().Any(child => child.Name.LocalName == "BOLD"),
+                        element.Elements().Any(child => child.Name.LocalName == "ITALIC"))))
+            {
+                throw new InvalidOperationException(
+                    "HWPML character-shape definitions must have unique integer IDs.");
+            }
+        }
+        if (result.Count == 0)
+        {
+            throw new InvalidOperationException("HWPML did not contain character-shape definitions.");
+        }
+        return result;
+    }
+}
+
+internal sealed record NativeStyle(
+    int Id,
+    string Name,
+    bool BaseBold,
+    bool BaseItalic);
+
+internal sealed class AuriPreviewStyleBindings
+{
+    private static readonly (string Symbolic, string NativeName)[] Required =
+    [
+        ("body", "본문"),
+        ("heading.1", "장제목 (개요 1)"),
+        ("heading.2", "1. (개요 2)"),
+        ("heading.3", "1) (개요 3)"),
+        ("heading.4", "① (개요 4)"),
+        ("heading.5", "□ (개요 5)"),
+        ("heading.6", "․ (개요 6)"),
+        ("block.box", "박스내용"),
+        ("figure", "본문"),
+        ("figure.caption", "표그림_캡션"),
+        ("figure.source", "출처 및 하단설명"),
+    ];
+
+    private readonly IReadOnlyDictionary<string, NativeStyle> styles;
+
+    private AuriPreviewStyleBindings(IReadOnlyDictionary<string, NativeStyle> styles)
+    {
+        this.styles = styles;
+        Bindings = Required
+            .Select(required => new StyleBinding(
+                required.Symbolic,
+                required.NativeName,
+                styles[required.Symbolic].Id))
+            .ToArray();
+    }
+
+    public IReadOnlyList<StyleBinding> Bindings { get; }
+
+    public static AuriPreviewStyleBindings Bind(dynamic hwp)
+    {
+        var document = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var styleElements = document.Descendants()
+            .Where(element => element.Name.LocalName == "STYLE")
+            .ToArray();
+        var characterShapes = HwpmlCharacterShapes.Read(document);
+        var bindings = new Dictionary<string, NativeStyle>(StringComparer.Ordinal);
+
+        foreach (var required in Required)
+        {
+            var matches = styleElements.Where(element =>
+                    string.Equals(element.Attribute("Type")?.Value, "Para", StringComparison.Ordinal) &&
+                    string.Equals(element.Attribute("Name")?.Value, required.NativeName, StringComparison.Ordinal))
+                .ToArray();
+            if (matches.Length != 1 ||
+                !int.TryParse(matches[0].Attribute("Id")?.Value, out var nativeId) ||
+                !int.TryParse(matches[0].Attribute("CharShape")?.Value, out var characterShapeId) ||
+                !characterShapes.TryGetValue(characterShapeId, out var characterMarks))
+            {
+                throw new InvalidOperationException(
+                    $"Expected one complete AURI paragraph style named {required.NativeName}, found {matches.Length}.");
+            }
+            bindings.Add(required.Symbolic, new NativeStyle(
+                nativeId,
+                required.NativeName,
+                characterMarks.Bold,
+                characterMarks.Italic));
+        }
+
+        return new AuriPreviewStyleBindings(bindings);
+    }
+
+    public NativeStyle Resolve(string symbolic)
+    {
+        return styles.TryGetValue(symbolic, out var style)
+            ? style
+            : throw new InvalidOperationException($"No AURI preview style binding for {symbolic}.");
+    }
 }
 
 internal sealed record SecurityModuleRegistration(string ModulePath, string Sha256)

@@ -145,6 +145,27 @@ from `examples/ir-v0.1.json`, saved and reopened the copy, found its text
 marker and one added picture, and confirmed that the source template was
 unchanged. No HWP process remained after either operation.
 
+On 2026-08-29, a style-aware render bound the example to the fixture's unique
+native AURI style names: `본문`, the six heading levels, `박스내용`,
+`표그림_캡션`, and `출처 및 하단설명`. Save/reopen checks found every appended
+text paragraph under the expected native style, found one added picture, and
+confirmed that the template hash was unchanged. A three-page PNG export showed
+the native heading, body, caption, and source typography. It also showed why
+style names alone are not the complete lowering contract: the box control,
+native list markers, and caption automatic numbering still require
+backend-specific structure or actions.
+
+On 2026-08-30, nested strong/emphasis runs were rendered with the bound native
+style as their base. Save/reopen verification resolved every direct HWPML text
+run through its character-shape definition and matched the expected effective
+bold/italic flags. The page export showed the marked text while retaining the
+base font and size. A rejected approach is also part of the environment result:
+`GetDefault("CharShape", ...)` returned a zeroed full shape at the insertion
+caret, so executing it as though it were a partial bold/italic patch produced
+zero height, font, ratio, and relative-size fields. The adopted investigation
+path instead uses the dedicated bold/italic transitions and restores the native
+style's HWPML-derived base state after each formatted line.
+
 In this C# late-bound COM context, HWP 2020 returned a non-null COM object from
 `InsertPicture`, rather than the Boolean result assumed by the initial
 implementation. The preview accepts either Boolean true or a COM object as the

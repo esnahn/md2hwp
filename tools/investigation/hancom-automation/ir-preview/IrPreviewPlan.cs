@@ -64,7 +64,43 @@ internal sealed record PreviewOperation(
     IReadOnlyList<string> Lines,
     string? ImagePath = null,
     double? ImageWidthMillimeters = null,
-    double? ImageHeightMillimeters = null);
+    double? ImageHeightMillimeters = null,
+    string? ParagraphStyle = null,
+    IReadOnlyList<IReadOnlyList<PreviewTextRun>>? FormattedLines = null);
+
+internal sealed record PreviewTextRun(
+    string Text,
+    bool Strong,
+    bool Emphasis);
+
+internal sealed record PreviewLine(
+    string Text,
+    IReadOnlyList<PreviewTextRun> Runs);
+
+internal sealed record PreviewInlineContent(
+    IReadOnlyList<PreviewLine> Lines)
+{
+    public static PreviewInlineContent Plain(IReadOnlyList<string> lines) =>
+        new(lines.Select(line => new PreviewLine(
+            line,
+            line.Length == 0 ? [] : [new PreviewTextRun(line, false, false)])).ToArray());
+
+    public PreviewLine Flatten(string separator)
+    {
+        var runs = new List<PreviewTextRun>();
+        for (var index = 0; index < Lines.Count; index++)
+        {
+            if (index > 0)
+            {
+                runs.Add(new PreviewTextRun(separator, false, false));
+            }
+            runs.AddRange(Lines[index].Runs);
+        }
+        return new PreviewLine(
+            string.Join(separator, Lines.Select(line => line.Text)),
+            PreviewRunBuilder.Coalesce(runs));
+    }
+}
 
 internal sealed class PlanBuilder(string irPath, string repositoryRoot)
 {
@@ -111,7 +147,8 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
             operations,
             [
                 "This is an investigation preview, not backend lowering.",
-                "Heading/body presentation, strong/emphasis marks, links, and native list semantics are flattened into diagnostic text.",
+                "AURI paragraph styles are bound by unique native names during render.",
+                "Strong/emphasis marks are retained as character-shape runs; link targets, native list semantics, and box controls remain flattened.",
                 "IR line_break nodes and verbatim-block lines are previewed as separate HWP paragraphs.",
                 "Only trusted repository-local PNG figures are inserted; width is limited to 142 mm and aspect ratio is preserved.",
             ]);
@@ -125,14 +162,16 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
         {
             throw JsonContract.Error(path + "/level", "heading level must be between 1 and 6");
         }
-        operations.Add(Text($"heading.{level}", InlineText.Read(block.GetProperty("inlines"), path + "/inlines")));
+        var style = $"heading.{level}";
+        operations.Add(Text(style, style, InlineText.Read(block.GetProperty("inlines"), path + "/inlines")));
     }
 
     private void AddParagraph(JsonElement block, string path, string? listLabel)
     {
         JsonContract.ExpectObject(block, path, ["type", "inlines"]);
+        const string style = "body";
         var label = listLabel ?? "body";
-        operations.Add(Text(label, InlineText.Read(block.GetProperty("inlines"), path + "/inlines")));
+        operations.Add(Text(label, style, InlineText.Read(block.GetProperty("inlines"), path + "/inlines")));
     }
 
     private void AddVerbatimBlock(JsonElement block, string path)
@@ -146,7 +185,7 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
             lines.Add(JsonContract.ReadString(line, $"{path}/lines/{index}"));
             index++;
         }
-        operations.Add(Text("verbatim_block", lines));
+        operations.Add(Text("verbatim_block", "block.box", PreviewInlineContent.Plain(lines)));
     }
 
     private void AddList(JsonElement block, string path, int depth)
@@ -232,42 +271,59 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
         var alt = InlineText.Read(image.GetProperty("alt"), path + "/image/alt");
         var caption = InlineText.Read(block.GetProperty("caption"), path + "/caption");
         var sourceElement = block.GetProperty("source");
-        IReadOnlyList<string> source = sourceElement.ValueKind is JsonValueKind.Null
-            ? []
+        var source = sourceElement.ValueKind is JsonValueKind.Null
+            ? PreviewInlineContent.Plain([string.Empty])
             : InlineText.Read(sourceElement, path + "/source");
+        var figureLines = new[]
+        {
+            alt.Flatten(" / "),
+            caption.Flatten(" / "),
+            source.Flatten(" / "),
+        };
         operations.Add(new PreviewOperation(
             "figure",
             "figure",
-            [
-                "alt: " + string.Join(" / ", alt),
-                "caption: " + string.Join(" / ", caption),
-                "source: " + string.Join(" / ", source),
-            ],
+            figureLines.Select(line => line.Text).ToArray(),
             imagePath,
             FigureWidthMillimeters,
-            height));
+            height,
+            "body",
+            figureLines.Select(line => line.Runs).ToArray()));
     }
 
-    private static PreviewOperation Text(string label, IReadOnlyList<string> lines) =>
-        new("text", label, lines);
+    private static PreviewOperation Text(
+        string label,
+        string paragraphStyle,
+        PreviewInlineContent content) =>
+        new(
+            "text",
+            label,
+            content.Lines.Select(line => line.Text).ToArray(),
+            ParagraphStyle: paragraphStyle,
+            FormattedLines: content.Lines.Select(line => line.Runs).ToArray());
 }
 
 internal static class InlineText
 {
-    public static IReadOnlyList<string> Read(JsonElement element, string path)
+    public static PreviewInlineContent Read(JsonElement element, string path)
     {
         var inlines = JsonContract.ExpectArray(element, path);
-        var text = new StringBuilder();
+        var builder = new PreviewRunBuilder();
         var index = 0;
         foreach (var inline in inlines.EnumerateArray())
         {
-            Append(inline, $"{path}/{index}", text);
+            Append(inline, $"{path}/{index}", builder, false, false);
             index++;
         }
-        return text.ToString().Split('\n', StringSplitOptions.None);
+        return builder.Build();
     }
 
-    private static void Append(JsonElement inline, string path, StringBuilder text)
+    private static void Append(
+        JsonElement inline,
+        string path,
+        PreviewRunBuilder builder,
+        bool strong,
+        bool emphasis)
     {
         if (inline.ValueKind is not JsonValueKind.Object)
         {
@@ -278,41 +334,100 @@ internal static class InlineText
         {
             case "text":
                 JsonContract.ExpectObject(inline, path, ["type", "value"]);
-                text.Append(JsonContract.RequiredString(inline, "value", path));
+                builder.Append(JsonContract.RequiredString(inline, "value", path), strong, emphasis);
                 break;
             case "space":
                 JsonContract.ExpectObject(inline, path, ["type"]);
-                text.Append(' ');
+                builder.Append(" ", strong, emphasis);
                 break;
             case "line_break":
                 JsonContract.ExpectObject(inline, path, ["type"]);
-                text.Append('\n');
+                builder.BreakLine();
                 break;
             case "strong":
+                JsonContract.ExpectObject(inline, path, ["type", "inlines"]);
+                AppendChildren(
+                    inline.GetProperty("inlines"),
+                    path + "/inlines",
+                    builder,
+                    true,
+                    emphasis);
+                break;
             case "emph":
                 JsonContract.ExpectObject(inline, path, ["type", "inlines"]);
-                AppendChildren(inline.GetProperty("inlines"), path + "/inlines", text);
+                AppendChildren(
+                    inline.GetProperty("inlines"),
+                    path + "/inlines",
+                    builder,
+                    strong,
+                    true);
                 break;
             case "link":
                 JsonContract.ExpectObject(inline, path, ["type", "target", "title", "inlines"]);
                 _ = JsonContract.RequiredString(inline, "target", path);
                 JsonContract.ExpectNullOrString(inline.GetProperty("title"), path + "/title");
-                AppendChildren(inline.GetProperty("inlines"), path + "/inlines", text);
+                AppendChildren(
+                    inline.GetProperty("inlines"),
+                    path + "/inlines",
+                    builder,
+                    strong,
+                    emphasis);
                 break;
             default:
                 throw JsonContract.Error(path + "/type", $"unsupported IR inline type {type}");
         }
     }
 
-    private static void AppendChildren(JsonElement element, string path, StringBuilder text)
+    private static void AppendChildren(
+        JsonElement element,
+        string path,
+        PreviewRunBuilder builder,
+        bool strong,
+        bool emphasis)
     {
         var children = JsonContract.ExpectArray(element, path);
         var index = 0;
         foreach (var child in children.EnumerateArray())
         {
-            Append(child, $"{path}/{index}", text);
+            Append(child, $"{path}/{index}", builder, strong, emphasis);
             index++;
         }
+    }
+}
+
+internal sealed class PreviewRunBuilder
+{
+    private readonly List<List<PreviewTextRun>> lines = [[]];
+
+    public void Append(string text, bool strong, bool emphasis)
+    {
+        if (text.Length == 0)
+        {
+            return;
+        }
+        var line = lines[^1];
+        if (line.Count > 0 && line[^1].Strong == strong && line[^1].Emphasis == emphasis)
+        {
+            line[^1] = line[^1] with { Text = line[^1].Text + text };
+            return;
+        }
+        line.Add(new PreviewTextRun(text, strong, emphasis));
+    }
+
+    public void BreakLine() => lines.Add([]);
+
+    public PreviewInlineContent Build() => new(lines.Select(line => new PreviewLine(
+        string.Concat(line.Select(run => run.Text)),
+        line.ToArray())).ToArray());
+
+    public static IReadOnlyList<PreviewTextRun> Coalesce(IEnumerable<PreviewTextRun> source)
+    {
+        var builder = new PreviewRunBuilder();
+        foreach (var run in source)
+        {
+            builder.Append(run.Text, run.Strong, run.Emphasis);
+        }
+        return builder.lines[0].ToArray();
     }
 }
 
