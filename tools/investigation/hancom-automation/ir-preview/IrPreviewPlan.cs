@@ -55,6 +55,7 @@ internal sealed record IrPreviewPlan(
 internal sealed record PreviewSummary(
     int SourceBlocks,
     int TextOperations,
+    int BoxOperations,
     int FigureOperations,
     int ListItems);
 
@@ -140,16 +141,24 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
     public IrPreviewPlan Build(int sourceBlocks)
     {
         var textOperations = operations.Count(operation => operation.Kind == "text");
+        var boxOperations = operations.Count(operation => operation.Kind == "box");
         var figureOperations = operations.Count(operation => operation.Kind == "figure");
         return new IrPreviewPlan(
             irPath,
-            new PreviewSummary(sourceBlocks, textOperations, figureOperations, listItems),
+            new PreviewSummary(
+                sourceBlocks,
+                textOperations,
+                boxOperations,
+                figureOperations,
+                listItems),
             operations,
             [
                 "This is an investigation preview, not backend lowering.",
                 "AURI paragraph styles are bound by unique native names during render.",
-                "Strong/emphasis marks are retained as character-shape runs; link targets, native list semantics, and box controls remain flattened.",
-                "IR line_break nodes and verbatim-block lines are previewed as separate HWP paragraphs.",
+                "Strong/emphasis marks are retained as character-shape runs; link targets and native list semantics remain flattened.",
+                "verbatim_block maps to one prototype-backed block.box operation; render accepts only the uniquely matched minimal-fixture box structure.",
+                "The minimal-fixture box prototype's source placeholder remains template decoration; its production metadata contract is unresolved.",
+                "IR line_break nodes outside verbatim blocks are previewed as separate HWP paragraphs.",
                 "Only trusted repository-local PNG figures are inserted; width is limited to 142 mm and aspect ratio is preserved.",
             ]);
     }
@@ -178,14 +187,31 @@ internal sealed class PlanBuilder(string irPath, string repositoryRoot)
     {
         JsonContract.ExpectObject(block, path, ["type", "lines"]);
         var linesElement = JsonContract.ExpectArray(block.GetProperty("lines"), path + "/lines");
+        if (linesElement.GetArrayLength() == 0)
+        {
+            throw JsonContract.Error(path + "/lines", "verbatim block must contain at least one line");
+        }
         var lines = new List<string>();
         var index = 0;
         foreach (var line in linesElement.EnumerateArray())
         {
-            lines.Add(JsonContract.ReadString(line, $"{path}/lines/{index}"));
+            var value = JsonContract.ReadString(line, $"{path}/lines/{index}");
+            if (value.Contains('\r') || value.Contains('\n'))
+            {
+                throw JsonContract.Error(
+                    $"{path}/lines/{index}",
+                    "verbatim block line must not contain CR or LF");
+            }
+            lines.Add(value);
             index++;
         }
-        operations.Add(Text("verbatim_block", "block.box", PreviewInlineContent.Plain(lines)));
+        var content = PreviewInlineContent.Plain(lines);
+        operations.Add(new PreviewOperation(
+            "box",
+            "verbatim_block",
+            content.Lines.Select(line => line.Text).ToArray(),
+            ParagraphStyle: "block.box",
+            FormattedLines: content.Lines.Select(line => line.Runs).ToArray()));
     }
 
     private void AddList(JsonElement block, string path, int depth)

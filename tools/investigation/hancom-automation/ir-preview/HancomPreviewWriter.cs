@@ -19,12 +19,15 @@ internal sealed record ProbeResult(
 internal sealed record RenderResult(
     string Output,
     int TextOperations,
+    int BoxOperations,
     int FigureOperations,
+    int BoxesAdded,
     int PicturesAdded,
     IReadOnlyList<StyleBinding> StyleBindings,
     bool TextVerified,
     bool StylesVerified,
     bool CharacterMarksVerified,
+    bool BoxesVerified,
     bool TemplateUnchanged);
 
 internal sealed record StyleBinding(
@@ -33,6 +36,7 @@ internal sealed record StyleBinding(
     int NativeId);
 
 internal sealed record PreviewRendering(
+    int BoxesAdded,
     int PicturesAdded,
     IReadOnlyList<StyleBinding> StyleBindings);
 
@@ -40,6 +44,7 @@ internal sealed record SavedParagraph(
     int Style,
     string Text,
     bool ContainsPicture,
+    bool ContainsTable,
     IReadOnlyList<SavedTextRun> Runs);
 
 internal sealed record SavedTextRun(
@@ -51,6 +56,7 @@ internal sealed record ExpectedParagraph(
     string SymbolicStyle,
     string Text,
     bool ContainsPicture,
+    bool ContainsTable,
     IReadOnlyList<PreviewTextRun>? FormattedRuns);
 
 internal sealed record ExportedPage(
@@ -135,6 +141,9 @@ internal static class HancomPreviewWriter
             {
                 Open(hwp, temporaryOutput, visible);
                 AuriPreviewStyleBindings styles = AuriPreviewStyleBindings.Bind(hwp);
+                AuriMinimalBoxPrototype? boxPrototype = plan.Summary.BoxOperations == 0
+                    ? null
+                    : AuriMinimalBoxPrototype.Bind(hwp, styles);
                 int picturesBefore = CountPictures(hwp);
                 IReadOnlyList<SavedParagraph> existingParagraphs = ReadParagraphs(hwp);
                 var paragraphsBefore = existingParagraphs.Count;
@@ -143,7 +152,7 @@ internal static class HancomPreviewWriter
 
                 foreach (var operation in plan.Operations)
                 {
-                    RenderOperation(hwp, operation, styles);
+                    RenderOperation(hwp, operation, styles, boxPrototype);
                 }
 
                 Run(hwp, "FileSave");
@@ -153,6 +162,7 @@ internal static class HancomPreviewWriter
                 VerifyText(hwp, plan);
                 VerifyStyles(hwp, plan, styles, paragraphsBefore);
                 VerifyCharacterMarks(hwp, plan, styles, paragraphsBefore);
+                VerifyBoxes(hwp, plan, styles, boxPrototype, paragraphsBefore);
                 var picturesAfter = CountPictures(hwp);
                 var added = picturesAfter - picturesBefore;
                 if (added != plan.Summary.FigureOperations)
@@ -160,7 +170,7 @@ internal static class HancomPreviewWriter
                     throw new InvalidOperationException(
                         $"Expected {plan.Summary.FigureOperations} inserted pictures, observed {added}.");
                 }
-                return new PreviewRendering(added, styles.Bindings);
+                return new PreviewRendering(plan.Summary.BoxOperations, added, styles.Bindings);
             });
 
             var templateUnchanged = string.Equals(
@@ -176,9 +186,12 @@ internal static class HancomPreviewWriter
             return new RenderResult(
                 output,
                 plan.Summary.TextOperations,
+                plan.Summary.BoxOperations,
                 plan.Summary.FigureOperations,
+                rendering.BoxesAdded,
                 rendering.PicturesAdded,
                 rendering.StyleBindings,
+                true,
                 true,
                 true,
                 true,
@@ -380,7 +393,8 @@ internal static class HancomPreviewWriter
     private static void RenderOperation(
         dynamic hwp,
         PreviewOperation operation,
-        AuriPreviewStyleBindings styles)
+        AuriPreviewStyleBindings styles,
+        AuriMinimalBoxPrototype? boxPrototype)
     {
         if (operation.Kind == "text")
         {
@@ -392,6 +406,17 @@ internal static class HancomPreviewWriter
                 InsertFormattedLine(hwp, FormattedLine(operation, index), style);
                 Run(hwp, "BreakPara");
             }
+            return;
+        }
+        if (operation.Kind == "box")
+        {
+            if (boxPrototype is null ||
+                !string.Equals(operation.ParagraphStyle, "block.box", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"No minimal-fixture box prototype is bound for {operation.Label}.");
+            }
+            _ = boxPrototype.Insert(hwp, styles, operation.Lines);
             return;
         }
         if (operation.Kind != "figure" || operation.ImagePath is null ||
@@ -608,6 +633,7 @@ internal static class HancomPreviewWriter
             var nativeStyle = styles.Resolve(expected.SymbolicStyle);
             if (actual.Style != nativeStyle.Id ||
                 actual.ContainsPicture != expected.ContainsPicture ||
+                actual.ContainsTable != expected.ContainsTable ||
                 !actual.Text.Contains(expected.Text, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
@@ -654,25 +680,99 @@ internal static class HancomPreviewWriter
             runs.Select(run =>
                 $"{JsonSerializer.Serialize(run.Text)}:bold={run.Bold}:italic={run.Italic}")) + "]";
 
+    private static void VerifyBoxes(
+        dynamic hwp,
+        IrPreviewPlan plan,
+        AuriPreviewStyleBindings styles,
+        AuriMinimalBoxPrototype? prototype,
+        int paragraphsBefore)
+    {
+        if (plan.Summary.BoxOperations == 0)
+        {
+            if (prototype is not null)
+            {
+                throw new InvalidOperationException("A box prototype was bound without a box operation.");
+            }
+            return;
+        }
+        if (prototype is null)
+        {
+            throw new InvalidOperationException("Missing minimal-fixture box prototype verification.");
+        }
+
+        XDocument document = AuriMinimalBoxPrototype.ReadDocument(hwp);
+        IReadOnlyList<XElement> roots = AuriMinimalBoxPrototype.RootParagraphs(document);
+        prototype.VerifyOriginal(roots);
+        var appended = roots.Skip(paragraphsBefore).ToArray();
+        var rootIndex = 0;
+        var verified = 0;
+        foreach (var operation in plan.Operations)
+        {
+            switch (operation.Kind)
+            {
+                case "text":
+                    rootIndex += operation.Lines.Count;
+                    break;
+                case "box":
+                    if (rootIndex >= appended.Length)
+                    {
+                        throw new InvalidOperationException("Saved preview lost an expected box root.");
+                    }
+                    prototype.VerifyRenderedRoot(
+                        appended[rootIndex],
+                        styles,
+                        operation.Lines);
+                    rootIndex++;
+                    verified++;
+                    break;
+                case "figure":
+                    rootIndex += 3;
+                    break;
+                default:
+                    throw new InvalidOperationException(
+                        $"Unknown preview operation during box verification: {operation.Kind}");
+            }
+        }
+        if (verified != plan.Summary.BoxOperations)
+        {
+            throw new InvalidOperationException(
+                $"Expected {plan.Summary.BoxOperations} verified boxes, observed {verified}.");
+        }
+    }
+
     private static IEnumerable<(string Symbolic, string Text)> StyledTexts(IrPreviewPlan plan)
     {
         foreach (var operation in plan.Operations)
         {
-            if (operation.Kind == "text")
+            switch (operation.Kind)
             {
-                var symbolicStyle = operation.ParagraphStyle ??
-                    throw new InvalidOperationException($"Missing paragraph style for {operation.Label}.");
-                foreach (var line in operation.Lines)
-                {
-                    yield return (symbolicStyle, line);
-                }
-                continue;
+                case "text":
+                    var symbolicStyle = operation.ParagraphStyle ??
+                        throw new InvalidOperationException(
+                            $"Missing paragraph style for {operation.Label}.");
+                    foreach (var line in operation.Lines)
+                    {
+                        yield return (symbolicStyle, line);
+                    }
+                    break;
+                case "box":
+                    foreach (var line in operation.Lines)
+                    {
+                        yield return ("block.box", line);
+                    }
+                    break;
+                case "figure":
+                    yield return ("figure.caption", operation.Lines[1]);
+                    yield return (
+                        "figure.source",
+                        operation.Lines[2].Length == 0
+                            ? "출처:"
+                            : $"출처: {operation.Lines[2]}");
+                    break;
+                default:
+                    throw new InvalidOperationException(
+                        $"Unknown preview operation during text verification: {operation.Kind}");
             }
-
-            yield return ("figure.caption", operation.Lines[1]);
-            yield return (
-                "figure.source",
-                operation.Lines[2].Length == 0 ? "출처:" : $"출처: {operation.Lines[2]}");
         }
     }
 
@@ -680,37 +780,56 @@ internal static class HancomPreviewWriter
     {
         foreach (var operation in plan.Operations)
         {
-            if (operation.Kind == "text")
+            switch (operation.Kind)
             {
-                var symbolicStyle = operation.ParagraphStyle ??
-                    throw new InvalidOperationException($"Missing paragraph style for {operation.Label}.");
-                for (var index = 0; index < operation.Lines.Count; index++)
-                {
+                case "text":
+                    var symbolicStyle = operation.ParagraphStyle ??
+                        throw new InvalidOperationException(
+                            $"Missing paragraph style for {operation.Label}.");
+                    for (var index = 0; index < operation.Lines.Count; index++)
+                    {
+                        yield return new ExpectedParagraph(
+                            symbolicStyle,
+                            operation.Lines[index],
+                            false,
+                            false,
+                            FormattedLine(operation, index));
+                    }
+                    break;
+                case "box":
                     yield return new ExpectedParagraph(
-                        symbolicStyle,
-                        operation.Lines[index],
+                        "body",
+                        string.Concat(operation.Lines),
                         false,
-                        FormattedLine(operation, index));
-                }
-                continue;
+                        true,
+                        null);
+                    break;
+                case "figure":
+                    yield return new ExpectedParagraph("figure", string.Empty, true, false, null);
+                    yield return new ExpectedParagraph(
+                        "figure.caption",
+                        operation.Lines[1],
+                        false,
+                        false,
+                        FormattedLine(operation, 1));
+                    var sourceRuns = new List<PreviewTextRun>
+                    {
+                        new(operation.Lines[2].Length == 0 ? "출처:" : "출처: ", false, false),
+                    };
+                    sourceRuns.AddRange(FormattedLine(operation, 2));
+                    yield return new ExpectedParagraph(
+                        "figure.source",
+                        operation.Lines[2].Length == 0
+                            ? "출처:"
+                            : $"출처: {operation.Lines[2]}",
+                        false,
+                        false,
+                        PreviewRunBuilder.Coalesce(sourceRuns));
+                    break;
+                default:
+                    throw new InvalidOperationException(
+                        $"Unknown preview operation during paragraph verification: {operation.Kind}");
             }
-
-            yield return new ExpectedParagraph("figure", string.Empty, true, null);
-            yield return new ExpectedParagraph(
-                "figure.caption",
-                operation.Lines[1],
-                false,
-                FormattedLine(operation, 1));
-            var sourceRuns = new List<PreviewTextRun>
-            {
-                new(operation.Lines[2].Length == 0 ? "출처:" : "출처: ", false, false),
-            };
-            sourceRuns.AddRange(FormattedLine(operation, 2));
-            yield return new ExpectedParagraph(
-                "figure.source",
-                operation.Lines[2].Length == 0 ? "출처:" : $"출처: {operation.Lines[2]}",
-                false,
-                PreviewRunBuilder.Coalesce(sourceRuns));
         }
     }
 
@@ -746,11 +865,14 @@ internal static class HancomPreviewWriter
         var document = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
         var characterShapes = HwpmlCharacterShapes.Read(document);
         return document.Descendants()
-            .Where(element => element.Name.LocalName == "P")
+            .Where(element => element.Name.LocalName == "SECTION")
+            .SelectMany(section => section.Elements()
+                .Where(element => element.Name.LocalName == "P"))
             .Select(element => new SavedParagraph(
                 int.TryParse(element.Attribute("Style")?.Value, out var style) ? style : -1,
                 element.Value,
                 element.Descendants().Any(descendant => descendant.Name.LocalName == "PICTURE"),
+                element.Descendants().Any(descendant => descendant.Name.LocalName == "TABLE"),
                 ReadSavedRuns(element, characterShapes)))
             .ToArray();
     }
@@ -927,6 +1049,11 @@ internal sealed class AuriPreviewStyleBindings
     public static AuriPreviewStyleBindings Bind(dynamic hwp)
     {
         var document = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        return BindDocument(document);
+    }
+
+    public static AuriPreviewStyleBindings BindDocument(XDocument document)
+    {
         var styleElements = document.Descendants()
             .Where(element => element.Name.LocalName == "STYLE")
             .ToArray();

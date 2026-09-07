@@ -11,10 +11,11 @@ It has four modes:
 - `probe` registers the security module, opens an HWP without saving, closes
   it, and verifies that the input hash did not change;
 - `render` copies an HWP to a temporary sibling, binds supported symbolic
-  paragraph styles to unique AURI native style names, appends text and
-  repository-local PNG figures from IR, saves and reopens it, verifies the
-  appended paragraph order, text, paragraph styles, character-mark runs, and
-  picture count, then publishes the requested output path.
+  paragraph styles to unique AURI native style names, appends text, cloned box
+  structures, and repository-local PNG figures from IR, saves and reopens it,
+  verifies the appended paragraph order, text, paragraph styles,
+  character-mark runs, box structure, and picture count, then publishes the
+  requested output path.
 - `export-images` opens an HWP read-only, uses Hancom's PNG `SaveAs` support to
   render every page into a new output directory, validates every PNG header and
   records its dimensions and hash, and verifies that the HWP did not change.
@@ -26,11 +27,23 @@ The preview currently binds `body`, headings 1 through 6, `block.box`, figure
 anchors, captions, and source lines by exact native style name. Nested
 `strong`/`emph` nodes are lowered to character-shape runs, including marks in a
 link label; the link target and title are intentionally not rendered by this
-AURI preview. It does not yet apply native list semantics, clone template box
-controls, or preserve automatic figure numbering. IR line breaks and
-verbatim_block lines are also previewed as separate HWP paragraphs. These
-limitations are present in `plan` output and must not be copied into production
-lowering.
+AURI preview. It does not yet apply native list semantics or preserve automatic
+figure numbering. A `verbatim_block` is lowered to one typed `block.box` plan operation and,
+during render, clones the uniquely matched box prototype from
+`tests/fixtures/templates/minimal.hwp`. Its logical lines remain inside one
+native box paragraph as HWP line breaks, including empty and trailing lines. IR
+line breaks outside a verbatim block are still previewed as separate HWP
+paragraphs. These limitations are present in `plan` output and must not be
+copied into production lowering.
+
+The box selector is deliberately fixture-specific. It requires one root `본문`
+paragraph containing one inline table with exactly two internal paragraphs:
+one `박스내용` content paragraph and one `출처 및 하단설명` placeholder. The
+source placeholder remains template decoration because verbatim-block IR has no
+source metadata. The full AURI reference template has a different root style
+and four internal `박스내용` paragraphs, so this selector fails preflight there
+instead of guessing. A production profile must define that separate structure
+and the source-line policy first.
 
 ## Setup and non-COM verification
 
@@ -75,7 +88,7 @@ C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe `
   -Mode render `
   -Ir .\examples\ir-v0.1.json `
   -Template .\tests\fixtures\templates\minimal.hwp `
-  -Output .\artifacts\csharp-ir-styled-preview.hwp `
+  -Output .\artifacts\csharp-ir-box-preview.hwp `
   -Visible
 ```
 
@@ -91,6 +104,20 @@ text run to have the effective marks `native style base OR IR semantic mark`.
 HWP 2020 returned a COM object from `InsertPicture` in the adopted .NET
 late-binding context; the preview accepts that result but still requires the
 reopened picture count to increase by the exact expected amount.
+
+For each `block.box`, the preview selects the uniquely bound template root,
+captures a native HWP `saveblock` in memory, and inserts it at the document end
+with `SetTextFile(..., "HWP", "insertfile")`; it does not use the system
+clipboard. The inserted clone must add exactly one table and no picture or
+automatic-number control. The source prototype must remain unchanged, and the
+saved clone must retain the expected root/body/table/content/source structure
+and exact logical content. HWP regenerates native `InstId` and shape `ZOrder`
+values during insertion. It also recalculates the box-layout `LastWidth` and
+`SIZE.Height` as logical lines change. Verification excludes those
+four known instance/layout fields, normalizes only the box content payload for
+the final structure comparison, and compares the remaining prototype XML.
+Direct HWPML2X insertion was rejected after it produced no inserted control in
+this environment.
 
 The character-mark implementation deliberately uses the dedicated
 `CharShapeBold` and `CharShapeItalic` transitions while inserting a paragraph,
@@ -108,8 +135,8 @@ C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe `
   -NoProfile -ExecutionPolicy Bypass -Sta `
   -File .\tools\investigation\hancom-automation\ir-preview\run-ir-preview.ps1 `
   -Mode export-images `
-  -Document .\artifacts\csharp-ir-styled-preview.hwp `
-  -Output .\artifacts\csharp-ir-styled-preview-pages
+  -Document .\artifacts\csharp-ir-box-preview.hwp `
+  -Output .\artifacts\csharp-ir-box-preview-pages
 ```
 
 The style-aware reference-workstation export was checked again on 2026-08-30.
@@ -118,11 +145,16 @@ left the HWP unchanged. The images confirmed that the template cover and page
 decorations survived, the heading/body/caption/source typography came from the
 template's native styles, nested bold/italic marks were visible without losing
 the base font or size, and the 142 mm figure retained its 3:2 ratio. The reopened
-HWPML run check passed as well. The images still expose the structural gaps:
-`박스내용` alone does not recreate the template box control, list paragraphs
-lack native markers, and a newly typed caption lacks the template's `AUTONUM`
-control. The template's current font also renders the city emoji as
-missing-glyph boxes; a separate save/reopen probe confirmed that this is a
-rendering limitation in the tested path, not loss of the underlying
+HWPML run check passed as well. A later render cloned the minimal fixture's
+native box control: the new `block.box` showed the same border and internal
+style, retained its empty line, and passed the reopened table/content check.
+An additional two-box render used prototype-identical content to exercise the
+otherwise ambiguous adjacent-root case and reported `BoxesAdded=2`. Both clones
+reopened with exact logical lines, and a two-page PNG export showed both native
+boxes with content-dependent heights. The template hash remained unchanged.
+The remaining visible structural gaps are native list markers and the figure
+caption's `AUTONUM` control. The template's current font also renders the city
+emoji as missing-glyph boxes; a separate save/reopen probe confirmed that this
+is a rendering limitation in the tested path, not loss of the underlying
 `U+1F3D9 U+FE0F` values. Generated page images stay under ignored `artifacts/`;
 they are evidence for human review, not fixtures.

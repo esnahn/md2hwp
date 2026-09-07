@@ -166,6 +166,39 @@ zero height, font, ratio, and relative-size fields. The adopted investigation
 path instead uses the dedicated bold/italic transitions and restores the native
 style's HWPML-derived base state after each formatted line.
 
+The same reference context then passed a minimal-fixture native box-clone
+render. The investigation selected the unique root `본문` paragraph containing
+one inline table, one internal `박스내용` paragraph, and one internal
+`출처 및 하단설명` placeholder. It captured that root as an in-memory native HWP
+`saveblock` and inserted it with `SetTextFile(..., "HWP", "insertfile")`, without
+using the system clipboard. Each box remained one preview operation and its
+logical lines, including an empty line and a trailing empty line, reopened as
+`LINEBREAK` children inside the same content paragraph. Verification observed
+exactly one added table, no added picture or automatic-number control, an
+unchanged source prototype, and an unchanged template hash. HWP regenerated
+native `InstId` and shape `ZOrder` values during insertion, including values in
+existing roots. It also recalculated the box-layout `LastWidth` and `SIZE.Height`
+as its logical line count changed. Structural comparison excludes
+those four known instance/layout fields, normalizes only the content payload,
+and compares the remaining prototype XML. Direct HWPML2X insertion was rejected
+because it inserted no control in this tested path.
+
+A separate two-box IR render used content identical to the template prototype,
+exercising repeated insertion when adjacent roots serialize alike. It reported
+two box operations and two boxes added, then reopened both clones with their
+exact logical lines and verified the unchanged source prototype and template hash.
+The two-page PNG export was 992 by 1403 pixels per page and showed both native
+blue-border boxes with their content-dependent heights. No HWP process remained
+after rendering or export.
+
+The exported second page showed the cloned blue-border box and native internal
+style. It also retained the prototype's `출처:` placeholder as template
+decoration; verbatim-block IR has no corresponding source field, so production
+lowering must resolve that policy before adoption. This selector intentionally
+does not bind the full AURI reference document, whose box has a different root
+style and four internal `박스내용` paragraphs. Native list markers and caption
+automatic numbering remain unresolved after this probe.
+
 In this C# late-bound COM context, HWP 2020 returned a non-null COM object from
 `InsertPicture`, rather than the Boolean result assumed by the initial
 implementation. The preview accepts either Boolean true or a COM object as the

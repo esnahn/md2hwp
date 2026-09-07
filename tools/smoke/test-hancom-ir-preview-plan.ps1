@@ -10,6 +10,7 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\.."))
 $dotnetWrapper = Join-Path $repositoryRoot "tools\development\dotnet.ps1"
 $project = Join-Path $repositoryRoot "tools\investigation\hancom-automation\ir-preview\Md2Hwp.HancomIrPreview.csproj"
 $ir = Join-Path $repositoryRoot "examples\ir-v0.1.json"
+$twoBoxesIr = Join-Path $repositoryRoot "tests\fixtures\ir\two-boxes-v0.1.json"
 $image = Join-Path $repositoryRoot "assets\sample-urban-context.png"
 $nullableSourceIr = Join-Path `
     (Split-Path -Parent $ir) `
@@ -33,11 +34,36 @@ try {
     $plan = $planJson | ConvertFrom-Json -Depth 100
 
     if ($plan.Summary.SourceBlocks -ne 5 -or
-        $plan.Summary.TextOperations -ne 6 -or
+        $plan.Summary.TextOperations -ne 5 -or
+        $plan.Summary.BoxOperations -ne 1 -or
         $plan.Summary.FigureOperations -ne 1 -or
         $plan.Summary.ListItems -ne 3) {
         throw "Unexpected C# IR preview summary."
     }
+    $box = @($plan.Operations | Where-Object { $_.Kind -eq "box" })
+    if ($box.Count -ne 1 -or
+        [string]$box[0].Label -cne "verbatim_block" -or
+        [string]$box[0].ParagraphStyle -cne "block.box" -or
+        @($plan.Operations | Where-Object {
+            $_.Kind -eq "text" -and $_.Label -eq "verbatim_block"
+        }).Count -ne 0) {
+        throw "The verbatim block was not preserved as one typed box operation."
+    }
+    $expectedBoxLines = @("박스의 첫째 줄", "", "빈 줄 다음 줄", "")
+    if (@($box[0].Lines).Count -ne $expectedBoxLines.Count) {
+        throw "The typed box lost logical lines."
+    }
+    for ($lineIndex = 0; $lineIndex -lt $expectedBoxLines.Count; $lineIndex++) {
+        if ([string]$box[0].Lines[$lineIndex] -cne $expectedBoxLines[$lineIndex]) {
+            throw "The typed box changed logical line $lineIndex."
+        }
+        $boxRuns = @($box[0].FormattedLines[$lineIndex])
+        if ((-join @($boxRuns | ForEach-Object { [string]$_.Text })) -cne $expectedBoxLines[$lineIndex] -or
+            @($boxRuns | Where-Object { $_.Strong -or $_.Emphasis }).Count -ne 0) {
+            throw "The typed box line $lineIndex has incorrect plain runs."
+        }
+    }
+
     $body = @($plan.Operations | Where-Object { $_.Label -eq "body" })
     if ($body.Count -ne 1) {
         throw "Expected one body preview operation."
@@ -107,6 +133,39 @@ try {
     }
 
 
+    $twoBoxesPlanJson = & pwsh -NoProfile -File $dotnetWrapper run `
+        --project $project `
+        --no-build `
+        -- `
+        plan `
+        --ir $twoBoxesIr
+    if ($LASTEXITCODE -ne 0) {
+        throw "The two-box C# preview plan command failed."
+    }
+    $twoBoxesPlan = $twoBoxesPlanJson | ConvertFrom-Json -Depth 100
+    $twoBoxOperations = @($twoBoxesPlan.Operations | Where-Object { $_.Kind -eq "box" })
+    if ($twoBoxesPlan.Summary.SourceBlocks -ne 2 -or
+        $twoBoxesPlan.Summary.TextOperations -ne 0 -or
+        $twoBoxesPlan.Summary.BoxOperations -ne 2 -or
+        $twoBoxOperations.Count -ne 2) {
+        throw "The C# preview plan did not preserve two independent box operations."
+    }
+    $prototypeLines = @(
+        "스타일 블록 예시: 이 영역은 법령, 인용문, 참고 내용 등 줄 구조를 보존해야 하는 내용을 담습니다.",
+        "두 번째 줄도 같은 박스내용 문단 안의 명시적 줄바꿈입니다."
+    )
+    foreach ($operation in $twoBoxOperations) {
+        if (@($operation.Lines).Count -ne $prototypeLines.Count) {
+            throw "The repeated-box fixture no longer matches the prototype line count."
+        }
+        for ($lineIndex = 0; $lineIndex -lt $prototypeLines.Count; $lineIndex++) {
+            if ([string]$operation.Lines[$lineIndex] -cne $prototypeLines[$lineIndex]) {
+                throw "The repeated-box fixture no longer exercises prototype-identical content."
+            }
+        }
+    }
+
+
     $nullableDocument = Get-Content -Raw -Encoding UTF8 -LiteralPath $ir |
         ConvertFrom-Json -Depth 100
     ($nullableDocument.blocks | Where-Object { $_.type -eq "figure" }).source = $null
@@ -133,6 +192,9 @@ try {
         ProjectBuild = $true
         SourceBlocks = $plan.Summary.SourceBlocks
         TextOperations = $plan.Summary.TextOperations
+        BoxOperations = $plan.Summary.BoxOperations
+        TypedBoxPreserved = $true
+        MultipleBoxesPreserved = $true
         FigureOperations = $plan.Summary.FigureOperations
         ListItems = $plan.Summary.ListItems
         ExplicitListBodyStyles = $true

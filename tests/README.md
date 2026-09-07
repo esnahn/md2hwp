@@ -23,6 +23,13 @@ The same Pandoc JSON fixture is also the direct-input CLI fixture. Its smoke
 test bypasses Pandoc process invocation, requires the golden IR result, and
 checks that an unsupported Pandoc API version leaves no partial output.
 
+`fixtures/ir/two-boxes-v0.1.json` is the repeated native-box investigation
+fixture. Both operations intentionally use text identical to the template
+prototype, exercising insertion identity when adjacent roots serialize alike.
+The non-COM preview smoke test requires two independent typed box operations.
+On the adopted HWP 2020 workstation it is also the manual render input for
+checking two successive prototype clones and their reopened logical content.
+
 Every AST-to-IR ruleset needs fixtures for each declared handler and for
 unlisted-constructor rejection. Equivalent backends are compared by semantic
 postconditions, not by requiring identical native operation sequences.
