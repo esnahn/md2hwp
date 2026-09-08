@@ -5,7 +5,7 @@ backend. It shows how validated IR plus a closed investigation template profile
 can drive a safe edit of an HWP copy before the production lowering contract is
 implemented.
 
-It has four modes:
+It has five modes:
 
 - `plan` parses the closed IR v0.1 shape without COM and emits the exact preview
   operations and selected profile ID as JSON;
@@ -18,6 +18,11 @@ It has four modes:
   verifies the appended paragraph order, text, paragraph styles,
   character-mark runs, list definitions, box and automatic-number caption
   structures, and picture count, then publishes the requested output path.
+- `prepare-template-pair` makes a byte-identical baseline copy and a separately
+  saved working copy with one dedicated
+  `{{MD2HWP_INSERTION_TARGET_V0_1}}` paragraph at the document end. It reopens
+  the working copy and requires exactly one simple marker paragraph while
+  preserving the source hash;
 - `export-images` opens an HWP read-only, uses Hancom's PNG `SaveAs` support to
   render every page into a new output directory, validates every PNG header and
   records its dimensions and hash, and verifies that the HWP did not change.
@@ -124,6 +129,39 @@ text run to have the effective marks `native style base OR IR semantic mark`.
 HWP 2020 returned a COM object from `InsertPicture` in the adopted .NET
 late-binding context; the preview accepts that result but still requires the
 reopened picture count to increase by the exact expected amount.
+
+## Minimal-template pair
+
+The intended working template will be based on `tests/fixtures/templates/minimal.hwp`.
+Prepare a baseline and a marked copy of that fixture under ignored `artifacts/`:
+
+```powershell
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe `
+  -NoProfile -ExecutionPolicy Bypass -Sta `
+  -File .\tools\investigation\hancom-automation\ir-preview\run-ir-preview.ps1 `
+  -Mode prepare-template-pair `
+  -Template .\tests\fixtures\templates\minimal.hwp `
+  -Baseline .\artifacts\minimal-baseline.hwp `
+  -Marked .\artifacts\minimal-marked.hwp
+```
+
+All three paths must be distinct, both output paths must be new, and their
+parent directories must already exist. The baseline is byte-identical to the
+source. The marked copy retains the fixture content and adds one dedicated
+`{{MD2HWP_INSERTION_TARGET_V0_1}}` paragraph at the document end.
+The source must not already contain the marker. After save/reopen, the marker
+must occur in exactly one dedicated root paragraph without tables, pictures,
+or automatic-number controls. Temporary files and partially published outputs
+are cleaned up on failure.
+
+This mode prepares the pair only; it does not insert IR content at the marker.
+The current profile identifies the original minimal fixture, so the marked
+copy is not yet a supported render input. Marker binding and the identity of
+a user-authored template will need a separate profile change.
+Hancom may rewrite native metadata when saving; generated HWP byte equality
+is not required. Visual equivalence outside the marker must be checked
+separately. The full AURI reference is structural reference material and is
+not required for this workflow.
 
 For each `block.box`, the preview selects the uniquely bound template root,
 captures a native HWP `saveblock` in memory, and inserts it at the document end

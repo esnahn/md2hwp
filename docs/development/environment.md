@@ -302,6 +302,22 @@ one-content-paragraph box selectors must reject the full file. It does not yet
 resolve the full-template insertion region, box-title/source policy, or nested
 picture-caption cloning path.
 
+The current template-pair workflow uses `tests/fixtures/templates/minimal.hwp`
+as the basis for a user-authored template. The C# preview's
+`prepare-template-pair` mode creates a byte-identical baseline and a separate
+saved copy containing one dedicated `{{MD2HWP_INSERTION_TARGET_V0_1}}`
+paragraph at the document end. The documented output paths are
+`artifacts/minimal-baseline.hwp` and `artifacts/minimal-marked.hwp`.
+The full AURI document remains structural reference material.
+
+This minimal-based pair with the revised marker has not yet been verified
+live. The earlier full-document comparison results do not establish its page
+count or visual equivalence. Verification must check the source/baseline hash,
+the reopened marker structure, cleanup, and visual preservation outside the
+marker. Generated HWP files need not be byte-identical after Hancom saves them.
+The marker is not a render selector until the profile schema, typed loader,
+and renderer preflight adopt it.
+
 All Hancom COM investigation, security-module installation or re-registration,
 and backend verification on this workstation must run under the same Windows
 identity/profile in a logged-in interactive session using that exact Windows

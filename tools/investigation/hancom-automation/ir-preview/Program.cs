@@ -48,6 +48,17 @@ internal static class Program
                         Console.WriteLine(JsonSerializer.Serialize(result, JsonOutput.Options));
                         break;
                     }
+                case OperationMode.PrepareTemplatePair:
+                    {
+                        var result = HancomPreviewWriter.PrepareTemplatePair(
+                            options.TemplatePath!,
+                            options.BaselinePath!,
+                            options.MarkedPath!,
+                            repositoryRoot,
+                            options.Visible);
+                        Console.WriteLine(JsonSerializer.Serialize(result, JsonOutput.Options));
+                        break;
+                    }
                 case OperationMode.ExportImages:
                     {
                         var result = HancomPreviewWriter.ExportImages(
@@ -107,6 +118,7 @@ internal enum OperationMode
     Plan,
     Probe,
     Render,
+    PrepareTemplatePair,
     ExportImages,
 }
 
@@ -115,6 +127,8 @@ internal sealed record CommandLine(
     string? IrPath,
     string? ProfilePath,
     string? TemplatePath,
+    string? BaselinePath,
+    string? MarkedPath,
     string? DocumentPath,
     string? OutputPath,
     bool Visible)
@@ -131,12 +145,15 @@ internal sealed record CommandLine(
             "plan" => OperationMode.Plan,
             "probe" => OperationMode.Probe,
             "render" => OperationMode.Render,
+            "prepare-template-pair" => OperationMode.PrepareTemplatePair,
             "export-images" => OperationMode.ExportImages,
             _ => throw new ArgumentException(Usage),
         };
         string? ir = null;
         string? profile = null;
         string? template = null;
+        string? baseline = null;
+        string? marked = null;
         string? document = null;
         string? output = null;
         var visible = false;
@@ -154,6 +171,12 @@ internal sealed record CommandLine(
                 case "--template":
                     template = ReadValue(args, ref index, "--template");
                     break;
+                case "--baseline":
+                    baseline = ReadValue(args, ref index, "--baseline");
+                    break;
+                case "--marked":
+                    marked = ReadValue(args, ref index, "--marked");
+                    break;
                 case "--document":
                     document = ReadValue(args, ref index, "--document");
                     break;
@@ -170,10 +193,11 @@ internal sealed record CommandLine(
 
         var valid = mode switch
         {
-            OperationMode.Plan => ir is not null && profile is not null && template is null && document is null && output is null && !visible,
-            OperationMode.Probe => ir is null && profile is null && template is not null && document is null && output is null,
-            OperationMode.Render => ir is not null && profile is not null && template is not null && document is null && output is not null,
-            OperationMode.ExportImages => ir is null && profile is null && template is null && document is not null && output is not null,
+            OperationMode.Plan => ir is not null && profile is not null && template is null && baseline is null && marked is null && document is null && output is null && !visible,
+            OperationMode.Probe => ir is null && profile is null && template is not null && baseline is null && marked is null && document is null && output is null,
+            OperationMode.Render => ir is not null && profile is not null && template is not null && baseline is null && marked is null && document is null && output is not null,
+            OperationMode.PrepareTemplatePair => ir is null && profile is null && template is not null && baseline is not null && marked is not null && document is null && output is null,
+            OperationMode.ExportImages => ir is null && profile is null && template is null && baseline is null && marked is null && document is not null && output is not null,
             _ => false,
         };
         if (!valid)
@@ -186,6 +210,8 @@ internal sealed record CommandLine(
             ResolveOptionalPath(ir),
             ResolveOptionalPath(profile),
             ResolveOptionalPath(template),
+            ResolveOptionalPath(baseline),
+            ResolveOptionalPath(marked),
             ResolveOptionalPath(document),
             ResolveOptionalPath(output),
             visible);
@@ -209,6 +235,7 @@ internal sealed record CommandLine(
           hancom-ir-preview plan --ir <validated.ir.json> --profile <template-profile.json>
           hancom-ir-preview probe --template <input.hwp> [--visible]
           hancom-ir-preview render --ir <validated.ir.json> --profile <template-profile.json> --template <input.hwp> --output <new.hwp> [--visible]
+          hancom-ir-preview prepare-template-pair --template <input.hwp> --baseline <new.hwp> --marked <new.hwp> [--visible]
           hancom-ir-preview export-images --document <input.hwp> --output <new-directory> [--visible]
         """;
 }

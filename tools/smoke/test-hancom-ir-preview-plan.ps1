@@ -22,6 +22,7 @@ $nullableSourceIr = Join-Path `
 $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) ("md2hwp-profile-" + [guid]::NewGuid().ToString("N"))
 $mismatchedTemplate = Join-Path $temporaryRoot "mismatched-template.hwp"
 $mismatchedOutput = Join-Path $temporaryRoot "must-not-exist.hwp"
+$comparisonMarkedOutput = Join-Path $temporaryRoot "comparison-must-not-exist.hwp"
 [IO.Directory]::CreateDirectory($temporaryRoot) | Out-Null
 
 try {
@@ -271,11 +272,28 @@ try {
     if (-not (($templateRejection -join "`n").Contains("Template byte length does not match profile"))) {
         throw "The template-identity rejection did not explain the mismatched byte length."
     }
+
+    $comparisonRejection = @(& pwsh -NoProfile -File $dotnetWrapper run `
+        --project $project `
+        --no-build `
+        -- `
+        prepare-template-pair `
+        --template $minimalTemplate `
+        --baseline $minimalTemplate `
+        --marked $comparisonMarkedOutput 2>&1)
+    if ($LASTEXITCODE -eq 0 -or (Test-Path -LiteralPath $comparisonMarkedOutput)) {
+        throw "The comparison preparation accepted an existing output or left partial output."
+    }
+    if (-not (($comparisonRejection -join "`n").Contains("Baseline path already exists"))) {
+        throw "The comparison existing-output rejection was not explicit."
+    }
+
     [pscustomobject]@{
         DotNet = (& pwsh -NoProfile -File $dotnetWrapper --version)
         ProjectBuild = $true
         Profile = $plan.ProfileId
         TemplateIdentityMismatchRejected = $true
+        ComparisonExistingOutputRejected = $true
         SourceBlocks = $plan.Summary.SourceBlocks
         TextOperations = $plan.Summary.TextOperations
         BoxOperations = $plan.Summary.BoxOperations
@@ -301,6 +319,9 @@ finally {
     }
     if (Test-Path -LiteralPath $mismatchedOutput) {
         Remove-Item -LiteralPath $mismatchedOutput -Force
+    }
+    if (Test-Path -LiteralPath $comparisonMarkedOutput) {
+        Remove-Item -LiteralPath $comparisonMarkedOutput -Force
     }
     [IO.Directory]::Delete($temporaryRoot)
 

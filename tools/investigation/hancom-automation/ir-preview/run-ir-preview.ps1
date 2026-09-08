@@ -3,10 +3,14 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("probe", "render", "export-images")]
+    [ValidateSet("probe", "render", "prepare-template-pair", "export-images")]
     [string]$Mode,
 
     [string]$Template,
+
+    [string]$Baseline,
+
+    [string]$Marked,
 
     [string]$Document,
 
@@ -62,6 +66,8 @@ $previewArguments = @($assemblyPath, $Mode)
 switch ($Mode) {
     "probe" {
         if ([string]::IsNullOrWhiteSpace($Template) -or
+            -not [string]::IsNullOrWhiteSpace($Baseline) -or
+            -not [string]::IsNullOrWhiteSpace($Marked) -or
             -not [string]::IsNullOrWhiteSpace($ProfilePath) -or
             -not [string]::IsNullOrWhiteSpace($Document) -or
             -not [string]::IsNullOrWhiteSpace($Ir) -or
@@ -75,6 +81,8 @@ switch ($Mode) {
             [string]::IsNullOrWhiteSpace($Ir) -or
             [string]::IsNullOrWhiteSpace($ProfilePath) -or
             [string]::IsNullOrWhiteSpace($Output) -or
+            -not [string]::IsNullOrWhiteSpace($Baseline) -or
+            -not [string]::IsNullOrWhiteSpace($Marked) -or
             -not [string]::IsNullOrWhiteSpace($Document)) {
             throw "Render mode requires -Template, -Ir, -Profile, and -Output."
         }
@@ -85,11 +93,29 @@ switch ($Mode) {
             "--output", (Resolve-InvocationPath $Output)
         )
     }
+    "prepare-template-pair" {
+        if ([string]::IsNullOrWhiteSpace($Template) -or
+            [string]::IsNullOrWhiteSpace($Baseline) -or
+            [string]::IsNullOrWhiteSpace($Marked) -or
+            -not [string]::IsNullOrWhiteSpace($ProfilePath) -or
+            -not [string]::IsNullOrWhiteSpace($Document) -or
+            -not [string]::IsNullOrWhiteSpace($Ir) -or
+            -not [string]::IsNullOrWhiteSpace($Output)) {
+            throw "Prepare-comparison mode requires -Template, -Baseline, and -Marked."
+        }
+        $previewArguments += @(
+            "--template", (Resolve-InvocationPath $Template),
+            "--baseline", (Resolve-InvocationPath $Baseline),
+            "--marked", (Resolve-InvocationPath $Marked)
+        )
+    }
     "export-images" {
         if ([string]::IsNullOrWhiteSpace($Document) -or
             [string]::IsNullOrWhiteSpace($Output) -or
             -not [string]::IsNullOrWhiteSpace($ProfilePath) -or
             -not [string]::IsNullOrWhiteSpace($Template) -or
+            -not [string]::IsNullOrWhiteSpace($Baseline) -or
+            -not [string]::IsNullOrWhiteSpace($Marked) -or
             -not [string]::IsNullOrWhiteSpace($Ir)) {
             throw "Export-images mode requires -Document and -Output."
         }

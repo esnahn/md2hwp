@@ -34,3 +34,15 @@ string may be promoted as the insertion contract. A production profile still
 needs a deliberately unique named marker in a separately managed runtime
 template, or a documented and tested structural replacement region. Until one
 is adopted, the full reference document remains inspection-only.
+
+For continuing visual comparison, use the tracked `minimal.hwp` fixture as
+the basis for the user-authored template. The preview's `prepare-template-pair`
+mode creates two ignored artifacts: `artifacts/minimal-baseline.hwp`, a
+byte-identical copy, and `artifacts/minimal-marked.hwp`, a Hancom-saved copy
+with one dedicated `{{MD2HWP_INSERTION_TARGET_V0_1}}` paragraph at the document
+end. The full reference document is not an input to this workflow.
+
+The current profile still identifies the original minimal fixture and uses
+document-end insertion. Accepting the marked copy or a user-authored template,
+and binding its marker, requires a separate profile change. This preparation
+does not establish a production insertion contract.

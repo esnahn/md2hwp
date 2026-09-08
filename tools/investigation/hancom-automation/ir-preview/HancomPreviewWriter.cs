@@ -35,6 +35,18 @@ internal sealed record RenderResult(
     bool ListsVerified,
     bool TemplateUnchanged);
 
+internal sealed record TemplatePairPreparationResult(
+    string Template,
+    string Baseline,
+    string Marked,
+    string Marker,
+    string TemplateSha256,
+    string BaselineSha256,
+    string MarkedSha256,
+    int MarkerParagraphs,
+    bool BaselineByteIdentical,
+    bool TemplateUnchanged);
+
 internal sealed record StyleBinding(
     string Symbolic,
     string NativeName,
@@ -93,6 +105,7 @@ internal static class HancomPreviewWriter
     private const string ProgId = "HWPFrame.HwpObject";
     private const string ModuleName = "FilePathCheckerModuleExample";
     private const string OpenOptions = "lock:false;forceopen:true;suspendpassword:true;versionwarning:false";
+    private const string ComparisonMarker = "{{MD2HWP_INSERTION_TARGET_V0_1}}";
 
     public static ProbeResult Probe(string templatePath, string repositoryRoot, bool visible)
     {
@@ -269,6 +282,129 @@ internal static class HancomPreviewWriter
             if (File.Exists(temporaryOutput))
             {
                 File.Delete(temporaryOutput);
+            }
+        }
+    }
+
+    public static TemplatePairPreparationResult PrepareTemplatePair(
+        string templatePath,
+        string baselinePath,
+        string markedPath,
+        string repositoryRoot,
+        bool visible)
+    {
+        var template = ValidateTemplate(templatePath);
+        var baseline = ValidateNewHwpPath(baselinePath, "Baseline");
+        var marked = ValidateNewHwpPath(markedPath, "Marked comparison template");
+        if (string.Equals(template, baseline, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(template, marked, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(baseline, marked, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException(
+                "Template, baseline, and marked comparison paths must be distinct.");
+        }
+
+        EnsureInteractiveContext();
+        EnsureNoExistingHwpProcess();
+        var module = SecurityModuleRegistration.ReadAndValidate(repositoryRoot);
+        var templateHashBefore = HashFile(template);
+        var baselineTemporary = Path.Combine(
+            Path.GetDirectoryName(baseline)!,
+            $".md2hwp-comparison-baseline-{Guid.NewGuid():N}.hwp");
+        var markedTemporary = Path.Combine(
+            Path.GetDirectoryName(marked)!,
+            $".md2hwp-comparison-marked-{Guid.NewGuid():N}.hwp");
+        var baselinePublished = false;
+        var markedPublished = false;
+
+        File.Copy(template, baselineTemporary, overwrite: false);
+        File.Copy(template, markedTemporary, overwrite: false);
+        try
+        {
+            if (!string.Equals(
+                    templateHashBefore,
+                    HashFile(baselineTemporary),
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "The comparison baseline was not byte-identical to the source template.");
+            }
+
+            var markerParagraphs = WithHwp(module, hwp =>
+            {
+                Open(hwp, markedTemporary, visible);
+                var before = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+                if (CountMarkerParagraphs(before, ComparisonMarker) != 0 ||
+                    before.Descendants().Any(element =>
+                        element.Value.Contains(ComparisonMarker, StringComparison.Ordinal)))
+                {
+                    throw new InvalidOperationException(
+                        "The source template already contains the comparison insertion marker.");
+                }
+
+                Run(hwp, "MoveDocEnd");
+                Run(hwp, "BreakPara");
+                InsertComparisonMarker(hwp, ComparisonMarker);
+                Run(hwp, "FileSave");
+                CloseDocument(hwp);
+                Open(hwp, markedTemporary, visible);
+
+                var reopened = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+                var count = CountMarkerParagraphs(reopened, ComparisonMarker);
+                if (count != 1)
+                {
+                    throw new InvalidOperationException(
+                        $"Expected one dedicated comparison marker paragraph, observed {count}.");
+                }
+                return count;
+            });
+
+            if (!string.Equals(
+                    templateHashBefore,
+                    HashFile(template),
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "Comparison preparation changed the source template.");
+            }
+
+            File.Move(baselineTemporary, baseline);
+            baselinePublished = true;
+            File.Move(markedTemporary, marked);
+            markedPublished = true;
+            return new TemplatePairPreparationResult(
+                template,
+                baseline,
+                marked,
+                ComparisonMarker,
+                templateHashBefore,
+                HashFile(baseline),
+                HashFile(marked),
+                markerParagraphs,
+                true,
+                true);
+        }
+        catch
+        {
+            if (markedPublished && File.Exists(marked))
+            {
+                File.Delete(marked);
+            }
+            if (baselinePublished && File.Exists(baseline))
+            {
+                File.Delete(baseline);
+            }
+            throw;
+        }
+        finally
+        {
+            if (File.Exists(markedTemporary))
+            {
+                File.Delete(markedTemporary);
+            }
+            if (File.Exists(baselineTemporary))
+            {
+                File.Delete(baselineTemporary);
             }
         }
     }
@@ -455,6 +591,45 @@ internal static class HancomPreviewWriter
     private static void CloseDocument(dynamic hwp)
     {
         _ = hwp.Clear(1);
+    }
+
+    private static string ValidateNewHwpPath(string path, string label)
+    {
+        var fullPath = Path.GetFullPath(path);
+        if (!string.Equals(Path.GetExtension(fullPath), ".hwp", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException($"{label} must preserve the HWP format: {fullPath}");
+        }
+        if (File.Exists(fullPath) || Directory.Exists(fullPath))
+        {
+            throw new IOException($"{label} path already exists: {fullPath}");
+        }
+        var parent = Path.GetDirectoryName(fullPath)!;
+        if (!Directory.Exists(parent))
+        {
+            throw new DirectoryNotFoundException($"Missing {label.ToLowerInvariant()} directory: {parent}");
+        }
+        return fullPath;
+    }
+
+    private static int CountMarkerParagraphs(XDocument document, string marker) =>
+        document.Descendants()
+            .Where(element => element.Name.LocalName == "SECTION")
+            .SelectMany(section => section.Elements()
+                .Where(element => element.Name.LocalName == "P"))
+            .Count(paragraph =>
+                string.Equals(paragraph.Value, marker, StringComparison.Ordinal) &&
+                !paragraph.Descendants().Any(element =>
+                    element.Name.LocalName is "TABLE" or "PICTURE" or "AUTONUM"));
+
+    private static void InsertComparisonMarker(dynamic hwp, string marker)
+    {
+        _ = hwp.HAction.GetDefault("InsertText", hwp.HParameterSet.HInsertText.HSet);
+        hwp.HParameterSet.HInsertText.Text = marker;
+        if (!(bool)hwp.HAction.Execute("InsertText", hwp.HParameterSet.HInsertText.HSet))
+        {
+            throw new InvalidOperationException("Hancom could not insert the comparison marker.");
+        }
     }
 
     private static int? RenderOperation(
