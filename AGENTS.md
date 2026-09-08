@@ -41,7 +41,10 @@ Keep parsing, document generation, and verification separate.
   `backends/hancom-automation`. C# work uses the pinned repository-local .NET
   10.0.400 SDK. The investigation preview targets `net10.0-windows` x64; the
   production worker project shape, COM interop strategy, and protocol remain
-  open decisions.
+  open decisions. The preview can prepare paired baseline/guarded-marker HWP
+  comparison fixtures, and its investigation profile loader/render path proves
+  a unique document-end marker followed by an empty paragraph. This is not yet
+  the full AURI production insertion contract.
 - The C# investigation preview consumes the closed, explicitly non-production
   `profiles/templates/auri-basic/investigation-v0.1.json` profile. It identifies
   only `tests/fixtures/templates/minimal.hwp` by exact hash and declares the

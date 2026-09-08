@@ -6,7 +6,14 @@ paragraph styles, `바탕글` reset style, document-end investigation target,
 minimal box and caption prototypes, list indentation/numbering, figure layout,
 and required native capabilities.
 
-Its status is deliberately `investigation`. It identifies
+`minimal-marker-investigation-v0.1.json` binds the repository-owned
+`tests/fixtures/templates/minimal-marker.hwp`. It has the same native style and
+prototype contract but requires one dedicated end marker followed by an empty
+paragraph. This paired fixture proves marker preflight and safe whole-paragraph
+removal separately from the full external template.
+
+Both profiles have status `investigation`. The original
+`investigation-v0.1.json` identifies
 `tests/fixtures/templates/minimal.hwp`, not the full third-party AURI report
 template. The actual reference HWP remains under local `reference/` input until
 its provenance, redistribution policy, unique insertion target, and different
@@ -42,7 +49,7 @@ byte-identical copy, and `artifacts/minimal-marked.hwp`, a Hancom-saved copy
 with one dedicated `{{MD2HWP_INSERTION_TARGET_V0_1}}` paragraph at the document
 end. The full reference document is not an input to this workflow.
 
-The current profile still identifies the original minimal fixture and uses
-document-end insertion. Accepting the marked copy or a user-authored template,
-and binding its marker, requires a separate profile change. This preparation
-does not establish a production insertion contract.
+The original profile uses document-end insertion. The marker profile binds the
+tracked `minimal-marker.hwp`, requiring the marker and an empty successor at
+the document end. Other generated copies or user-authored templates require
+their own verified identity. This remains an investigation insertion contract.

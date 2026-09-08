@@ -310,13 +310,13 @@ paragraph at the document end. The documented output paths are
 `artifacts/minimal-baseline.hwp` and `artifacts/minimal-marked.hwp`.
 The full AURI document remains structural reference material.
 
-This minimal-based pair with the revised marker has not yet been verified
-live. The earlier full-document comparison results do not establish its page
-count or visual equivalence. Verification must check the source/baseline hash,
-the reopened marker structure, cleanup, and visual preservation outside the
-marker. Generated HWP files need not be byte-identical after Hancom saves them.
-The marker is not a render selector until the profile schema, typed loader,
-and renderer preflight adopt it.
+On 2026-09-08, the minimal pair was generated with the double-curly marker.
+The baseline matched the source hash and the marked copy reopened with one
+dedicated marker followed by an empty terminal paragraph. The resulting
+marked copy is tracked as `minimal-marker.hwp`; its exact hash is recorded in
+`minimal-marker-investigation-v0.1.json`. The renderer removes only the marker
+paragraph and checks the remaining root text before inserting IR content.
+Visual equivalence of this new pair has not yet been checked.
 
 All Hancom COM investigation, security-module installation or re-registration,
 and backend verification on this workstation must run under the same Windows

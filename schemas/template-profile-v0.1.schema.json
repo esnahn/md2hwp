@@ -121,14 +121,42 @@
       "required": ["insertion_target", "box_prototype", "caption_prototype"],
       "properties": {
         "insertion_target": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["kind"],
-          "properties": {
-            "kind": {
-              "const": "document_end"
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind"],
+              "properties": {
+                "kind": {
+                  "const": "document_end"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "marker", "position", "paragraph"],
+              "properties": {
+                "kind": {
+                  "const": "unique_text_marker"
+                },
+                "marker": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256,
+                  "not": {
+                    "pattern": "[\\r\\n]"
+                  }
+                },
+                "position": {
+                  "const": "document_end"
+                },
+                "paragraph": {
+                  "const": "dedicated_with_empty_successor"
+                }
+              }
             }
-          }
+          ]
         },
         "box_prototype": {
           "type": "object",

@@ -11,6 +11,7 @@ $dotnetWrapper = Join-Path $repositoryRoot "tools\development\dotnet.ps1"
 $project = Join-Path $repositoryRoot "tools\investigation\hancom-automation\ir-preview\Md2Hwp.HancomIrPreview.csproj"
 $ir = Join-Path $repositoryRoot "examples\ir-v0.1.json"
 $templateProfilePath = Join-Path $repositoryRoot "profiles\templates\auri-basic\investigation-v0.1.json"
+$markerProfile = Join-Path $repositoryRoot "profiles/templates/auri-basic/minimal-marker-investigation-v0.1.json"
 $minimalTemplate = Join-Path $repositoryRoot "tests\fixtures\templates\minimal.hwp"
 $twoBoxesIr = Join-Path $repositoryRoot "tests\fixtures\ir\two-boxes-v0.1.json"
 $twoFiguresIr = Join-Path $repositoryRoot "tests\fixtures\ir\two-figures-v0.1.json"
@@ -169,6 +170,26 @@ try {
     }
 
 
+    $markerPlanJson = & pwsh -NoProfile -File $dotnetWrapper run `
+        --project $project `
+        --no-build `
+        -- `
+        plan `
+        --ir $ir `
+        --profile $markerProfile
+    if ($LASTEXITCODE -ne 0) {
+        throw "The marker-profile C# preview plan command failed."
+    }
+    $markerPlan = $markerPlanJson | ConvertFrom-Json -Depth 100
+    if ([string]$markerPlan.ProfileId -cne "auri-basic-minimal-marker-investigation" -or
+        $markerPlan.Summary.SourceBlocks -ne $plan.Summary.SourceBlocks -or
+        $markerPlan.Summary.TextOperations -ne $plan.Summary.TextOperations -or
+        $markerPlan.Summary.BoxOperations -ne $plan.Summary.BoxOperations -or
+        $markerPlan.Summary.FigureOperations -ne $plan.Summary.FigureOperations -or
+        $markerPlan.Summary.ListItems -ne $plan.Summary.ListItems) {
+        throw "The marker-profile plan changed the IR operations."
+    }
+
     $twoBoxesPlanJson = & pwsh -NoProfile -File $dotnetWrapper run `
         --project $project `
         --no-build `
@@ -292,6 +313,7 @@ try {
         DotNet = (& pwsh -NoProfile -File $dotnetWrapper --version)
         ProjectBuild = $true
         Profile = $plan.ProfileId
+        MarkerProfile = $markerPlan.ProfileId
         TemplateIdentityMismatchRejected = $true
         ComparisonExistingOutputRejected = $true
         SourceBlocks = $plan.Summary.SourceBlocks

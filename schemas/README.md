@@ -16,4 +16,6 @@ adopted; floating or guessed values must not be represented as pins.
 `template-profile-v0.1.schema.json` defines backend-facing symbolic style,
 selector, layout, capability, and template-identity declarations. The initial
 consumer is an explicitly non-production AURI minimal-fixture investigation
-profile.
+profile. Its insertion-target union supports the fixture-only document-end
+mode and a unique dedicated text marker at the document end with a required
+empty successor paragraph for safe whole-paragraph removal.

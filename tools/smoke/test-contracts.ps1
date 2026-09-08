@@ -16,6 +16,8 @@ $rulesPath = Join-Path $repositoryRoot "rules\ast2ir\ir-v0.1.json"
 $dependencyLockPath = Join-Path $repositoryRoot "dependencies\lock.json"
 $profilePath = Join-Path $repositoryRoot "profiles\templates\auri-basic\investigation-v0.1.json"
 $profileTemplatePath = Join-Path $repositoryRoot "tests\fixtures\templates\minimal.hwp"
+$markerProfilePath = Join-Path $repositoryRoot "profiles\templates\auri-basic\minimal-marker-investigation-v0.1.json"
+$markerProfileTemplatePath = Join-Path $repositoryRoot "tests\fixtures\templates\minimal-marker.hwp"
 $acceptedPath = Join-Path $repositoryRoot "examples\ir-v0.1.json"
 $twoBoxesPath = Join-Path $repositoryRoot "tests\fixtures\ir\two-boxes-v0.1.json"
 $twoFiguresPath = Join-Path $repositoryRoot "tests\fixtures\ir\two-figures-v0.1.json"
@@ -33,6 +35,8 @@ foreach ($path in @(
         $dependencyLockPath,
         $profilePath,
         $profileTemplatePath,
+        $markerProfilePath,
+        $markerProfileTemplatePath,
         $acceptedPath,
         $twoBoxesPath,
         $twoFiguresPath
@@ -88,6 +92,40 @@ if ([int64]$profileDocument.template.identity.bytes -ne $profileTemplate.Length 
     throw "The AURI investigation profile no longer identifies the minimal HWP fixture."
 }
 
+$markerProfileJson = Get-Content -Raw -LiteralPath $markerProfilePath
+$markerProfileValid = $markerProfileJson | Test-Json -SchemaFile $profileSchemaPath
+if (-not $markerProfileValid) {
+    throw "The AURI marker investigation template profile failed schema validation."
+}
+$markerProfileDocument = $markerProfileJson | ConvertFrom-Json
+$markerProfileTemplate = Get-Item -LiteralPath $markerProfileTemplatePath
+$markerProfileTemplateHash = (
+    Get-FileHash -Algorithm SHA256 -LiteralPath $markerProfileTemplatePath
+).Hash
+if ([int64]$markerProfileDocument.template.identity.bytes -ne $markerProfileTemplate.Length -or
+    [string]$markerProfileDocument.template.identity.sha256 -cne $markerProfileTemplateHash) {
+    throw "The AURI marker profile no longer identifies its minimal HWP fixture."
+}
+$invalidMarkerProfile = $markerProfileJson | ConvertFrom-Json -Depth 100
+$invalidMarkerProfile.selectors.insertion_target.paragraph = "unguarded"
+if (($invalidMarkerProfile | ConvertTo-Json -Depth 100) |
+    Test-Json -SchemaFile $profileSchemaPath -ErrorAction SilentlyContinue) {
+    throw "The template-profile schema accepted an unguarded marker target."
+}
+
+$rejectedMarkerLineBreaks = 0
+foreach ($markerLineBreak in @("`r", "`n", "`r`n")) {
+    foreach ($markerText in @("{{MARK${markerLineBreak}ER}}", "{{MARKER}}$markerLineBreak")) {
+        $invalidMarkerProfile = $markerProfileJson | ConvertFrom-Json -Depth 100
+        $invalidMarkerProfile.selectors.insertion_target.marker = $markerText
+        if (($invalidMarkerProfile | ConvertTo-Json -Depth 100) |
+            Test-Json -SchemaFile $profileSchemaPath -ErrorAction SilentlyContinue) {
+            throw "The template-profile schema accepted a marker containing CR/LF."
+        }
+        $rejectedMarkerLineBreaks++
+    }
+}
+
 $acceptedJson = Get-Content -Raw -LiteralPath $acceptedPath
 $accepted = $acceptedJson | Test-Json -SchemaFile $schemaPath
 if (-not $accepted) {
@@ -121,9 +159,10 @@ foreach ($rejectedPath in $rejectedPaths) {
     Ast2IrRules = $rulesValid
     ExternalDependencies = $dependencyDocument.dependencies.Count
     TemplateProfile = $profileDocument.id
-    TemplateProfileValid = $profileValid
+    TemplateProfiles = 2
+    TemplateProfileValid = $profileValid -and $markerProfileValid
     TemplateIdentityValid = $true
-    RejectedTemplateProfiles = 1
+    RejectedTemplateProfiles = 2 + $rejectedMarkerLineBreaks
     AcceptedIrExample = $accepted
     AcceptedTwoBoxesFixture = $twoBoxesAccepted
     AcceptedTwoFiguresFixture = $twoFiguresAccepted

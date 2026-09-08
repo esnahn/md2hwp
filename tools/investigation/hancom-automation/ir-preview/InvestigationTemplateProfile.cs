@@ -15,6 +15,10 @@ internal sealed record ProfileListLayout(
     int MaxDepth,
     int DepthIndentHwpUnits);
 
+internal sealed record ProfileInsertionTarget(
+    string Kind,
+    string? Marker);
+
 internal sealed record ProfileBoxSelector(
     string RootStyle,
     string ContentStyle,
@@ -60,6 +64,7 @@ internal sealed class InvestigationTemplateProfile
         string resetNativeStyle,
         ProfileFigureLayout figure,
         ProfileListLayout lists,
+        ProfileInsertionTarget insertionTarget,
         ProfileBoxSelector boxSelector,
         ProfileCaptionSelector captionSelector)
     {
@@ -71,6 +76,7 @@ internal sealed class InvestigationTemplateProfile
         ResetNativeStyle = resetNativeStyle;
         Figure = figure;
         Lists = lists;
+        InsertionTarget = insertionTarget;
         BoxSelector = boxSelector;
         CaptionSelector = captionSelector;
     }
@@ -90,6 +96,8 @@ internal sealed class InvestigationTemplateProfile
     public ProfileFigureLayout Figure { get; }
 
     public ProfileListLayout Lists { get; }
+
+    public ProfileInsertionTarget InsertionTarget { get; }
 
     public ProfileBoxSelector BoxSelector { get; }
 
@@ -198,11 +206,7 @@ internal sealed class InvestigationTemplateProfile
             "/selectors",
             ["insertion_target", "box_prototype", "caption_prototype"]);
         var insertionTarget = selectors.GetProperty("insertion_target");
-        ProfileJson.ExpectObject(insertionTarget, "/selectors/insertion_target", ["kind"]);
-        ProfileJson.ExpectString(
-            insertionTarget.GetProperty("kind"),
-            "/selectors/insertion_target/kind",
-            "document_end");
+        var parsedInsertionTarget = ReadInsertionTarget(insertionTarget);
         var boxSelector = ReadBoxSelector(selectors.GetProperty("box_prototype"));
         var captionSelector = ReadCaptionSelector(selectors.GetProperty("caption_prototype"));
 
@@ -284,6 +288,7 @@ internal sealed class InvestigationTemplateProfile
                 maxWidth,
                 ProfileJson.RequiredNonemptyString(figure, "source_label", "/layout/figure")),
             new ProfileListLayout(maxDepth, depthIndent),
+            parsedInsertionTarget,
             boxSelector,
             captionSelector);
         result.ValidateSelectors();
@@ -344,6 +349,54 @@ internal sealed class InvestigationTemplateProfile
             ProfileJson.RequiredInt32(element, "source_paragraphs", "/selectors/box_prototype"),
             ProfileJson.RequiredNonemptyString(element, "prototype_text_marker", "/selectors/box_prototype"),
             ProfileJson.RequiredString(element, "source_text", "/selectors/box_prototype"));
+    }
+
+    private static ProfileInsertionTarget ReadInsertionTarget(JsonElement element)
+    {
+        if (element.ValueKind is not JsonValueKind.Object ||
+            !element.TryGetProperty("kind", out var kindElement) ||
+            kindElement.ValueKind is not JsonValueKind.String)
+        {
+            throw ProfileJson.Error(
+                "/selectors/insertion_target",
+                "expected an object with a string kind");
+        }
+        var kind = kindElement.GetString();
+        if (string.Equals(kind, "document_end", StringComparison.Ordinal))
+        {
+            ProfileJson.ExpectObject(element, "/selectors/insertion_target", ["kind"]);
+            return new ProfileInsertionTarget("document_end", null);
+        }
+        if (!string.Equals(kind, "unique_text_marker", StringComparison.Ordinal))
+        {
+            throw ProfileJson.Error(
+                "/selectors/insertion_target/kind",
+                $"unsupported insertion target {JsonSerializer.Serialize(kind)}");
+        }
+
+        ProfileJson.ExpectObject(
+            element,
+            "/selectors/insertion_target",
+            ["kind", "marker", "position", "paragraph"]);
+        ProfileJson.ExpectString(
+            element.GetProperty("position"),
+            "/selectors/insertion_target/position",
+            "document_end");
+        ProfileJson.ExpectString(
+            element.GetProperty("paragraph"),
+            "/selectors/insertion_target/paragraph",
+            "dedicated_with_empty_successor");
+        var marker = ProfileJson.RequiredNonemptyString(
+            element,
+            "marker",
+            "/selectors/insertion_target");
+        if (marker.Length > 256 || marker.Contains('\r') || marker.Contains('\n'))
+        {
+            throw ProfileJson.Error(
+                "/selectors/insertion_target/marker",
+                "marker must be a CR/LF-free string of at most 256 characters");
+        }
+        return new ProfileInsertionTarget("unique_text_marker", marker);
     }
 
     private static string ReadNativeStyleName(

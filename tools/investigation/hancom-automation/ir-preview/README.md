@@ -155,13 +155,24 @@ or automatic-number controls. Temporary files and partially published outputs
 are cleaned up on failure.
 
 This mode prepares the pair only; it does not insert IR content at the marker.
-The current profile identifies the original minimal fixture, so the marked
-copy is not yet a supported render input. Marker binding and the identity of
-a user-authored template will need a separate profile change.
+The `investigation-v0.1.json` profile identifies the unmarked `minimal.hwp`
+fixture. The separate
+`minimal-marker-investigation-v0.1.json` profile identifies the tracked
+`minimal-marker.hwp` and supports its marker followed by an empty terminal
+paragraph. A newly generated copy or user-authored template needs its own
+verified identity before rendering.
 Hancom may rewrite native metadata when saving; generated HWP byte equality
 is not required. Visual equivalence outside the marker must be checked
 separately. The full AURI reference is structural reference material and is
 not required for this workflow.
+
+The repository-owned `minimal-marker.hwp` fixture and
+`minimal-marker-investigation-v0.1.json` profile exercise the same selector with
+the complete IR example. The 2026-09-08 live render removed the marker, added
+one box, one picture, one Figure automatic number, and three native-list
+paragraphs, and passed every reopened structural/style/text check. PNG visual
+equivalence with the document-end profile render has not been verified for
+the current double-curly marker fixture.
 
 For each `block.box`, the preview selects the uniquely bound template root,
 captures a native HWP `saveblock` in memory, and inserts it at the document end

@@ -41,6 +41,13 @@ caption clones: the non-COM plan must retain two independent figure operations,
 and the adopted HWP 2020 render must reopen with two new native Figure
 automatic-number controls in sequence.
 
+`fixtures/templates/minimal-marker.hwp` is a repository-owned comparison
+fixture prepared from `minimal.hwp`. It adds one dedicated
+`{{MD2HWP_INSERTION_TARGET_V0_1}}` paragraph followed by an empty paragraph.
+The paired investigation profile must remove that whole marker paragraph before
+rendering and verify the complete root-paragraph text sequence immediately
+after deletion.
+
 Every AST-to-IR ruleset needs fixtures for each declared handler and for
 unlisted-constructor rejection. Equivalent backends are compared by semantic
 postconditions, not by requiring identical native operation sequences.

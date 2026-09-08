@@ -187,10 +187,7 @@ internal static class HancomPreviewWriter
                 int picturesBefore = CountPictures(hwp);
                 int captionsBefore = CountFigureAutoNumbers(hwp);
                 int nativeListsBefore = CountNativeListParagraphs(hwp);
-                IReadOnlyList<SavedParagraph> existingParagraphs = ReadParagraphs(hwp);
-                var paragraphsBefore = existingParagraphs.Count;
-                Run(hwp, "MoveDocEnd");
-                Run(hwp, "BreakPara");
+                var paragraphsBefore = PrepareInsertionTarget(hwp, profile);
 
                 int? activeListId = null;
                 foreach (var operation in plan.Operations)
@@ -345,6 +342,7 @@ internal static class HancomPreviewWriter
                 Run(hwp, "MoveDocEnd");
                 Run(hwp, "BreakPara");
                 InsertComparisonMarker(hwp, ComparisonMarker);
+                Run(hwp, "BreakPara");
                 Run(hwp, "FileSave");
                 CloseDocument(hwp);
                 Open(hwp, markedTemporary, visible);
@@ -615,12 +613,90 @@ internal static class HancomPreviewWriter
     private static int CountMarkerParagraphs(XDocument document, string marker) =>
         document.Descendants()
             .Where(element => element.Name.LocalName == "SECTION")
+            .Sum(section =>
+            {
+                var roots = section.Elements()
+                    .Where(element => element.Name.LocalName == "P")
+                    .ToArray();
+                return roots.Select((paragraph, index) => (paragraph, index))
+                    .Count(candidate =>
+                        candidate.index + 1 == roots.Length - 1 &&
+                        IsSimpleParagraph(candidate.paragraph, marker) &&
+                        IsSimpleParagraph(roots[candidate.index + 1], string.Empty));
+            });
+
+    private static int PrepareInsertionTarget(
+        dynamic hwp,
+        InvestigationTemplateProfile profile)
+    {
+        if (string.Equals(
+                profile.InsertionTarget.Kind,
+                "document_end",
+                StringComparison.Ordinal))
+        {
+            var paragraphsBefore = ReadParagraphs(hwp).Count;
+            Run(hwp, "MoveDocEnd");
+            Run(hwp, "BreakPara");
+            return paragraphsBefore;
+        }
+
+        var marker = profile.InsertionTarget.Marker ??
+            throw new InvalidOperationException("The marker insertion target has no marker text.");
+        var beforeDocument = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var beforeRoots = beforeDocument.Descendants()
+            .Where(element => element.Name.LocalName == "SECTION")
             .SelectMany(section => section.Elements()
                 .Where(element => element.Name.LocalName == "P"))
-            .Count(paragraph =>
-                string.Equals(paragraph.Value, marker, StringComparison.Ordinal) &&
-                !paragraph.Descendants().Any(element =>
-                    element.Name.LocalName is "TABLE" or "PICTURE" or "AUTONUM"));
+            .ToArray();
+        var candidates = beforeRoots
+            .Select((paragraph, index) => (paragraph, index))
+            .Where(candidate =>
+                candidate.index + 1 == beforeRoots.Length - 1 &&
+                IsSimpleParagraph(candidate.paragraph, marker) &&
+                IsSimpleParagraph(beforeRoots[candidate.index + 1], string.Empty))
+            .ToArray();
+        if (candidates.Length != 1)
+        {
+            throw new InvalidOperationException(
+                $"Expected one dedicated end marker with an empty successor, observed {candidates.Length}.");
+        }
+
+        var beforeText = beforeRoots.Select(root => root.Value).ToArray();
+        var markerIndex = candidates[0].index;
+        if (!(bool)hwp.SetPos(0, markerIndex, 0))
+        {
+            throw new InvalidOperationException(
+                $"Hancom could not move to marker root paragraph {markerIndex}.");
+        }
+        Run(hwp, "MoveParaBegin");
+        Run(hwp, "MoveSelNextParaBegin");
+        Run(hwp, "Delete");
+
+        var afterDocument = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var afterRoots = afterDocument.Descendants()
+            .Where(element => element.Name.LocalName == "SECTION")
+            .SelectMany(section => section.Elements()
+                .Where(element => element.Name.LocalName == "P"))
+            .ToArray();
+        var expectedText = beforeText.Where((_, index) => index != markerIndex).ToArray();
+        var afterText = afterRoots.Select(root => root.Value).ToArray();
+        if (!afterText.SequenceEqual(expectedText, StringComparer.Ordinal) ||
+            afterRoots.Length == 0 ||
+            !IsSimpleParagraph(afterRoots[^1], string.Empty) ||
+            afterRoots.Any(root => root.Value.Contains(marker, StringComparison.Ordinal)))
+        {
+            throw new InvalidOperationException(
+                "Deleting the insertion-marker paragraph changed unexpected document text or structure.");
+        }
+
+        Run(hwp, "MoveDocEnd");
+        return afterRoots.Length - 1;
+    }
+
+    private static bool IsSimpleParagraph(XElement paragraph, string text) =>
+        string.Equals(paragraph.Value, text, StringComparison.Ordinal) &&
+        !paragraph.Descendants().Any(element =>
+            element.Name.LocalName is "P" or "TABLE" or "PICTURE" or "AUTONUM");
 
     private static void InsertComparisonMarker(dynamic hwp, string marker)
     {
