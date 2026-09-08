@@ -5,7 +5,11 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$File,
 
-    [string]$RootIndexes = ''
+    [string]$RootIndexes = '',
+
+    [string]$TableIndexes = '',
+
+    [string]$StyleNames = ''
 )
 
 Set-StrictMode -Version Latest
@@ -218,6 +222,14 @@ try {
         $RootIndexes.Split(',', [StringSplitOptions]::RemoveEmptyEntries) |
             ForEach-Object { [int]$_.Trim() }
     )
+    $requestedTableIndexes = @(
+        $TableIndexes.Split(',', [StringSplitOptions]::RemoveEmptyEntries) |
+            ForEach-Object { [int]$_.Trim() }
+    )
+    $requestedStyleNames = @(
+        $StyleNames.Split('|', [StringSplitOptions]::RemoveEmptyEntries) |
+            ForEach-Object { $_.Trim() }
+    )
     $targetRoots = @(
         foreach ($rootIndex in $requestedRootIndexes) {
             if ($rootIndex -lt 0 -or $rootIndex -ge $rootParagraphs.Count) {
@@ -276,17 +288,265 @@ try {
             }
         }
     )
+    $tables = @($document.SelectNodes("//*[local-name()='TABLE']"))
+    $targetTables = @(
+        foreach ($tableIndex in $requestedTableIndexes) {
+            if ($tableIndex -lt 0 -or $tableIndex -ge $tables.Count) {
+                throw "Table index is outside the document: $tableIndex"
+            }
+            $table = $tables[$tableIndex]
+            $rows = @($table.SelectNodes(".//*[local-name()='ROW']"))
+            [pscustomobject]@{
+                TableIndex = $tableIndex
+                Attributes = Get-AttributeMap $table
+                Rows = @(
+                    for ($rowIndex = 0; $rowIndex -lt $rows.Count; $rowIndex++) {
+                        $cells = @($rows[$rowIndex].SelectNodes("./*[local-name()='CELL']"))
+                        [pscustomobject]@{
+                            RowIndex = $rowIndex
+                            Cells = @(
+                                for ($cellIndex = 0; $cellIndex -lt $cells.Count; $cellIndex++) {
+                                    $cell = $cells[$cellIndex]
+                                    [pscustomobject]@{
+                                        CellIndex = $cellIndex
+                                        Attributes = Get-AttributeMap $cell
+                                        Text = (([string]$cell.InnerText -replace '\s+', ' ').Trim())
+                                        ParagraphStyles = @(
+                                            $cell.SelectNodes(".//*[local-name()='P']") |
+                                                ForEach-Object {
+                                                    $id = -1
+                                                    [void][int]::TryParse(
+                                                        [string]$_.GetAttribute('Style'),
+                                                        [ref]$id
+                                                    )
+                                                    if ($styles.ContainsKey($id)) {
+                                                        [string]$styles[$id]
+                                                    }
+                                                    else {
+                                                        "#$id"
+                                                    }
+                                                } |
+                                                Select-Object -Unique
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                    }
+                )
+            }
+        }
+    )
+    $charShapes = @{}
+    foreach ($shape in @($document.SelectNodes("//*[local-name()='CHARSHAPE']"))) {
+        $id = -1
+        if ([int]::TryParse([string]$shape.GetAttribute('Id'), [ref]$id)) {
+            $charShapes[$id] = $shape
+        }
+    }
+    $paraShapes = @{}
+    foreach ($shape in @($document.SelectNodes("//*[local-name()='PARASHAPE']"))) {
+        $id = -1
+        if ([int]::TryParse([string]$shape.GetAttribute('Id'), [ref]$id)) {
+            $paraShapes[$id] = $shape
+        }
+    }
+    $styleElements = @($document.SelectNodes("//*[local-name()='STYLE']"))
+    $hangulFonts = @{}
+    foreach ($fontFace in @(
+        $document.SelectNodes("//*[local-name()='FONTFACE' and @Lang='Hangul']")
+    )) {
+        foreach ($font in @($fontFace.SelectNodes(".//*[local-name()='FONT']"))) {
+            $fontId = -1
+            if ([int]::TryParse([string]$font.GetAttribute('Id'), [ref]$fontId)) {
+                $hangulFonts[$fontId] = [string]$font.GetAttribute('Name')
+            }
+        }
+    }
+    $targetStyles = @(
+        foreach ($requestedStyleName in $requestedStyleNames) {
+            $matches = @(
+                $styleElements |
+                    Where-Object {
+                        [string]$_.GetAttribute('Name') -ceq $requestedStyleName
+                    }
+            )
+            if ($matches.Count -ne 1) {
+                throw "Expected one style named '$requestedStyleName'; found $($matches.Count)."
+            }
+            $style = $matches[0]
+            $charShapeId = -1
+            $paraShapeId = -1
+            [void][int]::TryParse(
+                [string]$style.GetAttribute('CharShape'),
+                [ref]$charShapeId
+            )
+            [void][int]::TryParse(
+                [string]$style.GetAttribute('ParaShape'),
+                [ref]$paraShapeId
+            )
+            $charShape = if ($charShapes.ContainsKey($charShapeId)) {
+                $charShapes[$charShapeId]
+            }
+            else { $null }
+            $paraShape = if ($paraShapes.ContainsKey($paraShapeId)) {
+                $paraShapes[$paraShapeId]
+            }
+            else { $null }
+            $fontIdElement = if ($null -eq $charShape) {
+                $null
+            }
+            else {
+                $charShape.SelectSingleNode("./*[local-name()='FONTID']")
+            }
+            $ratioElement = if ($null -eq $charShape) {
+                $null
+            }
+            else {
+                $charShape.SelectSingleNode("./*[local-name()='RATIO']")
+            }
+            $spacingElement = if ($null -eq $charShape) {
+                $null
+            }
+            else {
+                $charShape.SelectSingleNode("./*[local-name()='CHARSPACING']")
+            }
+            $marginElement = if ($null -eq $paraShape) {
+                $null
+            }
+            else {
+                $paraShape.SelectSingleNode("./*[local-name()='PARAMARGIN']")
+            }
+            $hangulFontId = -1
+            if ($null -ne $fontIdElement) {
+                [void][int]::TryParse(
+                    [string]$fontIdElement.GetAttribute('Hangul'),
+                    [ref]$hangulFontId
+                )
+            }
+            [pscustomobject]@{
+                Name = $requestedStyleName
+                Style = Get-AttributeMap $style
+                Summary = [pscustomobject]@{
+                    Height = if ($null -eq $charShape) {
+                        $null
+                    }
+                    else { [string]$charShape.GetAttribute('Height') }
+                    HangulFontId = $hangulFontId
+                    HangulFont = if ($hangulFonts.ContainsKey($hangulFontId)) {
+                        [string]$hangulFonts[$hangulFontId]
+                    }
+                    else { $null }
+                    HangulRatio = if ($null -eq $ratioElement) {
+                        $null
+                    }
+                    else { [string]$ratioElement.GetAttribute('Hangul') }
+                    HangulSpacing = if ($null -eq $spacingElement) {
+                        $null
+                    }
+                    else { [string]$spacingElement.GetAttribute('Hangul') }
+                    Bold = ($null -ne $charShape -and
+                        $null -ne $charShape.SelectSingleNode("./*[local-name()='BOLD']"))
+                    Italic = ($null -ne $charShape -and
+                        $null -ne $charShape.SelectSingleNode("./*[local-name()='ITALIC']"))
+                    Align = if ($null -eq $paraShape) {
+                        $null
+                    }
+                    else { [string]$paraShape.GetAttribute('Align') }
+                    HeadingType = if ($null -eq $paraShape) {
+                        $null
+                    }
+                    else { [string]$paraShape.GetAttribute('HeadingType') }
+                    Level = if ($null -eq $paraShape) {
+                        $null
+                    }
+                    else { [string]$paraShape.GetAttribute('Level') }
+                    LineSpacing = if ($null -eq $marginElement) {
+                        $null
+                    }
+                    else { [string]$marginElement.GetAttribute('LineSpacing') }
+                    LineSpacingType = if ($null -eq $marginElement) {
+                        $null
+                    }
+                    else { [string]$marginElement.GetAttribute('LineSpacingType') }
+                    Left = if ($null -eq $marginElement) {
+                        $null
+                    }
+                    else { [string]$marginElement.GetAttribute('Left') }
+                    Right = if ($null -eq $marginElement) {
+                        $null
+                    }
+                    else { [string]$marginElement.GetAttribute('Right') }
+                    Indent = if ($null -eq $marginElement) {
+                        $null
+                    }
+                    else { [string]$marginElement.GetAttribute('Indent') }
+                    Prev = if ($null -eq $marginElement) {
+                        $null
+                    }
+                    else { [string]$marginElement.GetAttribute('Prev') }
+                    Next = if ($null -eq $marginElement) {
+                        $null
+                    }
+                    else { [string]$marginElement.GetAttribute('Next') }
+                }
+                CharShape = if ($null -eq $charShape) {
+                    $null
+                }
+                else {
+                    [pscustomobject]@{
+                        Attributes = Get-AttributeMap $charShape
+                        Children = @(
+                            $charShape.ChildNodes |
+                                Where-Object { $_.NodeType -eq [Xml.XmlNodeType]::Element } |
+                                ForEach-Object {
+                                    [pscustomobject]@{
+                                        Element = [string]$_.LocalName
+                                        Attributes = Get-AttributeMap $_
+                                    }
+                                }
+                        )
+                    }
+                }
+                ParaShape = if ($null -eq $paraShape) {
+                    $null
+                }
+                else {
+                    [pscustomobject]@{
+                        Attributes = Get-AttributeMap $paraShape
+                        Children = @(
+                            $paraShape.ChildNodes |
+                                Where-Object { $_.NodeType -eq [Xml.XmlNodeType]::Element } |
+                                ForEach-Object {
+                                    [pscustomobject]@{
+                                        Element = [string]$_.LocalName
+                                        Attributes = Get-AttributeMap $_
+                                    }
+                                }
+                        )
+                    }
+                }
+            }
+        }
+    )
 
     [object[]]$reportedStyles = @()
     [object[]]$reportedStyleUsage = @()
     [object[]]$reportedInterestingRoots = @()
     [object[]]$reportedElementCounts = @()
-    if ($requestedRootIndexes.Count -eq 0) {
+    if ($requestedRootIndexes.Count -eq 0 -and
+        $requestedTableIndexes.Count -eq 0 -and
+        $requestedStyleNames.Count -eq 0) {
         $reportedStyles = @(
-            $styles.GetEnumerator() |
-                Sort-Object Name |
+            $styleElements |
+                Sort-Object { [int]$_.GetAttribute('Id') } |
                 ForEach-Object {
-                    [pscustomobject]@{ Id = [int]$_.Key; Name = [string]$_.Value }
+                    [pscustomobject]@{
+                        Id = [int]$_.GetAttribute('Id')
+                        Name = [string]$_.GetAttribute('Name')
+                        CharShape = [int]$_.GetAttribute('CharShape')
+                        ParaShape = [int]$_.GetAttribute('ParaShape')
+                    }
                 }
         )
         $reportedStyleUsage = $styleUsage
@@ -311,6 +571,8 @@ try {
         StyleUsage = $reportedStyleUsage
         InterestingRoots = $reportedInterestingRoots
         TargetRoots = $targetRoots
+        TargetTables = $targetTables
+        TargetStyles = $targetStyles
         FieldLikeElements = $fieldLike
         ElementCounts = $reportedElementCounts
         TemplateUnchanged = ((Get-Sha256 $absoluteFile) -eq $hashBefore)

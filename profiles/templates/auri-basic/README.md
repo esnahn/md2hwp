@@ -12,6 +12,23 @@ prototype contract but requires one dedicated end marker followed by an empty
 paragraph. This paired fixture proves marker preflight and safe whole-paragraph
 removal separately from the full external template.
 
+These two tracked HWP files are the primary comparison pair. `minimal.hwp` is
+the untouched, deliberately small example supplied for this investigation;
+`minimal-marker.hwp` is its working copy with only the guarded insertion target
+added at the document end. Rendering starts from the marked copy, removes that
+paragraph, and leaves the original example body in place above the generated
+content. The full report is not the runtime basis for this path.
+
+The native style definitions in `minimal.hwp` are authoritative for this
+fixture and are locked indirectly by its exact file hash. A read-only inspection
+confirmed that `본문`, headings 1 through 4, `표그림_캡션`, and
+`출처 및 하단설명` have the expected names and native attributes. It also found
+that this small file's `박스내용` is 8 pt KoPubWorld돋움체 Light with 160%
+line spacing, while the separate basic-research style-list document describes
+8 pt Medium with 145% line spacing. The investigation renderer follows the
+actual small template and does not silently rewrite it from that external
+reference table.
+
 Both profiles have status `investigation`. The original
 `investigation-v0.1.json` identifies
 `tests/fixtures/templates/minimal.hwp`, not the full third-party AURI report

@@ -130,7 +130,20 @@ HWP 2020 returned a COM object from `InsertPicture` in the adopted .NET
 late-binding context; the preview accepts that result but still requires the
 reopened picture count to increase by the exact expected amount.
 
-## Minimal-template pair
+## Tracked minimal comparison pair
+
+The normal visual comparison starts with the two repository-owned fixtures:
+
+- `tests/fixtures/templates/minimal.hwp` is the untouched baseline;
+- `tests/fixtures/templates/minimal-marker.hwp` contains one guarded marker at
+  the document end and is bound by
+  `profiles/templates/auri-basic/minimal-marker-investigation-v0.1.json`.
+
+This small pair is the current runtime basis; the full AURI report remains
+structural reference material. Visual equivalence of the current double-curly-brace
+marker fixture has not yet been verified.
+
+## Prepare a minimal-template pair
 
 The intended working template will be based on `tests/fixtures/templates/minimal.hwp`.
 Prepare a baseline and a marked copy of that fixture under ignored `artifacts/`:

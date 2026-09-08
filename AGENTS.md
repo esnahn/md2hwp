@@ -51,6 +51,11 @@ Keep parsing, document generation, and verification separate.
   proven style, selector, list, and figure policies. It is not the full AURI
   template profile; that template's insertion target and distinct box/caption
   bindings remain open.
+- `tests/fixtures/templates/minimal.hwp` and `minimal-marker.hwp` are the
+  primary tracked visual comparison pair. The small fixture's actual native
+  style definitions are authoritative for this investigation; the separate
+  AURI style-list document is read-only evidence and must not silently rewrite
+  the fixture when its documented values differ.
 - Do not impose repository-wide `src/`, `bin/`, `dist/`, or `share/` roots.
   Rust packages use Cargo's package layout, C# projects use .NET project and
   test-project conventions, and declarative assets remain in domain-named

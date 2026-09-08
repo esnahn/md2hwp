@@ -48,6 +48,13 @@ The paired investigation profile must remove that whole marker paragraph before
 rendering and verify the complete root-paragraph text sequence immediately
 after deletion.
 
+Treat `minimal.hwp` and `minimal-marker.hwp` as the primary visual comparison
+pair. The first is the untouched small example and the second is the render
+input; the full external AURI report is not substituted for either fixture.
+Visual verification must confirm that the marked copy preserves the example
+body with only the insertion marker added. This has not yet been verified for
+the current double-curly-brace marker fixture.
+
 Every AST-to-IR ruleset needs fixtures for each declared handler and for
 unlisted-constructor rejection. Equivalent backends are compared by semantic
 postconditions, not by requiring identical native operation sequences.

@@ -27,6 +27,7 @@ artifacts/*
 
 # Local stdout/stderr captured by timed Hancom investigation runs.
 /tools/investigation/hancom-automation/ir-preview/probe-logs/
+/tools/investigation/auri/probe-logs/
 
 # Reference documents and templates are local inputs until their provenance,
 # license, and redistribution policy are recorded explicitly.
