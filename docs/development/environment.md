@@ -104,6 +104,15 @@ were installed and verified on 2026-08-27.
 
 ## Verified Hancom Automation execution context
 
+On 2026-09-22, an approved non-default run confirmed that the actual Windows
+process token matched the interactive desktop user in session 1. The canonical
+open-only probe passed in Windows PowerShell `5.1.26100.9444`, Desktop, x64,
+STA, at the exact host path below. The registered module matched the pinned
+SHA-256, `RegisterModule=True`, `Open=True` for `minimal.hwp`, and
+`HwpProcessExited=True` without forced termination. This adopts the updated
+host for the same interactive context; it does not verify the new template
+declaration grammar, range cloning, or output appearance.
+
 The environment was verified on 2026-08-27, and the tracked minimal-fixture
 checks were reverified on 2026-08-28:
 
