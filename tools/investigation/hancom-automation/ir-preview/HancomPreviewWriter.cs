@@ -231,10 +231,14 @@ internal static partial class HancomPreviewWriter
                         $"observed {captionsAdded}.");
                 }
                 var nativeListParagraphs = CountNativeListParagraphs(hwp) - nativeListsBefore;
-                if (nativeListParagraphs != plan.Summary.ListItems)
+                var expectedNativeListParagraphs = ExpectedParagraphs(plan, profile).Count(paragraph =>
+                    paragraph.ListMarker is not null ||
+                    (paragraph.SymbolicStyle.StartsWith("heading.", StringComparison.Ordinal) &&
+                     styles.Resolve(paragraph.SymbolicStyle).BaseNativeList is not null));
+                if (nativeListParagraphs != expectedNativeListParagraphs)
                 {
                     throw new InvalidOperationException(
-                        $"Expected {plan.Summary.ListItems} native list paragraphs, " +
+                        $"Expected {expectedNativeListParagraphs} native list/heading-marker paragraphs, " +
                         $"observed {nativeListParagraphs}.");
                 }
                 return new PreviewRendering(
@@ -723,13 +727,17 @@ internal static partial class HancomPreviewWriter
             var marker = operation.ListMarker;
             for (var index = 0; index < operation.Lines.Count; index++)
             {
-                if (index == 0 && marker is not null)
+                if (index > 0 && styles.Profile.PreserveParagraphLineBreaks)
+                {
+                    Run(hwp, "BreakLine");
+                }
+                else if (index == 0 && marker is not null)
                 {
                     if (activeListId != marker.ListId)
                     {
                         if (activeListId is null)
                         {
-                            ApplyParagraphStyle(hwp, style);
+                            ApplyResolvedParagraphStyle(hwp, styles, style);
                         }
                         ApplyNativeListMarker(hwp, marker, style, styles.Profile.Lists);
                     }
@@ -742,11 +750,12 @@ internal static partial class HancomPreviewWriter
                     }
                     else
                     {
-                        ApplyParagraphStyle(hwp, style);
+                        ApplyResolvedParagraphStyle(hwp, styles, style);
                     }
                 }
                 InsertFormattedLine(hwp, FormattedLine(operation, index), style);
-                Run(hwp, "BreakPara");
+                if (!styles.Profile.PreserveParagraphLineBreaks || index == operation.Lines.Count - 1)
+                    Run(hwp, "BreakPara");
             }
             return marker?.ListId;
         }
@@ -778,7 +787,7 @@ internal static partial class HancomPreviewWriter
         }
         else
         {
-            ApplyParagraphStyle(hwp, figureStyle);
+            ApplyResolvedParagraphStyle(hwp, styles, figureStyle);
         }
         object? insertionResult = hwp.InsertPicture(
             operation.ImagePath,
@@ -807,7 +816,7 @@ internal static partial class HancomPreviewWriter
             styles,
             FormattedLine(operation, 1));
         var sourceStyle = styles.Resolve("figure.source");
-        ApplyParagraphStyle(hwp, sourceStyle);
+        ApplyResolvedParagraphStyle(hwp, styles, sourceStyle);
         var sourceLabel = styles.Profile.Figure.SourceLabel;
         var sourceRuns = new List<PreviewTextRun>
         {
@@ -843,11 +852,7 @@ internal static partial class HancomPreviewWriter
     {
         var bodyStyle = styles.Resolve("body");
         ClearNativeListAtCaret(hwp, bodyStyle);
-        if (targetStyle.Id == bodyStyle.Id)
-        {
-            ApplyParagraphStyle(hwp, styles.ResetStyle);
-        }
-        ApplyParagraphStyle(hwp, targetStyle);
+        ApplyResolvedParagraphStyle(hwp, styles, targetStyle);
     }
 
     private static void ApplyNativeListMarker(
@@ -1012,6 +1017,26 @@ internal static partial class HancomPreviewWriter
         }
     }
 
+    private static void ApplyResolvedParagraphStyle(dynamic hwp, AuriPreviewStyleBindings styles, NativeStyle target)
+    {
+        // Reapplying a modified current style can open a modal confirmation in
+        // HWP 2020. Read its ID, switch to a distinct declared style, then apply
+        // the requested base. Never accept the dialog or overwrite a definition.
+        // Both investigation render paths append to the final root paragraph.
+        // Style/GetDefault's Apply value was not reliable after native box
+        // insertion on the reference host; inspect the actual root instead.
+        Run(hwp, "MoveDocEnd");
+        XDocument currentDocument = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var current = int.Parse(AuriMinimalBoxPrototype.RootParagraphs(currentDocument)[^1].Attribute("Style")!.Value);
+        if (current == target.Id)
+        {
+            var detour = target.Id == styles.ResetStyle.Id ? styles.Resolve("body") : styles.ResetStyle;
+            if (detour.Id == target.Id) throw new InvalidOperationException("No distinct style detour is bound.");
+            ApplyParagraphStyle(hwp, detour);
+        }
+        ApplyParagraphStyle(hwp, target);
+    }
+
     private static void InsertText(dynamic hwp, string text)
     {
         _ = hwp.HAction.GetDefault("InsertText", hwp.HParameterSet.HInsertText.HSet);
@@ -1161,7 +1186,8 @@ internal static partial class HancomPreviewWriter
                     actual.NativeList,
                     expected.ListMarker,
                     nativeStyle,
-                    styles.Profile.Lists) ||
+                    styles.Profile.Lists,
+                    expected.SymbolicStyle.StartsWith("heading.", StringComparison.Ordinal)) ||
                 !actual.Text.Contains(expected.Text, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
@@ -1174,10 +1200,12 @@ internal static partial class HancomPreviewWriter
         SavedNativeList? actual,
         PreviewListMarker? expected,
         NativeStyle nativeStyle,
-        ProfileListLayout listLayout) =>
+        ProfileListLayout listLayout,
+        bool allowNativeHeadingDecoration = false) =>
         (actual, expected) switch
         {
-            (null, null) => true,
+            (null, null) => !allowNativeHeadingDecoration || nativeStyle.BaseNativeList is null,
+            (not null, null) when allowNativeHeadingDecoration => actual == nativeStyle.BaseNativeList,
             (not null, not null) =>
                 string.Equals(actual.Kind, expected.Kind, StringComparison.Ordinal) &&
                 actual.Level == expected.Depth &&
@@ -1229,7 +1257,8 @@ internal static partial class HancomPreviewWriter
         IrPreviewPlan plan,
         AuriPreviewStyleBindings styles,
         AuriMinimalBoxPrototype? prototype,
-        int paragraphsBefore)
+        int paragraphsBefore,
+        bool verifyPrototype = true)
     {
         if (plan.Summary.BoxOperations == 0)
         {
@@ -1246,7 +1275,7 @@ internal static partial class HancomPreviewWriter
 
         XDocument document = AuriMinimalBoxPrototype.ReadDocument(hwp);
         IReadOnlyList<XElement> roots = AuriMinimalBoxPrototype.RootParagraphs(document);
-        prototype.VerifyOriginal(roots);
+        if (verifyPrototype) prototype.VerifyOriginal(roots);
         var appended = roots.Skip(paragraphsBefore).ToArray();
         var rootIndex = 0;
         var verified = 0;
@@ -1255,7 +1284,7 @@ internal static partial class HancomPreviewWriter
             switch (operation.Kind)
             {
                 case "text":
-                    rootIndex += operation.Lines.Count;
+                    rootIndex += styles.Profile.PreserveParagraphLineBreaks ? 1 : operation.Lines.Count;
                     break;
                 case "box":
                     if (rootIndex >= appended.Length)
@@ -1289,7 +1318,8 @@ internal static partial class HancomPreviewWriter
         IrPreviewPlan plan,
         AuriPreviewStyleBindings styles,
         AuriMinimalCaptionPrototype? prototype,
-        int paragraphsBefore)
+        int paragraphsBefore,
+        bool verifyPrototype = true)
     {
         if (plan.Summary.FigureOperations == 0)
         {
@@ -1308,7 +1338,7 @@ internal static partial class HancomPreviewWriter
 
         XDocument document = AuriMinimalCaptionPrototype.ReadDocument(hwp);
         IReadOnlyList<XElement> roots = AuriMinimalCaptionPrototype.RootParagraphs(document);
-        prototype.VerifyOriginal(roots);
+        if (verifyPrototype) prototype.VerifyOriginal(roots);
         var appended = roots.Skip(paragraphsBefore).ToArray();
         var rootIndex = 0;
         var verified = 0;
@@ -1317,7 +1347,7 @@ internal static partial class HancomPreviewWriter
             switch (operation.Kind)
             {
                 case "text":
-                    rootIndex += operation.Lines.Count;
+                    rootIndex += styles.Profile.PreserveParagraphLineBreaks ? 1 : operation.Lines.Count;
                     break;
                 case "box":
                     rootIndex++;
@@ -1493,6 +1523,15 @@ internal static partial class HancomPreviewWriter
                     var symbolicStyle = operation.ParagraphStyle ??
                         throw new InvalidOperationException(
                             $"Missing paragraph style for {operation.Label}.");
+                    if (profile.PreserveParagraphLineBreaks)
+                    {
+                        yield return new ExpectedParagraph(symbolicStyle,
+                            string.Concat(operation.Lines), false, false, 0,
+                            operation.ListMarker,
+                            PreviewRunBuilder.Coalesce(Enumerable.Range(0, operation.Lines.Count)
+                                .SelectMany(index => FormattedLine(operation, index))));
+                        break;
+                    }
                     for (var index = 0; index < operation.Lines.Count; index++)
                     {
                         yield return new ExpectedParagraph(
@@ -1794,7 +1833,8 @@ internal sealed record NativeStyle(
     string Name,
     bool BaseBold,
     bool BaseItalic,
-    int BaseLeftMargin);
+    int BaseLeftMargin,
+    SavedNativeList? BaseNativeList = null);
 
 internal sealed class AuriPreviewStyleBindings
 {
@@ -1890,12 +1930,22 @@ internal sealed class AuriPreviewStyleBindings
             throw new InvalidOperationException(
                 $"Expected one complete AURI paragraph style named {nativeName}, found {matches.Length}.");
         }
+        SavedNativeList? baseNativeList = null;
+        var baseHeadingType = paragraphShape.Attribute("HeadingType")?.Value;
+        if (baseHeadingType is "Bullet" or "Number")
+        {
+            if (!int.TryParse(paragraphShape.Attribute("Level")?.Value, out var level) ||
+                !int.TryParse(paragraphShape.Attribute("Heading")?.Value, out var definitionId))
+                throw new InvalidOperationException($"Incomplete native heading decoration for style {nativeName}.");
+            baseNativeList = new(baseHeadingType == "Bullet" ? "bullet" : "ordered", level, definitionId, baseLeftMargin);
+        }
         return new NativeStyle(
             nativeId,
             nativeName,
             characterMarks.Bold,
             characterMarks.Italic,
-            baseLeftMargin);
+            baseLeftMargin,
+            baseNativeList);
     }
 
     public NativeStyle Resolve(string symbolic)

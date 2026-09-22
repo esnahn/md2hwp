@@ -179,7 +179,9 @@ internal sealed class PlanBuilder(
                 "verbatim_block maps to one prototype-backed block.box operation; render accepts only the uniquely matched minimal-fixture box structure.",
                 "The minimal-fixture box prototype's source placeholder remains template decoration; its production metadata contract is unresolved.",
                 "Figure captions remain one prototype-backed native AUTONUM operation; render accepts only the uniquely matched minimal-fixture root-caption structure.",
-                "IR line_break nodes outside verbatim blocks are previewed as separate HWP paragraphs.",
+                profile.PreserveParagraphLineBreaks
+                    ? "IR line_break nodes remain native line breaks in the same paragraph."
+                    : "IR line_break nodes outside verbatim blocks are previewed as separate HWP paragraphs.",
                 $"Only trusted repository-local PNG figures are inserted; width is limited to {profile.Figure.MaxWidthMillimeters} mm by the investigation profile and aspect ratio is preserved.",
             ]);
     }
@@ -211,7 +213,7 @@ internal sealed class PlanBuilder(
         const string style = "body";
         var label = listLabel ?? "body";
         var content = InlineText.Read(block.GetProperty("inlines"), path + "/inlines");
-        if (listMarker is not null && content.Lines.Count != 1)
+        if (listMarker is not null && content.Lines.Count != 1 && !profile.PreserveParagraphLineBreaks)
         {
             throw JsonContract.Error(
                 path + "/inlines",
@@ -428,7 +430,10 @@ internal static class InlineText
         {
             case "text":
                 JsonContract.ExpectObject(inline, path, ["type", "value"]);
-                builder.Append(JsonContract.RequiredString(inline, "value", path), strong, emphasis);
+                var value = JsonContract.RequiredString(inline, "value", path);
+                if (value.Length == 0 || value.Any(c => c <= ' ' || c == '\u007f'))
+                    throw JsonContract.Error(path + "/value", "text must be nonempty and contain no ASCII spaces or control characters; use space/line_break nodes");
+                builder.Append(value, strong, emphasis);
                 break;
             case "space":
                 JsonContract.ExpectObject(inline, path, ["type"]);

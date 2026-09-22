@@ -391,7 +391,7 @@ internal sealed class AuriMinimalBoxPrototype
             sourceLines.Count != 1 ||
             !string.Equals(sourceLines[0], selector.SourceText, StringComparison.Ordinal) ||
             (requirePrototypeLineBreak &&
-             (contentLines.Count < 2 ||
+             (contentLines.Count < (styles.Profile.PreserveParagraphLineBreaks ? 1 : 2) ||
               CountOccurrences(
                   string.Concat(contentLines),
                   selector.PrototypeTextMarker) != 1)))

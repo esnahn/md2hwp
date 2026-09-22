@@ -103,6 +103,23 @@ internal sealed class InvestigationTemplateProfile
 
     public ProfileCaptionSelector CaptionSelector { get; }
 
+    public bool PreserveParagraphLineBreaks { get; private init; }
+
+    // Internal bindings extracted from the actual authored template. No JSON
+    // profile is loaded or persisted for this path.
+    internal static InvestigationTemplateProfile FromTaggedTemplate(
+        string templatePath, IReadOnlyList<ProfileStyle> styles, string reset,
+        double width, string sourceLabel, int maxDepth, int indent) =>
+        new("minimal-tagged-v1", templatePath,
+            Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(templatePath))),
+            new FileInfo(templatePath).Length, styles, reset,
+            new(width, sourceLabel), new(maxDepth, indent),
+            new("unique_text_marker", "{{md2hwp:content}}"),
+            new("body", "block.box", 1, "figure.source", 1,
+                "{{md2hwp:slot:box.content}}", sourceLabel + " "),
+            new("figure.caption", "[그림 ", "] ", "{{md2hwp:slot:figure.caption}}"))
+        { PreserveParagraphLineBreaks = true };
+
     public static InvestigationTemplateProfile Load(
         string profilePath,
         string repositoryRoot)
