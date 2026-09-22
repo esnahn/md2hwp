@@ -1,0 +1,344 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:md2hwp:schema:ast2ir-rules:0.2",
+  "title": "md2hwp AST-to-IR rules v0.2",
+  "description": "Closed structure for the product-owned Pandoc AST-to-IR normalization ruleset.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "rules_version",
+    "target_ir",
+    "unlisted_constructor",
+    "document",
+    "blocks",
+    "inlines"
+  ],
+  "properties": {
+    "schema": {
+      "const": "md2hwp.ast2ir-rules"
+    },
+    "rules_version": {
+      "const": "0.2"
+    },
+    "target_ir": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "version"
+      ],
+      "properties": {
+        "schema": {
+          "const": "md2hwp.ir"
+        },
+        "version": {
+          "const": "0.2"
+        }
+      }
+    },
+    "unlisted_constructor": {
+      "const": "reject"
+    },
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metadata",
+        "object_sources"
+      ],
+      "properties": {
+        "metadata": {
+          "const": "require_empty"
+        },
+        "object_sources": {
+          "const": {
+            "separator": "space",
+            "prefix": "출처:",
+            "owners": [
+              "figure",
+              "verbatim_block"
+            ],
+            "empty": "reject",
+            "handler": "adjacent_paragraph"
+          }
+        }
+      }
+    },
+    "blocks": {
+      "$ref": "#/$defs/blocks"
+    },
+    "inlines": {
+      "$ref": "#/$defs/inlines"
+    }
+  },
+  "$defs": {
+    "blocks": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "Para": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "handler",
+            "figure"
+          ],
+          "properties": {
+            "handler": {
+              "const": "paragraph"
+            },
+            "figure": {
+              "const": {
+                "attributes": "require_empty",
+                "context": "document_only",
+                "handler": "standalone_image",
+                "caption": "alt"
+              }
+            }
+          }
+        },
+        "Header": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "handler",
+            "minimum_level",
+            "maximum_level",
+            "attributes"
+          ],
+          "properties": {
+            "handler": {
+              "const": "heading"
+            },
+            "minimum_level": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 6
+            },
+            "maximum_level": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 6
+            },
+            "attributes": {
+              "const": "require_empty"
+            }
+          }
+        },
+        "Plain": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "handler",
+            "context"
+          ],
+          "properties": {
+            "handler": {
+              "const": "list_item_paragraph"
+            },
+            "context": {
+              "const": "list_item_only"
+            }
+          }
+        },
+        "CodeBlock": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "handler",
+            "attributes"
+          ],
+          "properties": {
+            "handler": {
+              "const": "verbatim_block"
+            },
+            "attributes": {
+              "const": "require_empty"
+            }
+          }
+        },
+        "BulletList": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "handler"
+          ],
+          "properties": {
+            "handler": {
+              "const": "bullet_list"
+            }
+          }
+        },
+        "OrderedList": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "handler",
+            "minimum_start",
+            "number_styles",
+            "delimiters"
+          ],
+          "properties": {
+            "handler": {
+              "const": "ordered_list"
+            },
+            "minimum_start": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "number_styles": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "DefaultStyle",
+                  "Decimal"
+                ]
+              }
+            },
+            "delimiters": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "DefaultDelim",
+                  "Period",
+                  "OneParen"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "inlines": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "Str": {
+          "$ref": "#/$defs/text_handler"
+        },
+        "Space": {
+          "$ref": "#/$defs/space_handler"
+        },
+        "SoftBreak": {
+          "$ref": "#/$defs/soft_break_handler"
+        },
+        "LineBreak": {
+          "$ref": "#/$defs/line_break_handler"
+        },
+        "Strong": {
+          "$ref": "#/$defs/strong_handler"
+        },
+        "Emph": {
+          "$ref": "#/$defs/emph_handler"
+        },
+        "Link": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "handler",
+            "attributes",
+            "target",
+            "absent_title"
+          ],
+          "properties": {
+            "handler": {
+              "const": "link"
+            },
+            "attributes": {
+              "const": "require_empty"
+            },
+            "target": {
+              "const": "require_nonempty"
+            },
+            "absent_title": {
+              "const": "null"
+            }
+          }
+        }
+      }
+    },
+    "text_handler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "handler"
+      ],
+      "properties": {
+        "handler": {
+          "const": "text"
+        }
+      }
+    },
+    "space_handler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "handler"
+      ],
+      "properties": {
+        "handler": {
+          "const": "space"
+        }
+      }
+    },
+    "soft_break_handler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "handler"
+      ],
+      "properties": {
+        "handler": {
+          "enum": [
+            "space",
+            "line_break",
+            "reject"
+          ]
+        }
+      }
+    },
+    "line_break_handler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "handler"
+      ],
+      "properties": {
+        "handler": {
+          "const": "line_break"
+        }
+      }
+    },
+    "strong_handler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "handler"
+      ],
+      "properties": {
+        "handler": {
+          "const": "strong"
+        }
+      }
+    },
+    "emph_handler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "handler"
+      ],
+      "properties": {
+        "handler": {
+          "const": "emph"
+        }
+      }
+    }
+  }
+}
