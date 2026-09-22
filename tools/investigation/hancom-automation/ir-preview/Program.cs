@@ -14,6 +14,13 @@ internal static class Program
 
             switch (options.Mode)
             {
+                case OperationMode.InvestigateRanges:
+                    {
+                        var result = HancomPreviewWriter.InvestigateRanges(options.TemplatePath!,
+                            options.MarkedPath!, options.OutputPath!, repositoryRoot, options.Visible);
+                        Console.WriteLine(JsonSerializer.Serialize(result, JsonOutput.Options));
+                        break;
+                    }
                 case OperationMode.Plan:
                     {
                         var profile = InvestigationTemplateProfile.Load(
@@ -120,6 +127,7 @@ internal enum OperationMode
     Render,
     PrepareTemplatePair,
     ExportImages,
+    InvestigateRanges,
 }
 
 internal sealed record CommandLine(
@@ -147,6 +155,7 @@ internal sealed record CommandLine(
             "render" => OperationMode.Render,
             "prepare-template-pair" => OperationMode.PrepareTemplatePair,
             "export-images" => OperationMode.ExportImages,
+            "investigate-ranges" => OperationMode.InvestigateRanges,
             _ => throw new ArgumentException(Usage),
         };
         string? ir = null;
@@ -193,6 +202,7 @@ internal sealed record CommandLine(
 
         var valid = mode switch
         {
+            OperationMode.InvestigateRanges => ir is null && profile is null && template is not null && baseline is null && marked is not null && document is null && output is not null,
             OperationMode.Plan => ir is not null && profile is not null && template is null && baseline is null && marked is null && document is null && output is null && !visible,
             OperationMode.Probe => ir is null && profile is null && template is not null && baseline is null && marked is null && document is null && output is null,
             OperationMode.Render => ir is not null && profile is not null && template is not null && baseline is null && marked is null && document is null && output is not null,
@@ -237,6 +247,7 @@ internal sealed record CommandLine(
           hancom-ir-preview render --ir <validated.ir.json> --profile <template-profile.json> --template <input.hwp> --output <new.hwp> [--visible]
           hancom-ir-preview prepare-template-pair --template <input.hwp> --baseline <new.hwp> --marked <new.hwp> [--visible]
           hancom-ir-preview export-images --document <input.hwp> --output <new-directory> [--visible]
+          hancom-ir-preview investigate-ranges --template <minimal.hwp> --marked <new-authored.hwp> --output <new-result.hwp> [--visible]
         """;
 }
 

@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("probe", "render", "prepare-template-pair", "export-images")]
+    [ValidateSet("probe", "render", "prepare-template-pair", "export-images", "investigate-ranges")]
     [string]$Mode,
 
     [string]$Template,
@@ -64,6 +64,22 @@ function Resolve-InvocationPath([string]$Path) {
 
 $previewArguments = @($assemblyPath, $Mode)
 switch ($Mode) {
+    "investigate-ranges" {
+        if ([string]::IsNullOrWhiteSpace($Template) -or
+            [string]::IsNullOrWhiteSpace($Marked) -or
+            [string]::IsNullOrWhiteSpace($Output) -or
+            -not [string]::IsNullOrWhiteSpace($Baseline) -or
+            -not [string]::IsNullOrWhiteSpace($Document) -or
+            -not [string]::IsNullOrWhiteSpace($Ir) -or
+            -not [string]::IsNullOrWhiteSpace($ProfilePath)) {
+            throw "Range investigation requires -Template, -Marked, and -Output."
+        }
+        $previewArguments += @(
+            "--template", (Resolve-InvocationPath $Template),
+            "--marked", (Resolve-InvocationPath $Marked),
+            "--output", (Resolve-InvocationPath $Output)
+        )
+    }
     "probe" {
         if ([string]::IsNullOrWhiteSpace($Template) -or
             -not [string]::IsNullOrWhiteSpace($Baseline) -or
