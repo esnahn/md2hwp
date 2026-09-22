@@ -12,5 +12,8 @@
     <RestoreConfigFile>$(MSBuildThisFileDirectory)NuGet.Config</RestoreConfigFile>
     <RootNamespace>Md2Hwp.HancomIrPreview</RootNamespace>
     <AssemblyName>Md2Hwp.HancomIrPreview</AssemblyName>
-  </PropertyGroup>
+</PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="TemplateDeclarations.Tests" />
+  </ItemGroup>
 </Project>

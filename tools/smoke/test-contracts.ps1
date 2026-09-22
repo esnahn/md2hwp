@@ -144,6 +144,13 @@ if (-not $twoFiguresAccepted) {
     throw "The two-figure IR v0.1 fixture failed schema validation."
 }
 
+$taggedConformancePath = Join-Path $repositoryRoot "tests\fixtures\ir\tagged-template-conformance-v0.1.json"
+$taggedConformanceValid = Get-Content -Raw -LiteralPath $taggedConformancePath |
+    Test-Json -SchemaFile $schemaPath
+if (-not $taggedConformanceValid) {
+    throw "The tagged-template conformance IR fixture failed schema validation."
+}
+
 $rejectedCount = 0
 foreach ($rejectedPath in $rejectedPaths) {
     $rejectedJson = Get-Content -Raw -LiteralPath $rejectedPath
@@ -166,5 +173,6 @@ foreach ($rejectedPath in $rejectedPaths) {
     AcceptedIrExample = $accepted
     AcceptedTwoBoxesFixture = $twoBoxesAccepted
     AcceptedTwoFiguresFixture = $twoFiguresAccepted
+    AcceptedTaggedTemplateConformance = $taggedConformanceValid
     RejectedIrExamples = $rejectedCount
 }

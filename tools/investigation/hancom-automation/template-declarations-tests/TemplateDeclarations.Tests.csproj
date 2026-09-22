@@ -10,8 +10,7 @@
     <RestoreConfigFile>$(MSBuildThisFileDirectory)../ir-preview/NuGet.Config</RestoreConfigFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../ir-preview/TemplateDeclarations.cs" Link="TemplateDeclarations.cs" />
-    <Compile Include="../ir-preview/TemplateRangeStructure.cs" Link="TemplateRangeStructure.cs" />
+    <ProjectReference Include="../ir-preview/Md2Hwp.HancomIrPreview.csproj" />
     <None Include="../../../../tests/fixtures/template-declarations/*.txt" Link="Fixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

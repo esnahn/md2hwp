@@ -1,0 +1,331 @@
+{
+  "schema": "md2hwp.ir",
+  "ir_version": "0.1",
+  "metadata": {},
+  "blocks": [
+    {
+      "type": "heading",
+      "level": 2,
+      "inlines": [
+        {
+          "value": "태그",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "템플릿",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "검증",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "value": "같은",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "문단",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "첫째",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "줄",
+          "type": "text"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "strong",
+          "inlines": [
+            {
+              "value": "둘째",
+              "type": "text"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "value": "줄",
+              "type": "text"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "value": "굵게",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "value": "원고의",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "{{md2hwp:body}}",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "문자는",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "그대로",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "보존",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "list",
+      "kind": "ordered",
+      "start": 3,
+      "tight": true,
+      "items": [
+        {
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "value": "번호",
+                  "type": "text"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "value": "문단",
+                  "type": "text"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "value": "첫째",
+                  "type": "text"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "value": "줄",
+                  "type": "text"
+                },
+                {
+                  "type": "line_break"
+                },
+                {
+                  "type": "emph",
+                  "inlines": [
+                    {
+                      "value": "같은",
+                      "type": "text"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "value": "번호의",
+                      "type": "text"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "value": "둘째",
+                      "type": "text"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "value": "줄",
+                      "type": "text"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "value": "다음",
+                  "type": "text"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "value": "번호",
+                  "type": "text"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "value": "목록",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "다음",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "일반",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "본문",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "verbatim_block",
+      "lines": [
+        "박스 첫째 줄",
+        "",
+        "박스 셋째 줄",
+        ""
+      ]
+    },
+    {
+      "type": "verbatim_block",
+      "lines": [
+        "두 번째 박스",
+        "줄 구조 유지"
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "inlines": [
+        {
+          "value": "셋째",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "수준",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 4,
+      "inlines": [
+        {
+          "value": "넷째",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "수준",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 5,
+      "inlines": [
+        {
+          "value": "다섯째",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "수준",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 6,
+      "inlines": [
+        {
+          "value": "여섯째",
+          "type": "text"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "value": "수준",
+          "type": "text"
+        }
+      ]
+    }
+  ]
+}

@@ -73,3 +73,42 @@ changedStyle[0].SetAttributeValue("Style", "9");
 if (TemplateRangeStructure.Equivalent(Shapes(35, 32), changedStyle))
     throw new Exception("Structural comparison accepted a changed paragraph style.");
 Console.WriteLine("Structure checks passed: renumbering accepted; order, ties, text, and style changes rejected.");
+TaggedBindingChecks.Run(Path.Combine(AppContext.BaseDirectory, "Fixtures", "explicit-ranges.txt"));
+
+var borderBefore = XDocument.Parse("<HWPML><BORDERFILL Id='7'><LEFTBORDER Width='0.1' Color='0'/></BORDERFILL></HWPML>");
+var borderAfter = XDocument.Parse("<HWPML><BORDERFILL Id='6'><LEFTBORDER Width='0.1' Color='0'/></BORDERFILL></HWPML>");
+XElement[] borderRootBefore = [XElement.Parse("<P><CELL BorderFill='7'/></P>")];
+XElement[] borderRootAfter = [XElement.Parse("<P><CELL BorderFill='6'/></P>")];
+if (!TemplateRangeStructure.Equivalent(borderRootBefore, borderRootAfter, borderBefore, borderAfter))
+    throw new Exception("Equivalent dereferenced border fills rejected.");
+borderAfter.Descendants("LEFTBORDER").Single().SetAttributeValue("Color", "255");
+if (TemplateRangeStructure.Equivalent(borderRootBefore, borderRootAfter, borderBefore, borderAfter))
+    throw new Exception("Changed border-fill appearance accepted.");
+Console.WriteLine("Border-fill checks passed: reference renumbering accepted, changed appearance rejected.");
+
+var styleBefore = XDocument.Parse("<HWPML><STYLE Id='0' CharShape='0' ParaShape='0'/><CHARSHAPE Id='0' Height='1000'/><PARASHAPE Id='0'/><PARASHAPE Id='1' Align='Left'/><PARASHAPE Id='2'/></HWPML>");
+var styleAfter = new XDocument(styleBefore);
+styleAfter.Descendants("PARASHAPE").Single(e => (string?)e.Attribute("Id") == "2").Remove();
+XElement[] staticRoots = [XElement.Parse("<P ParaShape='1'/>")];
+TemplateRangeStructure.RequireOriginalStyleDefinitions(styleBefore, styleAfter, staticRoots);
+foreach (var name in new[] { "STYLE", "CHARSHAPE", "PARASHAPE" })
+{
+    var changed = new XDocument(styleAfter);
+    changed.Descendants(name).Last().SetAttributeValue("Changed", "true");
+    var failed = false;
+    try { TemplateRangeStructure.RequireOriginalStyleDefinitions(styleBefore, changed, staticRoots); }
+    catch (InvalidOperationException) { failed = true; }
+    if (!failed) throw new Exception($"Changed preserved {name} accepted.");
+}
+Console.WriteLine("Style preservation checks passed: unused sample shape removal accepted, referenced definition changes rejected.");
+
+foreach (var invalidText in new[] { "", "two words", "a\nb", "a\tb", "a\u007fb" })
+{
+    using var json = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(
+        new[] { new { type = "text", value = invalidText } }));
+    var failed = false;
+    try { InlineText.Read(json.RootElement, "/inlines"); }
+    catch (InvalidDataException) { failed = true; }
+    if (!failed) throw new Exception("Invalid IR text token accepted.");
+}
+Console.WriteLine("IR text-token checks passed: empty values, ASCII spaces, and controls rejected.");
