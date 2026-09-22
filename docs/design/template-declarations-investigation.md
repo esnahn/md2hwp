@@ -1,7 +1,8 @@
 # Explicit template declarations: investigation draft
 
-Status: non-production lexical contract for ADR 0008. No HWP reader or renderer
-consumes this grammar yet. Native field/bookmark comparison remains required.
+Status: non-production lexical contract for ADR 0008. A fixture-specific native
+paragraph-range experiment consumes the sample declarations; no renderer uses
+this grammar yet. Native field/bookmark comparison remains required.
 
 ## Three different scopes
 
@@ -111,6 +112,10 @@ It is deliberately disconnected from the render path. Run the fixture harness:
 ```powershell
 pwsh -NoProfile -File .\tools\development\dotnet.ps1 run --project .\tools\investigation\hancom-automation\template-declarations-tests\TemplateDeclarations.Tests.csproj
 ```
+
+The [native range experiment record](../development/template-range-investigation.md)
+documents the text-only HWP save/reopen, capture, deletion, and cloning result.
+It does not validate box/figure ranges or resolve styles from authored samples.
 
 Next: compare this explicit-range candidate against named native fields on a
 separate HWP fixture. Run the canonical open-only probe in the verified context

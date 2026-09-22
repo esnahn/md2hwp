@@ -8,10 +8,17 @@ implemented.
 The separate [explicit-range declaration experiment](../../../../docs/design/template-declarations-investigation.md)
 defines insertion points, paragraph samples, paired prototype boundaries, and
 owner-scoped slots. `TemplateDeclarations.cs` is a COM-free lexical validator
-with a separate fixture harness; it is not connected to any preview mode and
-does not replace the required investigation profile.
+with a separate fixture harness. Only the dedicated `investigate-ranges` mode
+consumes it; the render mode still requires its investigation profile.
 
-It has five modes:
+It has six modes:
+
+- `investigate-ranges` performs the profile-free, minimal-fixture-only
+  [native paragraph-range experiment](../../../../docs/development/template-range-investigation.md).
+  It saves/reopens an authored copy, captures two sample paragraphs, deletes
+  explicit ranges, clones them at the declared target, and checks preservation.
+  Its diagnostic output deliberately retains copied tag text; it is not a
+  manuscript renderer.
 
 - `plan` parses the closed IR v0.1 shape without COM and emits the exact preview
   operations and selected profile ID as JSON;
