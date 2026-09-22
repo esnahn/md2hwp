@@ -2,7 +2,7 @@
 
 ![도시 **맥락**](../assets/sample-urban-context.png "도시 맥락 이미지")
 
-출처: **작성자** · [자료 안내](https://example.com)
+출처: **작성자** · https://example.com
 
 ```
 박스 첫째 줄

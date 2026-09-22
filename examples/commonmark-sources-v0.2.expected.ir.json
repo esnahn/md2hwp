@@ -90,22 +90,8 @@
           "type": "space"
         },
         {
-          "type": "link",
-          "target": "https://example.com",
-          "title": null,
-          "inlines": [
-            {
-              "type": "text",
-              "value": "자료"
-            },
-            {
-              "type": "space"
-            },
-            {
-              "type": "text",
-              "value": "안내"
-            }
-          ]
+          "type": "text",
+          "value": "https://example.com"
         }
       ]
     },
