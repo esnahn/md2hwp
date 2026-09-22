@@ -39,7 +39,8 @@ internal sealed record IrPreviewPlan(
             string.Empty,
             ["schema", "ir_version", "metadata", "blocks"]);
         JsonContract.ExpectString(document.RootElement.GetProperty("schema"), "/schema", "md2hwp.ir");
-        JsonContract.ExpectString(document.RootElement.GetProperty("ir_version"), "/ir_version", "0.1");
+        var version = JsonContract.RequiredString(document.RootElement, "ir_version", "");
+        if (version is not ("0.1" or "0.2")) throw JsonContract.Error("/ir_version", "expected 0.1 or 0.2");
 
         var metadata = document.RootElement.GetProperty("metadata");
         JsonContract.ExpectObject(metadata, "/metadata", []);
@@ -48,7 +49,7 @@ internal sealed record IrPreviewPlan(
         var builder = new PlanBuilder(
             Path.GetFullPath(irPath),
             Path.GetFullPath(repositoryRoot),
-            profile);
+            profile, version);
         var index = 0;
         foreach (var block in blocks.EnumerateArray())
         {
@@ -75,7 +76,8 @@ internal sealed record PreviewOperation(
     double? ImageHeightMillimeters = null,
     string? ParagraphStyle = null,
     IReadOnlyList<IReadOnlyList<PreviewTextRun>>? FormattedLines = null,
-    PreviewListMarker? ListMarker = null);
+    PreviewListMarker? ListMarker = null,
+    IReadOnlyList<PreviewTextRun>? SourceRuns = null);
 
 internal sealed record PreviewListMarker(
     int ListId,
@@ -122,7 +124,8 @@ internal sealed record PreviewInlineContent(
 internal sealed class PlanBuilder(
     string irPath,
     string repositoryRoot,
-    InvestigationTemplateProfile profile)
+    InvestigationTemplateProfile profile,
+    string irVersion)
 {
     private readonly List<PreviewOperation> operations = [];
     private int listItems;
@@ -177,7 +180,7 @@ internal sealed class PlanBuilder(
                 "AURI paragraph styles are bound by unique native names during render.",
                 "Strong/emphasis marks are retained as character-shape runs; link targets remain flattened.",
                 "verbatim_block maps to one prototype-backed block.box operation; render accepts only the uniquely matched minimal-fixture box structure.",
-                "The minimal-fixture box prototype's source placeholder remains template decoration; its production metadata contract is unresolved.",
+                "IR 0.2 box sources use the prototype source paragraph; absent sources retain its placeholder.",
                 "Figure captions remain one prototype-backed native AUTONUM operation; render accepts only the uniquely matched minimal-fixture root-caption structure.",
                 profile.PreserveParagraphLineBreaks
                     ? "IR line_break nodes remain native line breaks in the same paragraph."
@@ -224,7 +227,7 @@ internal sealed class PlanBuilder(
 
     private void AddVerbatimBlock(JsonElement block, string path)
     {
-        JsonContract.ExpectObject(block, path, ["type", "lines"]);
+        JsonContract.ExpectObject(block, path, ["type", "lines"], irVersion == "0.2" ? ["source"] : []);
         var linesElement = JsonContract.ExpectArray(block.GetProperty("lines"), path + "/lines");
         if (linesElement.GetArrayLength() == 0)
         {
@@ -245,12 +248,20 @@ internal sealed class PlanBuilder(
             index++;
         }
         var content = PreviewInlineContent.Plain(lines);
+        IReadOnlyList<PreviewTextRun>? sourceRuns = null;
+        if (block.TryGetProperty("source", out var source) && source.ValueKind != JsonValueKind.Null)
+        {
+            if (JsonContract.ExpectArray(source, path + "/source").GetArrayLength() == 0)
+                throw JsonContract.Error(path + "/source", "source must not be empty");
+            sourceRuns = InlineText.Read(source, path + "/source").Flatten(" / ").Runs;
+        }
         operations.Add(new PreviewOperation(
             "box",
             "verbatim_block",
             content.Lines.Select(line => line.Text).ToArray(),
             ParagraphStyle: "block.box",
-            FormattedLines: content.Lines.Select(line => line.Runs).ToArray()));
+            FormattedLines: content.Lines.Select(line => line.Runs).ToArray(),
+            SourceRuns: sourceRuns));
     }
 
     private void AddList(JsonElement block, string path, int depth)

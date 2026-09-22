@@ -771,7 +771,7 @@ internal static partial class HancomPreviewWriter
                 throw new InvalidOperationException(
                     $"No minimal-fixture box prototype is bound for {operation.Label}.");
             }
-            _ = boxPrototype.Insert(hwp, styles, operation.Lines);
+            _ = boxPrototype.Insert(hwp, styles, operation.Lines, operation.SourceRuns);
             return null;
         }
         if (operation.Kind != "figure" || operation.ImagePath is null ||
@@ -1246,6 +1246,27 @@ internal static partial class HancomPreviewWriter
         }
     }
 
+    internal static void InsertBoxSourceLine(dynamic hwp, AuriPreviewStyleBindings styles,
+        IReadOnlyList<PreviewTextRun> sourceRuns)
+    {
+        IReadOnlyList<PreviewTextRun> runs = PreviewRunBuilder.Coalesce(
+            new[] { new PreviewTextRun(styles.Profile.Figure.SourceLabel + " ", false, false) }.Concat(sourceRuns));
+        InsertFormattedLine(hwp, runs, styles.Resolve(styles.Profile.BoxSelector.SourceStyle));
+    }
+
+    internal static void VerifyBoxSourceRuns(XElement paragraph, AuriPreviewStyleBindings styles,
+        IReadOnlyList<PreviewTextRun>? sourceRuns)
+    {
+        var style = styles.Resolve(styles.Profile.BoxSelector.SourceStyle);
+        var runs = sourceRuns is null ? new[] { new PreviewTextRun(styles.Profile.BoxSelector.SourceText, false, false) } :
+            new[] { new PreviewTextRun(styles.Profile.Figure.SourceLabel + " ", false, false) }.Concat(sourceRuns);
+        var expected = CoalesceSavedRuns(runs.Select(run => new SavedTextRun(run.Text,
+            style.BaseBold || run.Strong, style.BaseItalic || run.Emphasis)));
+        var actual = ReadSavedRuns(paragraph, HwpmlCharacterShapes.Read(paragraph.Document ??
+            throw new InvalidOperationException("Source verification requires its owning HWPML document.")));
+        if (!expected.SequenceEqual(actual)) throw new InvalidOperationException("Box source character marks differ from IR.");
+    }
+
     private static string DescribeRuns(IEnumerable<SavedTextRun> runs) =>
         "[" + string.Join(
             ", ",
@@ -1294,7 +1315,8 @@ internal static partial class HancomPreviewWriter
                     prototype.VerifyRenderedRoot(
                         appended[rootIndex],
                         styles,
-                        operation.Lines);
+                        operation.Lines,
+                        operation.SourceRuns);
                     rootIndex++;
                     verified++;
                     break;

@@ -83,7 +83,8 @@ internal sealed class AuriMinimalBoxPrototype
     public BoxInsertion Insert(
         dynamic hwp,
         AuriPreviewStyleBindings styles,
-        IReadOnlyList<string> lines)
+        IReadOnlyList<string> lines,
+        IReadOnlyList<PreviewTextRun>? sourceRuns = null)
     {
         if (lines.Count == 0 || lines.Any(line => line.Contains('\r') || line.Contains('\n')))
         {
@@ -185,7 +186,7 @@ internal sealed class AuriMinimalBoxPrototype
                 "Box insertion did not add exactly one table while preserving pictures and automatic numbers.");
         }
 
-        ReplaceCloneContent(hwp, styles, insertedIndex, lines);
+        ReplaceCloneContent(hwp, styles, insertedIndex, lines, sourceRuns);
 
         Run(hwp, "MoveDocEnd");
         return new BoxInsertion(insertedIndex);
@@ -207,7 +208,8 @@ internal sealed class AuriMinimalBoxPrototype
     public void VerifyRenderedRoot(
         XElement root,
         AuriPreviewStyleBindings styles,
-        IReadOnlyList<string> lines)
+        IReadOnlyList<string> lines,
+        IReadOnlyList<PreviewTextRun>? sourceRuns = null)
     {
         if (!TryReadParts(root, styles, requirePrototypeLineBreak: false, out var parts))
         {
@@ -220,6 +222,11 @@ internal sealed class AuriMinimalBoxPrototype
             throw new InvalidOperationException(
                 $"Rendered box lines differed; expected {Describe(lines)}, actual {Describe(actualLines)}.");
         }
+        var expectedSource = sourceRuns is null ? styles.Profile.BoxSelector.SourceText :
+            styles.Profile.Figure.SourceLabel + " " + string.Concat(sourceRuns.Select(run => run.Text));
+        if (ReadSourceText(parts.SourceParagraph) != expectedSource)
+            throw new InvalidOperationException("Rendered box source text differs from its IR or template placeholder.");
+        HancomPreviewWriter.VerifyBoxSourceRuns(parts.SourceParagraph, styles, sourceRuns);
         var renderedStructureXml = StableBoxStructureXml(root, styles);
         if (!string.Equals(
                 renderedStructureXml,
@@ -230,6 +237,28 @@ internal sealed class AuriMinimalBoxPrototype
                 "Rendered box structure differed from the prototype outside its logical content: " +
                 DescribeFirstDifference(originalRootStructureXml, renderedStructureXml));
         }
+    }
+
+    public void ReplaceSource(dynamic hwp, AuriPreviewStyleBindings styles, int rootIndex,
+        IReadOnlyList<string> lines, IReadOnlyList<PreviewTextRun> sourceRuns)
+    {
+        // Search only while the new clone still has the original placeholder.
+        // A sentinel proves the selected paragraph is its source before inserting IR.
+        var sentinel = "MD2HWP_SOURCE_" + Guid.NewGuid().ToString("N");
+        MoveToRoot(hwp, rootIndex);
+        FindNext(hwp, styles.Profile.BoxSelector.SourceText);
+        Run(hwp, "MoveParaBegin"); Run(hwp, "MoveSelParaEnd"); InsertText(hwp, sentinel);
+        XDocument marked = ReadDocument(hwp);
+        var roots = RootParagraphs(marked);
+        VerifyOriginal(roots);
+        if (!TryReadParts(roots[rootIndex], styles, false, out var parts) || ReadSourceText(parts.SourceParagraph) != sentinel)
+            throw new InvalidOperationException("Box source selection did not identify the cloned source paragraph.");
+        MoveToRoot(hwp, rootIndex); FindNext(hwp, sentinel);
+        HancomPreviewWriter.InsertBoxSourceLine(hwp, styles, sourceRuns);
+        XDocument saved = ReadDocument(hwp);
+        VerifyOriginal(RootParagraphs(saved));
+        VerifyRenderedRoot(RootParagraphs(saved)[rootIndex], styles, lines, sourceRuns);
+        Run(hwp, "MoveDocEnd");
     }
 
     public static XDocument ReadDocument(dynamic hwp) =>
@@ -254,7 +283,8 @@ internal sealed class AuriMinimalBoxPrototype
         dynamic hwp,
         AuriPreviewStyleBindings styles,
         int cloneRootParagraphIndex,
-        IReadOnlyList<string> lines)
+        IReadOnlyList<string> lines,
+        IReadOnlyList<PreviewTextRun>? sourceRuns)
     {
         var sentinel = $"MD2HWP_BOX_{Guid.NewGuid():N}";
         XDocument beforeDocument = ReadDocument(hwp);
@@ -286,6 +316,11 @@ internal sealed class AuriMinimalBoxPrototype
             styles,
             [sentinel]);
 
+        // The body now has a unique sentinel. Fill the source before inserting
+        // manuscript text so neither slot lookup can match the other's IR text.
+        if (sourceRuns is not null)
+            ReplaceSource(hwp, styles, cloneRootParagraphIndex, new[] { sentinel }, sourceRuns);
+
         MoveToRoot(hwp, cloneRootParagraphIndex);
         FindNext(hwp, sentinel);
         if (lines[0].Length == 0)
@@ -314,7 +349,7 @@ internal sealed class AuriMinimalBoxPrototype
         {
             throw new InvalidOperationException("Box sentinel remained after content replacement.");
         }
-        VerifyRenderedRoot(finalRoots[cloneRootParagraphIndex], styles, lines);
+        VerifyRenderedRoot(finalRoots[cloneRootParagraphIndex], styles, lines, sourceRuns);
     }
 
     private static IReadOnlyList<BoxCandidate> FindCandidates(
@@ -387,11 +422,10 @@ internal sealed class AuriMinimalBoxPrototype
         if (content.Length != selector.ContentParagraphs ||
             source.Length != selector.SourceParagraphs ||
             !TryReadLogicalLines(content.ElementAtOrDefault(0), out var contentLines) ||
-            !TryReadLogicalLines(source.ElementAtOrDefault(0), out var sourceLines) ||
-            sourceLines.Count != 1 ||
-            !string.Equals(sourceLines[0], selector.SourceText, StringComparison.Ordinal) ||
+            ReadSourceText(source.ElementAtOrDefault(0)) is not { } sourceText ||
             (requirePrototypeLineBreak &&
-             (contentLines.Count < (styles.Profile.PreserveParagraphLineBreaks ? 1 : 2) ||
+             (sourceText != selector.SourceText ||
+              contentLines.Count < (styles.Profile.PreserveParagraphLineBreaks ? 1 : 2) ||
               CountOccurrences(
                   string.Concat(contentLines),
                   selector.PrototypeTextMarker) != 1)))
@@ -400,6 +434,14 @@ internal sealed class AuriMinimalBoxPrototype
         }
         parts = new BoxParts(table, content[0], source[0]);
         return true;
+    }
+
+    private static string? ReadSourceText(XElement? paragraph)
+    {
+        if (paragraph is null || paragraph.Elements().Any(e => e.Name.LocalName != "TEXT")) return null;
+        var texts = paragraph.Elements().ToArray();
+        if (texts.Length == 0 || texts.Any(t => t.Elements().Any(c => c.Name.LocalName != "CHAR" || c.HasElements))) return null;
+        return string.Concat(texts.SelectMany(t => t.Elements()).Select(c => c.Value));
     }
 
     private static IReadOnlyList<string> ReadLogicalLines(XElement paragraph)
@@ -544,6 +586,9 @@ internal sealed class AuriMinimalBoxPrototype
         }
         characters[0].RemoveNodes();
         characters[0].Add("MD2HWP_BOX_CONTENT");
+        // Source text/character runs are checked separately; retain its paragraph
+        // style and layout while allowing authored metadata to replace the slot.
+        parts.SourceParagraph.ReplaceNodes(new XElement("TEXT", new XElement("CHAR", "MD2HWP_BOX_SOURCE")));
         return StableBoxCloneXml(clone);
     }
 
