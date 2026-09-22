@@ -22,6 +22,11 @@ until the replacement contract is proven and implemented.
 
 ## Ownership and authoring
 
+The [explicit-range investigation draft](../design/template-declarations-investigation.md)
+distinguishes insertion points, paragraph samples, paired prototype boundaries,
+and owner-scoped content slots. Its lexical tests do not adopt a native HWP
+representation or establish render compatibility.
+
 Declarations identify roles rather than executable expressions. The closed,
 versioned template contract must distinguish:
 
