@@ -1,4 +1,5 @@
 using Md2Hwp.HancomIrPreview;
+using System.Xml.Linq;
 
 var fixture = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", "explicit-ranges.txt"));
 var plan = TemplateDeclarations.Parse(fixture);
@@ -58,3 +59,17 @@ var minimal = new[] { "{{md2hwp:content}}", "{{md2hwp:begin:samples}}",
     "{{md2hwp:contract:experimental-1}}", "{{md2hwp:body}}", "{{md2hwp:end:samples}}", "" };
 TemplateDeclarations.Parse(minimal);
 Console.WriteLine($"Template declaration lexical checks passed: 3 accepted, {rejected} rejected. No COM or HWP validation performed.");
+
+XElement[] Shapes(int first, int second, string text = "unchanged") =>
+    [XElement.Parse($"<P Style='1'><SHAPEOBJECT ZOrder='{first}'/><CHAR>{text}</CHAR></P>"),
+     XElement.Parse($"<P Style='2'><SHAPEOBJECT ZOrder='{second}'/></P>")];
+if (!TemplateRangeStructure.Equivalent(Shapes(35, 32), Shapes(5, 2)) ||
+    TemplateRangeStructure.Equivalent(Shapes(35, 32), Shapes(2, 5)) ||
+    TemplateRangeStructure.Equivalent(Shapes(35, 35), Shapes(5, 2)) ||
+    TemplateRangeStructure.Equivalent(Shapes(35, 32), Shapes(5, 2, "changed")))
+    throw new Exception("ZOrder renumbering must preserve ordering, ties, and all other content.");
+var changedStyle = Shapes(5, 2);
+changedStyle[0].SetAttributeValue("Style", "9");
+if (TemplateRangeStructure.Equivalent(Shapes(35, 32), changedStyle))
+    throw new Exception("Structural comparison accepted a changed paragraph style.");
+Console.WriteLine("Structure checks passed: renumbering accepted; order, ties, text, and style changes rejected.");
