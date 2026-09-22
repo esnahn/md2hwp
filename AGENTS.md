@@ -247,6 +247,15 @@ If adopted later, `backends/rhwp` contains md2hwp's integration code,
 
 ## Template and backend rules
 
+- ADR 0008 adopts template-owned production bindings: users supply IR and an
+  authored HWP template without a separate profile JSON. Inspect template
+  declarations into validated internal bindings. Native tag/field syntax is
+  pending investigation; do not treat illustrative markers as implemented.
+  Existing investigation profiles retain their contracts until a tested
+  replacement is adopted. Define the worker invocation contract after the
+  template declaration investigation. This supersedes the separate-input
+  requirement below for the future production interface only.
+
 - Treat a template profile and a runtime HWP/HWPX file as separate inputs. The
   profile declares intended meanings; the backend must inspect the actual file,
   validate required styles/capabilities, and bind each declared selector and

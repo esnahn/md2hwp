@@ -10,6 +10,13 @@ Repository boundaries and placement rules are documented in
 Reference-workstation prerequisites and current gaps are recorded in
 [`docs/development/environment.md`](docs/development/environment.md).
 
+The accepted next design is **validated IR + an authored HWP template** as the
+render inputs, with role declarations and reusable style/structure samples
+inside the template instead of a separately maintained profile JSON. See
+[ADR 0008](docs/decisions/0008-template-owned-bindings.md). This direction is
+not implemented yet: the current investigation renderer still requires its
+external profile, and native tag/field representation remains to be tested.
+
 The repository is organized by product responsibility:
 
 - `apps/`, `crates/`, and `backends/` contain md2hwp code boundaries;
