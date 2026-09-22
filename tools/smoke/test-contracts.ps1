@@ -9,10 +9,10 @@ $ErrorActionPreference = "Stop"
 
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\.."))
 $schemaPath = Join-Path $repositoryRoot "schemas\ir-v0.1.schema.json"
-$rulesSchemaPath = Join-Path $repositoryRoot "schemas\ast2ir-rules-v0.1.schema.json"
+$rulesSchemaPath = Join-Path $repositoryRoot "schemas\ast2ir-rules-v0.2.schema.json"
 $dependencySchemaPath = Join-Path $repositoryRoot "schemas\dependencies-lock-v0.1.schema.json"
 $profileSchemaPath = Join-Path $repositoryRoot "schemas\template-profile-v0.1.schema.json"
-$rulesPath = Join-Path $repositoryRoot "rules\ast2ir\ir-v0.1.json"
+$rulesPath = Join-Path $repositoryRoot "rules\ast2ir\ir-v0.2.json"
 $dependencyLockPath = Join-Path $repositoryRoot "dependencies\lock.json"
 $profilePath = Join-Path $repositoryRoot "profiles\templates\auri-basic\investigation-v0.1.json"
 $profileTemplatePath = Join-Path $repositoryRoot "tests\fixtures\templates\minimal.hwp"
@@ -49,7 +49,7 @@ foreach ($path in @(
 $rulesJson = Get-Content -Raw -LiteralPath $rulesPath
 $rulesValid = $rulesJson | Test-Json -SchemaFile $rulesSchemaPath
 if (-not $rulesValid) {
-    throw "The AST-to-IR v0.1 ruleset failed schema validation."
+    throw "The AST-to-IR v0.2 ruleset failed schema validation."
 }
 
 $dependencyDataPaths = @(
@@ -151,6 +151,20 @@ if (-not $taggedConformanceValid) {
     throw "The tagged-template conformance IR fixture failed schema validation."
 }
 
+$currentSchema = Join-Path $repositoryRoot 'schemas/ir-v0.2.schema.json'
+$currentExample = Join-Path $repositoryRoot 'examples/commonmark-sources-v0.2.expected.ir.json'
+if (-not (Get-Content -Raw $currentExample | Test-Json -SchemaFile $currentSchema)) {
+    throw 'Source metadata fixture failed IR 0.2 schema validation.'
+}
+if (-not (Get-Content -Raw (Join-Path $repositoryRoot 'tests/fixtures/ir/box-source-slots-v0.2.json') | Test-Json -SchemaFile $currentSchema)) {
+    throw 'Box source slot-collision fixture failed IR 0.2 schema validation.'
+}
+$legacyRules = Join-Path $repositoryRoot 'rules/ast2ir/ir-v0.1.json'
+$legacyRulesSchema = Join-Path $repositoryRoot 'schemas/ast2ir-rules-v0.1.schema.json'
+if (-not (Get-Content -Raw $legacyRules | Test-Json -SchemaFile $legacyRulesSchema)) {
+    throw 'Historical ruleset no longer satisfies its original contract.'
+}
+
 $rejectedCount = 0
 foreach ($rejectedPath in $rejectedPaths) {
     $rejectedJson = Get-Content -Raw -LiteralPath $rejectedPath
@@ -164,6 +178,8 @@ foreach ($rejectedPath in $rejectedPaths) {
 [pscustomobject]@{
     IrSchema = $schemaPath
     Ast2IrRules = $rulesValid
+    AcceptedIr02Sources = $true
+    HistoricalRulesValid = $true
     ExternalDependencies = $dependencyDocument.dependencies.Count
     TemplateProfile = $profileDocument.id
     TemplateProfiles = 2

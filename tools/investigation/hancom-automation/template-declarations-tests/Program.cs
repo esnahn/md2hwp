@@ -112,3 +112,27 @@ foreach (var invalidText in new[] { "", "two words", "a\nb", "a\tb", "a\u007fb" 
     if (!failed) throw new Exception("Invalid IR text token accepted.");
 }
 Console.WriteLine("IR text-token checks passed: empty values, ASCII spaces, and controls rejected.");
+
+var repository = new DirectoryInfo(AppContext.BaseDirectory);
+while (repository is not null && !File.Exists(Path.Combine(repository.FullName, "dependencies", "lock.json")))
+    repository = repository.Parent;
+if (repository is null) throw new Exception("Repository root not found.");
+var profile = InvestigationTemplateProfile.Load(Path.Combine(repository.FullName,
+    "profiles", "templates", "auri-basic", "investigation-v0.1.json"), repository.FullName);
+var sourcesPlan = IrPreviewPlan.Load(Path.Combine(repository.FullName,
+    "examples", "commonmark-sources-v0.2.expected.ir.json"), repository.FullName, profile);
+var boxes = sourcesPlan.Operations.Where(op => op.Kind == "box").ToArray();
+if (boxes.Length != 2 || boxes[0].SourceRuns is null || boxes[1].SourceRuns is not null ||
+    !boxes[0].SourceRuns!.Any(run => run.Emphasis) || sourcesPlan.Summary.FigureOperations != 2 ||
+    string.Concat(boxes[0].SourceRuns!.Select(run => run.Text)) != "현장 조사 2026")
+    throw new Exception("IR 0.2 source plan lost metadata or marks.");
+foreach (var version in new[] { "0.1", "0.2" })
+{
+    using var sourceJson = System.Text.Json.JsonDocument.Parse(
+        "{\"type\":\"verbatim_block\",\"lines\":[\"text\"],\"source\":[]}");
+    var failed = false;
+    try { new PlanBuilder("unused.json", repository.FullName, profile, version).AddBlock(sourceJson.RootElement, "/blocks/0"); }
+    catch (InvalidDataException) { failed = true; }
+    if (!failed) throw new Exception("Invalid box source accepted for " + version);
+}
+Console.WriteLine("Source plan checks passed: figure/box metadata and marks retained; 0.1 extension and empty 0.2 source rejected.");

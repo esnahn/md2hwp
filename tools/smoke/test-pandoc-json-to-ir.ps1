@@ -9,7 +9,7 @@ $ErrorActionPreference = "Stop"
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\.."))
 $inputPath = Join-Path $repositoryRoot "tests\fixtures\pandoc-json\commonmark-v0.1.json"
 $expectedPath = Join-Path $repositoryRoot "examples\commonmark-v0.1.expected.ir.json"
-$schemaPath = Join-Path $repositoryRoot "schemas\ir-v0.1.schema.json"
+$schemaPath = Join-Path $repositoryRoot "schemas\ir-v0.2.schema.json"
 
 foreach ($path in @($inputPath, $expectedPath, $schemaPath)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
@@ -34,12 +34,12 @@ try {
 
     $actualJson = Get-Content -Raw -Encoding UTF8 -LiteralPath $actualPath
     if (-not ($actualJson | Test-Json -SchemaFile $schemaPath)) {
-        throw "Generated direct-input IR failed the IR v0.1 schema."
+        throw "Generated direct-input IR failed the IR 0.2 schema."
     }
     $actualCanonical = $actualJson | ConvertFrom-Json -Depth 100 | ConvertTo-Json -Depth 100 -Compress
-    $expectedCanonical = Get-Content -Raw -Encoding UTF8 -LiteralPath $expectedPath |
-        ConvertFrom-Json -Depth 100 |
-        ConvertTo-Json -Depth 100 -Compress
+    $expected = Get-Content -Raw -Encoding UTF8 -LiteralPath $expectedPath | ConvertFrom-Json -Depth 100
+    $expected.ir_version = '0.2'
+    $expectedCanonical = $expected | ConvertTo-Json -Depth 100 -Compress
     if ($actualCanonical -cne $expectedCanonical) {
         throw "Direct Pandoc JSON output differs from the expected fixture."
     }
