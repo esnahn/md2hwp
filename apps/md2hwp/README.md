@@ -33,6 +33,12 @@ normalizes only allowlisted constructors through the built-in ruleset, and
 writes only validated IR. Existing output requires `--force`. Backend
 invocation and serialized-IR replay remain unimplemented.
 
+New normalization emits IR 0.2. Standalone Markdown images and adjacent
+`출처: …` metadata for figures/boxes are supported; see the
+[syntax and HWP commands](../../docs/development/markdown-object-sources.md).
+Image paths are relative to the input file (Markdown or direct Pandoc JSON).
+The app rebases them to the IR output location and validates again before writing.
+
 To start from an existing Pandoc JSON file, select `pandoc-json`. This path does
 not locate, launch, or version-check a Pandoc executable:
 

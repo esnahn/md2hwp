@@ -2,6 +2,9 @@
 
 Status: normative serialization contract for IR version `0.1`.
 
+This version remains readable unchanged. New normalization targets
+[IR 0.2](ir-v0.2.md), which adds optional box source metadata.
+
 The project IR is the stable boundary between source-language normalization and
 document lowering. It represents document meaning, not Pandoc constructors,
 template coordinates, Hancom Automation actions, or `rhwp` implementation

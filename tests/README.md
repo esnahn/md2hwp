@@ -69,6 +69,13 @@ postconditions, not by requiring identical native operation sequences.
 
 ## Tagged minimal template
 
+`fixtures/pandoc-json/commonmark-sources-v0.2.json` records the pinned Pandoc
+output for `examples/commonmark-sources-v0.2.md`; its paths retain that source
+file's base directory. Core tests compare it with the expected 0.2 IR example.
+The source smoke rebases paths when copying this AST for direct CLI replay.
+`fixtures/ir/box-source-slots-v0.2.json` exercises two boxes whose body/source
+text resembles template placeholders, including formatted source metadata.
+
 `fixtures/templates/minimal-tagged-v1.hwp` is the authored, usable `minimal-1`
 template. Its provenance, exact tags, render commands, native verification,
 and scope are recorded in

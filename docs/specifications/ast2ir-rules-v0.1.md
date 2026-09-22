@@ -1,6 +1,7 @@
 # AST-to-IR normalization rules v0.1
 
-Status: normative implemented product ruleset.
+Status: historical ruleset. New normalization uses the
+[0.2 rules and source attachment contract](ir-v0.2.md).
 
 The authoritative data instance is
 [`rules/ast2ir/ir-v0.1.json`](../../rules/ast2ir/ir-v0.1.json). Its closed

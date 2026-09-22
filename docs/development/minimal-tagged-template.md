@@ -73,7 +73,8 @@ pwsh -NoProfile -File .\tools\development\dotnet.ps1 build `
 박스는 `{{md2hwp:begin:block.box}}`와 `{{md2hwp:end:block.box}}` 사이의
 정확히 한 루트 문단이다. 본문 스타일의 글자처럼 취급되는 기존 표를 복제한다.
 셀 안 `{{md2hwp:slot:box.content}}` 문단이 내용과 `block.box` 스타일을 지정한다.
-기존 `출처: ` 문단은 장식으로 유지하며 그림 출처와 같은 스타일을 사용한다.
+기존 `출처: ` 문단은 IR 0.2의 박스 source를 채우는 위치이며 그림 출처와 같은
+스타일을 사용한다. 출처가 없거나 IR 0.1이면 기존 자리 표시를 유지한다.
 임의 표 구조를 지원하지 않으므로 제공된 박스의 셀·캡션 구조를 유지한다.
 
 그림은 `{{md2hwp:begin:figure}}`와 `{{md2hwp:end:figure}}` 사이에 아래 세
@@ -146,4 +147,5 @@ worker 프로토콜 연결, 한글 필드·책갈피 방식과의 비교는 아�
 
 글꼴은 템플릿을 보존한다. 예제의 도시 이모지는 현재 템플릿 글꼴에서 네모로
 표시되지만 Unicode 텍스트는 보존된다. 링크는 서식 있는 레이블만 출력하며,
-PNG 리소스와 figure/source 메타데이터는 기존 직접 IR 계약을 따른다.
+PNG 리소스와 source 메타데이터는 IR 계약을 따른다. 현재는
+[Markdown 그림·박스 출처](markdown-object-sources.md)도 입력할 수 있다.

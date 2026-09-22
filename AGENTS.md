@@ -70,7 +70,8 @@ Keep parsing, document generation, and verification separate.
   payloads must use an explicitly documented ignored path or an explicitly
   documented external install location; do not track them.
 - Product-owned AST-to-IR policy is data in
-  `rules/ast2ir/ir-v0.1.json`, validated by its closed schema. The core owns the
+  `rules/ast2ir/ir-v0.2.json`, validated by its closed schema. Historical 0.1
+  rules and IR schemas remain unchanged. The core owns the
   finite handler implementations; the ruleset is not executable code or an
   implicitly replaceable user configuration file.
 - The initial reference environment is Hancom Office 2020 HWP 11.0.0.9136,
@@ -118,9 +119,10 @@ Supported content:
 - links, preserving label, target, and optional title in IR;
 - native HWP bullet and numbered lists;
 - line-preserving verbatim blocks;
-- figures supplied as trusted direct IR, using an explicit template-specific
-  figure, caption, and source-line mapping. CommonMark/reStructuredText figure
-  normalization remains disabled until its syntax is defined.
+- figures from standalone CommonMark images or direct IR, using explicit
+  template figure/caption/source mappings. Figure and verbatim-block sources
+  use an immediately following `출처: …` paragraph under ADR 0009. The
+  reStructuredText figure convention remains unimplemented.
 
 Deferred to a later IR version:
 
@@ -152,9 +154,11 @@ unrelated template content must still be preserved.
   source aspect ratio and limit width to 142 mm. Put the caption next, followed
   immediately by a source placeholder; source metadata may later come from a
   defined CommonMark or reStructuredText convention.
-- Treat the current empty source line as a placeholder. Define the CommonMark
-  and reStructuredText source-metadata syntax and its Pandoc/IR mapping before
-  production use.
+- Absent source metadata retains the template source placeholder. CommonMark
+  source attachment is defined in ADR 0009 and `docs/specifications/ir-v0.2.md`.
+  IR 0.2 adds optional box source inlines; 0.1 files retain their original
+  closed contract. Tables share the planned adjacent-source convention but
+  table parsing/generation is not enabled by that convention.
 - Lists use the template's `body` text style plus Hancom's native bullet or
   paragraph-numbering feature. Do not insert literal list markers or reuse
   heading outline styles.
@@ -188,8 +192,10 @@ Inline = Text | Space | LineBreak | Strong | Emph | Link
 
 IR v0.1 metadata is an empty object. Tables, footnotes, page breaks, inline
 code, block quotes, raw nodes, horizontal rules, and unlisted constructors are
-not representable. Figures are representable, but their source-language syntax
-and source-metadata mapping remain open decisions.
+not representable. The current normalization target is IR 0.2, whose only
+structural extension is optional nullable VerbatimBlock.source. Readers accept
+0.1 and 0.2 against separate schemas. See `docs/development/markdown-object-sources.md`
+for the implemented CommonMark figure/source path and live HWP verification.
 
 ## Architecture
 
@@ -347,7 +353,7 @@ surrounding content, and passes structural and visual verification.
 - template insertion contract;
 - full AURI symbolic style mapping;
 - verbatim-block presentation policy;
-- CommonMark/reStructuredText figure/source syntax and Pandoc-to-IR mapping;
+- reStructuredText figure/source syntax and generated-table IR/backend support;
 - page-break representation in a later IR version;
 - initial HWP/HWPX support range and visual comparison method.
 

@@ -36,10 +36,14 @@ current files and the implementation files that are intentionally deferred
 until their toolchain decisions are made.
 
 The canonical AST-to-IR policy is the versioned product data in
-[`rules/ast2ir/ir-v0.1.json`](rules/ast2ir/ir-v0.1.json), specified in
-[`docs/specifications/ast2ir-rules-v0.1.md`](docs/specifications/ast2ir-rules-v0.1.md).
+[`rules/ast2ir/ir-v0.2.json`](rules/ast2ir/ir-v0.2.json), specified in
+[`docs/specifications/ir-v0.2.md`](docs/specifications/ir-v0.2.md).
 
-## Project IR v0.1
+## Project IR
+
+New normalization emits [IR 0.2](docs/specifications/ir-v0.2.md), adding optional
+box source metadata. The original 0.1 schema and files remain readable under
+their original contract.
 
 The first closed, backend-neutral serialization contract is now defined in:
 
@@ -88,8 +92,10 @@ cargo run -p md2hwp -- md2ir `
 ```
 
 The source example is [CommonMark](examples/commonmark-v0.1.md), and its golden
-result is [expected IR](examples/commonmark-v0.1.expected.ir.json). Figure
-normalization remains disabled, so the direct-IR figure in `ir-v0.1.json` is
+result is [expected IR](examples/commonmark-v0.1.expected.ir.json), with only the
+envelope upgraded to 0.2 for new runs. Figure and box source normalization now
+uses [the shared Markdown convention](docs/development/markdown-object-sources.md).
+The direct-IR figure in `ir-v0.1.json` is
 intentionally absent from this pair. Run the end-to-end comparison with:
 
 ```powershell

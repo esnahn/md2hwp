@@ -71,8 +71,10 @@ copied into production lowering.
 The box selector is deliberately fixture-specific. It requires one root `본문`
 paragraph containing one inline table with exactly two internal paragraphs:
 one `박스내용` content paragraph and one `출처 및 하단설명` placeholder. The
-source placeholder remains template decoration because verbatim-block IR has no
-source metadata. The full AURI reference template has a different root style
+source placeholder remains when metadata is absent. IR 0.2 box sources replace
+its text with formatted metadata, checked separately from preserved structure.
+See [Markdown object sources](../../../../docs/development/markdown-object-sources.md).
+The full AURI reference template has a different root style
 and four internal `박스내용` paragraphs, so this selector fails preflight there
 instead of guessing. A production profile must define that separate structure
 and the source-line policy first.
