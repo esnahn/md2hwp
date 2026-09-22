@@ -100,7 +100,7 @@ internal sealed record ImageExportResult(
     IReadOnlyList<ExportedPage> Pages,
     bool DocumentUnchanged);
 
-internal static class HancomPreviewWriter
+internal static partial class HancomPreviewWriter
 {
     private const string ProgId = "HWPFrame.HwpObject";
     private const string ModuleName = "FilePathCheckerModuleExample";
