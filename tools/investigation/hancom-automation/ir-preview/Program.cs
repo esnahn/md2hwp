@@ -14,6 +14,14 @@ internal static class Program
 
             switch (options.Mode)
             {
+                case OperationMode.AuthorTagged:
+                    Console.WriteLine(JsonSerializer.Serialize(HancomPreviewWriter.AuthorTaggedTemplate(
+                        options.TemplatePath!, options.OutputPath!, repositoryRoot, options.Visible), JsonOutput.Options));
+                    break;
+                case OperationMode.RenderTagged:
+                    Console.WriteLine(JsonSerializer.Serialize(HancomPreviewWriter.RenderTaggedTemplate(
+                        options.IrPath!, options.TemplatePath!, options.OutputPath!, repositoryRoot, options.Visible), JsonOutput.Options));
+                    break;
                 case OperationMode.InvestigateRanges:
                     {
                         var result = HancomPreviewWriter.InvestigateRanges(options.TemplatePath!,
@@ -128,6 +136,8 @@ internal enum OperationMode
     PrepareTemplatePair,
     ExportImages,
     InvestigateRanges,
+    AuthorTagged,
+    RenderTagged,
 }
 
 internal sealed record CommandLine(
@@ -156,6 +166,8 @@ internal sealed record CommandLine(
             "prepare-template-pair" => OperationMode.PrepareTemplatePair,
             "export-images" => OperationMode.ExportImages,
             "investigate-ranges" => OperationMode.InvestigateRanges,
+            "author-tagged" => OperationMode.AuthorTagged,
+            "render-tagged" => OperationMode.RenderTagged,
             _ => throw new ArgumentException(Usage),
         };
         string? ir = null;
@@ -202,6 +214,8 @@ internal sealed record CommandLine(
 
         var valid = mode switch
         {
+            OperationMode.AuthorTagged => ir is null && profile is null && template is not null && baseline is null && marked is null && document is null && output is not null,
+            OperationMode.RenderTagged => ir is not null && profile is null && template is not null && baseline is null && marked is null && document is null && output is not null,
             OperationMode.InvestigateRanges => ir is null && profile is null && template is not null && baseline is null && marked is not null && document is null && output is not null,
             OperationMode.Plan => ir is not null && profile is not null && template is null && baseline is null && marked is null && document is null && output is null && !visible,
             OperationMode.Probe => ir is null && profile is null && template is not null && baseline is null && marked is null && document is null && output is null,
@@ -248,6 +262,8 @@ internal sealed record CommandLine(
           hancom-ir-preview prepare-template-pair --template <input.hwp> --baseline <new.hwp> --marked <new.hwp> [--visible]
           hancom-ir-preview export-images --document <input.hwp> --output <new-directory> [--visible]
           hancom-ir-preview investigate-ranges --template <minimal.hwp> --marked <new-authored.hwp> --output <new-result.hwp> [--visible]
+          hancom-ir-preview author-tagged --template <minimal.hwp> --output <new-template.hwp> [--visible]
+          hancom-ir-preview render-tagged --ir <validated.ir.json> --template <tagged.hwp> --output <new.hwp> [--visible]
         """;
 }
 

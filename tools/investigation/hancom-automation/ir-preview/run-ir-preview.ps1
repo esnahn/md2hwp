@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("probe", "render", "prepare-template-pair", "export-images", "investigate-ranges")]
+    [ValidateSet("probe", "render", "prepare-template-pair", "export-images", "investigate-ranges", "author-tagged", "render-tagged")]
     [string]$Mode,
 
     [string]$Template,
@@ -64,6 +64,20 @@ function Resolve-InvocationPath([string]$Path) {
 
 $previewArguments = @($assemblyPath, $Mode)
 switch ($Mode) {
+    { $_ -in @("author-tagged", "render-tagged") } {
+        if ([string]::IsNullOrWhiteSpace($Template) -or
+            [string]::IsNullOrWhiteSpace($Output) -or
+            -not [string]::IsNullOrWhiteSpace($Baseline) -or
+            -not [string]::IsNullOrWhiteSpace($Marked) -or
+            -not [string]::IsNullOrWhiteSpace($Document) -or
+            -not [string]::IsNullOrWhiteSpace($ProfilePath) -or
+            ($Mode -eq "render-tagged" -and [string]::IsNullOrWhiteSpace($Ir)) -or
+            ($Mode -eq "author-tagged" -and -not [string]::IsNullOrWhiteSpace($Ir))) {
+            throw "Tagged modes require -Template and -Output; only render-tagged requires -Ir. No -Profile is accepted."
+        }
+        $previewArguments += @("--template", (Resolve-InvocationPath $Template), "--output", (Resolve-InvocationPath $Output))
+        if ($Mode -eq "render-tagged") { $previewArguments += @("--ir", (Resolve-InvocationPath $Ir)) }
+    }
     "investigate-ranges" {
         if ([string]::IsNullOrWhiteSpace($Template) -or
             [string]::IsNullOrWhiteSpace($Marked) -or
