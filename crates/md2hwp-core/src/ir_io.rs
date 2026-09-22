@@ -1,4 +1,4 @@
-//! Strict UTF-8 JSON input and validated-only output for IR v0.1.
+//! Strict UTF-8 JSON input and validated-only output for IR 0.1 and 0.2.
 
 use std::collections::HashSet;
 use std::fmt;
@@ -7,10 +7,11 @@ use jsonschema::{Draft, JSONSchema};
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde_json::{Map, Number, Value};
 
-use crate::ir::{Document, IR_VERSION, SCHEMA_NAME};
+use crate::ir::{Document, IR_VERSION, LEGACY_IR_VERSION, SCHEMA_NAME};
 use crate::validate::{SemanticError, ValidatedDocument, ValidationLimits, validate};
 
-const IR_SCHEMA: &str = include_str!("../../../schemas/ir-v0.1.schema.json");
+const IR_SCHEMA: &str = include_str!("../../../schemas/ir-v0.2.schema.json");
+const LEGACY_IR_SCHEMA: &str = include_str!("../../../schemas/ir-v0.1.schema.json");
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -154,11 +155,13 @@ fn inspect_envelope(value: &Value) -> Result<(), IrReadError> {
         None => return Err(schema_error("/schema", "missing schema member")),
     }
     match object.get("ir_version") {
-        Some(Value::String(version)) if version == IR_VERSION => Ok(()),
+        Some(Value::String(version)) if version == IR_VERSION || version == LEGACY_IR_VERSION => {
+            Ok(())
+        }
         Some(Value::String(version)) => Err(IrReadError {
             code: IrReadErrorCode::UnsupportedIrVersion,
             path: "/ir_version".to_owned(),
-            message: format!("unsupported IR version {version:?}; expected {IR_VERSION:?}"),
+            message: format!("unsupported IR version {version:?}; expected 0.1 or 0.2"),
         }),
         Some(actual) => Err(schema_error(
             "/ir_version",
@@ -169,7 +172,12 @@ fn inspect_envelope(value: &Value) -> Result<(), IrReadError> {
 }
 
 fn validate_schema(value: &Value) -> Result<(), IrReadError> {
-    let schema: Value = serde_json::from_str(IR_SCHEMA).map_err(|error| {
+    let schema_text = if value["ir_version"] == LEGACY_IR_VERSION {
+        LEGACY_IR_SCHEMA
+    } else {
+        IR_SCHEMA
+    };
+    let schema: Value = serde_json::from_str(schema_text).map_err(|error| {
         schema_error("", format!("embedded IR schema is invalid JSON: {error}"))
     })?;
     let compiled = JSONSchema::options()
@@ -320,6 +328,33 @@ mod tests {
     use crate::ir::{Block, Inline};
 
     const EXAMPLE: &[u8] = include_bytes!("../../../examples/ir-v0.1.json");
+
+    #[test]
+    fn box_sources_require_v02_and_remain_validated() {
+        let limits = ValidationLimits::default();
+        let mut value = serde_json::json!({"schema":"md2hwp.ir","ir_version":"0.2","metadata":{},
+            "blocks":[{"type":"verbatim_block","lines":["본문"],"source":[{"type":"text","value":"작성자"}]}]});
+        let input = serde_json::to_vec(&value).unwrap();
+        let valid = read_ir(&input, &limits).unwrap();
+        assert_eq!(valid, read_ir(&write_ir(&valid).unwrap(), &limits).unwrap());
+        value["ir_version"] = serde_json::json!("0.1");
+        assert_eq!(
+            read_ir(&serde_json::to_vec(&value).unwrap(), &limits)
+                .unwrap_err()
+                .code,
+            IrReadErrorCode::InvalidIrSchema
+        );
+        let mut old_typed = valid.into_document();
+        old_typed.ir_version = "0.1".into();
+        assert!(validate(old_typed, &limits).is_err());
+        value["ir_version"] = serde_json::json!("0.2");
+        value["blocks"][0]["source"] = serde_json::json!([]);
+        assert!(read_ir(&serde_json::to_vec(&value).unwrap(), &limits).is_err());
+        value["blocks"][0]["source"] = serde_json::json!(null);
+        assert!(read_ir(&serde_json::to_vec(&value).unwrap(), &limits).is_ok());
+        value["blocks"][0].as_object_mut().unwrap().remove("source");
+        assert!(read_ir(&serde_json::to_vec(&value).unwrap(), &limits).is_ok());
+    }
     const COMMONMARK_EXAMPLE: &[u8] =
         include_bytes!("../../../examples/commonmark-v0.1.expected.ir.json");
     const NON_NFC_EXAMPLE: &[u8] =
@@ -400,7 +435,7 @@ mod tests {
     #[test]
     fn reports_unsupported_version_before_schema_validation() {
         let json =
-            br#"{"schema":"md2hwp.ir","ir_version":"0.2","metadata":{},"blocks":[],"future":true}"#;
+            br#"{"schema":"md2hwp.ir","ir_version":"0.3","metadata":{},"blocks":[],"future":true}"#;
         let error = read_ir(json, &ValidationLimits::default()).unwrap_err();
         assert_eq!(error.code, IrReadErrorCode::UnsupportedIrVersion);
         assert_eq!(error.path, "/ir_version");

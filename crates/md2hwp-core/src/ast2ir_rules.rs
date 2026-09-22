@@ -11,8 +11,8 @@ use crate::ir::{IR_VERSION, SCHEMA_NAME};
 use crate::ir_io::read_strict_json_value;
 use crate::validate::ValidationLimits;
 
-const RULES_JSON: &str = include_str!("../../../rules/ast2ir/ir-v0.1.json");
-const RULES_SCHEMA: &str = include_str!("../../../schemas/ast2ir-rules-v0.1.schema.json");
+const RULES_JSON: &str = include_str!("../../../rules/ast2ir/ir-v0.2.json");
+const RULES_SCHEMA: &str = include_str!("../../../schemas/ast2ir-rules-v0.2.schema.json");
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -43,6 +43,26 @@ pub enum RejectPolicy {
 #[serde(deny_unknown_fields)]
 pub struct DocumentRules {
     pub metadata: RequireEmpty,
+    pub object_sources: ObjectSources,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ObjectSources {
+    pub handler: String,
+    pub prefix: String,
+    pub separator: String,
+    pub empty: String,
+    pub owners: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StandaloneFigure {
+    pub handler: String,
+    pub attributes: RequireEmpty,
+    pub caption: String,
+    pub context: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
@@ -54,7 +74,9 @@ pub enum RequireEmpty {
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 #[serde(tag = "handler", rename_all = "snake_case", deny_unknown_fields)]
 pub enum BlockRule {
-    Paragraph,
+    Paragraph {
+        figure: StandaloneFigure,
+    },
     Heading {
         minimum_level: u8,
         maximum_level: u8,
@@ -171,13 +193,13 @@ pub fn load_builtin_rules() -> Result<Ast2IrRules, RulesError> {
     }
     let rules: Ast2IrRules = serde_json::from_value(value)
         .map_err(|error| rules_error("", format!("typed rules decoding failed: {error}")))?;
-    if rules.schema != "md2hwp.ast2ir-rules" || rules.rules_version != "0.1" {
+    if rules.schema != "md2hwp.ast2ir-rules" || rules.rules_version != "0.2" {
         return Err(rules_error("", "unsupported rules envelope"));
     }
     if rules.target_ir.schema != SCHEMA_NAME || rules.target_ir.version != IR_VERSION {
         return Err(rules_error(
             "/target_ir",
-            "rules target does not match IR v0.1",
+            "rules target does not match IR 0.2",
         ));
     }
     if let Some(BlockRule::Heading {

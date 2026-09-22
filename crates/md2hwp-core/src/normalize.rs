@@ -1,4 +1,4 @@
-//! Closed Pandoc AST-to-IR v0.1 normalization handlers.
+//! Closed Pandoc AST-to-IR 0.2 normalization handlers.
 
 use std::fmt;
 
@@ -6,7 +6,8 @@ use serde_json::Value;
 
 use crate::ast2ir_rules::{Ast2IrRules, BlockRule, InlineRule, NumberDelimiter, NumberStyle};
 use crate::ir::{
-    Block, Document, IR_VERSION, Inline, ListItem, ListItemBlock, ListKind, Metadata, SCHEMA_NAME,
+    Block, Document, IR_VERSION, ImageRef, Inline, ListItem, ListItemBlock, ListKind, Metadata,
+    SCHEMA_NAME,
 };
 use crate::pandoc_input::PandocDocument;
 use crate::validate::{ValidatedDocument, ValidationLimits, validate};
@@ -40,12 +41,28 @@ pub fn normalize_pandoc(
             "invalid_pandoc_structure",
             "/meta",
             None,
-            "Pandoc metadata must be empty for IR v0.1",
+            "Pandoc metadata must be empty for IR 0.2",
         ));
     }
     let mut blocks = Vec::with_capacity(document.blocks.len());
-    for (index, block) in document.blocks.iter().enumerate() {
-        blocks.push(normalizer.block(block, &format!("/blocks/{index}"))?);
+    let mut index = 0;
+    while index < document.blocks.len() {
+        let path = format!("/blocks/{index}");
+        let node = &document.blocks[index];
+        let mut block = match normalizer.standalone_figure(node, &path)? {
+            Some(figure) => figure,
+            None => normalizer.block(node, &path)?,
+        };
+        if let Block::Figure { source, .. } | Block::VerbatimBlock { source, .. } = &mut block
+            && let Some(next) = document.blocks.get(index + 1)
+            && let Some(attached) =
+                normalizer.object_source(next, &format!("/blocks/{}", index + 1))?
+        {
+            *source = Some(attached);
+            index += 1;
+        }
+        blocks.push(block);
+        index += 1;
     }
     let ir = Document {
         schema: SCHEMA_NAME.to_owned(),
@@ -63,6 +80,102 @@ struct Normalizer<'a> {
 }
 
 impl Normalizer<'_> {
+    fn standalone_figure(
+        &mut self,
+        node: &Value,
+        path: &str,
+    ) -> Result<Option<Block>, NormalizeError> {
+        if node.get("t").and_then(Value::as_str) != Some("Para")
+            || !matches!(
+                self.rules.blocks.get("Para"),
+                Some(BlockRule::Paragraph { .. })
+            )
+        {
+            return Ok(None);
+        }
+        let (_, content) = self.node(node, path)?;
+        let inlines = self.array(content, &format!("{path}/c"))?;
+        if inlines.len() != 1 || inlines[0].get("t").and_then(Value::as_str) != Some("Image") {
+            return Ok(None);
+        }
+        let image_path = format!("{path}/c/0");
+        let (_, content) = self.node(&inlines[0], &image_path)?;
+        let values = self.fixed_array(content, 3, &format!("{image_path}/c"))?;
+        self.require_empty_attr(&values[0], &format!("{image_path}/c/0"), "Image")?;
+        let alt = self.inlines(
+            self.array(Some(&values[1]), &format!("{image_path}/c/1"))?,
+            &format!("{image_path}/c/1"),
+        )?;
+        let target = self.fixed_array(Some(&values[2]), 2, &format!("{image_path}/c/2"))?;
+        let resource = target[0].as_str().ok_or_else(|| {
+            self.invalid(
+                &format!("{image_path}/c/2/0"),
+                "Image",
+                "image target must be a string",
+            )
+        })?;
+        let title = target[1].as_str().ok_or_else(|| {
+            self.invalid(
+                &format!("{image_path}/c/2/1"),
+                "Image",
+                "image title must be a string",
+            )
+        })?;
+        Ok(Some(Block::Figure {
+            caption: alt.clone(),
+            image: ImageRef {
+                path: resource.to_owned(),
+                alt,
+                title: (!title.is_empty()).then(|| title.to_owned()),
+            },
+            source: None,
+        }))
+    }
+
+    fn object_source(
+        &mut self,
+        node: &Value,
+        path: &str,
+    ) -> Result<Option<Vec<Inline>>, NormalizeError> {
+        if node.get("t").and_then(Value::as_str) != Some("Para") {
+            return Ok(None);
+        }
+        let (_, content) = self.node(node, path)?;
+        let nodes = self.array(content, &format!("{path}/c"))?;
+        let prefix = &self.rules.document.object_sources.prefix;
+        if nodes
+            .first()
+            .and_then(|n| n.get("t"))
+            .and_then(Value::as_str)
+            != Some("Str")
+            || nodes
+                .first()
+                .and_then(|n| n.get("c"))
+                .and_then(Value::as_str)
+                != Some(prefix.as_str())
+        {
+            return Ok(None);
+        }
+        // Validate even the consumed prefix and separator, so unknown AST fields
+        // cannot disappear through metadata attachment.
+        self.inline(&nodes[0], &format!("{path}/c/0"))?;
+        if nodes.len() < 3 || nodes[1].get("t").and_then(Value::as_str) != Some("Space") {
+            return Err(self.invalid(
+                path,
+                "Para",
+                "object source requires '출처: ' followed by nonempty inline content",
+            ));
+        }
+        self.inline(&nodes[1], &format!("{path}/c/1"))?;
+        let source = nodes
+            .iter()
+            .enumerate()
+            .skip(2)
+            .map(|(i, node)| self.inline(node, &format!("{path}/c/{i}")))
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Some(source))
+    }
+
     fn block(&mut self, node: &Value, path: &str) -> Result<Block, NormalizeError> {
         let (constructor, content) = self.node(node, path)?;
         let rule = self
@@ -71,7 +184,7 @@ impl Normalizer<'_> {
             .get(constructor)
             .ok_or_else(|| self.unsupported(path, constructor))?;
         match (constructor, rule) {
-            ("Para", BlockRule::Paragraph) => Ok(Block::Paragraph {
+            ("Para", BlockRule::Paragraph { .. }) => Ok(Block::Paragraph {
                 inlines: self.inlines(
                     self.array(content, &format!("{path}/c"))?,
                     &format!("{path}/c"),
@@ -121,6 +234,7 @@ impl Normalizer<'_> {
                 })?;
                 Ok(Block::VerbatimBlock {
                     lines: text.split('\n').map(str::to_owned).collect(),
+                    source: None,
                 })
             }
             ("BulletList", BlockRule::BulletList) => {
@@ -254,7 +368,7 @@ impl Normalizer<'_> {
                 })
             }
             "Para" if !tight => {
-                let Some(BlockRule::Paragraph) = self.rules.blocks.get("Para") else {
+                let Some(BlockRule::Paragraph { .. }) = self.rules.blocks.get("Para") else {
                     return Err(self.unsupported(path, constructor));
                 };
                 Ok(ListItemBlock::Paragraph {
@@ -559,7 +673,9 @@ mod tests {
         let pandoc = read_pandoc_json(COMMONMARK_FIXTURE, &limits).unwrap();
         let rules = load_builtin_rules().unwrap();
         let ir = normalize_pandoc(pandoc, &rules, "commonmark", &limits).unwrap();
-        assert_eq!(ir, read_ir(EXPECTED_IR, &limits).unwrap());
+        let mut expected = read_ir(EXPECTED_IR, &limits).unwrap().into_document();
+        expected.ir_version = IR_VERSION.to_owned();
+        assert_eq!(ir.as_document(), &expected);
         assert_eq!(ir.as_document().blocks.len(), 4);
         let Block::Paragraph { inlines, .. } = &ir.as_document().blocks[1] else {
             panic!("expected paragraph")
@@ -577,7 +693,7 @@ mod tests {
         assert!(!inlines.contains(&Inline::Text {
             value: "가".to_owned()
         }));
-        let Block::VerbatimBlock { lines } = &ir.as_document().blocks[2] else {
+        let Block::VerbatimBlock { lines, .. } = &ir.as_document().blocks[2] else {
             panic!("expected verbatim block")
         };
         assert_eq!(lines, &["박스의 첫째 줄", "", "빈 줄 다음 줄", ""]);
@@ -585,6 +701,29 @@ mod tests {
             panic!("expected list")
         };
         assert!(!tight);
+    }
+
+    #[test]
+    fn normalizes_pinned_commonmark_sources_fixture() {
+        let limits = ValidationLimits::default();
+        let pandoc = read_pandoc_json(
+            include_bytes!("../../../tests/fixtures/pandoc-json/commonmark-sources-v0.2.json"),
+            &limits,
+        )
+        .unwrap();
+        let actual = normalize_pandoc(
+            pandoc,
+            &load_builtin_rules().unwrap(),
+            "commonmark",
+            &limits,
+        )
+        .unwrap();
+        let expected = read_ir(
+            include_bytes!("../../../examples/commonmark-sources-v0.2.expected.ir.json"),
+            &limits,
+        )
+        .unwrap();
+        assert_eq!(actual, expected);
     }
 
     #[test]
@@ -605,5 +744,99 @@ mod tests {
         assert_eq!(error.code, "unsupported_pandoc_node");
         assert_eq!(error.path, "/blocks/0");
         assert_eq!(error.constructor.as_deref(), Some("BlockQuote"));
+    }
+
+    fn normalize_blocks(blocks: Value) -> Result<ValidatedDocument, NormalizeError> {
+        let limits = ValidationLimits::default();
+        let bytes = serde_json::to_vec(&serde_json::json!({
+            "pandoc-api-version": [1,23,1,2], "meta": {}, "blocks": blocks
+        }))
+        .unwrap();
+        normalize_pandoc(
+            read_pandoc_json(&bytes, &limits).unwrap(),
+            &load_builtin_rules().unwrap(),
+            "pandoc-json",
+            &limits,
+        )
+    }
+
+    fn image() -> Value {
+        serde_json::json!({"t":"Image","c":[["",[],[]],[{"t":"Str","c":"그림"}],["assets/image.png","제목"]]})
+    }
+
+    #[test]
+    fn attaches_one_adjacent_source_to_figures_and_boxes() {
+        use serde_json::json;
+        let source = json!({"t":"Para","c":[{"t":"Str","c":"출처:"},{"t":"Space"},{"t":"Strong","c":[{"t":"Str","c":"작성자"}]}]});
+        let result = normalize_blocks(json!([
+            {"t":"Para","c":[image()]}, source.clone(), source.clone(),
+            {"t":"CodeBlock","c":[["",[],[]],"첫째\n\n셋째\n"]}, source,
+            {"t":"CodeBlock","c":[["",[],[]],"출처 없음"]}
+        ]))
+        .unwrap()
+        .into_document();
+        assert_eq!(result.ir_version, "0.2");
+        assert_eq!(result.blocks.len(), 4);
+        let Block::Figure {
+            image,
+            caption,
+            source: Some(source),
+        } = &result.blocks[0]
+        else {
+            panic!("figure")
+        };
+        assert_eq!(image.alt, *caption);
+        assert_eq!(image.title.as_deref(), Some("제목"));
+        assert!(matches!(source[0], Inline::Strong { .. }));
+        assert!(matches!(result.blocks[1], Block::Paragraph { .. }));
+        assert!(matches!(
+            result.blocks[2],
+            Block::VerbatimBlock {
+                source: Some(_),
+                ..
+            }
+        ));
+        assert!(matches!(
+            result.blocks[3],
+            Block::VerbatimBlock { source: None, .. }
+        ));
+    }
+
+    #[test]
+    fn rejects_unsupported_image_contexts_and_empty_sources() {
+        use serde_json::json;
+        let mixed =
+            normalize_blocks(json!([{"t":"Para","c":[{"t":"Str","c":"앞"},image()]}])).unwrap_err();
+        assert_eq!(mixed.constructor.as_deref(), Some("Image"));
+        assert_eq!(mixed.path, "/blocks/0/c/1");
+        assert!(normalize_blocks(json!([{"t":"Para","c":[image(),image()]}])).is_err());
+        assert!(
+            normalize_blocks(json!([{"t":"BulletList","c":[[{"t":"Plain","c":[image()]}]]}]))
+                .is_err()
+        );
+        let empty = normalize_blocks(
+            json!([{"t":"Para","c":[image()]},{"t":"Para","c":[{"t":"Str","c":"출처:"}]}]),
+        )
+        .unwrap_err();
+        assert_eq!(empty.path, "/blocks/1");
+        let unsupported = normalize_blocks(json!([{"t":"Para","c":[image()]},{"t":"Para","c":[{"t":"Str","c":"출처:"},{"t":"Space"},{"t":"Code","c":[["",[],[]],"x"]}]}])).unwrap_err();
+        assert_eq!(unsupported.path, "/blocks/1/c/2");
+        assert_eq!(unsupported.constructor.as_deref(), Some("Code"));
+    }
+
+    #[test]
+    fn rejects_image_attributes_empty_captions_and_unsafe_resources() {
+        use serde_json::json;
+        for target in ["https://example.com/a.png", "/a.png", "C:\\a.png"] {
+            let mut node = image();
+            node["c"][2][0] = json!(target);
+            assert!(normalize_blocks(json!([{"t":"Para","c":[node]}])).is_err());
+        }
+        let mut node = image();
+        node["c"][0][0] = json!("id");
+        assert!(normalize_blocks(json!([{"t":"Para","c":[node]}])).is_err());
+        let mut node = image();
+        node["c"][1] = json!([]);
+        assert!(normalize_blocks(json!([{"t":"Para","c":[node]}])).is_err());
     }
 }

@@ -5,7 +5,8 @@ use std::fmt;
 use icu_normalizer::ComposingNormalizerBorrowed;
 
 use crate::ir::{
-    Block, Document, IR_VERSION, Inline, ListItem, ListItemBlock, ListKind, SCHEMA_NAME,
+    Block, Document, IR_VERSION, Inline, LEGACY_IR_VERSION, ListItem, ListItemBlock, ListKind,
+    SCHEMA_NAME,
 };
 
 const NFC: ComposingNormalizerBorrowed<'static> = ComposingNormalizerBorrowed::new_nfc();
@@ -77,11 +78,25 @@ pub fn validate(
         "schema must be md2hwp.ir",
     )?;
     state.require(
-        document.ir_version == IR_VERSION,
+        document.ir_version == IR_VERSION || document.ir_version == LEGACY_IR_VERSION,
         "/ir_version",
-        "IR version must be 0.1",
+        "IR version must be 0.1 or 0.2",
     )?;
     for (index, block) in document.blocks.iter().enumerate() {
+        if document.ir_version == LEGACY_IR_VERSION
+            && matches!(
+                block,
+                Block::VerbatimBlock {
+                    source: Some(_),
+                    ..
+                }
+            )
+        {
+            return state.fail(
+                &format!("/blocks/{index}/source"),
+                "box source requires IR 0.2",
+            );
+        }
         state.block(block, &format!("/blocks/{index}"))?;
     }
     Ok(ValidatedDocument(document))
@@ -151,7 +166,7 @@ impl State<'_> {
                 )?;
                 self.inline_array(inlines, &format!("{path}/inlines"), false)
             }
-            Block::VerbatimBlock { lines } => {
+            Block::VerbatimBlock { lines, source } => {
                 self.require(
                     !lines.is_empty(),
                     &format!("{path}/lines"),
@@ -166,6 +181,9 @@ impl State<'_> {
                         "verbatim-block line contains a forbidden control character",
                     )?;
                     self.add_limited("text bytes", &line_path, line.len())?;
+                }
+                if let Some(source) = source {
+                    self.inline_array(source, &format!("{path}/source"), false)?;
                 }
                 Ok(())
             }
@@ -510,6 +528,7 @@ mod tests {
             (
                 Block::VerbatimBlock {
                     lines: vec!["가".to_owned()],
+                    source: None,
                 },
                 "/blocks/0/lines/0",
             ),
@@ -669,6 +688,7 @@ mod tests {
     fn accepts_tabs_and_blank_lines_in_verbatim_blocks() {
         let input = document(vec![Block::VerbatimBlock {
             lines: vec!["첫째\t열".to_owned(), "".to_owned()],
+            source: None,
         }]);
         validate(input, &ValidationLimits::default()).unwrap();
     }

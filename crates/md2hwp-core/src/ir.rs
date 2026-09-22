@@ -1,9 +1,10 @@
-//! Closed, backend-neutral IR v0.1 types.
+//! Closed, backend-neutral IR types with version-specific validation.
 
 use serde::{Deserialize, Serialize};
 
 pub const SCHEMA_NAME: &str = "md2hwp.ir";
-pub const IR_VERSION: &str = "0.1";
+pub const IR_VERSION: &str = "0.2";
+pub const LEGACY_IR_VERSION: &str = "0.1";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -30,6 +31,8 @@ pub enum Block {
     },
     VerbatimBlock {
         lines: Vec<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        source: Option<Vec<Inline>>,
     },
     List {
         kind: ListKind,
