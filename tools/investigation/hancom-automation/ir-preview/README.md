@@ -5,6 +5,12 @@ backend. It shows how validated IR plus a closed investigation template profile
 can drive a safe edit of an HWP copy before the production lowering contract is
 implemented.
 
+The separate [explicit-range declaration experiment](../../../../docs/design/template-declarations-investigation.md)
+defines insertion points, paragraph samples, paired prototype boundaries, and
+owner-scoped slots. `TemplateDeclarations.cs` is a COM-free lexical validator
+with a separate fixture harness; it is not connected to any preview mode and
+does not replace the required investigation profile.
+
 It has five modes:
 
 - `plan` parses the closed IR v0.1 shape without COM and emits the exact preview

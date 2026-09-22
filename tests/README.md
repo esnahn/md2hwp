@@ -13,6 +13,14 @@ Use these subtrees as the suite grows:
 Generated output belongs in `artifacts/`, never beside immutable fixtures.
 Examples may be reused by tests, but a test should not mutate them.
 
+`fixtures/template-declarations/explicit-ranges.txt` models an ordered stream
+of paragraph text for the experimental template declaration scanner. It is not
+an HWP fixture or a serialized public document format. The C# console harness
+under `tools/investigation/hancom-automation/template-declarations-tests` checks
+explicit bounds and slot ownership plus malformed mutations of that fixture.
+See the [investigation draft](../docs/design/template-declarations-investigation.md)
+for its command and the native/visual checks still required.
+
 `fixtures/templates/minimal.hwp` is identified by exact byte length and SHA-256
 in the non-production AURI investigation profile. Contract smoke validates the
 closed profile and identity, while the C# preview smoke verifies that a changed
