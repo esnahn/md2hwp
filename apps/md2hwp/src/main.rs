@@ -7,6 +7,8 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{self, Command, Stdio};
 
+use md2hwp_core::ir::Block;
+use md2hwp_core::validate::validate;
 use md2hwp_core::{
     ValidationLimits, load_builtin_rules, normalize_pandoc, read_pandoc_json, write_ir,
 };
@@ -74,6 +76,13 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
     let rules = load_builtin_rules().map_err(|error| error.to_string())?;
     let ir =
         normalize_pandoc(pandoc, &rules, reader, &limits).map_err(|error| error.to_string())?;
+    let mut document = ir.into_document();
+    for block in &mut document.blocks {
+        if let Block::Figure { image, .. } = block {
+            image.path = rebase_image_path(&image.path, &options.input, &options.output)?;
+        }
+    }
+    let ir = validate(document, &limits).map_err(|error| error.to_string())?;
     let serialized = write_ir(&ir).map_err(|error| error.to_string())?;
 
     if options.output.exists() && !options.force {
@@ -93,6 +102,48 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
         .map_err(|error| format!("could not write {}: {error}", options.output.display()))?;
     println!("{}", options.output.display());
     Ok(())
+}
+
+fn rebase_image_path(resource: &str, input: &Path, output: &Path) -> Result<String, String> {
+    fn absolute(path: &Path) -> Result<PathBuf, String> {
+        let absolute = std::path::absolute(path).map_err(|error| error.to_string())?;
+        let mut normalized = PathBuf::new();
+        for component in absolute.components() {
+            match component {
+                std::path::Component::CurDir => {}
+                std::path::Component::ParentDir => {
+                    normalized.pop();
+                }
+                _ => normalized.push(component.as_os_str()),
+            }
+        }
+        Ok(normalized)
+    }
+    let input = absolute(input)?;
+    let output = absolute(output)?;
+    let target = absolute(&input.parent().ok_or("input has no parent")?.join(resource))?;
+    let base = output.parent().ok_or("output has no parent")?;
+    let target_parts: Vec<_> = target.components().collect();
+    let base_parts: Vec<_> = base.components().collect();
+    if target_parts.first() != base_parts.first() {
+        return Err("image and IR output must be on the same filesystem root".to_owned());
+    }
+    let common = target_parts
+        .iter()
+        .zip(&base_parts)
+        .take_while(|(a, b)| a == b)
+        .count();
+    let mut relative = PathBuf::new();
+    for _ in common..base_parts.len() {
+        relative.push("..");
+    }
+    for component in &target_parts[common..] {
+        relative.push(component.as_os_str());
+    }
+    relative
+        .to_str()
+        .map(|path| path.replace('\\', "/"))
+        .ok_or_else(|| "image path is not Unicode".to_owned())
 }
 
 fn verify_pandoc(path: &Path) -> Result<(), AppError> {
@@ -245,6 +296,28 @@ fn usage() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn image_paths_follow_input_when_ir_moves() {
+        assert_eq!(
+            rebase_image_path(
+                "../assets/image.png",
+                Path::new("examples/source.md"),
+                Path::new("artifacts/nested/out.json")
+            )
+            .unwrap(),
+            "../../assets/image.png"
+        );
+        assert_eq!(
+            rebase_image_path(
+                "한글.png",
+                Path::new("examples/source.md"),
+                Path::new("examples/out.json")
+            )
+            .unwrap(),
+            "한글.png"
+        );
+    }
 
     fn arguments(values: &[&str]) -> Vec<std::ffi::OsString> {
         values.iter().map(std::ffi::OsString::from).collect()
