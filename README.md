@@ -14,8 +14,12 @@ The accepted next design is **validated IR + an authored HWP template** as the
 render inputs, with role declarations and reusable style/structure samples
 inside the template instead of a separately maintained profile JSON. See
 [ADR 0008](docs/decisions/0008-template-owned-bindings.md). This direction is
-not implemented yet: the current investigation renderer still requires its
-external profile, and native tag/field representation remains to be tested.
+implemented for the `minimal-1` investigation path: the tracked
+[`minimal-tagged-v1.hwp`](tests/fixtures/templates/minimal-tagged-v1.hwp) and
+`render-tagged` command accept IR and a tagged HWP without an external profile.
+See the [usage guide and verification evidence](docs/development/minimal-tagged-template.md).
+The existing `render` command retains its investigation profile. General
+template support and the production worker interface remain open.
 
 The repository is organized by product responsibility:
 

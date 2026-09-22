@@ -1,6 +1,6 @@
 # ADR 0008: Template-owned bindings
 
-- Status: accepted direction; native representation pending investigation
+- Status: accepted direction; dedicated markers implemented for minimal-1 investigation
 - Date: 2026-09-22
 
 ## Decision
@@ -44,10 +44,13 @@ must identify the complete structure and its content slots, not merely a
 paragraph style. Strong and emphasis remain character-shape patches over the
 resolved base style; list numbering remains native and IR controls its start.
 
-Plain-text markers such as `{{md2hwp:body}}` are illustrative, not an adopted
-syntax. Compare dedicated text markers with named Hancom fields/bookmarks in
-the reference environment before choosing their native representation. Define
-scope, cardinality, range boundaries, and safe removal in that investigation.
+The [minimal-1 investigation](../development/minimal-tagged-template.md) now
+adopts dedicated text markers such as `{{md2hwp:body}}` within a closed,
+fixture-family-specific scope. Its paired ranges, slots, cardinality, and safe
+removal are implemented and verified in saved/reopened HWP files. This does
+not adopt the earlier experimental-1 draft as a general production grammar.
+Comparison with named Hancom fields/bookmarks remains required before choosing
+the general production representation.
 Do not assume that replacing field text can insert arbitrary document blocks.
 
 ## Validation and migration
@@ -86,5 +89,6 @@ replay, resource boundaries, and output verification remain required.
    fixtures and tests before integrating a production render command.
 
 Live COM investigations must follow the approved interactive context in
-`docs/development/environment.md`. This decision records no new live result
-and does not claim HWPX compatibility.
+`docs/development/environment.md`. Live minimal-1 results and the tracked
+usable template are documented in the linked guide; they do not establish
+HWPX compatibility or a production worker invocation protocol.

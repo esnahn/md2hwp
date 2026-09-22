@@ -66,3 +66,15 @@ the current double-curly-brace marker fixture.
 Every AST-to-IR ruleset needs fixtures for each declared handler and for
 unlisted-constructor rejection. Equivalent backends are compared by semantic
 postconditions, not by requiring identical native operation sequences.
+
+## Tagged minimal template
+
+`fixtures/templates/minimal-tagged-v1.hwp` is the authored, usable `minimal-1`
+template. Its provenance, exact tags, render commands, native verification,
+and scope are recorded in
+[`minimal-tagged-template.md`](../docs/development/minimal-tagged-template.md).
+`fixtures/ir/tagged-template-conformance-v0.1.json` exercises same-paragraph
+line breaks in body/list text, repeated boxes, native heading markers, and
+literal tag-like manuscript text. The contract smoke validates this IR; the
+native results and page inspection are documented separately from COM-free
+tests.

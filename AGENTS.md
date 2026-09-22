@@ -247,10 +247,20 @@ If adopted later, `backends/rhwp` contains md2hwp's integration code,
 
 ## Template and backend rules
 
+- The investigation now provides `author-tagged` and `render-tagged`, plus
+  `tests/fixtures/templates/minimal-tagged-v1.hwp`. The closed `minimal-1`
+  contract binds declarations inside the HWP without loading an external
+  profile. See `docs/development/minimal-tagged-template.md` for commands,
+  exact range/slot rules, verification, and limitations. Preserve the original
+  `minimal.hwp` and existing investigation profiles. This is not the general
+  production worker protocol or HWPX support.
+
 - ADR 0008 adopts template-owned production bindings: users supply IR and an
   authored HWP template without a separate profile JSON. Inspect template
-  declarations into validated internal bindings. Native tag/field syntax is
-  pending investigation; do not treat illustrative markers as implemented.
+  declarations into validated internal bindings. Dedicated text markers are
+  implemented only for `minimal-1`; general native tag/field syntax remains
+  pending investigation. Do not confuse the experimental-1 lexical draft
+  with the implemented minimal-1 contract.
   Existing investigation profiles retain their contracts until a tested
   replacement is adopted. Define the worker invocation contract after the
   template declaration investigation. This supersedes the separate-input

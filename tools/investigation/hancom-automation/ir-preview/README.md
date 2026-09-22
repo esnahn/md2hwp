@@ -11,7 +11,16 @@ owner-scoped slots. `TemplateDeclarations.cs` is a COM-free lexical validator
 with a separate fixture harness. Only the dedicated `investigate-ranges` mode
 consumes it; the render mode still requires its investigation profile.
 
-It has six modes:
+It has eight modes:
+
+- `author-tagged` authors explicit sample ranges, style declarations, and
+  prototype slots in a copy of the exact original minimal fixture.
+- `render-tagged` consumes IR plus a `minimal-1` tagged HWP, with no external
+  profile. It binds actual native sample styles, preserves same-paragraph line
+  breaks, clones box/figure structures, removes the bounded sample area, and
+  verifies the saved/reopened result. See the
+  [tagged template guide](../../../../docs/development/minimal-tagged-template.md)
+  for the precise contract, commands, tested coverage, and limits.
 
 - `investigate-ranges` performs the profile-free, minimal-fixture-only
   [native paragraph-range experiment](../../../../docs/development/template-range-investigation.md).
@@ -54,8 +63,9 @@ literal marker is inserted. A `verbatim_block` is lowered to one typed
 during render, clones the uniquely matched box prototype from
 `tests/fixtures/templates/minimal.hwp`. Its logical lines remain inside one
 native box paragraph as HWP line breaks, including empty and trailing lines. IR
-line breaks outside a verbatim block are still previewed as separate HWP
-paragraphs. These limitations are present in `plan` output and must not be
+line breaks outside a verbatim block in the legacy `render` mode are still
+previewed as separate HWP paragraphs; `render-tagged` preserves them within
+their paragraph. Legacy limitations are present in `plan` output and must not be
 copied into production lowering.
 
 The box selector is deliberately fixture-specific. It requires one root `본문`
