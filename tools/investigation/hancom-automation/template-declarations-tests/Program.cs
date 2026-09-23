@@ -136,3 +136,9 @@ foreach (var version in new[] { "0.1", "0.2" })
     if (!failed) throw new Exception("Invalid box source accepted for " + version);
 }
 Console.WriteLine("Source plan checks passed: figure/box metadata and marks retained; 0.1 extension and empty 0.2 source rejected.");
+
+var spaced = HwpMarkup.Parse("<HWPML>\n <P><TEXT><CHAR>A</CHAR></TEXT>\n" +
+    " <TEXT><CHAR> </CHAR></TEXT><TEXT><CHAR>B<LINEBREAK/>  </CHAR></TEXT></P>\n</HWPML>");
+if (spaced.Root!.Value != "A B  " || spaced.Root.Nodes().OfType<XText>().Any())
+    throw new Exception("HWPML parsing lost manuscript spaces or retained structural indentation.");
+Console.WriteLine("HWPML whitespace checks passed: space-only character runs and spaces after line breaks preserved.");

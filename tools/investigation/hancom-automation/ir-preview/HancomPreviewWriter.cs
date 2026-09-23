@@ -334,7 +334,7 @@ internal static partial class HancomPreviewWriter
             var markerParagraphs = WithHwp(module, hwp =>
             {
                 Open(hwp, markedTemporary, visible);
-                var before = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+                var before = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
                 if (CountMarkerParagraphs(before, ComparisonMarker) != 0 ||
                     before.Descendants().Any(element =>
                         element.Value.Contains(ComparisonMarker, StringComparison.Ordinal)))
@@ -351,7 +351,7 @@ internal static partial class HancomPreviewWriter
                 CloseDocument(hwp);
                 Open(hwp, markedTemporary, visible);
 
-                var reopened = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+                var reopened = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
                 var count = CountMarkerParagraphs(reopened, ComparisonMarker);
                 if (count != 1)
                 {
@@ -646,7 +646,7 @@ internal static partial class HancomPreviewWriter
 
         var marker = profile.InsertionTarget.Marker ??
             throw new InvalidOperationException("The marker insertion target has no marker text.");
-        var beforeDocument = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var beforeDocument = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
         var beforeRoots = beforeDocument.Descendants()
             .Where(element => element.Name.LocalName == "SECTION")
             .SelectMany(section => section.Elements()
@@ -676,7 +676,7 @@ internal static partial class HancomPreviewWriter
         Run(hwp, "MoveSelNextParaBegin");
         Run(hwp, "Delete");
 
-        var afterDocument = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var afterDocument = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
         var afterRoots = afterDocument.Descendants()
             .Where(element => element.Name.LocalName == "SECTION")
             .SelectMany(section => section.Elements()
@@ -1026,7 +1026,7 @@ internal static partial class HancomPreviewWriter
         // Style/GetDefault's Apply value was not reliable after native box
         // insertion on the reference host; inspect the actual root instead.
         Run(hwp, "MoveDocEnd");
-        XDocument currentDocument = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        XDocument currentDocument = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
         var current = int.Parse(AuriMinimalBoxPrototype.RootParagraphs(currentDocument)[^1].Attribute("Style")!.Value);
         if (current == target.Id)
         {
@@ -1414,7 +1414,7 @@ internal static partial class HancomPreviewWriter
                 "Saved preview lost paragraphs before native-list verification.");
         }
 
-        var document = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
         int? activeListId = null;
         int? activeDefinitionId = null;
         var verified = 0;
@@ -1648,14 +1648,14 @@ internal static partial class HancomPreviewWriter
     private static int CountPictures(dynamic hwp)
     {
         var xml = (string)hwp.GetTextFile("HWPML2X", "");
-        return XDocument.Parse(xml)
+        return HwpMarkup.Parse(xml)
             .Descendants()
             .Count(element => element.Name.LocalName == "PICTURE");
     }
 
     private static int CountFigureAutoNumbers(dynamic hwp) =>
         AuriMinimalCaptionPrototype.CountFigureAutoNumbers(
-            XDocument.Parse((string)hwp.GetTextFile("HWPML2X", "")));
+            HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", "")));
 
     private static int CountNativeListParagraphs(dynamic hwp)
     {
@@ -1665,7 +1665,7 @@ internal static partial class HancomPreviewWriter
 
     private static IReadOnlyList<SavedParagraph> ReadParagraphs(dynamic hwp)
     {
-        var document = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
         var characterShapes = HwpmlCharacterShapes.Read(document);
         var paragraphShapes = document.Descendants()
             .Where(element => element.Name.LocalName == "PARASHAPE")
@@ -1888,7 +1888,7 @@ internal sealed class AuriPreviewStyleBindings
         dynamic hwp,
         InvestigationTemplateProfile profile)
     {
-        var document = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
         return BindDocument(document, profile);
     }
 

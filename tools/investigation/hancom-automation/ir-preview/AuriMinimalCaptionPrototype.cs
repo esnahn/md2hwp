@@ -56,7 +56,7 @@ internal sealed class AuriMinimalCaptionPrototype
             throw new InvalidOperationException("Hancom returned an empty native HWP caption block.");
         }
 
-        var selectedDocument = XDocument.Parse(selectedBlock);
+        var selectedDocument = HwpMarkup.Parse(selectedBlock);
         ValidateSelectedBlock(selectedDocument, styles.Profile.CaptionSelector);
 
         return new AuriMinimalCaptionPrototype(
@@ -204,7 +204,7 @@ internal sealed class AuriMinimalCaptionPrototype
     }
 
     public static XDocument ReadDocument(dynamic hwp) =>
-        XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
 
     public static IReadOnlyList<XElement> RootParagraphs(XDocument document) =>
         AuriMinimalBoxPrototype.RootParagraphs(document);

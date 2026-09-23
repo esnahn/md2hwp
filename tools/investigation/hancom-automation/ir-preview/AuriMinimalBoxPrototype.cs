@@ -56,7 +56,7 @@ internal sealed class AuriMinimalBoxPrototype
             throw new InvalidOperationException("Hancom returned an empty native HWP box block.");
         }
 
-        var selectedDocument = XDocument.Parse(selectedBlock);
+        var selectedDocument = HwpMarkup.Parse(selectedBlock);
         var selectedStyles = AuriPreviewStyleBindings.BindDocument(
             selectedDocument,
             styles.Profile);
@@ -262,7 +262,7 @@ internal sealed class AuriMinimalBoxPrototype
     }
 
     public static XDocument ReadDocument(dynamic hwp) =>
-        XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
 
     public static IReadOnlyList<XElement> RootParagraphs(XDocument document)
     {

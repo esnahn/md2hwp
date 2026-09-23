@@ -27,7 +27,7 @@ internal static partial class HancomPreviewWriter
                 if (original.Length != 8 || TaggedTemplateBinding.DirectText(original[2]) != "AURI 기본연구보고서 변환 예시")
                     throw new InvalidDataException("Unexpected minimal content layout.");
                 var prefix = original.Take(2).ToArray();
-                XDocument originalDocument = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+                XDocument originalDocument = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
                 var styles = originalDocument.Descendants().Where(e => e.Name.LocalName == "STYLE" && (string?)e.Attribute("Type") == "Para")
                     .ToDictionary(e => e.Attribute("Name")!.Value, e => int.Parse(e.Attribute("Id")!.Value));
                 int body = styles["본문"], reset = styles["바탕글"];
@@ -71,7 +71,7 @@ internal static partial class HancomPreviewWriter
                 Append(TaggedTemplateBinding.Tag("end:samples"), reset);
                 Append(TaggedTemplateBinding.Tag("content"), body);
                 Run(hwp, "FileSave"); CloseDocument(hwp); Open(hwp, temporary, visible);
-                XDocument reopened = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+                XDocument reopened = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
                 var binding = TaggedTemplateBinding.Read(reopened, temporary);
                 TemplateRangeStructure.RequireOriginalStyleDefinitions(originalDocument, reopened, prefix);
                 var resolved = AuriPreviewStyleBindings.BindDocument(reopened, binding.Profile);
@@ -105,7 +105,7 @@ internal static partial class HancomPreviewWriter
             WithHwp(module, hwp =>
             {
                 Open(hwp, temporary, visible);
-                XDocument document = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+                XDocument document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
                 var binding = TaggedTemplateBinding.Read(document, temporary);
                 var profile = binding.Profile;
                 var plan = IrPreviewPlan.Load(irPath, repositoryRoot, profile);
@@ -141,7 +141,7 @@ internal static partial class HancomPreviewWriter
                 VerifyCaptions(hwp, plan, styles, caption, start, verifyPrototype: false);
                 VerifyLists(hwp, plan, profile, start);
                 XElement[] finalRoots = RangeRoots(hwp);
-                XDocument finalDocument = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+                XDocument finalDocument = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
                 TemplateRangeStructure.RequireOriginalStyleDefinitions(document, finalDocument, prefix);
                 if (!TemplateRangeStructure.Equivalent(prefix, finalRoots.Take(prefix.Length).ToArray(), document, finalDocument))
                     throw new InvalidOperationException("Rendering changed static cover/header content: " +

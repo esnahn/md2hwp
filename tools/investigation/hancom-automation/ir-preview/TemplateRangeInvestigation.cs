@@ -125,7 +125,7 @@ internal static partial class HancomPreviewWriter
 
     private static XElement[] RangeRoots(dynamic hwp)
     {
-        var document = XDocument.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
         var sections = document.Descendants().Where(e => e.Name.LocalName == "SECTION").ToArray();
         if (sections.Length != 1) throw new InvalidOperationException("Range experiment requires one section.");
         return sections[0].Elements().Where(e => e.Name.LocalName == "P").ToArray();
