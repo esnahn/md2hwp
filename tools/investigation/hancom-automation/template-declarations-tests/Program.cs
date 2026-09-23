@@ -1,6 +1,32 @@
 using Md2Hwp.HancomIrPreview;
 using System.Xml.Linq;
 
+var replacementRoot = Path.Combine(Path.GetTempPath(), "md2hwp-replacement-" + Guid.NewGuid().ToString("N"));
+Directory.CreateDirectory(replacementRoot);
+var replacementTemplate = Path.Combine(replacementRoot, "template.hwp");
+var replacementOutput = Path.Combine(replacementRoot, "result.hwp");
+var replacementTemporary = Path.Combine(replacementRoot, "temporary.hwp");
+try
+{
+    File.WriteAllText(replacementTemplate, "template");
+    File.WriteAllText(replacementOutput, "previous result");
+    HancomPreviewWriter.ValidateRenderedOutput(replacementOutput, replacementTemplate);
+    try { HancomPreviewWriter.ValidateRenderedOutput(replacementTemplate, replacementTemplate); throw new Exception("Template overwrite accepted."); }
+    catch (IOException) { }
+    try { HancomPreviewWriter.PublishRenderedOutput(replacementTemporary, replacementOutput); throw new Exception("Missing temporary accepted."); }
+    catch (FileNotFoundException) { }
+    if (File.ReadAllText(replacementOutput) != "previous result") throw new Exception("Failed publication changed old result.");
+    File.WriteAllText(replacementTemporary, "new result");
+    HancomPreviewWriter.PublishRenderedOutput(replacementTemporary, replacementOutput);
+    if (File.ReadAllText(replacementOutput) != "new result" || File.ReadAllText(replacementTemplate) != "template")
+        throw new Exception("Replacement or template preservation failed.");
+}
+finally
+{
+    foreach (var path in new[] { replacementTemplate, replacementOutput, replacementTemporary }) File.Delete(path);
+    Directory.Delete(replacementRoot);
+}
+
 var shortDefault = CommandLine.Parse(["원고 폴더/보고서.v2.ir.json"]);
 if (shortDefault.OutputPath != Path.GetFullPath("원고 폴더/보고서.v2.result.hwp") ||
     shortDefault.Mode != OperationMode.RenderTagged ||

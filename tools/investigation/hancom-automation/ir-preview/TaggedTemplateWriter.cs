@@ -93,7 +93,7 @@ internal static partial class HancomPreviewWriter
         string outputPath, string repositoryRoot, bool visible)
     {
         var source = ValidateTemplate(templatePath);
-        var output = ValidateNewHwpPath(outputPath, "Rendered document");
+        var output = ValidateRenderedOutput(outputPath, source, irPath);
         var hash = HashFile(source);
         if (!File.Exists(irPath)) throw new FileNotFoundException("Missing IR input.", irPath);
         EnsureInteractiveContext(); EnsureNoExistingHwpProcess();
@@ -168,11 +168,38 @@ internal static partial class HancomPreviewWriter
                 return true;
             });
             if (HashFile(source) != hash) throw new InvalidOperationException("Source template changed.");
-            File.Move(temporary, output);
+            PublishRenderedOutput(temporary, output);
             return new(output, "minimal-1", true, true);
         }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
+
+    internal static string ValidateRenderedOutput(string outputPath, params string[] protectedPaths)
+    {
+        var output = Path.GetFullPath(outputPath);
+        if (!string.Equals(Path.GetExtension(output), ".hwp", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Rendered document must preserve HWP format.");
+        if (Directory.Exists(output)) throw new IOException($"Output is a directory: {output}");
+        static string Identity(string path)
+        {
+            var full = Path.GetFullPath(path);
+            var parent = Path.GetDirectoryName(full);
+            if (parent is null) return full;
+            FileSystemInfo info = Directory.Exists(full) ? new DirectoryInfo(full) : new FileInfo(full);
+            var target = info.ResolveLinkTarget(true);
+            return target is not null ? Identity(target.FullName) : Path.Combine(Identity(parent), Path.GetFileName(full));
+        }
+        foreach (var path in protectedPaths)
+        {
+            if (string.Equals(output, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase) ||
+                (File.Exists(output) && File.Exists(path) && string.Equals(Identity(output), Identity(path), StringComparison.OrdinalIgnoreCase)))
+                throw new IOException($"Output must not replace input: {path}");
+        }
+        if (!Directory.Exists(Path.GetDirectoryName(output))) throw new DirectoryNotFoundException($"Missing output directory: {output}");
+        return output;
+    }
+
+    internal static void PublishRenderedOutput(string temporary, string output) => File.Move(temporary, output, overwrite: true);
 
     private static void VerifyTaggedLineBreaks(IReadOnlyList<XElement> roots, IrPreviewPlan plan)
     {

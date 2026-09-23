@@ -120,8 +120,22 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
         fs::create_dir_all(parent)
             .map_err(|error| format!("could not create {}: {error}", parent.display()))?;
     }
-    fs::write(&options.output, serialized)
-        .map_err(|error| format!("could not write {}: {error}", options.output.display()))?;
+    let absolute_output = std::path::absolute(&options.output).map_err(|e| e.to_string())?;
+    let mut temporary = tempfile::NamedTempFile::new_in(absolute_output.parent().unwrap())
+        .map_err(|e| e.to_string())?;
+    temporary
+        .write_all(&serialized)
+        .map_err(|e| e.to_string())?;
+    temporary.as_file().sync_all().map_err(|e| e.to_string())?;
+    if options.force {
+        temporary
+            .persist(&absolute_output)
+            .map_err(|e| e.to_string())?;
+    } else {
+        temporary
+            .persist_noclobber(&absolute_output)
+            .map_err(|e| e.to_string())?;
+    }
     println!("{}", options.output.display());
     Ok(())
 }
@@ -154,17 +168,19 @@ fn manuscript_paths(
 
 fn convert_manuscript(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
     let (input, ir, output) = manuscript_paths(&arguments)?;
-    // Check both destinations before invoking Pandoc or writing the persistent IR.
+    // Protect source/template aliases before writing either generated file.
     for destination in [&ir, &output] {
         ensure_distinct_paths(&input, destination)?;
-        if destination.exists() {
-            return Err(format!("Output already exists: {}", destination.display()).into());
-        }
+        let template = env::current_exe()
+            .map_err(|e| e.to_string())?
+            .with_file_name("template.hwp");
+        ensure_distinct_paths(&template, destination)?;
     }
     run(vec![
         "md2ir".into(),
         "--from".into(),
         "commonmark".into(),
+        "--force".into(),
         "--input".into(),
         input.as_os_str().into(),
         "--output".into(),
@@ -400,17 +416,17 @@ mod tests {
     }
 
     #[test]
-    fn shorthand_collision_does_not_create_other_output_or_touch_source() {
+    fn invalid_source_preserves_existing_outputs() {
         for extension in ["ir.json", "result.hwp"] {
             let root = tempfile::tempdir().unwrap();
             let source = root.path().join("원고.md");
-            fs::write(&source, "# 원고").unwrap();
+            fs::write(&source, [0xff]).unwrap();
             let existing = source.with_extension(extension);
             fs::write(&existing, "preserve").unwrap();
             let error = run(vec![source.as_os_str().into()]).err().unwrap();
-            assert!(error.message.contains("already exists"));
+            assert!(error.message.contains("not UTF-8"));
             assert_eq!(fs::read_to_string(&existing).unwrap(), "preserve");
-            assert_eq!(fs::read_to_string(&source).unwrap(), "# 원고");
+            assert_eq!(fs::read(&source).unwrap(), vec![0xff]);
             assert_eq!(fs::read_dir(root.path()).unwrap().count(), 2);
         }
     }

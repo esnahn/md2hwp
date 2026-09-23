@@ -154,7 +154,15 @@ pub fn run_with_resource_root(
         }
     }
     if output.exists() {
-        return Err(format!("Output already exists: {}", output.display()));
+        let resolved = fs::canonicalize(&output).map_err(|e| e.to_string())?;
+        for protected in [&template, &ir, &worker] {
+            if resolved == fs::canonicalize(protected).map_err(|e| e.to_string())? {
+                return Err(format!(
+                    "Output must not replace input: {}",
+                    protected.display()
+                ));
+            }
+        }
     }
     let content = fs::read(&ir).map_err(|e| e.to_string())?;
     md2hwp_core::read_ir(&content, &md2hwp_core::ValidationLimits::default())

@@ -88,9 +88,13 @@ try {
             if ($generated.blocks[0].type -ne 'heading') { throw 'Invalid shorthand IR.' }
             if (Test-Path -LiteralPath (Join-Path $work '원고.result.hwp')) { throw 'Missing template created HWP.' }
             $irHash = (Get-FileHash -LiteralPath $generatedIr).Hash
+            [IO.File]::WriteAllText($source, "# 변경된 원고`n`n새 본문")
+            [IO.File]::WriteAllText((Join-Path $work '원고.result.hwp'), 'old result')
             $text = & $localCli $source 2>&1 | Out-String
-            if ($LASTEXITCODE -eq 0 -or $text -notmatch 'already exists' -or
-                (Get-FileHash -LiteralPath $generatedIr).Hash -cne $irHash) { throw 'Existing shorthand IR was not protected.' }
+            if ($LASTEXITCODE -eq 0 -or -not $text.Contains((Join-Path $work 'template.hwp')) -or
+                (Get-FileHash -LiteralPath $generatedIr).Hash -ceq $irHash) { throw 'Existing shorthand IR was not replaced.' }
+            if ([IO.File]::ReadAllText((Join-Path $work '원고.result.hwp')) -cne 'old result') { throw 'Failed render changed the previous result.' }
+            Remove-Item -LiteralPath (Join-Path $work '원고.result.hwp')
             $start.ArgumentList.Clear()
             $start.ArgumentList.Add($generatedIr)
             $process = [Diagnostics.Process]::Start($start)
