@@ -44,8 +44,10 @@ in one folder, the shorthand commands are:
 
 The first writes `원고.ir.json` and `원고.result.hwp` beside the Markdown file;
 the second renders an existing IR to `원고.result.hwp`. An optional second
-argument selects the HWP output path. Existing files are never overwritten by
-these shorthand commands; validated IR remains available if HWP rendering fails.
+argument selects the HWP output path. Shorthand replaces generated IR after
+validation and replaces an existing HWP only after rendering and verification
+succeed. Failed rendering preserves the previous HWP and retains the new IR.
+Source manuscripts and templates cannot be selected as replacement outputs.
 Shorthand image resources resolve inside the source/IR folder. The existing
 subcommands and `--template`, `--worker`, `--dotnet` and other options remain
 available through their original command forms. See
