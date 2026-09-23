@@ -13,7 +13,20 @@ are bundled inside the EXE; only the EXE is deployed for the C# component.
 This adopts deployment/runtime checking only, not a general production protocol.
 The original investigation modes retain their development DLL runner.
 
-Publish with the tracked profile:
+Build and collect the three deployment files with:
+
+```powershell
+pwsh -NoProfile -File .\tools\development\build.ps1
+```
+
+The default is Release: `target/release/` receives `md2hwp.exe`,
+`md2hwp-backend.exe` and `template.hwp`. `-Configuration Debug` selects
+`target/debug/`. Only these three files need to be copied for deployment.
+The tracked `minimal-tagged-v1.hwp` keeps its original filename; publication
+copies it as `template.hwp`. Rebuilding refreshes that generated copy.
+Plain `cargo build` builds Rust only; use this script to assemble the bundle.
+
+To publish the backend separately with the tracked profile:
 
 ```powershell
 pwsh -File .\tools\development\dotnet.ps1 publish `
@@ -21,8 +34,8 @@ pwsh -File .\tools\development\dotnet.ps1 publish `
   --configuration Release -p:PublishProfile=FrameworkDependent
 ```
 
-The project's `bin/Release/net10.0-windows/win-x64/publish/` contains only
-`md2hwp-backend.exe` (the former build name was `Md2Hwp.HancomIrPreview.exe`).
+The project's `bin/Release/net10.0-windows/win-x64/publish/` receives
+`md2hwp-backend.exe` and `template.hwp` (the former EXE build name was `Md2Hwp.HancomIrPreview.exe`).
 No runtime, PDB, trimming, or Native AOT is included.
 
 The supported worker runtimeconfig declares Microsoft.NETCore.App **10.0.0**.
