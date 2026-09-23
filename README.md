@@ -34,6 +34,23 @@ pwsh -NoProfile -File .\apps\md2hwp\convert.ps1 `
 See the [single-command workflow](docs/development/single-command-workflow.md)
 for its supported scope, failure behavior, and report fixture.
 
+With the published `md2hwp.exe`, `md2hwp-backend.exe` and tagged `template.hwp`
+in one folder, the shorthand commands are:
+
+```powershell
+.\md2hwp.exe .\원고.md
+.\md2hwp-backend.exe .\원고.ir.json
+```
+
+The first writes `원고.ir.json` and `원고.result.hwp` beside the Markdown file;
+the second renders an existing IR to `원고.result.hwp`. An optional second
+argument selects the HWP output path. Existing files are never overwritten by
+these shorthand commands; validated IR remains available if HWP rendering fails.
+Shorthand image resources resolve inside the source/IR folder. The existing
+subcommands and `--template`, `--worker`, `--dotnet` and other options remain
+available through their original command forms. See
+[runtime prerequisites and deployment](docs/development/dotnet-runtime-launch.md).
+
 The repository is organized by product responsibility:
 
 - `apps/`, `crates/`, and `backends/` contain md2hwp code boundaries;

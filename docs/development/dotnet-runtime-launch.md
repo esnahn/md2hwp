@@ -63,6 +63,28 @@ template authoring and legacy investigation modes retain explicit inputs.
 .\md2hwp-backend.exe render-tagged --ir .\document.ir.json --output .\result.hwp
 ```
 
+Both EXEs also accept positional shorthand without a subcommand:
+
+```powershell
+.\md2hwp.exe .\원고.md [결과.hwp]
+.\md2hwp-backend.exe .\원고.ir.json [결과.hwp]
+```
+
+Brackets denote an optional argument, not literal command text. The Rust form
+always writes `원고.ir.json` beside the Markdown source, then renders HWP. The
+default HWP name is `원고.result.hwp`, also beside the source; the backend strips
+the complete `.ir.json` suffix before adding `.result.hwp`. An explicit output
+is relative to the caller's working directory. Existing output files fail;
+Rust checks both destinations before normalization and retains validated IR
+if later rendering fails. To retry that IR, use the backend shorthand or
+`render-hwp`, rather than rerunning Markdown shorthand over an existing IR.
+
+Positional rendering uses the source/IR directory as the image resource root,
+independent of the caller's working directory. Images must stay within that
+directory. Existing option-based modes retain their cwd resource root and
+explicit override behavior. Positional syntax takes only input and optional
+output; use the original option-based commands for additional configuration.
+
 Rust validates IR before launching C#, refuses an existing output, and
 leaves template binding, COM safeguards, save/reopen verification, and cleanup to
 the existing worker. Worker failure is reported as a nonzero application exit.
