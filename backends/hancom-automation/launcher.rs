@@ -152,18 +152,18 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), String> {
     let content = fs::read(&ir).map_err(|e| e.to_string())?;
     md2hwp_core::read_ir(&content, &md2hwp_core::ValidationLimits::default())
         .map_err(|e| e.to_string())?;
-    // Match the investigation's framework-dependent runtimeconfig, with patch-only roll-forward.
-    let config_path = worker.with_extension("runtimeconfig.json");
-    let config: serde_json::Value = serde_json::from_slice(
-        &fs::read(&config_path)
-            .map_err(|e| format!("Could not read {}: {e}", config_path.display()))?,
-    )
-    .map_err(|e| format!("Invalid worker runtimeconfig: {e}"))?;
-    validate_config(&config)?;
+    if !worker
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("exe"))
+        || !is_x64_pe(&fs::read(&worker).map_err(|e| e.to_string())?)
+    {
+        return Err("Worker must be a published Windows x64 EXE.".into());
+    }
     let dotnet = resolve_runtime(dotnet)?;
-    let status = Command::new(dotnet)
-        .args(["exec", "--roll-forward", "LatestPatch"])
-        .arg(fs::canonicalize(worker).map_err(|e| e.to_string())?)
+    let runtime_root = dotnet
+        .parent()
+        .ok_or("dotnet.exe has no parent directory")?;
+    let status = Command::new(fs::canonicalize(worker).map_err(|e| e.to_string())?)
         .arg("render-tagged")
         .arg("--ir")
         .arg(ir)
@@ -171,6 +171,9 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), String> {
         .arg(template)
         .arg("--output")
         .arg(output)
+        // The published apphost searches environment variables only: use the checked runtime.
+        .env("DOTNET_ROOT_X64", runtime_root)
+        .env("DOTNET_ROOT", runtime_root)
         .env("DOTNET_ROLL_FORWARD", "LatestPatch")
         .env("DOTNET_ROLL_FORWARD_TO_PRERELEASE", "0")
         .status()
@@ -182,21 +185,7 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), String> {
 }
 
 fn usage() -> String {
-    "usage: md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --worker <worker.dll> --ir <file.ir.json> --template <template.hwp> --output <new.hwp> [--dotnet <dotnet.exe>]".into()
-}
-
-fn validate_config(config: &serde_json::Value) -> Result<(), String> {
-    let options = &config["runtimeOptions"];
-    if options["framework"]["name"] != "Microsoft.NETCore.App"
-        || options["framework"]["version"] != "10.0.0"
-        || options.get("frameworks").is_some()
-        || options.get("includedFrameworks").is_some()
-    {
-        return Err(
-            "Worker must use the framework-dependent Microsoft.NETCore.App 10.0.0 contract.".into(),
-        );
-    }
-    Ok(())
+    "usage: md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --worker <worker.exe> --ir <file.ir.json> --template <template.hwp> --output <new.hwp> [--dotnet <dotnet.exe>]".into()
 }
 
 #[cfg(test)]
@@ -237,12 +226,5 @@ mod tests {
             candidates(Some(PathBuf::from("missing.exe"))),
             vec![PathBuf::from("missing.exe")]
         );
-    }
-    #[test]
-    fn rejects_worker_framework_drift() {
-        let mut config = serde_json::json!({"runtimeOptions":{"framework":{"name":"Microsoft.NETCore.App","version":"10.0.0"}}});
-        assert!(validate_config(&config).is_ok());
-        config["runtimeOptions"]["framework"]["version"] = "10.0.11".into();
-        assert!(validate_config(&config).is_err());
     }
 }

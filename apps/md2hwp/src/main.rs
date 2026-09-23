@@ -299,7 +299,7 @@ fn default_pandoc_path() -> PathBuf {
 }
 
 fn usage() -> String {
-    "usage: md2hwp md2ir --from <commonmark|pandoc-json> --input <file> --output <file.ir.json> [--pandoc <pandoc.exe>] [--force]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --worker <worker.dll> --ir <file.ir.json> --template <template.hwp> --output <new.hwp> [--dotnet <dotnet.exe>]".to_owned()
+    "usage: md2hwp md2ir --from <commonmark|pandoc-json> --input <file> --output <file.ir.json> [--pandoc <pandoc.exe>] [--force]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --worker <worker.exe> --ir <file.ir.json> --template <template.hwp> --output <new.hwp> [--dotnet <dotnet.exe>]".to_owned()
 }
 
 #[cfg(test)]

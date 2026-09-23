@@ -368,7 +368,6 @@ name = "md2hwp"
 version = "0.1.0"
 dependencies = [
  "md2hwp-core",
- "serde_json",
 ]
 
 [[package]]

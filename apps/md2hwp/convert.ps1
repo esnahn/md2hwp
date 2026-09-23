@@ -65,8 +65,8 @@ try {
     Invoke-Checked $binary @('md2ir', '--from', $From, '--input', $source, '--output', $ir)
     if (-not $SkipBuild) {
         # Keep .NET build environment changes out of the COM worker's profile.
-        Invoke-Checked $pwsh @('-NoProfile', '-File', $dotnet, 'build', $project,
-            '--configuration', $Configuration, '--nologo')
+        Invoke-Checked $pwsh @('-NoProfile', '-File', $dotnet, 'publish', $project,
+            '--configuration', $Configuration, '-p:PublishProfile=FrameworkDependent', '--nologo')
     }
     # This is the existing investigation CLI, not a new production protocol.
     # The worker validates the interactive session/module, hides the window,

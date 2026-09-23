@@ -53,15 +53,16 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\..\..\..")
 $dotnetRoot = Join-Path $repositoryRoot ".local\dependencies\dotnet\10.0.400"
 $dotnetPath = Join-Path $dotnetRoot "dotnet.exe"
 $assemblyPath = Join-Path $PSScriptRoot "bin\$Configuration\net10.0-windows\Md2Hwp.HancomIrPreview.dll"
-$requiredPaths = @($assemblyPath)
+$requiredPaths = @()
 if ($RustLauncher) {
     if ($Mode -ne 'render-tagged' -or $Visible) {
         throw 'RustLauncher supports hidden render-tagged only.'
     }
-    $requiredPaths += $RustLauncher
+    $workerExecutable = Join-Path $PSScriptRoot "bin\$Configuration\net10.0-windows\win-x64\publish\Md2Hwp.HancomIrPreview.exe"
+    $requiredPaths += @($RustLauncher, $workerExecutable)
 } else {
     if ($RuntimeHostPath) { throw 'RuntimeHostPath requires RustLauncher.' }
-    $requiredPaths += $dotnetPath
+    $requiredPaths += @($dotnetPath, $assemblyPath)
 }
 foreach ($path in $requiredPaths) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
@@ -174,7 +175,7 @@ if ($Visible) {
 }
 
 if ($RustLauncher) {
-    $rustArguments = @('render-hwp', '--worker', $assemblyPath,
+    $rustArguments = @('render-hwp', '--worker', $workerExecutable,
         '--ir', (Resolve-InvocationPath $Ir), '--template', (Resolve-InvocationPath $Template),
         '--output', (Resolve-InvocationPath $Output))
     if ($RuntimeHostPath) { $rustArguments += @('--dotnet', (Resolve-InvocationPath $RuntimeHostPath)) }
