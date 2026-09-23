@@ -16,6 +16,9 @@ use md2hwp_core::{
 const PANDOC_VERSION_LINE: &str = "pandoc 3.10.1";
 const FAILURE_EXIT_CODE: i32 = 1;
 
+#[path = "../../../backends/hancom-automation/launcher.rs"]
+mod hancom;
+
 fn main() {
     if let Err(error) = run(env::args_os().skip(1).collect()) {
         eprintln!("md2hwp: {}", error.message);
@@ -53,6 +56,12 @@ fn child_exit_code(exit_code: Option<i32>) -> i32 {
 }
 
 fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
+    if arguments
+        .first()
+        .is_some_and(|a| a == "check-runtime" || a == "render-hwp")
+    {
+        return hancom::run(arguments).map_err(AppError::from);
+    }
     let options = Options::parse(arguments)?;
     let source = fs::read(&options.input)
         .map_err(|error| format!("could not read {}: {error}", options.input.display()))?;
@@ -290,7 +299,7 @@ fn default_pandoc_path() -> PathBuf {
 }
 
 fn usage() -> String {
-    "usage: md2hwp md2ir --from <commonmark|pandoc-json> --input <file> --output <file.ir.json> [--pandoc <pandoc.exe>] [--force]".to_owned()
+    "usage: md2hwp md2ir --from <commonmark|pandoc-json> --input <file> --output <file.ir.json> [--pandoc <pandoc.exe>] [--force]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --worker <worker.dll> --ir <file.ir.json> --template <template.hwp> --output <new.hwp> [--dotnet <dotnet.exe>]".to_owned()
 }
 
 #[cfg(test)]
