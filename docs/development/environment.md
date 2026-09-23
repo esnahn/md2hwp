@@ -31,6 +31,12 @@ process remained. Default system discovery found no compatible 10.0 runtime;
 the successful run explicitly selected the pinned local SDK host. See
 [runtime launch](dotnet-runtime-launch.md). No runtime was installed system-wide.
 
+The same date's follow-up replaces DLL launching with a framework-dependent
+single-file C# EXE. Rust supplies the verified runtime root to its apphost.
+`artifacts/single-exe-report.hwp` passed save/reopen and source preservation;
+all four page PNGs exactly match the baseline. A copied EXE also passed the
+no-COM `runtime-info` check in an empty directory without JSON sidecars.
+
 Install the official locked SDK without changing the system SDK or `PATH`:
 
 ```powershell

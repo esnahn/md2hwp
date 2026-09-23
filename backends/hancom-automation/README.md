@@ -1,7 +1,7 @@
 # Hancom Automation backend
 
 `launcher.rs` is the Rust integration for the existing investigation worker.
-It checks an installed .NET 10 x64 runtime before starting the C# DLL in a
+It checks an installed .NET 10 x64 runtime before starting the C# single-file EXE in a
 separate process. See [runtime launch](../../docs/development/dotnet-runtime-launch.md).
 
 Reserved for a separately launched C#/.NET production worker using the

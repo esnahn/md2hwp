@@ -1,7 +1,7 @@
 # md2hwp application
 
 `check-runtime` checks installed .NET 10 x64 and prints installation guidance
-when absent. `render-hwp` checks the runtime before launching the C# worker DLL.
+when absent. `render-hwp` checks the runtime before launching the C# single-file EXE.
 See [runtime launch](../../docs/development/dotnet-runtime-launch.md) for options.
 
 The investigation wrapper `convert.ps1` composes the Rust CLI below with the
