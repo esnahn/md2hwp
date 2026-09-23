@@ -31,6 +31,10 @@ require the development repository.
 ## Pandoc
 
 `md2hwp setup-pandoc` explicitly downloads upstream's portable Windows x64 ZIP.
+Download, SHA-256 verification and ZIP extraction run in Rust, without a
+PowerShell subprocess. HTTPS uses Windows TLS and the operating system trust
+store. The command always performs a download when explicitly invoked; normal
+conversion only searches for an existing executable and never installs one.
 The preferred version/URL/archive digest are embedded from the development lock
 at build time, so no lock file is shipped or read from disk at runtime. If that
 download is unavailable, the downloader queries the official GitHub latest
@@ -45,8 +49,9 @@ JSON compatibility checks succeed. Existing installations remain intact on failu
 If GitHub/network access fails, the CLI gives <https://pandoc.org/installing.html>
 and the `--pandoc <pandoc.exe>` alternative.
 
-Explicit `--pandoc` takes precedence; otherwise the app searches PATH and its
-managed download. Existing executable release numbers are not compared against
+Explicit `--pandoc` takes precedence; otherwise the app searches its managed
+download first, then absolute PATH entries. A missing or invalid managed pointer
+falls through to PATH. Existing executable release numbers are not compared against
 the preferred download version. The emitted `pandoc-api-version` and supported
 AST/IR contract still have to match: a genuinely incompatible format is rejected
 with its actual version/path, before writing IR or starting Hancom.
@@ -71,6 +76,25 @@ checked separately from Hancom readiness. C# remains a framework-dependent
 single EXE with no loose runtime JSON files.
 
 ## Verification
+
+2026-09-24: native Rust setup tests replace the former mocked PowerShell setup
+test. Tests cover managed-before-PATH selection, invalid pointers, preferred
+release fallback, missing upstream digest, unsafe ZIP paths, and preservation
+of current.txt on integrity, extraction, compatibility and copyright-download
+failures. Temporary staging directories are removed on these failures. The
+original ZIP and all extracted documentation remain in successful installations.
+Downloads are bounded at 128 MiB per archive and 4 MiB per metadata/notice;
+extraction allows at most 10,000 entries and 1 GiB total uncompressed content.
+Symlinks, traversal paths and duplicate output files are rejected. If publishing
+the pointer itself fails, the previous pointer survives and the complete new
+directory may remain inactive for inspection.
+
+Live verification downloaded official Pandoc 3.10.1 using the native Rust path
+and selected the new managed installation for the CommonMark source-metadata
+smoke test. CommonMark/direct-JSON equivalence, image rebasing and four rejection
+cases passed without COM. All 14 application unit tests and the repository
+contract smoke passed. The release Rust EXE is 5,521,920 bytes (previously
+4,589,056 bytes); the framework-dependent C# worker is unchanged.
 
 2026-09-23: official preferred Pandoc 3.10.1 downloaded successfully into the
 documented user cache, preserving upstream ZIP/docs/COPYRIGHT/source links.
