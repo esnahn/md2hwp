@@ -5,8 +5,10 @@
 The user's runtime policy supersedes historical installer/pin requirements below.
 `dependencies/lock.json` is development metadata, not a runtime version gate.
 Hancom security-module download/registration is user-managed via the official
-guide; do not install or register it from an agent. Its fixed hash pin has been
-removed; retain registration/file checks and require RegisterModule success.
+guide; do not install or register it from an agent. Its URL and hash pin remain
+in the development lock (restored 2026-09-24), solely for reproducible development
+verification. User runtime does not enforce that hash; retain registration/file
+checks and require RegisterModule success.
 The former installer is retired. Runtime tagged rendering does not read a lock
 or discover the repository; cwd is its resource root. Pandoc setup prefers the
 build-time lock's official download, falling back to latest stable if unavailable,

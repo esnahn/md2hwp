@@ -81,7 +81,8 @@ copy is needed.
 
 ## Hancom security module
 
-The module is no longer a content pin in `lock.json`. Users download and
+The module URL and SHA-256 remain a development-only content pin in `lock.json`
+to identify the binary used for reproducible development verification. Users download and
 register it by following the [official guide](https://developer.hancom.com/hwpautomation).
 The application provides that URL when registration is missing or rejected.
 No automatic registration or hash-based version gate is performed. The former

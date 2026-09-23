@@ -5,7 +5,10 @@ hash-pinned Hancom installer and exact Pandoc release checks in historical notes
 
 `dependencies/lock.json` now records Pandoc and .NET SDK build/development pins,
 plus the tested Hancom application version as a reference. Hancom's security
-module has no content pin. Rust's toolchain remains in `rust-toolchain.toml`.
+module URL and SHA-256 are retained as a development content pin (restored
+2026-09-24). They identify the tested binary for reproducible development
+verification and are not enforced by user runtime or used for automatic setup.
+Rust's toolchain remains in `rust-toolchain.toml`.
 None of these exact development versions is a blanket user update prohibition.
 
 ## Hancom
