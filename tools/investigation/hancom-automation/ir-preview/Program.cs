@@ -9,6 +9,17 @@ internal static class Program
     {
         try
         {
+            // Runs without repository discovery or COM, for deployment verification.
+            if (args is ["runtime-info"])
+            {
+                Console.WriteLine(JsonSerializer.Serialize(new
+                {
+                    Framework = "Microsoft.NETCore.App",
+                    Version = Environment.Version.ToString(),
+                    Architecture = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString(),
+                }, JsonOutput.Options));
+                return 0;
+            }
             var options = CommandLine.Parse(args);
             var repositoryRoot = RepositoryLocator.FindFrom(Directory.GetCurrentDirectory());
 
