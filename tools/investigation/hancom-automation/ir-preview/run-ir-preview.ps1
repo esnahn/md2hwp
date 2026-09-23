@@ -24,7 +24,11 @@ param(
     [ValidateSet("Debug", "Release")]
     [string]$Configuration = "Release",
 
-    [switch]$Visible
+    [switch]$Visible,
+
+    [string]$RustLauncher,
+
+    [string]$RuntimeHostPath
 )
 
 Set-StrictMode -Version Latest
@@ -49,7 +53,17 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\..\..\..")
 $dotnetRoot = Join-Path $repositoryRoot ".local\dependencies\dotnet\10.0.400"
 $dotnetPath = Join-Path $dotnetRoot "dotnet.exe"
 $assemblyPath = Join-Path $PSScriptRoot "bin\$Configuration\net10.0-windows\Md2Hwp.HancomIrPreview.dll"
-foreach ($path in @($dotnetPath, $assemblyPath)) {
+$requiredPaths = @($assemblyPath)
+if ($RustLauncher) {
+    if ($Mode -ne 'render-tagged' -or $Visible) {
+        throw 'RustLauncher supports hidden render-tagged only.'
+    }
+    $requiredPaths += $RustLauncher
+} else {
+    if ($RuntimeHostPath) { throw 'RuntimeHostPath requires RustLauncher.' }
+    $requiredPaths += $dotnetPath
+}
+foreach ($path in $requiredPaths) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Missing C# preview prerequisite: $path"
     }
@@ -159,6 +173,14 @@ if ($Visible) {
     $previewArguments += "--visible"
 }
 
+if ($RustLauncher) {
+    $rustArguments = @('render-hwp', '--worker', $assemblyPath,
+        '--ir', (Resolve-InvocationPath $Ir), '--template', (Resolve-InvocationPath $Template),
+        '--output', (Resolve-InvocationPath $Output))
+    if ($RuntimeHostPath) { $rustArguments += @('--dotnet', (Resolve-InvocationPath $RuntimeHostPath)) }
+    & $RustLauncher @rustArguments
+    exit $LASTEXITCODE
+}
 $env:DOTNET_ROOT = $dotnetRoot
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = "1"
 $env:DOTNET_NOLOGO = "1"

@@ -6,7 +6,8 @@ param(
     [Parameter(Mandatory)][string]$Output,
     [ValidateSet('commonmark', 'pandoc-json')][string]$From = 'commonmark',
     [ValidateSet('Debug', 'Release')][string]$Configuration = 'Debug',
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    [string]$RuntimeHostPath
 )
 
 Set-StrictMode -Version Latest
@@ -26,6 +27,7 @@ if (-not $IsWindows) { throw 'The current HWP investigation requires Windows.' }
 $source = FullPath $InputPath
 $templatePath = FullPath $Template
 $outputPath = FullPath $Output
+if ($RuntimeHostPath) { $RuntimeHostPath = FullPath $RuntimeHostPath }
 foreach ($path in @($source, $templatePath)) {
     if (-not [IO.File]::Exists($path)) { throw "Missing input file: $path" }
 }
@@ -69,9 +71,12 @@ try {
     # This is the existing investigation CLI, not a new production protocol.
     # The worker validates the interactive session/module, hides the window,
     # edits a copy, and publishes only after save/reopen verification.
-    Invoke-Checked $desktop @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-Sta',
+    $renderArguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-Sta',
         '-File', $worker, '-Mode', 'render-tagged', '-Ir', $ir,
-        '-Template', $templatePath, '-Output', $outputPath, '-Configuration', $Configuration)
+        '-Template', $templatePath, '-Output', $outputPath, '-Configuration', $Configuration,
+        '-RustLauncher', $binary)
+    if ($RuntimeHostPath) { $renderArguments += @('-RuntimeHostPath', $RuntimeHostPath) }
+    Invoke-Checked $desktop $renderArguments
 } finally {
     if ([IO.File]::Exists($ir)) { Remove-Item -LiteralPath $ir }
     if ([IO.Directory]::Exists($work)) { [IO.Directory]::Delete($work) }
