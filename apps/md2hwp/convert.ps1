@@ -7,7 +7,8 @@ param(
     [ValidateSet('commonmark', 'pandoc-json')][string]$From = 'commonmark',
     [ValidateSet('Debug', 'Release')][string]$Configuration = 'Debug',
     [switch]$SkipBuild,
-    [string]$RuntimeHostPath
+    [string]$RuntimeHostPath,
+    [string]$PandocPath
 )
 
 Set-StrictMode -Version Latest
@@ -28,6 +29,7 @@ $source = FullPath $InputPath
 $templatePath = FullPath $Template
 $outputPath = FullPath $Output
 if ($RuntimeHostPath) { $RuntimeHostPath = FullPath $RuntimeHostPath }
+if ($PandocPath) { $PandocPath = FullPath $PandocPath }
 foreach ($path in @($source, $templatePath)) {
     if (-not [IO.File]::Exists($path)) { throw "Missing input file: $path" }
 }
@@ -62,7 +64,13 @@ try {
     if (-not [IO.File]::Exists($binary)) { throw "Missing application build: $binary" }
     $null = [IO.Directory]::CreateDirectory($work)
     # Normalization and validation finish before the Hancom process starts.
-    Invoke-Checked $binary @('md2ir', '--from', $From, '--input', $source, '--output', $ir)
+    $normalizeArguments = @('md2ir', '--from', $From, '--input', $source, '--output', $ir)
+    if ($From -eq 'commonmark') {
+        # This repository wrapper keeps reproducible development defaults.
+        if (-not $PandocPath) { $PandocPath = Join-Path $root '.local/dependencies/pandoc/3.10.1/pandoc.exe' }
+        $normalizeArguments += @('--pandoc', $PandocPath)
+    }
+    Invoke-Checked $binary $normalizeArguments
     if (-not $SkipBuild) {
         # Keep .NET build environment changes out of the COM worker's profile.
         Invoke-Checked $pwsh @('-NoProfile', '-File', $dotnet, 'publish', $project,

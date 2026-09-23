@@ -13,8 +13,8 @@ use md2hwp_core::{
     ValidationLimits, load_builtin_rules, normalize_pandoc, read_pandoc_json, write_ir,
 };
 
-const PANDOC_VERSION_LINE: &str = "pandoc 3.10.1";
 const FAILURE_EXIT_CODE: i32 = 1;
+mod pandoc_setup;
 
 #[path = "../../../backends/hancom-automation/launcher.rs"]
 mod hancom;
@@ -56,6 +56,12 @@ fn child_exit_code(exit_code: Option<i32>) -> i32 {
 }
 
 fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
+    if arguments.first().is_some_and(|a| a == "setup-pandoc") {
+        if arguments.len() != 1 {
+            return Err("usage: md2hwp setup-pandoc".to_owned().into());
+        }
+        return pandoc_setup::install().map_err(AppError::from);
+    }
     if arguments
         .first()
         .is_some_and(|a| a == "check-runtime" || a == "render-hwp")
@@ -159,7 +165,13 @@ fn verify_pandoc(path: &Path) -> Result<(), AppError> {
     let output = Command::new(path)
         .arg("--version")
         .output()
-        .map_err(|error| format!("could not launch pinned Pandoc {}: {error}", path.display()))?;
+        .map_err(|error| {
+            format!(
+                "could not launch Pandoc {}: {error}\n{}",
+                path.display(),
+                pandoc_setup::GUIDE
+            )
+        })?;
     if !output.status.success() {
         return Err(AppError::pandoc(
             format!("Pandoc --version failed with {}", output.status),
@@ -169,13 +181,17 @@ fn verify_pandoc(path: &Path) -> Result<(), AppError> {
     let stdout = String::from_utf8(output.stdout)
         .map_err(|_| "Pandoc --version output was not UTF-8".to_owned())?;
     let actual = stdout.lines().next().unwrap_or("");
-    if actual != PANDOC_VERSION_LINE {
-        return Err(format!(
-            "unsupported Pandoc executable: expected {PANDOC_VERSION_LINE:?}, got {actual:?}"
-        )
-        .into());
+    if !is_pandoc_version_line(actual) {
+        return Err(
+            format!("expected a Pandoc executable, got version response {actual:?}").into(),
+        );
     }
     Ok(())
+}
+
+fn is_pandoc_version_line(line: &str) -> bool {
+    line.strip_prefix("pandoc ")
+        .is_some_and(|version| version.starts_with(|c: char| c.is_ascii_digit()))
 }
 
 fn invoke_pandoc(path: &Path, source: &[u8]) -> Result<Vec<u8>, AppError> {
@@ -288,23 +304,31 @@ impl Options {
 }
 
 fn default_pandoc_path() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("..")
-        .join("..")
-        .join(".local")
-        .join("dependencies")
-        .join("pandoc")
-        .join("3.10.1")
-        .join("pandoc.exe")
+    pandoc_setup::find().unwrap_or_else(|| PathBuf::from("pandoc.exe"))
 }
 
 fn usage() -> String {
-    "usage: md2hwp md2ir --from <commonmark|pandoc-json> --input <file> --output <file.ir.json> [--pandoc <pandoc.exe>] [--force]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --worker <worker.exe> --ir <file.ir.json> --template <template.hwp> --output <new.hwp> [--dotnet <dotnet.exe>]".to_owned()
+    "usage: md2hwp md2ir --from <commonmark|pandoc-json> --input <file> --output <file.ir.json> [--pandoc <pandoc.exe>] [--force]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --worker <worker.exe> --ir <file.ir.json> --template <template.hwp> --output <new.hwp> [--dotnet <dotnet.exe>]".to_owned()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pandoc_releases_are_not_an_exact_version_gate() {
+        for version in [
+            "pandoc 3.10.1",
+            "pandoc 3.11",
+            "pandoc 4.0",
+            "pandoc 3.10.1-nightly",
+        ] {
+            assert!(is_pandoc_version_line(version));
+        }
+        assert!(!is_pandoc_version_line("other 3.10.1"));
+        assert!(!is_pandoc_version_line("pandoc "));
+        // Actual JSON/API compatibility is checked by read_pandoc_json, not this banner.
+    }
 
     #[test]
     fn image_paths_follow_input_when_ir_moves() {
