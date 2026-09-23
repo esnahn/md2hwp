@@ -1,6 +1,17 @@
 using Md2Hwp.HancomIrPreview;
 using System.Xml.Linq;
 
+var shortDefault = CommandLine.Parse(["원고 폴더/보고서.v2.ir.json"]);
+if (shortDefault.OutputPath != Path.GetFullPath("원고 폴더/보고서.v2.result.hwp") ||
+    shortDefault.Mode != OperationMode.RenderTagged ||
+    shortDefault.TemplatePath != Path.Combine(AppContext.BaseDirectory, "template.hwp"))
+    throw new Exception("Positional input must resolve the compound IR suffix and default template.");
+var shortExplicit = CommandLine.Parse(["원고.ir.json", "결과 폴더/결과.hwp"]);
+if (shortExplicit.OutputPath != Path.GetFullPath("결과 폴더/결과.hwp"))
+    throw new Exception("Explicit positional output must win.");
+try { CommandLine.Parse(["원고.ir.json", "--output"]); throw new Exception("Missing option value accepted."); }
+catch (ArgumentException) { }
+
 var defaultTemplate = CommandLine.Parse(["render-tagged", "--ir", "input.json", "--output", "output.hwp"]);
 if (defaultTemplate.TemplatePath != Path.Combine(AppContext.BaseDirectory, "template.hwp"))
     throw new Exception("Default template must be beside the backend, not in the working directory.");

@@ -21,10 +21,10 @@ internal static class Program
                 return 0;
             }
             var options = CommandLine.Parse(args);
-            // Tagged rendering is a user operation: cwd is its explicit resource root.
+            // Positional IR uses its own directory; option-based rendering retains cwd.
             // Fixture/profile investigation modes still locate the development repository.
             var repositoryRoot = options.Mode == OperationMode.RenderTagged
-                ? Directory.GetCurrentDirectory()
+                ? (CommandLine.IsPositional(args) ? Path.GetDirectoryName(options.IrPath!)! : Directory.GetCurrentDirectory())
                 : RepositoryLocator.FindFrom(Directory.GetCurrentDirectory());
 
             switch (options.Mode)
@@ -166,8 +166,23 @@ internal sealed record CommandLine(
     string? OutputPath,
     bool Visible)
 {
+    internal static bool IsPositional(string[] args) => args.Length > 0 &&
+        !args[0].StartsWith("--", StringComparison.Ordinal) &&
+        args[0].EndsWith(".json", StringComparison.OrdinalIgnoreCase);
+
     public static CommandLine Parse(string[] args)
     {
+        if (IsPositional(args))
+        {
+            if (args.Length > 2 || args.Any(a => a.StartsWith("--", StringComparison.Ordinal)))
+                throw new ArgumentException("usage: md2hwp-backend <source.ir.json> [output.hwp]");
+            var input = Path.GetFullPath(args[0]);
+            var name = Path.GetFileName(input);
+            var stem = name.EndsWith(".ir.json", StringComparison.OrdinalIgnoreCase)
+                ? name[..^8] : Path.GetFileNameWithoutExtension(name);
+            var positionalOutput = args.Length == 2 ? args[1] : Path.Combine(Path.GetDirectoryName(input)!, stem + ".result.hwp");
+            return Parse(["render-tagged", "--ir", input, "--output", positionalOutput]);
+        }
         if (args.Length == 0)
         {
             throw new ArgumentException(Usage);
@@ -276,6 +291,7 @@ internal sealed record CommandLine(
 
     private const string Usage = """
         usage:
+          md2hwp-backend <source.ir.json> [output.hwp]
           hancom-ir-preview plan --ir <validated.ir.json> --profile <template-profile.json>
           hancom-ir-preview probe --template <input.hwp> [--visible]
           hancom-ir-preview render --ir <validated.ir.json> --profile <template-profile.json> --template <input.hwp> --output <new.hwp> [--visible]
