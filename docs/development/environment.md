@@ -104,6 +104,13 @@ were installed and verified on 2026-08-27.
 
 ## Verified Hancom Automation execution context
 
+On 2026-09-23, the same interactive desktop identity/session 1 and exact host
+path were rechecked before COM invocation. Windows PowerShell had advanced to
+`5.1.26100.9549`, Desktop, x64, STA. The canonical hidden open-only probe
+passed with the pinned module hash, `RegisterModule=True`, `Open=True`, and
+normal HWP process exit. This adopts that patched host for the same context;
+no module installation or registration change was performed.
+
 On 2026-09-22, an approved non-default run confirmed that the actual Windows
 process token matched the interactive desktop user in session 1. The canonical
 open-only probe passed in Windows PowerShell `5.1.26100.9444`, Desktop, x64,
