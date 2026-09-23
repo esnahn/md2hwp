@@ -57,24 +57,10 @@ if (Test-Path -LiteralPath $moduleRegistryPath) {
         $moduleRegistryValueKind = $moduleRegistryKey.GetValueKind($ModuleName)
     }
 }
-$dependencyLockPath = [IO.Path]::GetFullPath(
-    (Join-Path $PSScriptRoot "..\..\dependencies\lock.json")
-)
-$dependencyLock = Get-Content -Raw -Encoding UTF8 -LiteralPath $dependencyLockPath |
-    ConvertFrom-Json
-$securityPins = @(
-    $dependencyLock.dependencies |
-        Where-Object { $_.name -eq "hancom-automation" } |
-        Select-Object -ExpandProperty pins |
-        Where-Object { $_.name -eq "file-path-checker-module-example" }
-)
-if ($securityPins.Count -ne 1) {
-    throw "Expected exactly one pinned Hancom file-path checker module."
-}
-$expectedModuleSha256 = [string]$securityPins[0].sha256
+$securityGuide = 'Download the Automation security module and follow its registration instructions: https://developer.hancom.com/hwpautomation'
 if ([string]::IsNullOrWhiteSpace($modulePath) -or
     -not (Test-Path -LiteralPath $modulePath -PathType Leaf)) {
-    throw "The registered Hancom security module is missing: $modulePath"
+    throw "The registered Hancom security module is missing: $modulePath. $securityGuide"
 }
 if ($moduleRegistryValueKind -ne [Microsoft.Win32.RegistryValueKind]::String) {
     throw "The Hancom security-module registry value must be REG_SZ. Found: $moduleRegistryValueKind"
@@ -84,9 +70,7 @@ if (-not [IO.Path]::IsPathRooted($modulePath)) {
 }
 $modulePath = [IO.Path]::GetFullPath($modulePath)
 $moduleSha256 = (Get-FileHash -LiteralPath $modulePath -Algorithm SHA256).Hash
-if ($moduleSha256 -ne $expectedModuleSha256) {
-    throw "The registered Hancom security module hash does not match dependencies/lock.json."
-}
+# Observed hash is diagnostic only; RegisterModule and Open establish usability.
 
 $preexistingHwpIds = @(
     Get-Process -Name "Hwp" -ErrorAction SilentlyContinue |

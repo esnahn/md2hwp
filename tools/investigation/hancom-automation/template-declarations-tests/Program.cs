@@ -157,3 +157,25 @@ var spaced = HwpMarkup.Parse("<HWPML>\n <P><TEXT><CHAR>A</CHAR></TEXT>\n" +
 if (spaced.Root!.Value != "A B  " || spaced.Root.Nodes().OfType<XText>().Any())
     throw new Exception("HWPML parsing lost manuscript spaces or retained structural indentation.");
 Console.WriteLine("HWPML whitespace checks passed: space-only character runs and spaces after line breaks preserved.");
+
+// Runtime registration checks accept an updated DLL's bytes without a development hash pin.
+// This file is never registered or loaded; actual COM acceptance remains a live check.
+var moduleFixture = Path.Combine(Path.GetTempPath(), $"md2hwp-module-{Guid.NewGuid():N}.dll");
+try
+{
+    File.WriteAllText(moduleFixture, "updated module test bytes");
+    var module = SecurityModuleRegistration.ValidateRegisteredFile(moduleFixture);
+    if (module.ModulePath != moduleFixture || module.Sha256.Length != 64)
+        throw new Exception("Runtime module observation failed.");
+    foreach (var missing in new[] { "relative.dll", moduleFixture + ".missing" })
+    {
+        var rejectedModule = false;
+        try { SecurityModuleRegistration.ValidateRegisteredFile(missing); }
+        catch (InvalidOperationException error)
+        {
+            rejectedModule = error.Message.Contains("https://developer.hancom.com/hwpautomation", StringComparison.Ordinal);
+        }
+        if (!rejectedModule) throw new Exception("Missing module did not provide official setup guidance.");
+    }
+} finally { File.Delete(moduleFixture); }
+Console.WriteLine("Module checks passed: no fixed hash gate; missing files provide official setup guidance. No registry mutation or COM.");

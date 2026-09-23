@@ -510,7 +510,7 @@ internal static partial class HancomPreviewWriter
             // This must remain the first COM call after object creation.
             if (!(bool)hwp.RegisterModule("FilePathCheckDLL", ModuleName))
             {
-                throw new InvalidOperationException("Hancom rejected the registered file-access security module.");
+                throw SecurityModuleRegistration.Unavailable("한글이 등록된 보안 모듈을 받아들이지 않았습니다.");
             }
 
             result = operation(hwp);
@@ -2018,51 +2018,45 @@ internal sealed record SecurityModuleRegistration(string ModulePath, string Sha2
 {
     public static SecurityModuleRegistration ReadAndValidate(string repositoryRoot)
     {
-        var lockPath = Path.Combine(repositoryRoot, "dependencies", "lock.json");
-        using var lockDocument = JsonDocument.Parse(File.ReadAllBytes(lockPath));
-        var pins = lockDocument.RootElement.GetProperty("dependencies")
-            .EnumerateArray()
-            .Where(dependency => dependency.GetProperty("name").GetString() == "hancom-automation")
-            .SelectMany(dependency => dependency.GetProperty("pins").EnumerateArray())
-            .Where(pin => pin.GetProperty("name").GetString() == "file-path-checker-module-example")
-            .ToArray();
-        if (pins.Length != 1)
-        {
-            throw new InvalidOperationException("Expected one locked Hancom security module.");
-        }
-        var expectedHash = pins[0].GetProperty("sha256").GetString()!;
-
+        // The development lock is not a runtime compatibility gate.
+        _ = repositoryRoot;
         using var registryKey = Registry.CurrentUser.OpenSubKey(
             @"Software\HNC\HwpAutomation\Modules",
             writable: false);
         if (registryKey is null || !registryKey.GetValueNames().Contains(ModuleName, StringComparer.Ordinal))
         {
-            throw new InvalidOperationException("The Hancom security-module registration is missing.");
+            throw Unavailable("한글 보안 모듈 등록을 찾지 못했습니다.");
         }
         if (registryKey.GetValueKind(ModuleName) is not RegistryValueKind.String)
         {
-            throw new InvalidOperationException("The Hancom security-module registration must be REG_SZ.");
+            throw Unavailable("한글 보안 모듈 등록 값은 REG_SZ여야 합니다.");
         }
         var registeredPath = registryKey.GetValue(
             ModuleName,
             null,
             RegistryValueOptions.DoNotExpandEnvironmentNames) as string;
-        if (string.IsNullOrWhiteSpace(registeredPath) || !Path.IsPathRooted(registeredPath))
+        return ValidateRegisteredFile(registeredPath);
+    }
+
+    internal static SecurityModuleRegistration ValidateRegisteredFile(string? registeredPath)
+    {
+        if (string.IsNullOrWhiteSpace(registeredPath) || !Path.IsPathFullyQualified(registeredPath))
         {
-            throw new InvalidOperationException("The Hancom security-module path must be absolute.");
+            throw Unavailable("한글 보안 모듈 등록 경로는 절대 경로여야 합니다.");
         }
         var fullPath = Path.GetFullPath(registeredPath);
         if (!File.Exists(fullPath))
         {
-            throw new FileNotFoundException("The registered Hancom security module is missing.", fullPath);
+            throw Unavailable($"등록된 한글 보안 모듈 파일이 없습니다: {fullPath}");
         }
         var actualHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(fullPath)));
-        if (!string.Equals(actualHash, expectedHash, StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException("The registered Hancom security module hash does not match dependencies/lock.json.");
-        }
+        // Observed hash is diagnostic only. RegisterModule must still succeed before Open.
         return new SecurityModuleRegistration(fullPath, actualHash);
     }
+
+    internal static InvalidOperationException Unavailable(string reason) => new($"{reason}\n{InstallationGuide}");
+
+    internal const string InstallationGuide = "한컴 공식 페이지에서 보안모듈(Automation).zip을 내려받아 압축을 풀고, 동봉된 등록 안내를 따라 현재 사용자 계정에 등록하세요.\nhttps://developer.hancom.com/hwpautomation\n등록 이름: FilePathCheckerModuleExample (REG_SZ, DLL 절대 경로). 앱은 보안 모듈을 자동 설치하거나 등록하지 않습니다.";
 
     private const string ModuleName = "FilePathCheckerModuleExample";
 }
