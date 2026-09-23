@@ -21,6 +21,19 @@ See the [usage guide and verification evidence](docs/development/minimal-tagged-
 The existing `render` command retains its investigation profile. General
 template support and the production worker interface remain open.
 
+For the current CommonMark → tagged HWP investigation, run one command after
+the documented workstation prerequisites are installed:
+
+```powershell
+pwsh -NoProfile -File .\apps\md2hwp\convert.ps1 `
+  -InputPath .\examples\report-workflow-v0.2.md `
+  -Template .\tests\fixtures\templates\minimal-tagged-v1.hwp `
+  -Output .\artifacts\my-report.hwp
+```
+
+See the [single-command workflow](docs/development/single-command-workflow.md)
+for its supported scope, failure behavior, and report fixture.
+
 The repository is organized by product responsibility:
 
 - `apps/`, `crates/`, and `backends/` contain md2hwp code boundaries;

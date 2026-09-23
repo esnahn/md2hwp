@@ -1,5 +1,11 @@
 # md2hwp application
 
+The investigation wrapper `convert.ps1` composes the Rust CLI below with the
+existing C# tagged-template worker. It builds both, validates the manuscript
+before COM starts, cleans up temporary IR, and creates a new HWP after backend
+verification. See the [single-command workflow](../../docs/development/single-command-workflow.md).
+This wrapper does not adopt the production backend protocol described below.
+
 Reserved for the user-facing command-line application. It will invoke the
 declared Pandoc executable with explicit reader and JSON-writer options, pass
 Pandoc JSON to `md2hwp-core`, and
