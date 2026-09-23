@@ -227,6 +227,11 @@ internal sealed record CommandLine(
             }
         }
 
+        if (mode == OperationMode.RenderTagged && template is null)
+        {
+            template = Path.Combine(AppContext.BaseDirectory, "template.hwp");
+        }
+
         var valid = mode switch
         {
             OperationMode.AuthorTagged => ir is null && profile is null && template is not null && baseline is null && marked is null && document is null && output is not null,
@@ -278,7 +283,8 @@ internal sealed record CommandLine(
           hancom-ir-preview export-images --document <input.hwp> --output <new-directory> [--visible]
           hancom-ir-preview investigate-ranges --template <minimal.hwp> --marked <new-authored.hwp> --output <new-result.hwp> [--visible]
           hancom-ir-preview author-tagged --template <minimal.hwp> --output <new-template.hwp> [--visible]
-          hancom-ir-preview render-tagged --ir <validated.ir.json> --template <tagged.hwp> --output <new.hwp> [--visible]
+          md2hwp-backend render-tagged --ir <validated.ir.json> --output <new.hwp> [--template <tagged.hwp>] [--visible]
+          Default render-tagged template: template.hwp beside the backend executable.
         """;
 }
 

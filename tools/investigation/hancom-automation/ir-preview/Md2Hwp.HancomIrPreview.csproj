@@ -11,7 +11,7 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <RestoreConfigFile>$(MSBuildThisFileDirectory)NuGet.Config</RestoreConfigFile>
     <RootNamespace>Md2Hwp.HancomIrPreview</RootNamespace>
-    <AssemblyName>Md2Hwp.HancomIrPreview</AssemblyName>
+    <AssemblyName>md2hwp-backend</AssemblyName>
 </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="TemplateDeclarations.Tests" />

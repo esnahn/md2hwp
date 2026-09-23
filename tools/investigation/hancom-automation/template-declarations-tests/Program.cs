@@ -1,6 +1,13 @@
 using Md2Hwp.HancomIrPreview;
 using System.Xml.Linq;
 
+var defaultTemplate = CommandLine.Parse(["render-tagged", "--ir", "input.json", "--output", "output.hwp"]);
+if (defaultTemplate.TemplatePath != Path.Combine(AppContext.BaseDirectory, "template.hwp"))
+    throw new Exception("Default template must be beside the backend, not in the working directory.");
+var explicitTemplate = CommandLine.Parse(["render-tagged", "--ir", "input.json", "--output", "output.hwp", "--template", "custom.hwp"]);
+if (explicitTemplate.TemplatePath != Path.GetFullPath("custom.hwp"))
+    throw new Exception("Explicit template must override the executable-relative default.");
+
 var fixture = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", "explicit-ranges.txt"));
 var plan = TemplateDeclarations.Parse(fixture);
 if (plan.ContentParagraph != 1 || plan.SamplesBegin != 3 || plan.SamplesEnd != 21 ||

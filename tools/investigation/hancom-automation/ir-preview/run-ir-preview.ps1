@@ -52,13 +52,13 @@ if ($PSVersionTable.PSEdition -ne "Desktop" -or
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\..\..\.."))
 $dotnetRoot = Join-Path $repositoryRoot ".local\dependencies\dotnet\10.0.400"
 $dotnetPath = Join-Path $dotnetRoot "dotnet.exe"
-$assemblyPath = Join-Path $PSScriptRoot "bin\$Configuration\net10.0-windows\Md2Hwp.HancomIrPreview.dll"
+$assemblyPath = Join-Path $PSScriptRoot "bin\$Configuration\net10.0-windows\md2hwp-backend.dll"
 $requiredPaths = @()
 if ($RustLauncher) {
     if ($Mode -ne 'render-tagged' -or $Visible) {
         throw 'RustLauncher supports hidden render-tagged only.'
     }
-    $workerExecutable = Join-Path $PSScriptRoot "bin\$Configuration\net10.0-windows\win-x64\publish\Md2Hwp.HancomIrPreview.exe"
+    $workerExecutable = Join-Path $PSScriptRoot "bin\$Configuration\net10.0-windows\win-x64\publish\md2hwp-backend.exe"
     $requiredPaths += @($RustLauncher, $workerExecutable)
 } else {
     if ($RuntimeHostPath) { throw 'RuntimeHostPath requires RustLauncher.' }

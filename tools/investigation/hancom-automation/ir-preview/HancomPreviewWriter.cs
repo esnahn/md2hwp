@@ -1805,7 +1805,7 @@ internal static partial class HancomPreviewWriter
         var fullPath = Path.GetFullPath(path);
         if (!File.Exists(fullPath))
         {
-            throw new FileNotFoundException("Missing HWP template.", fullPath);
+            throw new FileNotFoundException($"Missing HWP template: {fullPath}. Use --template to select another file.", fullPath);
         }
         if (!string.Equals(Path.GetExtension(fullPath), ".hwp", StringComparison.OrdinalIgnoreCase))
         {
