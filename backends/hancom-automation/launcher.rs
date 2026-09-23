@@ -129,9 +129,9 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), String> {
         println!(".NET 10 x64: {}", resolve_runtime(dotnet)?.display());
         return Ok(());
     }
-    let worker = worker.ok_or_else(usage)?;
+    let worker = adjacent_default(worker, "md2hwp-backend.exe")?;
     let ir = ir.ok_or_else(usage)?;
-    let template = template.ok_or_else(usage)?;
+    let template = adjacent_default(template, "template.hwp")?;
     let output = output.ok_or_else(usage)?;
     for path in [&worker, &ir, &template] {
         if !path.is_file() {
@@ -184,13 +184,38 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), String> {
     Ok(())
 }
 
+fn adjacent_default(explicit: Option<PathBuf>, name: &str) -> Result<PathBuf, String> {
+    if let Some(path) = explicit {
+        return Ok(path);
+    }
+    let executable = env::current_exe().map_err(|e| e.to_string())?;
+    Ok(executable
+        .parent()
+        .ok_or("Executable has no parent directory")?
+        .join(name))
+}
+
 fn usage() -> String {
-    "usage: md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --worker <worker.exe> --ir <file.ir.json> --template <template.hwp> --output <new.hwp> [--dotnet <dotnet.exe>]".into()
+    "usage: md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <file.ir.json> --output <new.hwp> [--worker <worker.exe>] [--template <template.hwp>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp".into()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn defaults_are_executable_relative_and_explicit_paths_win() {
+        for name in ["template.hwp", "md2hwp-backend.exe"] {
+            assert_eq!(
+                adjacent_default(None, name).unwrap(),
+                env::current_exe().unwrap().parent().unwrap().join(name)
+            );
+            let explicit = PathBuf::from("custom").join(name);
+            assert_eq!(
+                adjacent_default(Some(explicit.clone()), name).unwrap(),
+                explicit
+            );
+        }
+    }
     #[test]
     fn runtime_requires_stable_core_10_0() {
         assert!(compatible_runtime(

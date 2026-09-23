@@ -7,7 +7,7 @@ an SDK or Desktop Runtime installation is also usable if it provides the same
 Microsoft.NETCore.App runtime. Hancom and its security module remain separate
 prerequisites.
 
-Rust launches `worker.exe render-tagged ...` in a separate process.
+Rust launches `md2hwp-backend.exe render-tagged ...` in a separate process.
 It does not host the CLR. The worker DLL, `.runtimeconfig.json`, and `.deps.json`
 are bundled inside the EXE; only the EXE is deployed for the C# component.
 This adopts deployment/runtime checking only, not a general production protocol.
@@ -22,7 +22,7 @@ pwsh -File .\tools\development\dotnet.ps1 publish `
 ```
 
 The project's `bin/Release/net10.0-windows/win-x64/publish/` contains only
-`Md2Hwp.HancomIrPreview.exe`: **499,366 bytes** in the measured Release build.
+`md2hwp-backend.exe` (the former build name was `Md2Hwp.HancomIrPreview.exe`).
 No runtime, PDB, trimming, or Native AOT is included.
 
 The supported worker runtimeconfig declares Microsoft.NETCore.App **10.0.0**.
@@ -49,8 +49,21 @@ presence does not imply that Hancom or security registration is ready.
 .\target\debug\md2hwp.exe check-runtime --dotnet .\.local\dependencies\dotnet\10.0.400\dotnet.exe
 ```
 
-`render-hwp` accepts `--worker <worker.exe>`, `--ir`, `--template`, `--output`, and optionally
-`--dotnet`. It validates IR before launching C#, refuses an existing output, and
+`render-hwp` requires `--ir` and `--output`. Optional `--worker` and `--template`
+default to `md2hwp-backend.exe` and `template.hwp` beside the Rust executable,
+independent of the working directory. Explicit paths override these defaults;
+missing files fail with their resolved paths. `--dotnet` is also optional.
+Standalone `md2hwp-backend.exe render-tagged` similarly defaults to `template.hwp`
+beside the backend executable. Relative explicit paths and manuscript resources
+still resolve from the working directory. Only render-tagged gains this default;
+template authoring and legacy investigation modes retain explicit inputs.
+
+```powershell
+.\md2hwp.exe render-hwp --ir .\document.ir.json --output .\result.hwp
+.\md2hwp-backend.exe render-tagged --ir .\document.ir.json --output .\result.hwp
+```
+
+Rust validates IR before launching C#, refuses an existing output, and
 leaves template binding, COM safeguards, save/reopen verification, and cleanup to
 the existing worker. Worker failure is reported as a nonzero application exit.
 
