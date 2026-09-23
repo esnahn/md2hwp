@@ -20,6 +20,8 @@
 - 그림은 독립된 문단에 하나만 둔다. `![…]` 안의 내용이 캡션이 된다.
 - 출처의 강조·링크는 IR에 보존된다. 현재 HWP 조사는 링크 레이블을 출력한다.
   URL을 직접 표시하려면 예제처럼 링크 문법 없이 URL을 적는다.
+- 생성 본문 전체에서 URL·이메일은 클릭 가능한 링크가 아닌 일반 문자로 출력한다.
+  제목·목록·박스 내부·그림 캡션·각 출처에도 동일하게 적용한다.
 - 출처가 없으면 기존처럼 템플릿의 `출처:` 자리만 남는다.
 - 일반 본문의 `출처:`는 변경하지 않는다. 객체 직후 한 문단만 출처로 소비한다.
 - `출처:`만 쓰면 오류다. 접두어 뒤에는 공백과 내용이 필요하다.
@@ -84,3 +86,30 @@ pwsh -NoProfile -File .\tools\smoke\test-commonmark-sources.ps1
 ```
 
 닫힌 규약은 [IR 0.2](../specifications/ir-v0.2.md)를 참고한다.
+
+## 자동 링크 제거
+
+한글 2020은 일반 문자열을 넣어도 URL을 하이퍼링크로 바꿀 수 있다.
+문단 스타일을 다시 적용해도 `FIELDBEGIN Type="Hyperlink"`는 남았다.
+검증된 경로는 새로 생성된 `%hlk` 컨트롤만 `DeleteCtrl`로 제거하는 것이다.
+URL 문자열과 원래 글자 모양은 유지된다. 본문 입력 직후와 문단을 떠난 뒤
+모두 링크가 생길 수 있으므로, 새 박스·캡션의 내용 검사 전과 전체 생성 완료 시 처리한다.
+사용자의 한글 전역 설정은 변경하지 않는다.
+
+링크의 루트 앵커가 새로 추가한 문단 범위에 속할 때만 제거한다. 박스 내부의
+링크도 새 박스의 루트 문단으로 판정한다. 템플릿의 기존 영역은 제외한다. 생성 영역은
+저장 전과 재열기 후 HWPML에서 링크 필드가 없는지 확인한다. 그림 자동번호는
+제거 대상이 아니다. HWPML 검사기는 서식 사이의 공백만 있는 `CHAR`도 보존한다.
+
+회귀 원고는 `examples/commonmark-plain-urls-v0.2.md`다. 위 실행 명령에서 입력
+파일을 이 원고로 바꾸면 URL·이메일·서식이 나뉜 URL·링크 레이블·목록·박스·그림과
+출처를 함께 검증할 수 있다. IR의 링크 대상과 제목 보존 규칙은 바뀌지 않는다.
+
+2026-09-23에 이 원고의 저장·재열기·3쪽 PNG 확인을 통과했다. 생성 영역의
+링크 필드는 없고 문자·공백·강조·그림 자동번호는 보존됐다. 기존 링크 하나를
+고정 문단에 추가한 템플릿 사본으로도 생성·재열기를 통과해 기존 링크의 구조와
+서식 보존을 확인했다 (`artifacts/commonmark-plain-urls-existing-link.hwp`).
+원본 태그 템플릿과 전역 한글 설정은 변경하지 않았다.
+
+참고: 한컴 [입력어 자동 실행 도움말](https://help.hancom.com/hoffice/multi/ko_kr/hwp/tools/automatic_action/automatic_action%28action%29.htm),
+[Automation API의 DeleteCtrl 및 컨트롤 목록](https://raw.githubusercontent.com/hancom-io/devcenter-archive/main/hwp-automation/HwpAutomation.pdf).
