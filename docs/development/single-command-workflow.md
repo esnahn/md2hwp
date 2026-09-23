@@ -18,8 +18,8 @@ Windows PowerShell 5.1 x64 STA 자식 프로세스에서 창을 숨겨 실행한
 
 C#은 `FrameworkDependent` 게시 프로필로 단일 EXE를 만든다. DLL과 실행 설정
 JSON은 EXE에 포함되므로 별도 배포하지 않는다. `-SkipBuild`도 해당 구성의
-게시된 EXE가 있어야 한다. 스키마는 Rust에 내장돼 있지만, 현재 조사 작업자는
-여전히 저장소 경로와 `dependencies/lock.json`을 사용한다.
+게시된 EXE가 있어야 한다. 스키마는 Rust에 내장돼 있다. 태그 템플릿 생성은
+lock 파일 없이 실행하며, 호출 작업 디렉터리를 그림 리소스의 기준 범위로 사용한다.
 
 ```powershell
 pwsh -NoProfile -File .\apps\md2hwp\convert.ps1 `

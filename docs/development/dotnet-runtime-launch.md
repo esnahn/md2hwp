@@ -78,18 +78,11 @@ Schemas and AST2IR schema/rules at compile time. C# checks its accepted IR shape
 in code and does not read JSON Schema files. The earlier statement that
 repository schemas were runtime inputs was incorrect.
 
-The current investigation still uses the repository:
-
-- `RepositoryLocator` searches working-directory ancestors for `global.json`
-  and `dependencies/lock.json`.
-- Security-module verification reads the DLL hash from `dependencies/lock.json`.
-- Figure resources are restricted to the repository tree.
-- Legacy profile-based modes read their supplied profiles; `render-tagged`
-  gets declarations from the HWP template itself.
-
-Therefore EXE + EXE + HWP is not yet a repository-independent package.
-Markdown parsing also requires Pandoc. Removing repository discovery and
-changing the resource-root policy is separate work; those checks remain intact.
+`render-tagged` no longer discovers a repository or reads `dependencies/lock.json`.
+Its working directory is the resource root for relative IR image paths. Legacy
+fixture/profile modes still use repository discovery. Security-module registration
+is checked without a fixed hash. Pandoc is a separate downloadable prerequisite
+for Markdown input. See [runtime dependency policy](runtime-dependencies.md).
 
 ## Verification, 2026-09-23
 

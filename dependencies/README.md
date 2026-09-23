@@ -81,30 +81,14 @@ copy is needed.
 
 ## Hancom security module
 
-The explicit installer reads the Hancom entry from `lock.json`:
+The module is no longer a content pin in `lock.json`. Users download and
+register it by following the [official guide](https://developer.hancom.com/hwpautomation).
+The application provides that URL when registration is missing or rejected.
+No automatic registration or hash-based version gate is performed. The former
+installer script is a retired guidance-only entry point.
 
-```powershell
-C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe `
-  -NoProfile -ExecutionPolicy Bypass -Sta `
-  -File .\dependencies\install-hancom-security-module.ps1
-```
-
-It installs the exactly ignored `dependencies/FilePathCheckerModuleExample.dll`
-and mutates the current user's registry, so it is never a build or test side
-effect and the DLL is never committed. It must run in the verified Windows
-identity/profile and interactive Windows PowerShell context recorded in
-`docs/development/environment.md`. An existing REG_SZ registration that points
-to an absolute, present DLL with the pinned hash is authoritative regardless of
-its install directory. The installer validates it before any download or write
-and preserves it as `Action=AlreadyValid`; a Hancom rejection at that point
-also fails without mutation. With an invalid or missing registration, the
-installer first reuses the ignored managed DLL when its hash matches the content
-pin. It downloads and verifies the official archive only when that local copy
-is absent or invalid. A failed fallback restores the previous file and registry
-value. Any other downloaded executable/archive payload added later requires its
-own explicitly documented ignored destination.
-
-The HKCU value points directly to the ignored DLL in this working tree. After
-moving or deleting the repository, or after a cleanup that removes ignored
-files such as `git clean -fdx`, re-run the installer from the repository's new
-or restored location before using HWP Automation.
+The Hancom version in the lock remains a development reference, not a runtime
+restriction. Pandoc and .NET SDK pins remain reproducible development inputs.
+The user-facing Pandoc downloader uses the embedded Pandoc pin as its preferred
+download, with latest-stable fallback; it does not require the lock file at
+runtime. See [runtime dependency policy](../docs/development/runtime-dependencies.md).

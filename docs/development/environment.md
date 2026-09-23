@@ -1,5 +1,11 @@
 # Development environment
 
+Current setup policy: [runtime dependencies](runtime-dependencies.md). The former
+Hancom installer and fixed security-module hash are retired. Historical probe
+hashes below are observations, not current acceptance gates. Users follow the
+official Hancom guide; agents do not install/register the module. The canonical
+probe still checks the registered file, RegisterModule, Open, and cleanup.
+
 ## Declared roles
 
 - PowerShell 7 (`pwsh`) runs repository diagnostics and schema smoke tests. It

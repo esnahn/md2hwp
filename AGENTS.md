@@ -1,5 +1,18 @@
 # AGENTS.md
 
+## Current dependency policy (2026-09-23)
+
+The user's runtime policy supersedes historical installer/pin requirements below.
+`dependencies/lock.json` is development metadata, not a runtime version gate.
+Hancom security-module download/registration is user-managed via the official
+guide; do not install or register it from an agent. Its fixed hash pin has been
+removed; retain registration/file checks and require RegisterModule success.
+The former installer is retired. Runtime tagged rendering does not read a lock
+or discover the repository; cwd is its resource root. Pandoc setup prefers the
+build-time lock's official download, falling back to latest stable if unavailable,
+and preserves upstream notices. Installed Pandoc versions are checked by their
+JSON contract, not exact release number. See `docs/development/runtime-dependencies.md`.
+
 ## Goal
 
 Build a deterministic converter from a small, explicit shared subset of
@@ -77,21 +90,9 @@ Keep parsing, document generation, and verification separate.
 - The initial reference environment is Hancom Office 2020 HWP 11.0.0.9136,
   registered as `HWPFrame.HwpObject`.
 - The official file-access security DLL is not tracked in the repository.
-  `dependencies/install-hancom-security-module.ps1`
-  reuses a matching ignored local copy or downloads the official archive,
-  verifies the URL/hash from the closed `dependencies/lock.json`, installs the
-  workstation-local copy at the exactly ignored
-  `dependencies/FilePathCheckerModuleExample.dll`, and registers it under
-  `HKCU\Software\HNC\HwpAutomation\Modules`.
-- Before downloading or writing anything, that installer must inspect the
-  current user's existing REG_SZ registration. An absolute, present DLL whose
-  SHA-256 matches `dependencies/lock.json` is authoritative regardless of its
-  install directory: validate it with Hancom and return `AlreadyValid` without
-  relocating or rewriting it. If Hancom rejects that otherwise-valid
-  registration, fail without persistent mutation. Only a missing, malformed,
-  missing-file, or hash-mismatched registration may enter transactional repair.
-  During repair, reuse the ignored local DLL without downloading when its hash
-  matches the content pin; otherwise download and verify the official archive.
+  Users download/register it following the official Hancom guide. The old
+  installer is retired, no fixed hash is enforced, and existing registrations
+  are never rewritten by the application. Observed hashes are diagnostics only.
 - Do not invent a toolchain, command, API, or compatibility claim that is not
   supported by the repository or the installed reference environment.
 
@@ -297,10 +298,8 @@ If adopted later, `backends/rhwp` contains md2hwp's integration code,
 - Installation and re-registration are user-only operations. Agents MUST NOT
   invoke `dependencies/install-hancom-security-module.ps1`, including through
   sandbox escalation or another approved command-runner context. When either
-  operation is needed, tell the user to run the exact command documented in the
-  root `README.md` from their own logged-in interactive Windows PowerShell 5.1
-  window and return its complete output. Agents may inspect that output but
-  must not perform the HKCU or managed-DLL mutation themselves.
+  operation is needed, give the official download/registration guide linked
+  in README.md. Agents must not perform HKCU or managed-DLL mutations.
 - An agent may run the canonical open-only probe only in an explicitly approved
   non-default context after confirming that the actual Windows process token,
   interactive session, and PowerShell host match the verified environment. A

@@ -1,5 +1,11 @@
 # md2hwp application
 
+`setup-pandoc` downloads the preferred official portable Pandoc release (latest
+stable fallback) into `%LOCALAPPDATA%\md2hwp\pandoc\`, preserving upstream notices.
+Installed executable releases are not exact-version gated; JSON compatibility
+is still validated. `--pandoc` selects an existing installation. See
+[runtime prerequisites](../../docs/development/runtime-dependencies.md).
+
 `check-runtime` checks installed .NET 10 x64 and prints installation guidance
 when absent. `render-hwp` checks the runtime before launching the C# single-file EXE.
 See [runtime launch](../../docs/development/dotnet-runtime-launch.md) for options.

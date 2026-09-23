@@ -29,7 +29,8 @@ Windows identity/profile, interactive-session contract, and host environment
 recorded in `docs/development/environment.md`. Do not infer readiness from a
 different account's HKCU or from a sandbox/noninteractive process.
 
-Hancom Office/runtime prerequisites and the security-module pin live in
-`dependencies/lock.json`; the explicit installer is
-`dependencies/install-hancom-security-module.ps1`. This directory contains
+The Hancom version in `dependencies/lock.json` is a development reference.
+Security-module setup is user-managed through the official download guide;
+there is no runtime hash pin or automatic installer. Tagged rendering does not
+read the lock file. This directory contains
 md2hwp's backend integration; exploratory C# code remains under `tools/`.
