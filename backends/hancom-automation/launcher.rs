@@ -101,6 +101,13 @@ fn resolve_runtime(explicit: Option<PathBuf>) -> Result<PathBuf, String> {
 }
 
 pub fn run(arguments: Vec<OsString>) -> Result<(), String> {
+    run_with_resource_root(arguments, None)
+}
+
+pub fn run_with_resource_root(
+    arguments: Vec<OsString>,
+    resource_root: Option<&std::path::Path>,
+) -> Result<(), String> {
     if !cfg!(all(target_os = "windows", target_arch = "x86_64")) {
         return Err("Hancom requires Windows x64.".into());
     }
@@ -163,7 +170,11 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), String> {
     let runtime_root = dotnet
         .parent()
         .ok_or("dotnet.exe has no parent directory")?;
-    let status = Command::new(fs::canonicalize(worker).map_err(|e| e.to_string())?)
+    let mut command = Command::new(fs::canonicalize(worker).map_err(|e| e.to_string())?);
+    if let Some(root) = resource_root {
+        command.current_dir(root);
+    }
+    let status = command
         .arg("render-tagged")
         .arg("--ir")
         .arg(ir)

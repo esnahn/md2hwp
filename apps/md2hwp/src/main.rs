@@ -56,6 +56,13 @@ fn child_exit_code(exit_code: Option<i32>) -> i32 {
 }
 
 fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
+    if arguments.first().is_some_and(|a| {
+        Path::new(a)
+            .extension()
+            .is_some_and(|e| e.eq_ignore_ascii_case("md"))
+    }) {
+        return convert_manuscript(arguments);
+    }
     if arguments.first().is_some_and(|a| a == "setup-pandoc") {
         if arguments.len() != 1 {
             return Err("usage: md2hwp setup-pandoc".to_owned().into());
@@ -116,6 +123,67 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
     fs::write(&options.output, serialized)
         .map_err(|error| format!("could not write {}: {error}", options.output.display()))?;
     println!("{}", options.output.display());
+    Ok(())
+}
+
+fn manuscript_paths(
+    arguments: &[std::ffi::OsString],
+) -> Result<(PathBuf, PathBuf, PathBuf), String> {
+    if !(1..=2).contains(&arguments.len())
+        || arguments
+            .iter()
+            .any(|a| a.to_string_lossy().starts_with("--"))
+    {
+        return Err("usage: md2hwp <source.md> [output.hwp]".into());
+    }
+    let input = std::path::absolute(Path::new(&arguments[0])).map_err(|e| e.to_string())?;
+    let ir = input.with_extension("ir.json");
+    let output = if arguments.len() == 2 {
+        std::path::absolute(Path::new(&arguments[1])).map_err(|e| e.to_string())?
+    } else {
+        input.with_extension("result.hwp")
+    };
+    if !output
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("hwp"))
+    {
+        return Err("Output must have .hwp extension".into());
+    }
+    Ok((input, ir, output))
+}
+
+fn convert_manuscript(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
+    let (input, ir, output) = manuscript_paths(&arguments)?;
+    // Check both destinations before invoking Pandoc or writing the persistent IR.
+    for destination in [&ir, &output] {
+        ensure_distinct_paths(&input, destination)?;
+        if destination.exists() {
+            return Err(format!("Output already exists: {}", destination.display()).into());
+        }
+    }
+    run(vec![
+        "md2ir".into(),
+        "--from".into(),
+        "commonmark".into(),
+        "--input".into(),
+        input.as_os_str().into(),
+        "--output".into(),
+        ir.as_os_str().into(),
+    ])?;
+    // Only the backend child receives the resource cwd; never change this process's cwd.
+    // IR is retained if runtime/backend/template prerequisites or rendering fail.
+    hancom::run_with_resource_root(
+        vec![
+            "render-hwp".into(),
+            "--ir".into(),
+            ir.as_os_str().into(),
+            "--output".into(),
+            output.as_os_str().into(),
+        ],
+        input.parent(),
+    )
+    .map_err(|e| format!("{e}\nValidated IR retained: {}", ir.display()))?;
+    println!("{}", output.display());
     Ok(())
 }
 
@@ -308,12 +376,44 @@ fn default_pandoc_path() -> PathBuf {
 }
 
 fn usage() -> String {
-    "usage: md2hwp md2ir --from <commonmark|pandoc-json> --input <file> --output <file.ir.json> [--pandoc <pandoc.exe>] [--force]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <file.ir.json> --output <new.hwp> [--worker <worker.exe>] [--template <template.hwp>] [--dotnet <dotnet.exe>]".to_owned()
+    "usage: md2hwp <source.md> [output.hwp]\n       md2hwp md2ir --from <commonmark|pandoc-json> --input <file> --output <file.ir.json> [--pandoc <pandoc.exe>] [--force]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <file.ir.json> --output <new.hwp> [--worker <worker.exe>] [--template <template.hwp>] [--dotnet <dotnet.exe>]".to_owned()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn manuscript_outputs_are_beside_source_and_explicit_output_wins() {
+        let input = std::ffi::OsString::from("원고 폴더/보고서.v2.md");
+        let (source, ir, output) = manuscript_paths(std::slice::from_ref(&input)).unwrap();
+        assert_eq!(ir, source.with_file_name("보고서.v2.ir.json"));
+        assert_eq!(output, source.with_file_name("보고서.v2.result.hwp"));
+        let (_, explicit_ir, explicit_output) =
+            manuscript_paths(&[input, "다른 폴더/결과.hwp".into()]).unwrap();
+        assert_eq!(explicit_ir, ir);
+        assert_eq!(
+            explicit_output,
+            std::path::absolute("다른 폴더/결과.hwp").unwrap()
+        );
+        assert!(manuscript_paths(&["source.md".into(), "output.json".into()]).is_err());
+    }
+
+    #[test]
+    fn shorthand_collision_does_not_create_other_output_or_touch_source() {
+        for extension in ["ir.json", "result.hwp"] {
+            let root = tempfile::tempdir().unwrap();
+            let source = root.path().join("원고.md");
+            fs::write(&source, "# 원고").unwrap();
+            let existing = source.with_extension(extension);
+            fs::write(&existing, "preserve").unwrap();
+            let error = run(vec![source.as_os_str().into()]).err().unwrap();
+            assert!(error.message.contains("already exists"));
+            assert_eq!(fs::read_to_string(&existing).unwrap(), "preserve");
+            assert_eq!(fs::read_to_string(&source).unwrap(), "# 원고");
+            assert_eq!(fs::read_dir(root.path()).unwrap().count(), 2);
+        }
+    }
 
     #[test]
     fn pandoc_releases_are_not_an_exact_version_gate() {

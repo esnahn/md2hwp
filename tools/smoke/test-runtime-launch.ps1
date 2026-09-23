@@ -76,6 +76,35 @@ try {
             $process.WaitForExit()
             if ($process.ExitCode -eq 0 -or -not $stderr.Contains((Join-Path $work 'template.hwp'))) { throw "Wrong standalone default: $stderr" }
         } finally { $process.Dispose() }
+        # Positional Markdown writes named IR before a missing-template failure.
+        $source = Join-Path $work '원고.md'
+        $generatedIr = Join-Path $work '원고.ir.json'
+        [IO.File]::WriteAllText($source, "# 간편 실행`n`n본문")
+        try {
+            $text = & $localCli $source 2>&1 | Out-String
+            if ($LASTEXITCODE -eq 0 -or -not (Test-Path -LiteralPath $generatedIr) -or
+                -not $text.Contains((Join-Path $work 'template.hwp'))) { throw "Positional normalization failed: $text" }
+            $generated = Get-Content -LiteralPath $generatedIr -Raw | ConvertFrom-Json
+            if ($generated.blocks[0].type -ne 'heading') { throw 'Invalid shorthand IR.' }
+            if (Test-Path -LiteralPath (Join-Path $work '원고.result.hwp')) { throw 'Missing template created HWP.' }
+            $irHash = (Get-FileHash -LiteralPath $generatedIr).Hash
+            $text = & $localCli $source 2>&1 | Out-String
+            if ($LASTEXITCODE -eq 0 -or $text -notmatch 'already exists' -or
+                (Get-FileHash -LiteralPath $generatedIr).Hash -cne $irHash) { throw 'Existing shorthand IR was not protected.' }
+            $start.ArgumentList.Clear()
+            $start.ArgumentList.Add($generatedIr)
+            $process = [Diagnostics.Process]::Start($start)
+            try {
+                $stdout = $process.StandardOutput.ReadToEnd()
+                $stderr = $process.StandardError.ReadToEnd()
+                $process.WaitForExit()
+                if ($process.ExitCode -eq 0 -or -not $stderr.Contains((Join-Path $work 'template.hwp'))) { throw "Standalone positional dispatch failed: $stderr" }
+            } finally { $process.Dispose() }
+        } finally {
+            foreach ($file in @($source, $generatedIr)) {
+                if (Test-Path -LiteralPath $file) { Remove-Item -LiteralPath $file }
+            }
+        }
         if (Test-Path -LiteralPath $output) { throw 'Failed prerequisites created output.' }
     } finally {
         Pop-Location
