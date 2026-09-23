@@ -187,7 +187,7 @@ internal static partial class HancomPreviewWriter
                 int picturesBefore = CountPictures(hwp);
                 int captionsBefore = CountFigureAutoNumbers(hwp);
                 int nativeListsBefore = CountNativeListParagraphs(hwp);
-                var paragraphsBefore = PrepareInsertionTarget(hwp, profile);
+                int paragraphsBefore = PrepareInsertionTarget(hwp, profile);
 
                 int? activeListId = null;
                 foreach (var operation in plan.Operations)
@@ -205,6 +205,8 @@ internal static partial class HancomPreviewWriter
                     ClearNativeListAtCaret(hwp, styles.Resolve("body"));
                 }
 
+                RemoveHyperlinksInRoots(hwp, paragraphsBefore, ((XElement[])RangeRoots(hwp)).Length);
+
                 Run(hwp, "FileSave");
                 CloseDocument(hwp);
                 Open(hwp, temporaryOutput, visible);
@@ -215,6 +217,7 @@ internal static partial class HancomPreviewWriter
                 VerifyBoxes(hwp, plan, styles, boxPrototype, paragraphsBefore);
                 VerifyCaptions(hwp, plan, styles, captionPrototype, paragraphsBefore);
                 VerifyLists(hwp, plan, profile, paragraphsBefore);
+                RequireNoHyperlinks(((XElement[])RangeRoots(hwp)).Skip(paragraphsBefore));
                 var picturesAfter = CountPictures(hwp);
                 var picturesAdded = picturesAfter - picturesBefore;
                 if (picturesAdded != plan.Summary.FigureOperations)
@@ -1037,7 +1040,7 @@ internal static partial class HancomPreviewWriter
         ApplyParagraphStyle(hwp, target);
     }
 
-    private static void InsertText(dynamic hwp, string text)
+    internal static void InsertText(dynamic hwp, string text)
     {
         _ = hwp.HAction.GetDefault("InsertText", hwp.HParameterSet.HInsertText.HSet);
         hwp.HParameterSet.HInsertText.Text = text;
@@ -1045,6 +1048,38 @@ internal static partial class HancomPreviewWriter
         {
             throw new InvalidOperationException("Hancom failed to insert preview text.");
         }
+    }
+
+    internal static void RemoveHyperlinksInRoots(dynamic hwp, int startInclusive, int endExclusive)
+    {
+        if (startInclusive < 0 || endExclusive < startInclusive)
+            throw new ArgumentOutOfRangeException(nameof(startInclusive));
+        // Resolve root anchors before deleting any control. A nested box link
+        // belongs to the root paragraph containing its newly cloned table.
+        var links = new List<object>();
+        for (dynamic? control = hwp.HeadCtrl; control is not null; control = control.Next)
+        {
+            if ((string)control.CtrlID != "%hlk") continue;
+            dynamic anchor = control.GetAnchorPos(2);
+            if ((int)anchor.Item("List") != 0)
+                throw new InvalidOperationException("Hyperlink did not resolve to a root anchor.");
+            int paragraph = (int)anchor.Item("Para");
+            if (paragraph >= startInclusive && paragraph < endExclusive)
+                links.Add((object)control);
+        }
+        // DeleteCtrl preserves the label and restores its pre-link character
+        // shape. Applying a paragraph style alone leaves the hyperlink field.
+        foreach (dynamic link in links)
+            if (!(bool)hwp.DeleteCtrl(link))
+                throw new InvalidOperationException("Hancom failed to remove a generated hyperlink.");
+    }
+
+    internal static void RequireNoHyperlinks(IEnumerable<XElement> roots)
+    {
+        if (roots.SelectMany(root => root.DescendantsAndSelf()).Any(element =>
+                element.Name.LocalName is "FIELDBEGIN" or "FIELDEND" &&
+                (string?)element.Attribute("Type") == "Hyperlink"))
+            throw new InvalidOperationException("Generated content contains an unexpected hyperlink field.");
     }
 
     internal static void InsertFormattedLine(
@@ -1191,7 +1226,8 @@ internal static partial class HancomPreviewWriter
                 !actual.Text.Contains(expected.Text, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
-                    $"Saved preview paragraph {index} did not match {expected.SymbolicStyle}/{nativeStyle.Name}: {expected.Text}");
+                    $"Saved preview paragraph {index} did not match {expected.SymbolicStyle}/{nativeStyle.Name}: " +
+                    $"expected={expected.Text}, actual={actual.Text}, style={actual.Style}.");
             }
         }
     }

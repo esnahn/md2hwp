@@ -117,6 +117,7 @@ internal static partial class HancomPreviewWriter
                 var box = plan.Summary.BoxOperations > 0 ? boundBox : null;
                 var caption = plan.Summary.FigureOperations > 0 ? boundCaption : null;
                 int start = PrepareInsertionTarget(hwp, profile);
+
                 int? list = null;
                 foreach (var operation in plan.Operations)
                 {
@@ -125,11 +126,13 @@ internal static partial class HancomPreviewWriter
                 }
                 ClearNativeListAtCaret(hwp, styles.Resolve("body"));
                 ApplyResolvedParagraphStyle(hwp, styles, styles.Resolve("body"));
+                RemoveHyperlinksInRoots(hwp, start, ((XElement[])RangeRoots(hwp)).Length);
                 VerifyStyles(hwp, plan, styles, start);
                 VerifyCharacterMarks(hwp, plan, styles, start);
                 VerifyBoxes(hwp, plan, styles, box, start);
                 VerifyCaptions(hwp, plan, styles, caption, start);
                 VerifyLists(hwp, plan, profile, start);
+                RequireNoHyperlinks(((XElement[])RangeRoots(hwp)).Skip(start));
                 // All clones are verified before removing the original prototypes.
                 DeleteRangeParagraphs(hwp, binding.SamplesBegin, binding.SamplesEnd + 1);
                 start -= binding.SamplesEnd + 1 - binding.SamplesBegin;
@@ -141,6 +144,7 @@ internal static partial class HancomPreviewWriter
                 VerifyCaptions(hwp, plan, styles, caption, start, verifyPrototype: false);
                 VerifyLists(hwp, plan, profile, start);
                 XElement[] finalRoots = RangeRoots(hwp);
+                RequireNoHyperlinks(finalRoots.Skip(start));
                 XDocument finalDocument = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
                 TemplateRangeStructure.RequireOriginalStyleDefinitions(document, finalDocument, prefix);
                 if (!TemplateRangeStructure.Equivalent(prefix, finalRoots.Take(prefix.Length).ToArray(), document, finalDocument))

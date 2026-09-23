@@ -264,6 +264,7 @@ internal sealed class AuriMinimalCaptionPrototype
             styles.Resolve(styles.Profile.CaptionSelector.ParagraphStyle));
 
         var caption = string.Concat(captionRuns.Select(run => run.Text));
+        HancomPreviewWriter.RemoveHyperlinksInRoots(hwp, cloneRootParagraphIndex, cloneRootParagraphIndex + 1);
         XDocument finalDocument = ReadDocument(hwp);
         IReadOnlyList<XElement> finalRoots = RootParagraphs(finalDocument);
         VerifyOriginal(finalRoots);
@@ -543,15 +544,8 @@ internal sealed class AuriMinimalCaptionPrototype
         }
     }
 
-    private static void InsertText(dynamic hwp, string text)
-    {
-        _ = hwp.HAction.GetDefault("InsertText", hwp.HParameterSet.HInsertText.HSet);
-        hwp.HParameterSet.HInsertText.Text = text;
-        if (!(bool)hwp.HAction.Execute("InsertText", hwp.HParameterSet.HInsertText.HSet))
-        {
-            throw new InvalidOperationException("Hancom could not replace caption text.");
-        }
-    }
+    private static void InsertText(dynamic hwp, string text) =>
+        HancomPreviewWriter.InsertText(hwp, text);
 
     private static int CountOccurrences(string source, string value)
     {

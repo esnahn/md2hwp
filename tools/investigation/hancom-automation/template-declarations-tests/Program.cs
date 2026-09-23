@@ -137,6 +137,21 @@ foreach (var version in new[] { "0.1", "0.2" })
 }
 Console.WriteLine("Source plan checks passed: figure/box metadata and marks retained; 0.1 extension and empty 0.2 source rejected.");
 
+HancomPreviewWriter.RequireNoHyperlinks([XElement.Parse(
+    "<P><TEXT><CHAR>https://example.com</CHAR><AUTONUM NumberType='Figure'/></TEXT></P>")]);
+foreach (var field in new[] { "FIELDBEGIN", "FIELDEND" })
+{
+    var failed = false;
+    try
+    {
+        HancomPreviewWriter.RequireNoHyperlinks([XElement.Parse(
+            $"<P><TABLE><CELL><P><TEXT><{field} Type='Hyperlink'/></TEXT></P></CELL></TABLE></P>")]);
+    }
+    catch (InvalidOperationException) { failed = true; }
+    if (!failed) throw new Exception("Nested hyperlink field escaped output verification.");
+}
+Console.WriteLine("Plain URL checks passed: text/automatic captions accepted; nested hyperlink fields rejected.");
+
 var spaced = HwpMarkup.Parse("<HWPML>\n <P><TEXT><CHAR>A</CHAR></TEXT>\n" +
     " <TEXT><CHAR> </CHAR></TEXT><TEXT><CHAR>B<LINEBREAK/>  </CHAR></TEXT></P>\n</HWPML>");
 if (spaced.Root!.Value != "A B  " || spaced.Root.Nodes().OfType<XText>().Any())

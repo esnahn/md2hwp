@@ -255,6 +255,7 @@ internal sealed class AuriMinimalBoxPrototype
             throw new InvalidOperationException("Box source selection did not identify the cloned source paragraph.");
         MoveToRoot(hwp, rootIndex); FindNext(hwp, sentinel);
         HancomPreviewWriter.InsertBoxSourceLine(hwp, styles, sourceRuns);
+        HancomPreviewWriter.RemoveHyperlinksInRoots(hwp, rootIndex, rootIndex + 1);
         XDocument saved = ReadDocument(hwp);
         VerifyOriginal(RootParagraphs(saved));
         VerifyRenderedRoot(RootParagraphs(saved)[rootIndex], styles, lines, sourceRuns);
@@ -340,6 +341,7 @@ internal sealed class AuriMinimalBoxPrototype
             }
         }
 
+        HancomPreviewWriter.RemoveHyperlinksInRoots(hwp, cloneRootParagraphIndex, cloneRootParagraphIndex + 1);
         XDocument finalDocument = ReadDocument(hwp);
         IReadOnlyList<XElement> finalRoots = RootParagraphs(finalDocument);
         VerifyOriginal(finalRoots);
@@ -520,15 +522,8 @@ internal sealed class AuriMinimalBoxPrototype
         }
     }
 
-    private static void InsertText(dynamic hwp, string text)
-    {
-        _ = hwp.HAction.GetDefault("InsertText", hwp.HParameterSet.HInsertText.HSet);
-        hwp.HParameterSet.HInsertText.Text = text;
-        if (!(bool)hwp.HAction.Execute("InsertText", hwp.HParameterSet.HInsertText.HSet))
-        {
-            throw new InvalidOperationException("Hancom could not replace box text.");
-        }
-    }
+    private static void InsertText(dynamic hwp, string text) =>
+        HancomPreviewWriter.InsertText(hwp, text);
 
     private static int CountOccurrences(string source, string value)
     {
