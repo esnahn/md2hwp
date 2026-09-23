@@ -21,7 +21,11 @@ internal static class Program
                 return 0;
             }
             var options = CommandLine.Parse(args);
-            var repositoryRoot = RepositoryLocator.FindFrom(Directory.GetCurrentDirectory());
+            // Tagged rendering is a user operation: cwd is its explicit resource root.
+            // Fixture/profile investigation modes still locate the development repository.
+            var repositoryRoot = options.Mode == OperationMode.RenderTagged
+                ? Directory.GetCurrentDirectory()
+                : RepositoryLocator.FindFrom(Directory.GetCurrentDirectory());
 
             switch (options.Mode)
             {

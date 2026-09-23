@@ -363,7 +363,7 @@ internal sealed class PlanBuilder(
             relativePath.Replace('/', Path.DirectorySeparatorChar)));
         if (!PathSafety.IsWithin(repositoryRoot, imagePath) || !File.Exists(imagePath))
         {
-            throw JsonContract.Error(path + "/image/path", "image must resolve to an existing file inside the repository");
+            throw JsonContract.Error(path + "/image/path", "image must resolve to an existing file inside the resource root (working directory for tagged rendering)");
         }
         if (!string.Equals(Path.GetExtension(imagePath), ".png", StringComparison.OrdinalIgnoreCase))
         {
