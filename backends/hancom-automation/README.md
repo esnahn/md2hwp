@@ -1,5 +1,9 @@
 # Hancom Automation backend
 
+`launcher.rs` is the Rust integration for the existing investigation worker.
+It checks an installed .NET 10 x64 runtime before starting the C# DLL in a
+separate process. See [runtime launch](../../docs/development/dotnet-runtime-launch.md).
+
 Reserved for a separately launched C#/.NET production worker using the
 documented Hancom OLE/COM API. It receives validated IR, a template profile, the
 runtime template path, and the output path. It then inspects and binds the
@@ -28,4 +32,4 @@ different account's HKCU or from a sandbox/noninteractive process.
 Hancom Office/runtime prerequisites and the security-module pin live in
 `dependencies/lock.json`; the explicit installer is
 `dependencies/install-hancom-security-module.ps1`. This directory contains
-only md2hwp's C# backend implementation and its tests.
+md2hwp's backend integration; exploratory C# code remains under `tools/`.

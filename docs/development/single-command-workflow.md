@@ -11,6 +11,11 @@
 닫고 실행한다. PowerShell 7이 빌드와 원고 변환을 실행하며, 한글 작업은 지정된
 Windows PowerShell 5.1 x64 STA 자식 프로세스에서 창을 숨겨 실행한다.
 
+실행 시 Rust가 설치된 **.NET 10 런타임 x64**를 먼저 확인한다. 없으면 설치 URL을
+안내하고 중단한다. 저장소 로컬 SDK의 런타임을 쓸 때는 아래 명령에
+`-RuntimeHostPath .\.local\dependencies\dotnet\10.0.400\dotnet.exe`를 추가한다.
+배포 시 런타임은 포함하지 않는다. [검사·실행 계약](dotnet-runtime-launch.md) 참고.
+
 ```powershell
 pwsh -NoProfile -File .\apps\md2hwp\convert.ps1 `
   -InputPath .\examples\report-workflow-v0.2.md `

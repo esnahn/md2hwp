@@ -21,6 +21,16 @@
 
 ## .NET toolchain
 
+The Rust launcher now checks an installed .NET 10.0 x64 runtime before starting
+the framework-dependent C# worker DLL. The 2026-09-23 verification used the same
+interactive user/session and Windows PowerShell 5.1 host, with Rust inserted
+between the wrapper and `dotnet.exe`. The canonical open-only probe passed;
+the report conversion saved and reopened successfully, preserved the template,
+and all four exported PNGs matched the earlier report byte for byte. No HWP
+process remained. Default system discovery found no compatible 10.0 runtime;
+the successful run explicitly selected the pinned local SDK host. See
+[runtime launch](dotnet-runtime-launch.md). No runtime was installed system-wide.
+
 Install the official locked SDK without changing the system SDK or `PATH`:
 
 ```powershell
