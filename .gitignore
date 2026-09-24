@@ -1,17 +1,5 @@
-# Workstation-local scratch notes, caches, and temporary files.
-tmp/
-
-# Hash-verified external CLI payloads installed explicitly by dependency setup.
-/.local/dependencies/
-
-# Repository-local CLI state and package caches.
-/.local/state/
-
-# Official Hancom Automation security module downloaded and hash-verified by
-# dependencies/install-hancom-security-module.ps1.
-/dependencies/FilePathCheckerModuleExample.dll
-
-# Language-native build and test outputs.
+# Local dependencies, state and build outputs.
+/.local/
 target/
 **/bin/
 **/obj/
@@ -20,21 +8,15 @@ TestResults/
 *.nupkg
 *.snupkg
 coverage/
+/dependencies/FilePathCheckerModuleExample.dll
 
-# Generated proof and investigation output. Keep the boundary documentation.
-artifacts/*
-!artifacts/README.md
+# Local reference material, generated evidence and temporary work (not tracked).
+/reference/
+/artifacts/
+/tmp/
+/tools/investigation/**/probe-logs/
 
-# Local stdout/stderr captured by timed Hancom investigation runs.
-/tools/investigation/hancom-automation/ir-preview/probe-logs/
-/tools/investigation/auri/probe-logs/
-
-# Reference documents and templates are local inputs until their provenance,
-# license, and redistribution policy are recorded explicitly.
-reference/*
-!reference/README.md
-
-# Common editor and OS state.
+# Editor and OS state.
 .DS_Store
 Thumbs.db
 Desktop.ini

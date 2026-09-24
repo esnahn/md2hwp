@@ -5,7 +5,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
-$project = Join-Path $root 'tools/investigation/hancom-automation/ir-preview/Md2Hwp.HancomIrPreview.csproj'
+$project = Join-Path $root 'backends/hancom-automation/Md2Hwp.Backend.csproj'
 $destination = Join-Path $root "target/$($Configuration.ToLowerInvariant())"
 $published = Join-Path ([IO.Path]::GetDirectoryName($project)) "bin/$Configuration/net10.0-windows/win-x64/publish"
 Push-Location $root

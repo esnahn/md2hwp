@@ -1,370 +1,64 @@
 # AGENTS.md
 
-## Current dependency policy (2026-09-23)
+## v0.1.0 repository boundary
 
-The user's runtime policy supersedes historical installer/pin requirements below.
-`dependencies/lock.json` is development metadata, not a runtime version gate.
-Hancom security-module download/registration is user-managed via the official
-guide; do not install or register it from an agent. Its URL and hash pin remain
-in the development lock (restored 2026-09-24), solely for reproducible development
-verification. User runtime does not enforce that hash; retain registration/file
-checks and require RegisterModule success.
-The former installer is retired. Runtime tagged rendering does not read a lock
-or discover the repository; cwd is its resource root. Pandoc setup prefers the
-build-time lock's official download, falling back to latest stable if unavailable,
-and preserves upstream notices. Installed Pandoc versions are checked by their
-JSON contract, not exact release number. See `docs/development/runtime-dependencies.md`.
+The user requested removal of tracked files not needed to build the v0.1.0
+application. Historical investigations and documentation are recoverable from
+Git history; do not recreate scaffolding or obsolete investigation workflows.
+Keep README.md accurate. Build via tools/development/build.ps1; verify Rust with
+cargo test --workspace. The old standalone smoke scripts and canonical COM probe
+were removed by this cleanup; do not claim they still exist or have passed.
 
-## Goal
+Rust application: apps/md2hwp. Shared semantic core: crates/md2hwp-core.
+C# backend: backends/hancom-automation/Md2Hwp.Backend.csproj.
+Template: templates/template.hwp. Build outputs: target/, bin/, obj/ (ignored).
+The JSON fixtures still tracked are included directly by Rust test compilation.
 
-Build a deterministic converter from a small, explicit shared subset of
-Pandoc-normalized CommonMark and reStructuredText to Korean Hangul documents.
+## Contracts
 
-```text
-CommonMark / reStructuredText -> Pandoc JSON + versioned AST2IR rules
-                              -> core -> validated project IR
-                              + template profile + required HWP/HWPX template
-                              -> backend-specific lowering -> output -> verification
-```
+Keep Pandoc invocation in the app and Pandoc AST handling in the core. Backends
+consume validated IR. Preserve Unicode. Reject unsupported constructors explicitly.
+Retain IR 0.1 and 0.2 closed schemas and current AST2IR 0.2 rules.
+Template-owned minimal-1 declarations supply native styles and prototype ranges;
+do not restore runtime external profiles. Preserve unrelated template content.
+Generated links render as formatted labels/plain text; strip automatic hyperlinks
+only in generated content. Figures embed PNGs; caption and source follow the figure.
+Verbatim blocks may carry sources. Generated tables, HWPX and RST input are deferred.
 
-Template fidelity and Hancom compatibility matter more than Markdown parsing.
-Keep parsing, document generation, and verification separate.
+## Dependencies
 
-## Current state
+Pinned Rust and .NET SDK settings remain authoritative. Use the repository-local
+.NET SDK through tools/development/dotnet.ps1. dependencies/lock.json is build/dev
+metadata, not a runtime version gate. Keep the Hancom module development pin.
+Never install/register the Hancom security module or mutate its DLL/HKCU settings.
+Users manage it via https://developer.hancom.com/hwpautomation.
+Require RegisterModule("FilePathCheckDLL", "FilePathCheckerModuleExample") to return
+true before opening a document. Existing file/registration checks remain mandatory.
+Pandoc setup is explicit, uses the build-time preferred release or official stable
+fallback, checks the digest, and preserves upstream notices. No runtime lock sidecar.
 
-- The repository contains AURI reference assets under `reference/`, exploratory
-  Hancom Automation scripts under `tools/`, and generated proof documents under
-  `artifacts/`.
-- `tools/investigation/auri/build-format-examples.ps1` is a
-  template-investigation script,
-  not the converter or a production backend. Its fixture-specific paragraph
-  coordinates document what was observed in the current AURI sample only.
-- There is no production converter yet. The workspace now has closed IR v0.1
-  types, strict validated I/O, semantic/resource validation, and Rust unit
-  tests. The contract smoke test validates the AST-to-IR ruleset, the external
-  dependencies lock, and accepted/rejected IR schema examples; there is no
-  HWP/HWPX converter or Hancom end-to-end smoke suite yet.
-- The canonical core implementation language is Rust. The shared crate is
-  `crates/md2hwp-core`, and the user-facing application boundary is
-  `apps/md2hwp`. The workspace pins Rust 1.98.0 for
-  `x86_64-pc-windows-msvc`, uses edition 2024 and Cargo resolver 3, and sets
-  the initial MSRV to Rust 1.98.0. `apps/md2hwp` now exposes CommonMark source
-  and direct Pandoc JSON input modes for IR output, and `crates/md2hwp-core`
-  implements the pinned Pandoc JSON input contract, built-in AST2IR rules, and
-  normalization handlers.
-- The Hancom Automation worker implementation language is C#/.NET under
-  `backends/hancom-automation`. C# work uses the pinned repository-local .NET
-  10.0.400 SDK. The investigation preview targets `net10.0-windows` x64; the
-  production worker project shape, COM interop strategy, and protocol remain
-  open decisions. The preview can prepare paired baseline/guarded-marker HWP
-  comparison fixtures, and its investigation profile loader/render path proves
-  a unique document-end marker followed by an empty paragraph. This is not yet
-  the full AURI production insertion contract.
-- The C# investigation preview consumes the closed, explicitly non-production
-  `profiles/templates/auri-basic/investigation-v0.1.json` profile. It identifies
-  only `tests/fixtures/templates/minimal.hwp` by exact hash and declares the
-  proven style, selector, list, and figure policies. It is not the full AURI
-  template profile; that template's insertion target and distinct box/caption
-  bindings remain open.
-- `tests/fixtures/templates/minimal.hwp` and `minimal-marker.hwp` are the
-  primary tracked visual comparison pair. The small fixture's actual native
-  style definitions are authoritative for this investigation; the separate
-  AURI style-list document is read-only evidence and must not silently rewrite
-  the fixture when its documented values differ.
-- Do not impose repository-wide `src/`, `bin/`, `dist/`, or `share/` roots.
-  Rust packages use Cargo's package layout, C# projects use .NET project and
-  test-project conventions, and declarative assets remain in domain-named
-  `rules/`, `schemas/`, and `profiles/` trees. Generated `target/`, `bin/`, and
-  `obj/` directories are compiler output, not repository boundaries.
-- All adopted external pins live in the single `dependencies/lock.json`.
-  Pandoc process invocation stays in `apps/md2hwp`; backend integration stays
-  under `backends/`. Once Git and compatible revisions are selected, upstream
-  Pandoc and rhwp sources are pinned submodules at `upstream/pandoc` and
-  `upstream/rhwp`. Do not create parallel reader, per-dependency metadata, or
-  generic imported-source directory trees. Downloaded executable/archive
-  payloads must use an explicitly documented ignored path or an explicitly
-  documented external install location; do not track them.
-- Product-owned AST-to-IR policy is data in
-  `rules/ast2ir/ir-v0.2.json`, validated by its closed schema. Historical 0.1
-  rules and IR schemas remain unchanged. The core owns the
-  finite handler implementations; the ruleset is not executable code or an
-  implicitly replaceable user configuration file.
-- The initial reference environment is Hancom Office 2020 HWP 11.0.0.9136,
-  registered as `HWPFrame.HwpObject`.
-- The official file-access security DLL is not tracked in the repository.
-  Users download/register it following the official Hancom guide. The old
-  installer is retired, no fixed hash is enforced, and existing registrations
-  are never rewritten by the application. Observed hashes are diagnostics only.
-- Do not invent a toolchain, command, API, or compatibility claim that is not
-  supported by the repository or the installed reference environment.
+## Hancom safety and verification
 
-## First milestone
+Use documented COM only, not UI clicks/keystrokes. Process one document at a time.
+Never modify source templates or manuscripts. Replace generated HWP only after
+successful temporary rendering, save/reopen and structural verification. Preserve
+the old result on failure. Do not accept security, repair or data-loss dialogs.
+Do not terminate user-owned HWP processes. Require existing HWP processes to close.
 
-- Use Pandoc JSON as the parser output contract. CommonMark and
-  reStructuredText readers must normalize only their explicitly adopted shared
-  subset to project IR.
-- Use an explicit syntax allowlist. Unsupported nodes must fail with the Pandoc
-  constructor and AST path; never silently discard them.
-- Keep the allowlist and simple mappings in a versioned product-owned data
-  ruleset. Core handlers remain closed typed code; rules must never contain or
-  invoke arbitrary code.
-- Require an existing Korean report template. Do not create a production
-  document from a blank file.
-- Initially target the AURI basic-research report while keeping style mappings
-  configurable for other templates.
-- Preserve Unicode exactly unless an explicit policy says otherwise.
+Verified workstation context from the removed environment record:
+DESKTOP-BRTN48S\MOLIT, interactive Session 1, Windows PowerShell 5.1 x64 STA,
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe,
+Hancom Office 2020 HWP 11.0.0.9136, HWPFrame.HwpObject.
+Confirm actual identity/session/host before COM work in an approved non-default
+execution context. Sandbox results do not establish workstation registration.
+Hidden windows in that interactive session are supported; services and concurrent
+COM are not. Report when no live or visual test was performed.
+For paragraph deletion select paragraph beginning through next paragraph beginning
+(MoveSelNextParaBegin), then verify text. Do not use SetPos+SelectPara+Delete.
+Keep native coordinates inside the adapter; no fixture coordinates in public IR.
 
-Supported content:
-
-- paragraphs and headings;
-- spaces, soft breaks normalized to spaces, and explicit line breaks;
-- nested strong and emphasis;
-- links, preserving label, target, and optional title in IR;
-- native HWP bullet and numbered lists;
-- line-preserving verbatim blocks;
-- figures from standalone CommonMark images or direct IR, using explicit
-  template figure/caption/source mappings. Figure and verbatim-block sources
-  use an immediately following `출처: …` paragraph under ADR 0009. The
-  reStructuredText figure convention remains unimplemented.
-
-Deferred to a later IR version:
-
-- generated tables;
-- generated footnotes and endnotes;
-- page breaks.
-
-Rejected in IR v0.1:
-
-- inline code and block quotes;
-- raw blocks and raw inlines;
-- horizontal rules;
-- any constructor not explicitly supported.
-
-Existing tables, figures, headers, footers, styles, page setup, backgrounds, and
-unrelated template content must still be preserved.
-
-## Content and style rules
-
-- Keep project styles symbolic: `body`, `heading.1`, `block.box`, and so on.
-- Resolve symbolic styles through a template-specific profile only inside each
-  backend's template-binding and lowering layers.
-- In the AURI basic template, `block.box` initially maps to `박스내용`.
-- Anchor AURI boxes in a `본문` paragraph; apply `박스내용` only to their
-  internal content.
-- A verbatim block is general-purpose; do not encode it as a law-specific type or
-  render it as monospaced source code.
-- Insert AURI figures as inline characters in a `본문` paragraph. Preserve the
-  source aspect ratio and limit width to 142 mm. Put the caption next, followed
-  immediately by a source placeholder; source metadata may later come from a
-  defined CommonMark or reStructuredText convention.
-- Absent source metadata retains the template source placeholder. CommonMark
-  source attachment is defined in ADR 0009 and `docs/specifications/ir-v0.2.md`.
-  IR 0.2 adds optional box source inlines; 0.1 files retain their original
-  closed contract. Tables share the planned adjacent-source convention but
-  table parsing/generation is not enabled by that convention.
-- Lists use the template's `body` text style plus Hancom's native bullet or
-  paragraph-numbering feature. Do not insert literal list markers or reuse
-  heading outline styles.
-- The AST-to-IR ruleset maps Pandoc `SoftBreak` to IR `Space` during
-  normalization. `SoftBreak` is not an IR node. `LineBreak` remains a line break
-  in the same paragraph and is neither a paragraph nor a page break.
-- Preserve `Strong` and `Emph` as nested semantic inline nodes. Flatten them
-  only inside each backend's lowering to adjacent text runs with an active mark
-  set. Apply the marks as character-shape patches over the resolved base style.
-- Preserve link label, target, and optional title in IR. The AURI v0.1 profile
-  intentionally renders the recursively formatted label only.
-- Do not reparse Markdown after Pandoc or leave Markdown markers in HWP text.
-
-The normative serialized IR v0.1 contract is in
-`docs/specifications/ir-v0.1.md`, with its
-machine-readable closed schema in `schemas/ir-v0.1.schema.json`. Its stable
-summary is:
-
-```text
-Document { schema, ir_version, metadata, blocks }
-
-Block =
-  Paragraph { inlines }
-  Heading { level, inlines }
-  VerbatimBlock { lines }
-  List { kind, start?, tight, items }
-  Figure { image, caption, source }
-
-Inline = Text | Space | LineBreak | Strong | Emph | Link
-```
-
-IR v0.1 metadata is an empty object. Tables, footnotes, page breaks, inline
-code, block quotes, raw nodes, horizontal rules, and unlisted constructors are
-not representable. The current normalization target is IR 0.2, whose only
-structural extension is optional nullable VerbatimBlock.source. Readers accept
-0.1 and 0.2 against separate schemas. See `docs/development/markdown-object-sources.md`
-for the implemented CommonMark figure/source path and live HWP verification.
-
-## Architecture
-
-Keep these layers distinct:
-
-1. `apps/md2hwp`: when source text is supplied, invoke the exact declared
-   Pandoc executable with explicit reader and JSON-writer options and capture
-   stdout/stderr; direct Pandoc JSON bypasses process invocation. Keep this a
-   small application module rather than a separate reader package until reuse
-   justifies another boundary.
-2. `pandoc_input`: decode and version-check Pandoc JSON.
-3. `ast2ir_rules`: load and validate the exact product-owned ruleset.
-4. `normalize`: apply closed rule handlers and convert Pandoc nodes to project
-   IR.
-5. `ir`: own the closed project types.
-6. `ir_io`: serialize only validated IR and deserialize UTF-8 JSON by checking
-   the envelope, exact version, closed JSON Schema, and typed representation.
-7. `validate`: enforce IR-local semantic invariants and configured resource
-   limits.
-8. `template_profile`: declare symbolic mappings, target selectors, layout
-   policy, and required capabilities without native coordinates or handles.
-9. Per backend: inspect and bind the actual template, lower validated IR into
-   the backend's native model, mutate a template copy, and verify the result.
-
-The normalized-source path is:
-
-```text
-source -> apps/md2hwp -> Pandoc CLI -> pandoc_input + ast2ir_rules
-direct Pandoc JSON ------------------> pandoc_input + ast2ir_rules
-                                      -> normalize -> ir -> validate
-                                                       -> ir_io(write)?
-```
-
-A serialized-IR replay enters through:
-
-```text
-ir_io(read) -> ir -> validate -> selected backend
-```
-
-No IR file is written before validation succeeds. IR is the only public,
-persistent intermediate document format. A separately launched backend may use
-a small versioned invocation envelope to transport validated IR, profile
-identity, template/output paths, and options, but that envelope is not another
-public document representation.
-
-Pandoc types and AST-to-IR rule handlers must not reach a backend. Each backend
-receives validated IR and owns its lowering implementation. COM cursor,
-selection, paragraph, and character coordinates must not escape the Hancom
-adapter. Equivalent backends share semantic postconditions and conformance
-fixtures rather than native lowering code. Keep a peer boundary for a future
-`rhwp` adapter, but do not implement or depend on `rhwp` in the first milestone.
-If adopted later, `backends/rhwp` contains md2hwp's integration code,
-`upstream/rhwp` contains the pinned upstream submodule, and
-`dependencies/lock.json` records the matching revision or release artifact.
-
-## Template and backend rules
-
-- The investigation now provides `author-tagged` and `render-tagged`, plus
-  `tests/fixtures/templates/minimal-tagged-v1.hwp`. The closed `minimal-1`
-  contract binds declarations inside the HWP without loading an external
-  profile. See `docs/development/minimal-tagged-template.md` for commands,
-  exact range/slot rules, verification, and limitations. Preserve the original
-  `minimal.hwp` and existing investigation profiles. This is not the general
-  production worker protocol or HWPX support.
-
-- ADR 0008 adopts template-owned production bindings: users supply IR and an
-  authored HWP template without a separate profile JSON. Inspect template
-  declarations into validated internal bindings. Dedicated text markers are
-  implemented only for `minimal-1`; general native tag/field syntax remains
-  pending investigation. Do not confuse the experimental-1 lexical draft
-  with the implemented minimal-1 contract.
-  Existing investigation profiles retain their contracts until a tested
-  replacement is adopted. Define the worker invocation contract after the
-  template declaration investigation. This supersedes the separate-input
-  requirement below for the future production interface only.
-
-- Treat a template profile and a runtime HWP/HWPX file as separate inputs. The
-  profile declares intended meanings; the backend must inspect the actual file,
-  validate required styles/capabilities, and bind each declared selector and
-  mapping without guessing.
-- Launch the Hancom Automation backend as a separate worker process so COM
-  crashes, hangs, runtime/bitness concerns, and cleanup remain outside the core
-  process. The exact internal invocation protocol remains an open decision.
-- Use Hancom's documented OLE/COM API. Do not automate mouse clicks, keystrokes,
-  or screen coordinates.
-- Immediately after creating `HWPFrame.HwpObject` and before opening a file,
-  require
-  `RegisterModule("FilePathCheckDLL", "FilePathCheckerModuleExample")` to
-  return true.
-- Run in a logged-in interactive Windows session and process one document at a
-  time. Headless, service, scheduled, and concurrent execution are out of scope.
-- On the reference workstation, all Hancom COM investigation, security-module
-  installation or re-registration, and backend verification MUST use the
-  verified execution context in `docs/development/environment.md`. HKCU and
-  `%LOCALAPPDATA%` are per-user: never use another account's, sandbox's, or
-  noninteractive process's result to declare the module present or absent. A
-  different context is not adopted until the canonical open-only probe passes
-  there and the environment record is updated.
-- Installation and re-registration are user-only operations. Agents MUST NOT
-  invoke `dependencies/install-hancom-security-module.ps1`, including through
-  sandbox escalation or another approved command-runner context. When either
-  operation is needed, give the official download/registration guide linked
-  in README.md. Agents must not perform HKCU or managed-DLL mutations.
-- An agent may run the canonical open-only probe only in an explicitly approved
-  non-default context after confirming that the actual Windows process token,
-  interactive session, and PowerShell host match the verified environment. A
-  result from the default sandbox is not workstation verification.
-- Never blindly accept security, overwrite, repair, compatibility, or data-loss
-  prompts. Clean up documents and COM processes after success or failure.
-- Never modify the source template. Write to a separate output path.
-- Delete whole paragraphs or ranges by selecting from the current paragraph
-  beginning through the next paragraph beginning (`MoveSelNextParaBegin`). Do
-  not combine `SetPos(..., 0)`, `SelectPara`, and `Delete`; in HWP 2020 that
-  reproduced loss of the next paragraph's first character. Verify the complete
-  text immediately before and after every deleted range.
-- Resolve a declared, unique insertion target. Prefer named fields/bookmarks,
-  then a unique marker, then a structurally identified paragraph. Never guess
-  when multiple candidates exist.
-- Hard-coded paragraph coordinates are permitted only in clearly labeled,
-  fixture-specific investigation scripts. Do not carry them into the converter
-  or production backend.
-- Fail before writing output when the template or insertion target is missing,
-  unreadable, unsupported, malformed, or ambiguous.
-- Preserve the template format: HWP to HWP and HWPX to HWPX. Do not claim the
-  formats are interchangeable.
-
-## Verification and completion
-
-Use fixture-driven tests for:
-
-- normalization of every supported constructor and rejection of unsupported
-  nodes, including `SoftBreak` to IR `Space`, Korean, and mixed Unicode text;
-- schema and typed validation of every product-owned AST-to-IR ruleset;
-- closed-schema validation of the single external dependencies lock;
-- missing and ambiguous templates without partial output;
-- paragraph, heading, list, verbatim-block, and line-break structure;
-- direct-IR embedded figures, aspect ratio, inline placement, caption
-  numbering, and source-line placement;
-- preservation of unrelated template content;
-- reopening the output in the target Hancom version;
-- visual checks for pagination, fonts, spacing, lists, and styled boxes.
-
-Text extraction alone is not sufficient. The first milestone is complete only
-when a documented command converts CommonMark, reStructuredText, or Pandoc
-JSON into an edited template, rejects unsupported syntax clearly, preserves
-surrounding content, and passes structural and visual verification.
-
-## Open decisions
-
-- production worker solution/project shape and COM interop strategy;
-- Hancom Automation licensing;
-- internal backend invocation envelope and process protocol;
-- template insertion contract;
-- full AURI symbolic style mapping;
-- verbatim-block presentation policy;
-- reStructuredText figure/source syntax and generated-table IR/backend support;
-- page-break representation in a later IR version;
-- initial HWP/HWPX support range and visual comparison method.
-
-Resolve an open decision in documentation and tests before relying on it. When
-blocked, report the alternatives rather than choosing silently.
-
-## Start of a fresh session
-
-Read this file, inspect the repository, confirm the installed Hancom/COM
-environment and security setup from the verified context in
-`docs/development/environment.md`, then run the canonical HWP open-only probe
-there and the smallest repository contract smoke test. If a prerequisite or
-test does not exist, report that instead of inventing it.
+Current shorthand: md2hwp source.md [output.hwp] creates source.ir.json and by
+default source.result.hwp; backend takes source.ir.json [output.hwp]. Existing
+option-based render modes remain. Defaults resolve beside the relevant EXE.
+Shorthand resources resolve within the source/IR directory; explicit render modes
+use cwd. Maintain source/template protection and successful-result replacement.
