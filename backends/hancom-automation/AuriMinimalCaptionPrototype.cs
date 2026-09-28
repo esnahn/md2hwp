@@ -348,17 +348,8 @@ internal sealed class AuriMinimalCaptionPrototype
             }
             (seenNumber ? afterNumber : beforeNumber).Append(element.Value);
         }
-        if (!string.Equals(
-                beforeNumber.ToString(),
-                selector.PrefixBeforeNumber,
-                StringComparison.Ordinal) ||
-            !afterNumber.ToString().StartsWith(
-                selector.PrefixAfterNumber,
-                StringComparison.Ordinal))
-        {
+        if (!selector.TryReadCaption(beforeNumber.ToString(), afterNumber.ToString(), out var caption))
             return false;
-        }
-        var caption = afterNumber.ToString()[selector.PrefixAfterNumber.Length..];
         if (caption.Length == 0 ||
             (requirePrototypeCaption &&
              !string.Equals(
@@ -372,7 +363,7 @@ internal sealed class AuriMinimalCaptionPrototype
         return true;
     }
 
-    private static bool IsFigureAutoNumber(XElement autoNumber)
+    internal static bool IsFigureAutoNumber(XElement autoNumber)
     {
         var attributes = autoNumber.Attributes().ToArray();
         if (attributes.Length != 2 ||
@@ -390,14 +381,7 @@ internal sealed class AuriMinimalCaptionPrototype
         {
             return false;
         }
-        var formatAttributes = formats[0].Attributes().ToArray();
-        return formatAttributes.Length == 2 &&
-               formatAttributes.Any(attribute =>
-                   attribute.Name.LocalName == "Superscript" &&
-                   string.Equals(attribute.Value, "false", StringComparison.Ordinal)) &&
-               formatAttributes.Any(attribute =>
-                   attribute.Name.LocalName == "Type" &&
-                   string.Equals(attribute.Value, "Digit", StringComparison.Ordinal));
+        return !formats[0].HasElements && !string.IsNullOrEmpty((string?)formats[0].Attribute("Type"));
     }
 
     private static void ValidateSelectedBlock(
@@ -420,33 +404,16 @@ internal sealed class AuriMinimalCaptionPrototype
 
         // HWP 2020 saveblock embeds the selected paragraph content in the
         // SECTION-definition TEXT instead of returning its ordinary root-P
-        // representation. Validate the exact siblings around the control;
+        // representation. Read text across character-formatting runs;
         // the inserted native block is compared with the ordinary prototype
         // again after SetTextFile(..., \"HWP\", \"insertfile\").
-        var autoNumber = autoNumbers[0];
-        var parent = autoNumber.Parent;
-        if (parent?.Name.LocalName != "TEXT")
-        {
-            throw new InvalidOperationException(
-                "The selected caption AUTONUM was not contained in a TEXT element.");
-        }
-        var siblings = parent.Elements().ToArray();
-        var autoIndex = Array.IndexOf(siblings, autoNumber);
-        if (autoIndex <= 0 || autoIndex >= siblings.Length - 1 ||
-            siblings[autoIndex - 1].Name.LocalName != "CHAR" ||
-            siblings[autoIndex + 1].Name.LocalName != "CHAR" ||
-            !string.Equals(
-                siblings[autoIndex - 1].Value,
-                selector.PrefixBeforeNumber,
-                StringComparison.Ordinal) ||
-            !string.Equals(
-                siblings[autoIndex + 1].Value,
-                selector.PrefixAfterNumber + selector.PrototypeCaption,
-                StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException(
-                "The selected caption block changed the literal text around its Figure AUTONUM control.");
-        }
+        var elements = sections[0].Descendants().Where(e => e.Name.LocalName is "CHAR" or "AUTONUM").ToArray();
+        var number = autoNumbers[0];
+        var before = string.Concat(elements.TakeWhile(e => e != number).Where(e => e.Name.LocalName == "CHAR").Select(e => e.Value));
+        var after = string.Concat(elements.SkipWhile(e => e != number).Skip(1).Where(e => e.Name.LocalName == "CHAR").Select(e => e.Value));
+        if (!selector.TryReadCaption(before, after, out var caption) || caption != selector.PrototypeCaption)
+            throw new InvalidOperationException("The selected caption block changed its template text or slot.");
+
     }
 
     private static string StableRootSequenceXml(

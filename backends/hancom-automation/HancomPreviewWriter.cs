@@ -888,6 +888,8 @@ internal static partial class HancomPreviewWriter
                 nativeStyle.BaseBold || run.Strong,
                 nativeStyle.BaseItalic || run.Emphasis)));
             var actualRuns = appended[index].Runs;
+            if (expected.SymbolicStyle == "figure.caption")
+                actualRuns = SliceSavedRuns(actualRuns, styles.Profile.CaptionSelector.CaptionTextOffset, expected.Text.Length);
             if (actualRuns.Count != expectedRuns.Count ||
                 actualRuns.Where((run, runIndex) => run != expectedRuns[runIndex]).Any())
             {
@@ -896,6 +898,20 @@ internal static partial class HancomPreviewWriter
                     $"expected {DescribeRuns(expectedRuns)}, actual {DescribeRuns(actualRuns)}.");
             }
         }
+    }
+
+    private static IReadOnlyList<SavedTextRun> SliceSavedRuns(IReadOnlyList<SavedTextRun> runs, int start, int length)
+    {
+        var result = new List<SavedTextRun>();
+        var position = 0;
+        foreach (var run in runs)
+        {
+            var begin = Math.Max(start, position);
+            var end = Math.Min(start + length, position + run.Text.Length);
+            if (end > begin) result.Add(run with { Text = run.Text.Substring(begin - position, end - begin) });
+            position += run.Text.Length;
+        }
+        return CoalesceSavedRuns(result);
     }
 
     internal static void InsertBoxSourceLine(dynamic hwp, AuriPreviewStyleBindings styles,
@@ -1237,11 +1253,6 @@ internal static partial class HancomPreviewWriter
                         0,
                         null,
                         null);
-                    var captionRuns = new List<PreviewTextRun>
-                    {
-                        new("[그림 ] ", false, false),
-                    };
-                    captionRuns.AddRange(FormattedLine(operation, 1));
                     yield return new ExpectedParagraph(
                         "figure.caption",
                         operation.Lines[1],
@@ -1249,7 +1260,7 @@ internal static partial class HancomPreviewWriter
                         false,
                         1,
                         null,
-                        PreviewRunBuilder.Coalesce(captionRuns));
+                        FormattedLine(operation, 1));
                     var sourceRuns = new List<PreviewTextRun>
                     {
                         new(

@@ -115,7 +115,10 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
         if (image != figureBegin + 1 || source != figureBegin + 3)
             throw new InvalidDataException("Figure slot is outside its exact range position.");
         var caption = roots[figureBegin + 2];
-        if (DirectText(caption) != "[그림 ] " + Tag("slot:figure.caption") ||
+        var captionSlot = Tag("slot:figure.caption");
+        var captionText = DirectText(caption);
+        if (captionText.Split(captionSlot, StringSplitOptions.None).Length != 2 ||
+            captionText.Replace(captionSlot, "", StringComparison.Ordinal).Contains(Prefix, StringComparison.Ordinal) ||
             caption.Descendants().Count(e => e.Name.LocalName == "AUTONUM" && (string?)e.Attribute("NumberType") == "Figure") != 1 ||
             caption.Descendants().Any(e => e.Name.LocalName is "P" or "TABLE" or "PICTURE"))
             throw new InvalidDataException("Caption must preserve its native Figure AUTONUM and exact text slot.");
@@ -139,7 +142,19 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
             if (index > boxBegin && index < boxEnd && index != boxBegin + 1 ||
                 index > figureBegin && index < figureEnd && index != image && index != source && index != figureBegin + 2)
                 throw new InvalidDataException("Declaration is nested in another role.");
-        var profile = InvestigationTemplateProfile.FromTaggedTemplate(templatePath, styles, reset, width, sourceLabel, depth, indent);
+        var number = caption.Descendants().Single(e => e.Name.LocalName == "AUTONUM");
+        var elements = caption.Elements().SelectMany(e => e.Elements()).ToArray();
+        if (caption.Elements().Any(e => e.Name.LocalName != "TEXT") ||
+            elements.Any(e => e.Name.LocalName is not ("CHAR" or "AUTONUM")) ||
+            elements.Where(e => e.Name.LocalName == "CHAR").Any(e => e.Nodes().Any(n => n is not XText)) ||
+            !AuriMinimalCaptionPrototype.IsFigureAutoNumber(number))
+            throw new InvalidDataException("Caption must be one text paragraph with exactly one native Figure AUTONUM.");
+        var beforeNumber = string.Concat(elements.TakeWhile(e => e != number).Where(e => e.Name.LocalName == "CHAR").Select(e => e.Value));
+        var afterNumber = string.Concat(elements.SkipWhile(e => e != number).Skip(1).Where(e => e.Name.LocalName == "CHAR").Select(e => e.Value));
+        if (!beforeNumber.Contains(captionSlot, StringComparison.Ordinal) && !afterNumber.Contains(captionSlot, StringComparison.Ordinal))
+            throw new InvalidDataException("Caption slot must not cross the automatic number control.");
+        var selector = new ProfileCaptionSelector("figure.caption", beforeNumber, afterNumber, captionSlot);
+        var profile = InvestigationTemplateProfile.FromTaggedTemplate(templatePath, styles, reset, width, sourceLabel, depth, indent, selector);
         _ = AuriPreviewStyleBindings.BindDocument(document, profile);
         return new(profile, begin, end, content, boxBegin + 1, figureBegin + 2);
     }

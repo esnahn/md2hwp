@@ -32,7 +32,27 @@ internal sealed record ProfileCaptionSelector(
     string ParagraphStyle,
     string PrefixBeforeNumber,
     string PrefixAfterNumber,
-    string PrototypeCaption);
+    string PrototypeCaption)
+{
+    public int CaptionTextOffset => (PrefixBeforeNumber + PrefixAfterNumber).IndexOf(PrototypeCaption, StringComparison.Ordinal);
+
+    public bool TryReadCaption(string before, string after, out string caption)
+    {
+        caption = "";
+        var slotBefore = PrefixBeforeNumber.Contains(PrototypeCaption, StringComparison.Ordinal);
+        var pattern = slotBefore ? PrefixBeforeNumber : PrefixAfterNumber;
+        var actual = slotBefore ? before : after;
+        if ((slotBefore ? after : before) != (slotBefore ? PrefixAfterNumber : PrefixBeforeNumber)) return false;
+        var offset = pattern.IndexOf(PrototypeCaption, StringComparison.Ordinal);
+        if (offset < 0) return false;
+        var prefix = pattern[..offset];
+        var suffix = pattern[(offset + PrototypeCaption.Length)..];
+        if (actual.Length <= prefix.Length + suffix.Length ||
+            !actual.StartsWith(prefix, StringComparison.Ordinal) || !actual.EndsWith(suffix, StringComparison.Ordinal)) return false;
+        caption = actual.Substring(prefix.Length, actual.Length - prefix.Length - suffix.Length);
+        return true;
+    }
+}
 
 internal sealed class InvestigationTemplateProfile
 {
@@ -109,7 +129,7 @@ internal sealed class InvestigationTemplateProfile
     // profile is loaded or persisted for this path.
     internal static InvestigationTemplateProfile FromTaggedTemplate(
         string templatePath, IReadOnlyList<ProfileStyle> styles, string reset,
-        double width, string sourceLabel, int maxDepth, int indent) =>
+        double width, string sourceLabel, int maxDepth, int indent, ProfileCaptionSelector caption) =>
         new("minimal-tagged-v1", templatePath,
             Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(templatePath))),
             new FileInfo(templatePath).Length, styles, reset,
@@ -117,7 +137,7 @@ internal sealed class InvestigationTemplateProfile
             new("unique_text_marker", "{{md2hwp:content}}"),
             new("body", "block.box", 1, "figure.source", 1,
                 "{{md2hwp:slot:box.content}}", sourceLabel + " "),
-            new("figure.caption", "[그림 ", "] ", "{{md2hwp:slot:figure.caption}}"))
+            caption)
         { PreserveParagraphLineBreaks = true };
 
     public void ValidateTemplate(string templatePath)
