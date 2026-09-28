@@ -140,34 +140,79 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
     Ok(())
 }
 
-fn manuscript_paths(
-    arguments: &[std::ffi::OsString],
-) -> Result<(PathBuf, PathBuf, PathBuf), String> {
-    if !(1..=2).contains(&arguments.len())
-        || arguments
-            .iter()
-            .any(|a| a.to_string_lossy().starts_with("--"))
-    {
-        return Err("usage: md2hwp <source.md> [output.hwp]".into());
-    }
-    let input = std::path::absolute(Path::new(&arguments[0])).map_err(|e| e.to_string())?;
+struct ManuscriptOptions {
+    input: PathBuf,
+    ir: PathBuf,
+    output: PathBuf,
+    forwarded: Vec<std::ffi::OsString>,
+    protected: Vec<PathBuf>,
+}
+
+fn manuscript_options(arguments: &[std::ffi::OsString]) -> Result<ManuscriptOptions, String> {
+    let input = std::path::absolute(Path::new(arguments.first().ok_or_else(usage)?))
+        .map_err(|e| e.to_string())?;
     let ir = input.with_extension("ir.json");
-    let output = if arguments.len() == 2 {
-        std::path::absolute(Path::new(&arguments[1])).map_err(|e| e.to_string())?
-    } else {
-        input.with_extension("result.hwp")
-    };
+    let mut output = None;
+    let mut forwarded = Vec::new();
+    let mut protected = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    let mut args = arguments.iter().skip(1);
+    while let Some(key) = args.next() {
+        let option = key.to_str();
+        if matches!(
+            option,
+            Some("--output" | "--template" | "--worker" | "--dotnet")
+        ) {
+            if !seen.insert(key.clone()) {
+                return Err(format!("Duplicate argument: {}", key.to_string_lossy()));
+            }
+            let value = args
+                .next()
+                .filter(|v| !v.to_string_lossy().starts_with("--"))
+                .ok_or_else(usage)?;
+            let path = std::path::absolute(Path::new(value)).map_err(|e| e.to_string())?;
+            if option == Some("--output") {
+                if output.replace(path).is_some() {
+                    return Err("Duplicate output argument".into());
+                }
+            } else {
+                protected.push(path.clone());
+                forwarded.extend([key.clone(), path.into_os_string()]);
+            }
+        } else {
+            if key.to_string_lossy().starts_with('-') {
+                return Err(usage());
+            }
+            let path = std::path::absolute(Path::new(key)).map_err(|e| e.to_string())?;
+            if output.replace(path).is_some() {
+                return Err("Duplicate output argument".into());
+            }
+        }
+    }
+    let output = output.unwrap_or_else(|| input.with_extension("result.hwp"));
     if !output
         .extension()
         .is_some_and(|e| e.eq_ignore_ascii_case("hwp"))
     {
         return Err("Output must have .hwp extension".into());
     }
-    Ok((input, ir, output))
+    Ok(ManuscriptOptions {
+        input,
+        ir,
+        output,
+        forwarded,
+        protected,
+    })
 }
 
 fn convert_manuscript(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
-    let (input, ir, output) = manuscript_paths(&arguments)?;
+    let ManuscriptOptions {
+        input,
+        ir,
+        output,
+        forwarded,
+        protected,
+    } = manuscript_options(&arguments)?;
     // Protect source/template aliases before writing either generated file.
     for destination in [&ir, &output] {
         ensure_distinct_paths(&input, destination)?;
@@ -175,6 +220,9 @@ fn convert_manuscript(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError
             .map_err(|e| e.to_string())?
             .with_file_name("template.hwp");
         ensure_distinct_paths(&template, destination)?;
+        for path in &protected {
+            ensure_distinct_paths(path, destination)?;
+        }
     }
     run(vec![
         "md2ir".into(),
@@ -188,17 +236,16 @@ fn convert_manuscript(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError
     ])?;
     // Only the backend child receives the resource cwd; never change this process's cwd.
     // IR is retained if runtime/backend/template prerequisites or rendering fail.
-    hancom::run_with_resource_root(
-        vec![
-            "render-hwp".into(),
-            "--ir".into(),
-            ir.as_os_str().into(),
-            "--output".into(),
-            output.as_os_str().into(),
-        ],
-        input.parent(),
-    )
-    .map_err(|e| format!("{e}\nValidated IR retained: {}", ir.display()))?;
+    let mut backend = vec![
+        "render-hwp".into(),
+        "--ir".into(),
+        ir.as_os_str().into(),
+        "--output".into(),
+        output.as_os_str().into(),
+    ];
+    backend.extend(forwarded);
+    hancom::run_with_resource_root(backend, input.parent())
+        .map_err(|e| format!("{e}\nValidated IR retained: {}", ir.display()))?;
     println!("{}", output.display());
     Ok(())
 }
@@ -392,7 +439,7 @@ fn default_pandoc_path() -> PathBuf {
 }
 
 fn usage() -> String {
-    "usage: md2hwp <source.md> [output.hwp]\n       md2hwp md2ir --from <commonmark|pandoc-json> --input <file> --output <file.ir.json> [--pandoc <pandoc.exe>] [--force]\n       md2hwp setup-pandoc\n       md2hwp init-template [output.hwp] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <file.ir.json> --output <new.hwp> [--worker <worker.exe>] [--template <template.hwp>] [--dotnet <dotnet.exe>]".to_owned()
+    "usage: md2hwp <source.md> [[--output ]output.hwp] [--template <template.hwp>] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\n       md2hwp md2ir --input <file> --output <file.ir.json> --from <commonmark|pandoc-json> [--pandoc <pandoc.exe>] [--force]\n       md2hwp setup-pandoc\n       md2hwp init-template [[--output ]output.hwp] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <file.ir.json> --output <new.hwp> [--template <template.hwp>] [--worker <worker.exe>] [--dotnet <dotnet.exe>]".to_owned()
 }
 
 #[cfg(test)]
@@ -402,17 +449,102 @@ mod tests {
     #[test]
     fn manuscript_outputs_are_beside_source_and_explicit_output_wins() {
         let input = std::ffi::OsString::from("원고 폴더/보고서.v2.md");
-        let (source, ir, output) = manuscript_paths(std::slice::from_ref(&input)).unwrap();
+        let ManuscriptOptions {
+            input: source,
+            ir,
+            output,
+            ..
+        } = manuscript_options(std::slice::from_ref(&input)).unwrap();
         assert_eq!(ir, source.with_file_name("보고서.v2.ir.json"));
         assert_eq!(output, source.with_file_name("보고서.v2.result.hwp"));
-        let (_, explicit_ir, explicit_output) =
-            manuscript_paths(&[input, "다른 폴더/결과.hwp".into()]).unwrap();
+        let ManuscriptOptions {
+            ir: explicit_ir,
+            output: explicit_output,
+            ..
+        } = manuscript_options(&[input, "다른 폴더/결과.hwp".into()]).unwrap();
         assert_eq!(explicit_ir, ir);
         assert_eq!(
             explicit_output,
             std::path::absolute("다른 폴더/결과.hwp").unwrap()
         );
-        assert!(manuscript_paths(&["source.md".into(), "output.json".into()]).is_err());
+        assert!(manuscript_options(&["source.md".into(), "output.json".into()]).is_err());
+    }
+
+    #[test]
+    fn shorthand_options_allow_free_order_and_resolve_from_caller() {
+        let args = [
+            "원고/source.md",
+            "--dotnet",
+            "runtime/dotnet.exe",
+            "--template",
+            "양식/custom.hwp",
+            "--worker",
+            "backend/worker.exe",
+            "--output",
+            "출력/result.hwp",
+        ]
+        .map(Into::into);
+        let options = manuscript_options(&args).unwrap();
+        assert_eq!(
+            options.output,
+            std::path::absolute("출력/result.hwp").unwrap()
+        );
+        assert_eq!(
+            options.forwarded,
+            vec![
+                std::ffi::OsString::from("--dotnet"),
+                std::path::absolute("runtime/dotnet.exe")
+                    .unwrap()
+                    .into_os_string(),
+                "--template".into(),
+                std::path::absolute("양식/custom.hwp")
+                    .unwrap()
+                    .into_os_string(),
+                "--worker".into(),
+                std::path::absolute("backend/worker.exe")
+                    .unwrap()
+                    .into_os_string()
+            ]
+        );
+        let positional = ["source.md", "--template", "custom.hwp", "result.hwp"].map(Into::into);
+        assert_eq!(
+            manuscript_options(&positional).unwrap().output,
+            std::path::absolute("result.hwp").unwrap()
+        );
+        for tail in [
+            vec!["a.hwp", "--output", "b.hwp"],
+            vec!["--output", "a.hwp", "b.hwp"],
+            vec!["--template"],
+            vec!["--template", "--output", "a.hwp"],
+            vec!["--worker", "a.exe", "--worker", "b.exe"],
+            vec!["--unknown", "x"],
+        ] {
+            let arguments = std::iter::once("source.md")
+                .chain(tail)
+                .map(Into::into)
+                .collect::<Vec<_>>();
+            assert!(manuscript_options(&arguments).is_err());
+        }
+    }
+
+    #[test]
+    fn shorthand_protects_explicit_template_before_writing_ir() {
+        let root = tempfile::tempdir().unwrap();
+        let source = root.path().join("source.md");
+        let template = root.path().join("custom.hwp");
+        fs::write(&source, "manuscript").unwrap();
+        fs::write(&template, "preserve template").unwrap();
+        assert!(
+            convert_manuscript(vec![
+                source.clone().into_os_string(),
+                template.clone().into_os_string(),
+                "--template".into(),
+                template.clone().into_os_string()
+            ])
+            .is_err()
+        );
+        assert_eq!(fs::read_to_string(template).unwrap(), "preserve template");
+        assert!(!source.with_extension("ir.json").exists());
     }
 
     #[test]
