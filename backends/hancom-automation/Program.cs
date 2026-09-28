@@ -9,6 +9,18 @@ internal static class Program
     {
         try
         {
+            if (args.Length > 0 && args[0] == "init-template")
+            {
+                var output = args.Length switch
+                {
+                    1 => "template.hwp",
+                    2 when !args[1].StartsWith("--", StringComparison.Ordinal) => args[1],
+                    3 when args[1] == "--output" && !args[2].StartsWith("--", StringComparison.Ordinal) => args[2],
+                    _ => throw new ArgumentException("usage: md2hwp-backend init-template [output.hwp]"),
+                };
+                Console.WriteLine(JsonSerializer.Serialize(HancomPreviewWriter.CreateDefaultTemplate(output), JsonOutput.Options));
+                return 0;
+            }
             if (args is ["runtime-info"])
             {
                 Console.WriteLine(JsonSerializer.Serialize(new {
@@ -80,6 +92,7 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
     }
     private const string Usage = """
         usage:
+          md2hwp-backend init-template [output.hwp]
           md2hwp-backend <source.ir.json> [output.hwp]
           md2hwp-backend render-tagged --ir <source.ir.json> --output <result.hwp> [--template <template.hwp>] [--visible]
         Default template: template.hwp beside the executable.
