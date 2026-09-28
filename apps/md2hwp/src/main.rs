@@ -71,7 +71,7 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
     }
     if arguments
         .first()
-        .is_some_and(|a| a == "check-runtime" || a == "render-hwp")
+        .is_some_and(|a| a == "check-runtime" || a == "render-hwp" || a == "init-template")
     {
         return hancom::run(arguments).map_err(AppError::from);
     }
@@ -392,7 +392,7 @@ fn default_pandoc_path() -> PathBuf {
 }
 
 fn usage() -> String {
-    "usage: md2hwp <source.md> [output.hwp]\n       md2hwp md2ir --from <commonmark|pandoc-json> --input <file> --output <file.ir.json> [--pandoc <pandoc.exe>] [--force]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <file.ir.json> --output <new.hwp> [--worker <worker.exe>] [--template <template.hwp>] [--dotnet <dotnet.exe>]".to_owned()
+    "usage: md2hwp <source.md> [output.hwp]\n       md2hwp md2ir --from <commonmark|pandoc-json> --input <file> --output <file.ir.json> [--pandoc <pandoc.exe>] [--force]\n       md2hwp setup-pandoc\n       md2hwp init-template [output.hwp] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <file.ir.json> --output <new.hwp> [--worker <worker.exe>] [--template <template.hwp>] [--dotnet <dotnet.exe>]".to_owned()
 }
 
 #[cfg(test)]

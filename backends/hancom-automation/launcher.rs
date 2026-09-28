@@ -114,16 +114,23 @@ pub fn run_with_resource_root(
     let mut args = arguments.into_iter();
     let mode = args.next().unwrap_or_default();
     let check = mode == "check-runtime";
-    if !check && mode != "render-hwp" {
+    let init = mode == "init-template";
+    if !check && !init && mode != "render-hwp" {
         return Err(usage());
     }
     let (mut dotnet, mut worker, mut ir, mut template, mut output) = (None, None, None, None, None);
     while let Some(key) = args.next() {
+        if init && !key.to_string_lossy().starts_with('-') {
+            if output.replace(PathBuf::from(key)).is_some() {
+                return Err("duplicate output argument".into());
+            }
+            continue;
+        }
         let slot = match key.to_str() {
             Some("--dotnet") => &mut dotnet,
             Some("--worker") if !check => &mut worker,
-            Some("--ir") if !check => &mut ir,
-            Some("--template") if !check => &mut template,
+            Some("--ir") if !check && !init => &mut ir,
+            Some("--template") if !check && !init => &mut template,
             Some("--output") if !check => &mut output,
             _ => return Err(usage()),
         };
@@ -137,6 +144,28 @@ pub fn run_with_resource_root(
         return Ok(());
     }
     let worker = adjacent_default(worker, "md2hwp-backend.exe")?;
+    if init {
+        let output = output.unwrap_or_else(|| PathBuf::from("template.hwp"));
+        if output.exists() {
+            return Err(format!("Template already exists: {}", output.display()));
+        }
+        if !output
+            .extension()
+            .is_some_and(|e| e.eq_ignore_ascii_case("hwp"))
+        {
+            return Err("Template output must be .hwp".into());
+        }
+        return launch_worker(
+            worker,
+            dotnet,
+            vec![
+                "init-template".into(),
+                "--output".into(),
+                output.into_os_string(),
+            ],
+            None,
+        );
+    }
     let ir = ir.ok_or_else(usage)?;
     let template = adjacent_default(template, "template.hwp")?;
     let output = output.ok_or_else(usage)?;
@@ -167,6 +196,28 @@ pub fn run_with_resource_root(
     let content = fs::read(&ir).map_err(|e| e.to_string())?;
     md2hwp_core::read_ir(&content, &md2hwp_core::ValidationLimits::default())
         .map_err(|e| e.to_string())?;
+    launch_worker(
+        worker,
+        dotnet,
+        vec![
+            "render-tagged".into(),
+            "--ir".into(),
+            ir.into_os_string(),
+            "--template".into(),
+            template.into_os_string(),
+            "--output".into(),
+            output.into_os_string(),
+        ],
+        resource_root,
+    )
+}
+
+fn launch_worker(
+    worker: PathBuf,
+    dotnet: Option<PathBuf>,
+    arguments: Vec<OsString>,
+    resource_root: Option<&std::path::Path>,
+) -> Result<(), String> {
     if !worker
         .extension()
         .is_some_and(|e| e.eq_ignore_ascii_case("exe"))
@@ -183,13 +234,7 @@ pub fn run_with_resource_root(
         command.current_dir(root);
     }
     let status = command
-        .arg("render-tagged")
-        .arg("--ir")
-        .arg(ir)
-        .arg("--template")
-        .arg(template)
-        .arg("--output")
-        .arg(output)
+        .args(arguments)
         // The published apphost searches environment variables only: use the checked runtime.
         .env("DOTNET_ROOT_X64", runtime_root)
         .env("DOTNET_ROOT", runtime_root)
@@ -215,12 +260,35 @@ fn adjacent_default(explicit: Option<PathBuf>, name: &str) -> Result<PathBuf, St
 }
 
 fn usage() -> String {
-    "usage: md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <file.ir.json> --output <new.hwp> [--worker <worker.exe>] [--template <template.hwp>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp".into()
+    "usage: md2hwp init-template [output.hwp] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <file.ir.json> --output <new.hwp> [--worker <worker.exe>] [--template <template.hwp>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp".into()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
+    fn template_creation_rejects_unsafe_targets_before_starting_worker() {
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("edited.hwp");
+        fs::write(&output, b"user template").unwrap();
+        let error = run(vec![
+            "init-template".into(),
+            output.clone().into_os_string(),
+        ])
+        .unwrap_err();
+        assert!(error.contains("already exists"), "{error}");
+        assert_eq!(fs::read(output).unwrap(), b"user template");
+        for arguments in [
+            vec!["init-template", "first.hwp", "second.hwp"],
+            vec!["init-template", "first.hwp", "--output", "second.hwp"],
+            vec!["init-template", "--template", "old.hwp"],
+            vec!["init-template", "--ir", "source.ir.json"],
+            vec!["init-template", "wrong.txt"],
+        ] {
+            assert!(run(arguments.into_iter().map(OsString::from).collect()).is_err());
+        }
+    }
     #[test]
     fn defaults_are_executable_relative_and_explicit_paths_win() {
         for name in ["template.hwp", "md2hwp-backend.exe"] {
