@@ -209,7 +209,7 @@ internal sealed class AuriMinimalBoxPrototype
         XElement root,
         AuriPreviewStyleBindings styles,
         IReadOnlyList<string> lines,
-        IReadOnlyList<PreviewTextRun>? sourceRuns = null)
+        IReadOnlyList<PreviewTextRun>? sourceRuns = null, bool sourcePending = false)
     {
         if (!TryReadParts(root, styles, requirePrototypeLineBreak: false, out var parts))
         {
@@ -222,15 +222,30 @@ internal sealed class AuriMinimalBoxPrototype
             throw new InvalidOperationException(
                 $"Rendered box lines differed; expected {Describe(lines)}, actual {Describe(actualLines)}.");
         }
-        var expectedSource = sourceRuns is null ? styles.Profile.BoxSelector.SourceText :
-            styles.Profile.Figure.SourceLabel + " " + string.Concat(sourceRuns.Select(run => run.Text));
-        if (ReadSourceText(parts.SourceParagraph) != expectedSource)
-            throw new InvalidOperationException("Rendered box source text differs from its IR or template placeholder.");
-        HancomPreviewWriter.VerifyBoxSourceRuns(parts.SourceParagraph, styles, sourceRuns);
-        var renderedStructureXml = StableBoxStructureXml(root, styles);
+        if (sourcePending)
+        {
+            if (ReadSourceText(parts.SourceParagraph) != styles.Profile.BoxSource.PrototypeText)
+                throw new InvalidOperationException("Pending box source changed.");
+        }
+        else if (sourceRuns is null)
+        {
+            if (parts.SourceParagraph is not null || parts.Table.Descendants("CAPTION").Any())
+                throw new InvalidOperationException("A box without a source must not retain its caption.");
+        }
+        else
+        {
+            if (parts.SourceParagraph is null) throw new InvalidOperationException("Missing box source paragraph.");
+            styles.Profile.BoxSource.Verify(parts.SourceParagraph, string.Concat(sourceRuns.Select(run => run.Text)));
+            HancomPreviewWriter.VerifyBoxSourceRuns(parts.SourceParagraph, styles, sourceRuns);
+        }
+        var omitSource = sourceRuns is null && !sourcePending;
+        var renderedStructureXml = StableBoxStructureXml(root, styles, omitSource);
+        var expectedStructureXml = omitSource
+            ? StableBoxStructureXml(XElement.Parse(originalRootXml), styles, true)
+            : originalRootStructureXml;
         if (!string.Equals(
                 renderedStructureXml,
-                originalRootStructureXml,
+                expectedStructureXml,
                 StringComparison.Ordinal))
         {
             throw new InvalidOperationException(
@@ -246,14 +261,14 @@ internal sealed class AuriMinimalBoxPrototype
         // A sentinel proves the selected paragraph is its source before inserting IR.
         var sentinel = "MD2HWP_SOURCE_" + Guid.NewGuid().ToString("N");
         MoveToRoot(hwp, rootIndex);
-        FindNext(hwp, styles.Profile.BoxSelector.SourceText);
-        Run(hwp, "MoveParaBegin"); Run(hwp, "MoveSelParaEnd"); InsertText(hwp, sentinel);
+        FindNext(hwp, styles.Profile.BoxSource.Slot);
+        InsertText(hwp, sentinel);
         XDocument marked = ReadDocument(hwp);
         var roots = RootParagraphs(marked);
         VerifyOriginal(roots);
-        if (!TryReadParts(roots[rootIndex], styles, false, out var parts) || ReadSourceText(parts.SourceParagraph) != sentinel)
+        if (!TryReadParts(roots[rootIndex], styles, false, out var parts) || ReadSourceText(parts.SourceParagraph) != styles.Profile.BoxSource.PrototypeText.Replace(styles.Profile.BoxSource.Slot, sentinel, StringComparison.Ordinal))
             throw new InvalidOperationException("Box source selection did not identify the cloned source paragraph.");
-        MoveToRoot(hwp, rootIndex); FindNext(hwp, sentinel);
+        MoveToRoot(hwp, rootIndex); FindNext(hwp, sentinel); Run(hwp, "Delete");
         HancomPreviewWriter.InsertBoxSourceLine(hwp, styles, sourceRuns);
         HancomPreviewWriter.RemoveHyperlinksInRoots(hwp, rootIndex, rootIndex + 1);
         XDocument saved = ReadDocument(hwp);
@@ -315,12 +330,22 @@ internal sealed class AuriMinimalBoxPrototype
         VerifyRenderedRoot(
             sentinelRoots[cloneRootParagraphIndex],
             styles,
-            [sentinel]);
+            [sentinel], sourcePending: true);
 
         // The body now has a unique sentinel. Fill the source before inserting
         // manuscript text so neither slot lookup can match the other's IR text.
         if (sourceRuns is not null)
             ReplaceSource(hwp, styles, cloneRootParagraphIndex, new[] { sentinel }, sourceRuns);
+        else
+        {
+            MoveToRoot(hwp, cloneRootParagraphIndex);
+            Run(hwp, "SelectCtrlFront");
+            Run(hwp, "ShapeObjDetachCaption");
+            Run(hwp, "Cancel");
+            XDocument detached = ReadDocument(hwp);
+            VerifyOriginal(RootParagraphs(detached));
+            VerifyRenderedRoot(RootParagraphs(detached)[cloneRootParagraphIndex], styles, new[] { sentinel });
+        }
 
         MoveToRoot(hwp, cloneRootParagraphIndex);
         FindNext(hwp, sentinel);
@@ -393,9 +418,10 @@ internal sealed class AuriMinimalBoxPrototype
             return false;
         }
         var table = tables[0];
+        var sourceCount = Count(table, "CAPTION") == 0 && !requirePrototypeLineBreak ? 0 : selector.SourceParagraphs;
         if (Count(table, "ROW") != 1 ||
             Count(table, "CELL") != 1 ||
-            Count(table, "PARALIST") != 2 ||
+            Count(table, "PARALIST") != 1 + sourceCount ||
             table.Descendants().Count(element =>
                 element.Name.LocalName == "POSITION" &&
                 string.Equals(
@@ -411,7 +437,7 @@ internal sealed class AuriMinimalBoxPrototype
             .SelectMany(element => element.Elements()
                 .Where(child => child.Name.LocalName == "P"))
             .ToArray();
-        if (innerParagraphs.Length != selector.ContentParagraphs + selector.SourceParagraphs)
+        if (innerParagraphs.Length != selector.ContentParagraphs + sourceCount)
         {
             return false;
         }
@@ -422,11 +448,11 @@ internal sealed class AuriMinimalBoxPrototype
             .Where(paragraph => ReadStyle(paragraph) == styles.Resolve(selector.SourceStyle).Id)
             .ToArray();
         if (content.Length != selector.ContentParagraphs ||
-            source.Length != selector.SourceParagraphs ||
+            source.Length != sourceCount ||
             !TryReadLogicalLines(content.ElementAtOrDefault(0), out var contentLines) ||
-            ReadSourceText(source.ElementAtOrDefault(0)) is not { } sourceText ||
+            (sourceCount > 0 && ReadSourceText(source.ElementAtOrDefault(0)) is null) ||
             (requirePrototypeLineBreak &&
-             (sourceText != selector.SourceText ||
+             (ReadSourceText(source.ElementAtOrDefault(0)) != selector.SourceText ||
               contentLines.Count < (styles.Profile.PreserveParagraphLineBreaks ? 1 : 2) ||
               CountOccurrences(
                   string.Concat(contentLines),
@@ -434,7 +460,7 @@ internal sealed class AuriMinimalBoxPrototype
         {
             return false;
         }
-        parts = new BoxParts(table, content[0], source[0]);
+        parts = new BoxParts(table, content[0], source.ElementAtOrDefault(0));
         return true;
     }
 
@@ -563,7 +589,7 @@ internal sealed class AuriMinimalBoxPrototype
 
     private static string StableBoxStructureXml(
         XElement root,
-        AuriPreviewStyleBindings styles)
+        AuriPreviewStyleBindings styles, bool omitSource = false)
     {
         var clone = new XElement(root);
         if (!TryReadParts(clone, styles, requirePrototypeLineBreak: false, out var parts))
@@ -583,7 +609,8 @@ internal sealed class AuriMinimalBoxPrototype
         characters[0].Add("MD2HWP_BOX_CONTENT");
         // Source text/character runs are checked separately; retain its paragraph
         // style and layout while allowing authored metadata to replace the slot.
-        parts.SourceParagraph.ReplaceNodes(new XElement("TEXT", new XElement("CHAR", "MD2HWP_BOX_SOURCE")));
+        if (omitSource) clone.Descendants("CAPTION").Remove();
+        else parts.SourceParagraph?.ReplaceNodes(new XElement("TEXT", new XElement("CHAR", "MD2HWP_BOX_SOURCE")));
         return StableBoxCloneXml(clone);
     }
 
@@ -658,6 +685,6 @@ internal sealed class AuriMinimalBoxPrototype
     private sealed record BoxParts(
         XElement Table,
         XElement ContentParagraph,
-        XElement SourceParagraph);
+        XElement? SourceParagraph);
 
 }

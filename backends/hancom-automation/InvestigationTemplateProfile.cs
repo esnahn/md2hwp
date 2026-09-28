@@ -123,22 +123,26 @@ internal sealed class InvestigationTemplateProfile
 
     public ProfileCaptionSelector CaptionSelector { get; }
 
+    public TemplateSource BoxSource { get; private init; } = null!;
+    public TemplateSource FigureSource { get; private init; } = null!;
+
     public bool PreserveParagraphLineBreaks { get; private init; }
 
     // Internal bindings extracted from the actual authored template. No JSON
     // profile is loaded or persisted for this path.
     internal static InvestigationTemplateProfile FromTaggedTemplate(
         string templatePath, IReadOnlyList<ProfileStyle> styles, string reset,
-        double width, string sourceLabel, int maxDepth, int indent, ProfileCaptionSelector caption) =>
+        double width, string sourceLabel, int maxDepth, int indent, ProfileCaptionSelector caption,
+        TemplateSource boxSource, TemplateSource figureSource) =>
         new("minimal-tagged-v1", templatePath,
             Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(templatePath))),
             new FileInfo(templatePath).Length, styles, reset,
             new(width, sourceLabel), new(maxDepth, indent),
             new("unique_text_marker", "{{md2hwp:content}}"),
-            new("body", "block.box", 1, "figure.source", 1,
-                "{{md2hwp:slot:box.content}}", sourceLabel + " "),
+            new("body", "block.box", 1, "box.source", 1,
+                "{{md2hwp:slot:box.content}}", boxSource.PrototypeText),
             caption)
-        { PreserveParagraphLineBreaks = true };
+        { PreserveParagraphLineBreaks = true, BoxSource = boxSource, FigureSource = figureSource };
 
     public void ValidateTemplate(string templatePath)
     {

@@ -180,7 +180,7 @@ internal sealed class PlanBuilder(
                 "AURI paragraph styles are bound by unique native names during render.",
                 "Strong/emphasis marks are retained as character-shape runs; link targets remain flattened.",
                 "verbatim_block maps to one prototype-backed block.box operation; render accepts only the uniquely matched minimal-fixture box structure.",
-                "IR 0.2 box sources use the prototype source paragraph; absent sources retain its placeholder.",
+                "IR 0.2 box sources replace the template source slot; absent sources remove the native caption.",
                 "Figure captions remain one prototype-backed native AUTONUM operation; render accepts only the uniquely matched minimal-fixture root-caption structure.",
                 profile.PreserveParagraphLineBreaks
                     ? "IR line_break nodes remain native line breaks in the same paragraph."

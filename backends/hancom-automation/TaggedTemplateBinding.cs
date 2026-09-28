@@ -66,7 +66,8 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
         }
         var depth = IntegerSetting("lists.max-depth", 6);
         var indent = IntegerSetting("lists.indent-hwp", 10000);
-        var sourceLabel = Setting("source-label");
+        var legacySources = roots.Any(p => DirectText(p).StartsWith(Prefix + "source-label:", StringComparison.Ordinal));
+        var sourceLabel = legacySources ? Setting("source-label") : "";
         var definitions = document.Descendants().Where(e => e.Name.LocalName == "STYLE").ToArray();
         string StyleName(XElement paragraph)
         {
@@ -102,8 +103,17 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
             throw new InvalidDataException("Box requires one content slot inside its cell.");
         accepted.Add(boxSlots[0]);
         styles.Add(new("block.box", StyleName(boxSlots[0])));
-        var boxSources = tables[0].Descendants().Where(e => e.Name.LocalName == "P" && DirectText(e) == sourceLabel + " ").ToArray();
+        var boxSourceSlot = Tag("slot:box.source");
+        var boxSources = tables[0].Descendants().Where(e => e.Name.LocalName == "P" &&
+            (legacySources ? DirectText(e) == sourceLabel + " " : DirectText(e).Contains(boxSourceSlot, StringComparison.Ordinal))).ToArray();
         if (boxSources.Length != 1) throw new InvalidDataException("Box source decoration does not match declared source label.");
+        var boxSource = legacySources
+            ? new TemplateSource(new XElement(boxSources[0]), sourceLabel + " ", sourceLabel + " ", "", sourceLabel + " ")
+            : TemplateSource.Read(boxSources[0], boxSourceSlot);
+        if (!boxSources[0].Ancestors().Any(e => e.Name.LocalName == "CAPTION"))
+            throw new InvalidDataException("Box source must be in its native table caption.");
+        accepted.Add(boxSources[0]);
+        styles.Add(new("box.source", StyleName(boxSources[0])));
 
         var figureBegin = Single("begin:figure");
         var figureEnd = Single("end:figure");
@@ -111,7 +121,10 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
         if (figureEnd != figureBegin + 4 || !(boxEnd < figureBegin || figureEnd < boxBegin))
             throw new InvalidDataException("Figure range must contain image, caption, source in order without overlap.");
         var image = Single("slot:figure.image");
-        var source = Single("slot:figure.source");
+        var source = figureBegin + 3;
+        var figureSource = TemplateSource.Read(roots[source], Tag("slot:figure.source"));
+        if (legacySources) figureSource = figureSource with { Prefix = sourceLabel + " ", LegacyInsertionPrefix = sourceLabel + " " };
+        accepted.Add(roots[source]);
         if (image != figureBegin + 1 || source != figureBegin + 3)
             throw new InvalidDataException("Figure slot is outside its exact range position.");
         var caption = roots[figureBegin + 2];
@@ -128,9 +141,8 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
         styles.Add(new("figure", StyleName(roots[image])));
         styles.Add(new("figure.caption", StyleName(caption)));
         styles.Add(new("figure.source", StyleName(roots[source])));
-        if (StyleName(roots[image]) != styles.Single(s => s.Symbolic == "body").NativeName ||
-            StyleName(boxSources[0]) != StyleName(roots[source]))
-            throw new InvalidDataException("Figure anchor or box source style differs from its declared role.");
+        if (StyleName(roots[image]) != styles.Single(s => s.Symbolic == "body").NativeName)
+            throw new InvalidDataException("Figure anchor style differs from body.");
         // Reject hidden, duplicate, malformed, or unknown declarations, including
         // tokens in headers/footers/cells other than the declared box slot.
         foreach (var paragraph in document.Descendants().Where(e => e.Name.LocalName == "P"))
@@ -154,7 +166,7 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
         if (!beforeNumber.Contains(captionSlot, StringComparison.Ordinal) && !afterNumber.Contains(captionSlot, StringComparison.Ordinal))
             throw new InvalidDataException("Caption slot must not cross the automatic number control.");
         var selector = new ProfileCaptionSelector("figure.caption", beforeNumber, afterNumber, captionSlot);
-        var profile = InvestigationTemplateProfile.FromTaggedTemplate(templatePath, styles, reset, width, sourceLabel, depth, indent, selector);
+        var profile = InvestigationTemplateProfile.FromTaggedTemplate(templatePath, styles, reset, width, sourceLabel, depth, indent, selector, boxSource, figureSource);
         _ = AuriPreviewStyleBindings.BindDocument(document, profile);
         return new(profile, begin, end, content, boxBegin + 1, figureBegin + 2);
     }

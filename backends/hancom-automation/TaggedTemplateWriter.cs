@@ -31,6 +31,7 @@ internal static partial class HancomPreviewWriter
                 var prefix = rootsBefore.Take(binding.SamplesBegin).ToArray();
                 var boundBox = AuriMinimalBoxPrototype.Bind(hwp, styles);
                 var boundCaption = AuriMinimalCaptionPrototype.Bind(hwp, styles);
+                var figureSource = FigureSourcePrototype.Bind(hwp, binding.CaptionRoot + 1, profile.FigureSource);
                 var box = plan.Summary.BoxOperations > 0 ? boundBox : null;
                 var caption = plan.Summary.FigureOperations > 0 ? boundCaption : null;
                 int start = PrepareInsertionTarget(hwp, profile);
@@ -39,7 +40,7 @@ internal static partial class HancomPreviewWriter
                 foreach (var operation in plan.Operations)
                 {
                     Console.Error.WriteLine($"render-tagged: {operation.Kind}/{operation.Label}");
-                    list = RenderOperation(hwp, operation, styles, box, caption, list);
+                    list = RenderOperation(hwp, operation, styles, box, caption, figureSource, list);
                 }
                 ClearNativeListAtCaret(hwp, styles.Resolve("body"));
                 ApplyResolvedParagraphStyle(hwp, styles, styles.Resolve("body"));

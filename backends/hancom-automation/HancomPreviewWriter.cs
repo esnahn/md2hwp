@@ -337,6 +337,7 @@ internal static partial class HancomPreviewWriter
         AuriPreviewStyleBindings styles,
         AuriMinimalBoxPrototype? boxPrototype,
         AuriMinimalCaptionPrototype? captionPrototype,
+        FigureSourcePrototype figureSource,
         int? activeListId)
     {
         if (operation.Kind == "text")
@@ -434,16 +435,8 @@ internal static partial class HancomPreviewWriter
             hwp,
             styles,
             FormattedLine(operation, 1));
-        var sourceStyle = styles.Resolve("figure.source");
-        ApplyResolvedParagraphStyle(hwp, styles, sourceStyle);
-        var sourceLabel = styles.Profile.Figure.SourceLabel;
-        var sourceRuns = new List<PreviewTextRun>
-        {
-            new(operation.Lines[2].Length == 0 ? sourceLabel : sourceLabel + " ", false, false),
-        };
-        sourceRuns.AddRange(FormattedLine(operation, 2));
-        InsertFormattedLine(hwp, PreviewRunBuilder.Coalesce(sourceRuns), sourceStyle);
-        Run(hwp, "BreakPara");
+        if (operation.Lines[2].Length > 0)
+            figureSource.Insert(hwp, styles, FormattedLine(operation, 2));
         return null;
     }
 
@@ -890,6 +883,9 @@ internal static partial class HancomPreviewWriter
             var actualRuns = appended[index].Runs;
             if (expected.SymbolicStyle == "figure.caption")
                 actualRuns = SliceSavedRuns(actualRuns, styles.Profile.CaptionSelector.CaptionTextOffset, expected.Text.Length);
+            if (expected.SymbolicStyle == "figure.source")
+                actualRuns = SliceSavedRuns(actualRuns, styles.Profile.FigureSource.Prefix.Length,
+                    expected.FormattedRuns.Sum(r => r.Text.Length));
             if (actualRuns.Count != expectedRuns.Count ||
                 actualRuns.Where((run, runIndex) => run != expectedRuns[runIndex]).Any())
             {
@@ -917,21 +913,20 @@ internal static partial class HancomPreviewWriter
     internal static void InsertBoxSourceLine(dynamic hwp, AuriPreviewStyleBindings styles,
         IReadOnlyList<PreviewTextRun> sourceRuns)
     {
-        IReadOnlyList<PreviewTextRun> runs = PreviewRunBuilder.Coalesce(
-            new[] { new PreviewTextRun(styles.Profile.Figure.SourceLabel + " ", false, false) }.Concat(sourceRuns));
-        InsertFormattedLine(hwp, runs, styles.Resolve(styles.Profile.BoxSelector.SourceStyle));
+        var prefix = styles.Profile.BoxSource.LegacyInsertionPrefix;
+        if (prefix.Length > 0) InsertText(hwp, prefix);
+        InsertFormattedLine(hwp, sourceRuns, styles.Resolve(styles.Profile.BoxSelector.SourceStyle));
     }
 
     internal static void VerifyBoxSourceRuns(XElement paragraph, AuriPreviewStyleBindings styles,
-        IReadOnlyList<PreviewTextRun>? sourceRuns)
+        IReadOnlyList<PreviewTextRun> sourceRuns)
     {
         var style = styles.Resolve(styles.Profile.BoxSelector.SourceStyle);
-        var runs = sourceRuns is null ? new[] { new PreviewTextRun(styles.Profile.BoxSelector.SourceText, false, false) } :
-            new[] { new PreviewTextRun(styles.Profile.Figure.SourceLabel + " ", false, false) }.Concat(sourceRuns);
-        var expected = CoalesceSavedRuns(runs.Select(run => new SavedTextRun(run.Text,
+        var expected = CoalesceSavedRuns(sourceRuns.Select(run => new SavedTextRun(run.Text,
             style.BaseBold || run.Strong, style.BaseItalic || run.Emphasis)));
         var actual = ReadSavedRuns(paragraph, HwpmlCharacterShapes.Read(paragraph.Document ??
             throw new InvalidOperationException("Source verification requires its owning HWPML document.")));
+        actual = SliceSavedRuns(actual, styles.Profile.BoxSource.Prefix.Length, sourceRuns.Sum(r => r.Text.Length));
         if (!expected.SequenceEqual(actual)) throw new InvalidOperationException("Box source character marks differ from IR.");
     }
 
@@ -989,7 +984,7 @@ internal static partial class HancomPreviewWriter
                     verified++;
                     break;
                 case "figure":
-                    rootIndex += 3;
+                    rootIndex += operation.Lines[2].Length > 0 ? 3 : 2;
                     break;
                 default:
                     throw new InvalidOperationException(
@@ -1052,7 +1047,9 @@ internal static partial class HancomPreviewWriter
                         appended[rootIndex + 1],
                         styles,
                         operation.Lines[1]);
-                    rootIndex += 3;
+                    if (operation.Lines[2].Length > 0)
+                        styles.Profile.FigureSource.Verify(appended[rootIndex + 2], operation.Lines[2]);
+                    rootIndex += operation.Lines[2].Length > 0 ? 3 : 2;
                     verified++;
                     break;
                 default:
@@ -1188,11 +1185,8 @@ internal static partial class HancomPreviewWriter
                     break;
                 case "figure":
                     yield return ("figure.caption", operation.Lines[1]);
-                    yield return (
-                        "figure.source",
-                        operation.Lines[2].Length == 0
-                            ? profile.Figure.SourceLabel
-                            : $"{profile.Figure.SourceLabel} {operation.Lines[2]}");
+                    if (operation.Lines[2].Length > 0)
+                        yield return ("figure.source", profile.FigureSource.Render(operation.Lines[2]));
                     break;
                 default:
                     throw new InvalidOperationException(
@@ -1261,26 +1255,9 @@ internal static partial class HancomPreviewWriter
                         1,
                         null,
                         FormattedLine(operation, 1));
-                    var sourceRuns = new List<PreviewTextRun>
-                    {
-                        new(
-                            operation.Lines[2].Length == 0
-                                ? profile.Figure.SourceLabel
-                                : profile.Figure.SourceLabel + " ",
-                            false,
-                            false),
-                    };
-                    sourceRuns.AddRange(FormattedLine(operation, 2));
-                    yield return new ExpectedParagraph(
-                        "figure.source",
-                        operation.Lines[2].Length == 0
-                            ? profile.Figure.SourceLabel
-                            : $"{profile.Figure.SourceLabel} {operation.Lines[2]}",
-                        false,
-                        false,
-                        0,
-                        null,
-                        PreviewRunBuilder.Coalesce(sourceRuns));
+                    if (operation.Lines[2].Length > 0)
+                        yield return new ExpectedParagraph("figure.source", profile.FigureSource.Render(operation.Lines[2]),
+                            false, false, 0, null, FormattedLine(operation, 2));
                     break;
                 default:
                     throw new InvalidOperationException(
