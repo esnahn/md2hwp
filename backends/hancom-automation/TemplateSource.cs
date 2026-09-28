@@ -2,7 +2,7 @@ using System.Xml.Linq;
 
 namespace Md2Hwp.HancomIrPreview;
 
-internal sealed record TemplateSource(XElement Paragraph, string Slot, string Prefix, string Suffix, string LegacyInsertionPrefix = "")
+internal sealed record TemplateSource(XElement Paragraph, string Slot, string Prefix, string Suffix)
 {
     public string PrototypeText => TaggedTemplateBinding.DirectText(Paragraph);
     public string Render(string content) => Prefix + content + Suffix;
@@ -66,7 +66,6 @@ internal sealed class FigureSourcePrototype
         if (TaggedTemplateBinding.DirectText(AuriMinimalBoxPrototype.RootParagraphs(marked)[index]) != source.PrototypeText.Replace(source.Slot, sentinel, StringComparison.Ordinal))
             throw new InvalidOperationException("Source slot selection escaped its clone.");
         Move(hwp, index); Find(hwp, sentinel); Run(hwp, "Delete");
-        if (source.LegacyInsertionPrefix.Length > 0) HancomPreviewWriter.InsertText(hwp, source.LegacyInsertionPrefix);
         HancomPreviewWriter.InsertFormattedLine(hwp, runs, styles.Resolve("figure.source"));
         HancomPreviewWriter.RemoveHyperlinksInRoots(hwp, index, index + 1);
         XDocument saved = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));

@@ -13,4 +13,7 @@
     <RootNamespace>Md2Hwp.HancomIrPreview</RootNamespace>
     <AssemblyName>md2hwp-backend</AssemblyName>
 </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../schemas/ir-v0.2.schema.json" LogicalName="md2hwp.ir.schema" />
+  </ItemGroup>
 </Project>

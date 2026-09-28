@@ -913,8 +913,6 @@ internal static partial class HancomPreviewWriter
     internal static void InsertBoxSourceLine(dynamic hwp, AuriPreviewStyleBindings styles,
         IReadOnlyList<PreviewTextRun> sourceRuns)
     {
-        var prefix = styles.Profile.BoxSource.LegacyInsertionPrefix;
-        if (prefix.Length > 0) InsertText(hwp, prefix);
         InsertFormattedLine(hwp, sourceRuns, styles.Resolve(styles.Profile.BoxSelector.SourceStyle));
     }
 

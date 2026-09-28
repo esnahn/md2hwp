@@ -8,8 +8,7 @@ namespace Md2Hwp.HancomIrPreview;
 internal sealed record ProfileStyle(string Symbolic, string NativeName);
 
 internal sealed record ProfileFigureLayout(
-    double MaxWidthMillimeters,
-    string SourceLabel);
+    double MaxWidthMillimeters);
 
 internal sealed record ProfileListLayout(
     int MaxDepth,
@@ -132,12 +131,12 @@ internal sealed class InvestigationTemplateProfile
     // profile is loaded or persisted for this path.
     internal static InvestigationTemplateProfile FromTaggedTemplate(
         string templatePath, IReadOnlyList<ProfileStyle> styles, string reset,
-        double width, string sourceLabel, int maxDepth, int indent, ProfileCaptionSelector caption,
+        double width, int maxDepth, int indent, ProfileCaptionSelector caption,
         TemplateSource boxSource, TemplateSource figureSource) =>
-        new("minimal-tagged-v1", templatePath,
+        new("ir-" + IrContract.Version, templatePath,
             Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(templatePath))),
             new FileInfo(templatePath).Length, styles, reset,
-            new(width, sourceLabel), new(maxDepth, indent),
+            new(width), new(maxDepth, indent),
             new("unique_text_marker", "{{md2hwp:content}}"),
             new("body", "block.box", 1, "box.source", 1,
                 "{{md2hwp:slot:box.content}}", boxSource.PrototypeText),

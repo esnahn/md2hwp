@@ -4,7 +4,7 @@ using System.Xml.Linq;
 namespace Md2Hwp.HancomIrPreview;
 
 internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profile,
-    int SamplesBegin, int SamplesEnd, int Content, int BoxRoot, int CaptionRoot)
+    int TemplateBegin, int TemplateEnd, int Content, int BoxRoot, int CaptionRoot)
 {
     internal const string Prefix = "{{md2hwp:";
     internal static string Tag(string name) => Prefix + name + "}}";
@@ -26,17 +26,18 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
             accepted.Add(matches[0].p);
             return matches[0].i;
         }
-        var begin = Single("begin:samples");
-        var end = Single("end:samples");
+        if (!roots.Any(p => DirectText(p).StartsWith(Prefix + "ir-version:", StringComparison.Ordinal)))
+            throw new InvalidDataException($"Template has no IR version. Create an IR {IrContract.Version} template with init-template.");
+        var begin = Single("begin:template");
+        var end = Single("end:template");
         var content = Single("content");
         if (begin <= 0 || end <= begin || end + 1 != content || content != roots.Count - 2 ||
             DirectText(roots[^1]) != "" || roots[^1].Descendants().Any(e => e.Name.LocalName is "P" or "TABLE" or "PICTURE"))
-            throw new InvalidDataException("Samples must precede the terminal content target and its empty successor.");
+            throw new InvalidDataException("Template definitions must precede the terminal content target and its empty successor.");
         void Inside(int index)
         {
-            if (index <= begin || index >= end) throw new InvalidDataException($"Declaration at root[{index}] is outside samples.");
+            if (index <= begin || index >= end) throw new InvalidDataException($"Declaration at root[{index}] is outside template definitions.");
         }
-        Inside(Single("contract:minimal-1"));
         string Setting(string key)
         {
             var prefix = Prefix + key + ":";
@@ -54,6 +55,7 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
                 throw new InvalidDataException($"Invalid setting {key}.");
             return value;
         }
+        IrContract.RequireCurrent(Setting("ir-version"), "Template");
         var widthText = Setting("figure.max-width-mm");
         if (!double.TryParse(widthText, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var width) ||
             !double.IsFinite(width) || width <= 0 || width > 142)
@@ -66,8 +68,6 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
         }
         var depth = IntegerSetting("lists.max-depth", 6);
         var indent = IntegerSetting("lists.indent-hwp", 10000);
-        var legacySources = roots.Any(p => DirectText(p).StartsWith(Prefix + "source-label:", StringComparison.Ordinal));
-        var sourceLabel = legacySources ? Setting("source-label") : "";
         var definitions = document.Descendants().Where(e => e.Name.LocalName == "STYLE").ToArray();
         string StyleName(XElement paragraph)
         {
@@ -105,11 +105,9 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
         styles.Add(new("block.box", StyleName(boxSlots[0])));
         var boxSourceSlot = Tag("slot:box.source");
         var boxSources = tables[0].Descendants().Where(e => e.Name.LocalName == "P" &&
-            (legacySources ? DirectText(e) == sourceLabel + " " : DirectText(e).Contains(boxSourceSlot, StringComparison.Ordinal))).ToArray();
-        if (boxSources.Length != 1) throw new InvalidDataException("Box source decoration does not match declared source label.");
-        var boxSource = legacySources
-            ? new TemplateSource(new XElement(boxSources[0]), sourceLabel + " ", sourceLabel + " ", "", sourceLabel + " ")
-            : TemplateSource.Read(boxSources[0], boxSourceSlot);
+            DirectText(e).Contains(boxSourceSlot, StringComparison.Ordinal)).ToArray();
+        if (boxSources.Length != 1) throw new InvalidDataException("Box requires exactly one source slot in its native caption.");
+        var boxSource = TemplateSource.Read(boxSources[0], boxSourceSlot);
         if (!boxSources[0].Ancestors().Any(e => e.Name.LocalName == "CAPTION"))
             throw new InvalidDataException("Box source must be in its native table caption.");
         accepted.Add(boxSources[0]);
@@ -123,7 +121,6 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
         var image = Single("slot:figure.image");
         var source = figureBegin + 3;
         var figureSource = TemplateSource.Read(roots[source], Tag("slot:figure.source"));
-        if (legacySources) figureSource = figureSource with { Prefix = sourceLabel + " ", LegacyInsertionPrefix = sourceLabel + " " };
         accepted.Add(roots[source]);
         if (image != figureBegin + 1 || source != figureBegin + 3)
             throw new InvalidDataException("Figure slot is outside its exact range position.");
@@ -166,7 +163,7 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
         if (!beforeNumber.Contains(captionSlot, StringComparison.Ordinal) && !afterNumber.Contains(captionSlot, StringComparison.Ordinal))
             throw new InvalidDataException("Caption slot must not cross the automatic number control.");
         var selector = new ProfileCaptionSelector("figure.caption", beforeNumber, afterNumber, captionSlot);
-        var profile = InvestigationTemplateProfile.FromTaggedTemplate(templatePath, styles, reset, width, sourceLabel, depth, indent, selector, boxSource, figureSource);
+        var profile = InvestigationTemplateProfile.FromTaggedTemplate(templatePath, styles, reset, width, depth, indent, selector, boxSource, figureSource);
         _ = AuriPreviewStyleBindings.BindDocument(document, profile);
         return new(profile, begin, end, content, boxBegin + 1, figureBegin + 2);
     }

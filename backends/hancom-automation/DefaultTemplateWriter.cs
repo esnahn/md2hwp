@@ -3,7 +3,7 @@ using System.Xml.Linq;
 
 namespace Md2Hwp.HancomIrPreview;
 
-internal sealed record TemplateCreationResult(string Output, string Contract, bool Reopened);
+internal sealed record TemplateCreationResult(string Output, string IrVersion, bool Reopened);
 
 internal static partial class HancomPreviewWriter
 {
@@ -54,7 +54,7 @@ internal static partial class HancomPreviewWriter
             });
             // Never replace an edited template, including one created during generation.
             File.Move(temporary, output);
-            return new(output, "minimal-1", true);
+            return new(output, IrContract.Version, true);
         }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
@@ -114,7 +114,7 @@ internal static partial class HancomPreviewWriter
         // Retain only the empty first paragraph's native section/page definition.
         var first = new XElement(blankRoot);
         first.SetAttributeValue("Style", ids["body"]);
-        var roots = new List<XElement> { first, Declaration("begin:samples"), Declaration("contract:minimal-1") };
+        var roots = new List<XElement> { first, Declaration("begin:template"), Declaration("ir-version:" + IrContract.Version) };
         var figureWidth = Math.Min(142, width * 25.4 / 7200).ToString("0.###", CultureInfo.InvariantCulture);
         roots.AddRange(new[] { Declaration("figure.max-width-mm:" + figureWidth), Declaration("lists.max-depth:6"),
             Declaration("lists.indent-hwp:1000") });
@@ -123,7 +123,7 @@ internal static partial class HancomPreviewWriter
         roots.AddRange(new[] { Declaration("begin:block.box"), Paragraph("body", table), Declaration("end:block.box"),
             Declaration("begin:figure"), Declaration("slot:figure.image"), figureCaption,
             TextParagraph("figure.source", "출처: " + TaggedTemplateBinding.Tag("slot:figure.source")), Declaration("end:figure"),
-            Declaration("end:samples"), Declaration("content"), TextParagraph("body", "") });
+            Declaration("end:template"), Declaration("content"), TextParagraph("body", "") });
         section.ReplaceNodes(roots);
         return result;
     }

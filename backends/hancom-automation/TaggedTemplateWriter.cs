@@ -2,7 +2,7 @@ using System.Xml.Linq;
 
 namespace Md2Hwp.HancomIrPreview;
 
-internal sealed record TaggedTemplateResult(string Output, string Contract, bool Reopened, bool SourceUnchanged);
+internal sealed record TaggedTemplateResult(string Output, string IrVersion, bool Reopened, bool SourceUnchanged);
 
 internal static partial class HancomPreviewWriter
 {
@@ -28,7 +28,7 @@ internal static partial class HancomPreviewWriter
                 var plan = IrPreviewPlan.Load(irPath, repositoryRoot, profile);
                 var styles = AuriPreviewStyleBindings.BindDocument(document, profile);
                 var rootsBefore = AuriMinimalBoxPrototype.RootParagraphs(document);
-                var prefix = rootsBefore.Take(binding.SamplesBegin).ToArray();
+                var prefix = rootsBefore.Take(binding.TemplateBegin).ToArray();
                 var boundBox = AuriMinimalBoxPrototype.Bind(hwp, styles);
                 var boundCaption = AuriMinimalCaptionPrototype.Bind(hwp, styles);
                 var figureSource = FigureSourcePrototype.Bind(hwp, binding.CaptionRoot + 1, profile.FigureSource);
@@ -52,8 +52,8 @@ internal static partial class HancomPreviewWriter
                 VerifyLists(hwp, plan, profile, start);
                 RequireNoHyperlinks(((XElement[])RangeRoots(hwp)).Skip(start));
                 // All clones are verified before removing the original prototypes.
-                DeleteRangeParagraphs(hwp, binding.SamplesBegin, binding.SamplesEnd + 1);
-                start -= binding.SamplesEnd + 1 - binding.SamplesBegin;
+                DeleteRangeParagraphs(hwp, binding.TemplateBegin, binding.TemplateEnd + 1);
+                start -= binding.TemplateEnd + 1 - binding.TemplateBegin;
                 Run(hwp, "FileSave"); CloseDocument(hwp); Open(hwp, temporary, visible);
                 VerifyText(hwp, plan, profile);
                 VerifyStyles(hwp, plan, styles, start);
@@ -70,7 +70,7 @@ internal static partial class HancomPreviewWriter
                         TemplateRangeStructure.DescribeDifference(prefix, finalRoots.Take(prefix.Length).ToArray()));
                 var expected = ExpectedParagraphs(plan, profile).ToArray();
                 if (finalRoots.Length != prefix.Length + expected.Length + 1 || !IsSimpleParagraph(finalRoots[^1], ""))
-                    throw new InvalidOperationException("Unexpected leftover samples or generated paragraph count.");
+                    throw new InvalidOperationException("Unexpected leftover template definitions or generated paragraph count.");
                 IReadOnlyList<SavedParagraph> saved = ReadParagraphs(hwp);
                 if (saved[^1].NativeList is not null ||
                     (string?)finalRoots[^1].Attribute("Style") != styles.Resolve("body").Id.ToString())
@@ -87,7 +87,7 @@ internal static partial class HancomPreviewWriter
             });
             if (HashFile(source) != hash) throw new InvalidOperationException("Source template changed.");
             PublishRenderedOutput(temporary, output);
-            return new(output, "minimal-1", true, true);
+            return new(output, IrContract.Version, true, true);
         }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }

@@ -40,7 +40,7 @@ internal sealed record IrPreviewPlan(
             ["schema", "ir_version", "metadata", "blocks"]);
         JsonContract.ExpectString(document.RootElement.GetProperty("schema"), "/schema", "md2hwp.ir");
         var version = JsonContract.RequiredString(document.RootElement, "ir_version", "");
-        if (version is not ("0.1" or "0.2")) throw JsonContract.Error("/ir_version", "expected 0.1 or 0.2");
+        IrContract.RequireCurrent(version, "Input");
 
         var metadata = document.RootElement.GetProperty("metadata");
         JsonContract.ExpectObject(metadata, "/metadata", []);
@@ -49,7 +49,7 @@ internal sealed record IrPreviewPlan(
         var builder = new PlanBuilder(
             Path.GetFullPath(irPath),
             Path.GetFullPath(repositoryRoot),
-            profile, version);
+            profile);
         var index = 0;
         foreach (var block in blocks.EnumerateArray())
         {
@@ -124,8 +124,7 @@ internal sealed record PreviewInlineContent(
 internal sealed class PlanBuilder(
     string irPath,
     string repositoryRoot,
-    InvestigationTemplateProfile profile,
-    string irVersion)
+    InvestigationTemplateProfile profile)
 {
     private readonly List<PreviewOperation> operations = [];
     private int listItems;
@@ -227,7 +226,7 @@ internal sealed class PlanBuilder(
 
     private void AddVerbatimBlock(JsonElement block, string path)
     {
-        JsonContract.ExpectObject(block, path, ["type", "lines"], irVersion == "0.2" ? ["source"] : []);
+        JsonContract.ExpectObject(block, path, ["type", "lines"], ["source"]);
         var linesElement = JsonContract.ExpectArray(block.GetProperty("lines"), path + "/lines");
         if (linesElement.GetArrayLength() == 0)
         {
