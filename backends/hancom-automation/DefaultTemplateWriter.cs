@@ -71,7 +71,7 @@ internal static partial class HancomPreviewWriter
         var styles = result.Descendants().Where(e => e.Name.LocalName == "STYLE").ToArray();
         var styleList = styles[0].Parent!;
         var nextId = styles.Max(e => (int)e.Attribute("Id")!) + 1;
-        var roles = new[] { "body", "heading.1", "heading.2", "heading.3", "heading.4", "heading.5", "heading.6", "block.box", "figure.caption", "figure.source", "reset" };
+        var roles = new[] { "body", "heading.1", "heading.2", "heading.3", "heading.4", "heading.5", "heading.6", "block.box", "box.source", "figure.caption", "figure.source", "reset" };
         var ids = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var role in roles)
         {
@@ -105,7 +105,7 @@ internal static partial class HancomPreviewWriter
         cell.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(Declaration("slot:box.content", "block.box"));
         var caption = shape.Elements().Single(e => e.Name.LocalName == "CAPTION");
         caption.SetAttributeValue("LastWidth", width);
-        caption.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(TextParagraph("figure.source", "출처: "));
+        caption.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(TextParagraph("box.source", "출처: " + TaggedTemplateBinding.Tag("slot:box.source")));
 
         var figureNumber = new XElement("AUTONUM", new XAttribute("Number", 1), new XAttribute("NumberType", "Figure"),
             new XElement("AUTONUMFORMAT", new XAttribute("Superscript", "false"), new XAttribute("Type", "Digit")));
@@ -117,12 +117,12 @@ internal static partial class HancomPreviewWriter
         var roots = new List<XElement> { first, Declaration("begin:samples"), Declaration("contract:minimal-1") };
         var figureWidth = Math.Min(142, width * 25.4 / 7200).ToString("0.###", CultureInfo.InvariantCulture);
         roots.AddRange(new[] { Declaration("figure.max-width-mm:" + figureWidth), Declaration("lists.max-depth:6"),
-            Declaration("lists.indent-hwp:1000"), Declaration("source-label:출처:") });
+            Declaration("lists.indent-hwp:1000") });
         foreach (var role in roles.Where(r => r == "body" || r.StartsWith("heading.", StringComparison.Ordinal) || r == "reset"))
             roots.Add(Declaration(role, role));
         roots.AddRange(new[] { Declaration("begin:block.box"), Paragraph("body", table), Declaration("end:block.box"),
             Declaration("begin:figure"), Declaration("slot:figure.image"), figureCaption,
-            Declaration("slot:figure.source", "figure.source"), Declaration("end:figure"),
+            TextParagraph("figure.source", "출처: " + TaggedTemplateBinding.Tag("slot:figure.source")), Declaration("end:figure"),
             Declaration("end:samples"), Declaration("content"), TextParagraph("body", "") });
         section.ReplaceNodes(roots);
         return result;
