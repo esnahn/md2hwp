@@ -260,7 +260,7 @@ fn adjacent_default(explicit: Option<PathBuf>, name: &str) -> Result<PathBuf, St
 }
 
 fn usage() -> String {
-    "usage: md2hwp init-template [[--output ]output.hwp] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <file.ir.json> --output <new.hwp> [--template <template.hwp>] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp".into()
+    "usage: md2hwp init-template [[--output] <output.hwp>] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <file.ir.json> --output <new.hwp> [--template <template.hwp>] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp".into()
 }
 
 #[cfg(test)]
