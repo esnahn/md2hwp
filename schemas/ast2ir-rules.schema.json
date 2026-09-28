@@ -1,13 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:md2hwp:schema:ast2ir-rules:0.2",
-  "title": "md2hwp AST-to-IR rules v0.2",
+  "$id": "urn:md2hwp:schema:ast2ir-rules",
+  "title": "md2hwp AST-to-IR rules targeting the current IR",
   "description": "Closed structure for the product-owned Pandoc AST-to-IR normalization ruleset.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema",
-    "rules_version",
     "target_ir",
     "unlisted_constructor",
     "document",
@@ -17,9 +16,6 @@
   "properties": {
     "schema": {
       "const": "md2hwp.ast2ir-rules"
-    },
-    "rules_version": {
-      "const": "0.2"
     },
     "target_ir": {
       "type": "object",

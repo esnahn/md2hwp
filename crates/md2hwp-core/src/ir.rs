@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 
 pub const SCHEMA_NAME: &str = "md2hwp.ir";
 pub const IR_VERSION: &str = "0.2";
-pub const LEGACY_IR_VERSION: &str = "0.1";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

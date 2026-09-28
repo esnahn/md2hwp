@@ -5,8 +5,7 @@ use std::fmt;
 use icu_normalizer::ComposingNormalizerBorrowed;
 
 use crate::ir::{
-    Block, Document, IR_VERSION, Inline, LEGACY_IR_VERSION, ListItem, ListItemBlock, ListKind,
-    SCHEMA_NAME,
+    Block, Document, IR_VERSION, Inline, ListItem, ListItemBlock, ListKind, SCHEMA_NAME,
 };
 
 const NFC: ComposingNormalizerBorrowed<'static> = ComposingNormalizerBorrowed::new_nfc();
@@ -78,25 +77,11 @@ pub fn validate(
         "schema must be md2hwp.ir",
     )?;
     state.require(
-        document.ir_version == IR_VERSION || document.ir_version == LEGACY_IR_VERSION,
+        document.ir_version == IR_VERSION,
         "/ir_version",
-        "IR version must be 0.1 or 0.2",
+        "IR version must be 0.2",
     )?;
     for (index, block) in document.blocks.iter().enumerate() {
-        if document.ir_version == LEGACY_IR_VERSION
-            && matches!(
-                block,
-                Block::VerbatimBlock {
-                    source: Some(_),
-                    ..
-                }
-            )
-        {
-            return state.fail(
-                &format!("/blocks/{index}/source"),
-                "box source requires IR 0.2",
-            );
-        }
         state.block(block, &format!("/blocks/{index}"))?;
     }
     Ok(ValidatedDocument(document))

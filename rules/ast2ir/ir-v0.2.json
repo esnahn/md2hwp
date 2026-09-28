@@ -1,6 +1,5 @@
 {
   "schema": "md2hwp.ast2ir-rules",
-  "rules_version": "0.2",
   "target_ir": {
     "schema": "md2hwp.ir",
     "version": "0.2"

@@ -403,7 +403,7 @@ impl Normalizer<'_> {
             _ => Err(self.invalid(
                 path,
                 constructor,
-                "block is not representable inside an IR v0.1 list item",
+                "block is not representable inside an IR list item",
             )),
         }
     }
@@ -664,17 +664,16 @@ mod tests {
     use crate::pandoc_input::read_pandoc_json;
 
     const COMMONMARK_FIXTURE: &[u8] =
-        include_bytes!("../../../tests/fixtures/pandoc-json/commonmark-v0.1.json");
-    const EXPECTED_IR: &[u8] = include_bytes!("../../../examples/commonmark-v0.1.expected.ir.json");
+        include_bytes!("../../../tests/fixtures/pandoc-json/commonmark.json");
+    const EXPECTED_IR: &[u8] = include_bytes!("../../../examples/commonmark-v0.2.expected.ir.json");
 
     #[test]
-    fn normalizes_the_commonmark_compatibility_fixture() {
+    fn normalizes_the_commonmark_fixture() {
         let limits = ValidationLimits::default();
         let pandoc = read_pandoc_json(COMMONMARK_FIXTURE, &limits).unwrap();
         let rules = load_builtin_rules().unwrap();
         let ir = normalize_pandoc(pandoc, &rules, "commonmark", &limits).unwrap();
-        let mut expected = read_ir(EXPECTED_IR, &limits).unwrap().into_document();
-        expected.ir_version = IR_VERSION.to_owned();
+        let expected = read_ir(EXPECTED_IR, &limits).unwrap().into_document();
         assert_eq!(ir.as_document(), &expected);
         assert_eq!(ir.as_document().blocks.len(), 4);
         let Block::Paragraph { inlines, .. } = &ir.as_document().blocks[1] else {

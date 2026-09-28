@@ -12,13 +12,12 @@ use crate::ir_io::read_strict_json_value;
 use crate::validate::ValidationLimits;
 
 const RULES_JSON: &str = include_str!("../../../rules/ast2ir/ir-v0.2.json");
-const RULES_SCHEMA: &str = include_str!("../../../schemas/ast2ir-rules-v0.2.schema.json");
+const RULES_SCHEMA: &str = include_str!("../../../schemas/ast2ir-rules.schema.json");
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Ast2IrRules {
     pub schema: String,
-    pub rules_version: String,
     pub target_ir: TargetIr,
     pub unlisted_constructor: RejectPolicy,
     pub document: DocumentRules,
@@ -193,7 +192,7 @@ pub fn load_builtin_rules() -> Result<Ast2IrRules, RulesError> {
     }
     let rules: Ast2IrRules = serde_json::from_value(value)
         .map_err(|error| rules_error("", format!("typed rules decoding failed: {error}")))?;
-    if rules.schema != "md2hwp.ast2ir-rules" || rules.rules_version != "0.2" {
+    if rules.schema != "md2hwp.ast2ir-rules" {
         return Err(rules_error("", "unsupported rules envelope"));
     }
     if rules.target_ir.schema != SCHEMA_NAME || rules.target_ir.version != IR_VERSION {
@@ -231,6 +230,9 @@ mod tests {
     #[test]
     fn loads_the_exact_builtin_ruleset() {
         let rules = load_builtin_rules().unwrap();
+        assert_eq!(rules.target_ir.version, IR_VERSION);
+        let envelope: Value = serde_json::from_str(RULES_JSON).unwrap();
+        assert!(envelope.get("rules_version").is_none());
         assert_eq!(rules.blocks.len(), 6);
         assert_eq!(rules.inlines.len(), 7);
         assert!(matches!(
