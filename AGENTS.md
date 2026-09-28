@@ -18,8 +18,11 @@ The JSON fixtures still tracked are included directly by Rust test compilation.
 
 Keep Pandoc invocation in the app and Pandoc AST handling in the core. Backends
 consume validated IR. Preserve Unicode. Reject unsupported constructors explicitly.
-Retain IR 0.1 and 0.2 closed schemas and current AST2IR 0.2 rules.
-Template-owned minimal-1 declarations supply native styles and prototype ranges;
+Use only the current IR 0.2 closed schema. AST2IR rules target that IR without
+an independent rules version. Input IR and template ir-version must match the
+program's current IR exactly; reject old versions with regeneration guidance.
+Template-owned begin:template/end:template declarations supply all current IR
+styles and prototype ranges, including roles unused by the manuscript;
 do not restore runtime external profiles. Preserve unrelated template content.
 Generated links render as formatted labels/plain text; strip automatic hyperlinks
 only in generated content. Figures embed PNGs; caption and source follow the figure.
