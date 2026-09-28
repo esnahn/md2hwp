@@ -30,7 +30,9 @@ C# 단독 프로젝트는 `backends/hancom-automation/Md2Hwp.Backend.csproj`입�
 ```powershell
 .\md2hwp.exe 원고.md
 .\md2hwp.exe 원고.md 결과.hwp
+.\md2hwp.exe 원고.md --output 결과.hwp --template 내템플릿.hwp
 .\md2hwp-backend.exe 원고.ir.json
+.\md2hwp-backend.exe 원고.ir.json --output 결과.hwp --template 내템플릿.hwp
 ```
 
 첫 명령은 원고 옆에 `원고.ir.json`, `원고.result.hwp`를 생성합니다.
@@ -38,11 +40,15 @@ C# 단독 프로젝트는 `backends/hancom-automation/Md2Hwp.Backend.csproj`입�
 검증된 IR은 교체하며, HWP는 생성·재열기 검증 성공 후 기존 결과를 교체합니다.
 실패한 HWP 생성은 이전 HWP를 보존합니다. 원고와 템플릿은 덮어쓰지 않습니다.
 간편 실행의 이미지 경로는 원고/IR 폴더 안에서 해석합니다.
+간편 실행은 출력 경로를 위치 인자 또는 `--output`으로 받습니다. 두 방식을 중복 지정할 수는 없습니다.
+Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔드는 `--template`을 받습니다.
+옵션 입력 순서는 자유롭습니다. 명시한 경로는 실행한 작업 폴더 기준이며,
+이미지의 기준 폴더만 원고/IR 폴더로 유지됩니다.
 
 기존 옵션 방식도 사용할 수 있습니다.
 
 ```powershell
-.\md2hwp.exe md2ir --from commonmark --input 원고.md --output 원고.ir.json --force
+.\md2hwp.exe md2ir --input 원고.md --output 원고.ir.json --from commonmark --force
 .\md2hwp.exe render-hwp --ir 원고.ir.json --output 원고.result.hwp
 .\md2hwp-backend.exe render-tagged --ir 원고.ir.json --output 원고.result.hwp
 ```

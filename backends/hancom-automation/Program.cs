@@ -16,7 +16,7 @@ internal static class Program
                     1 => "template.hwp",
                     2 when !args[1].StartsWith("--", StringComparison.Ordinal) => args[1],
                     3 when args[1] == "--output" && !args[2].StartsWith("--", StringComparison.Ordinal) => args[2],
-                    _ => throw new ArgumentException("usage: md2hwp-backend init-template [output.hwp]"),
+                    _ => throw new ArgumentException("usage: md2hwp-backend init-template [[--output ]output.hwp]"),
                 };
                 Console.WriteLine(JsonSerializer.Serialize(HancomPreviewWriter.CreateDefaultTemplate(output), JsonOutput.Options));
                 return 0;
@@ -58,14 +58,37 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
     {
         if (IsPositional(args))
         {
-            if (args.Length > 2 || args.Any(a => a.StartsWith("--", StringComparison.Ordinal)))
-                throw new ArgumentException(Usage);
             var input = Path.GetFullPath(args[0]);
             var name = Path.GetFileName(input);
             var stem = name.EndsWith(".ir.json", StringComparison.OrdinalIgnoreCase)
                 ? name[..^8] : Path.GetFileNameWithoutExtension(name);
-            var result = args.Length == 2 ? args[1] : Path.Combine(Path.GetDirectoryName(input)!, stem + ".result.hwp");
-            return Parse(["render-tagged", "--ir", input, "--output", result]);
+            string? result = null;
+            var forwarded = new List<string> { "render-tagged", "--ir", input };
+            var positionalOptions = new HashSet<string>(StringComparer.Ordinal);
+            for (var index = 1; index < args.Length; index++)
+            {
+                var option = args[index];
+                if (option is "--output" or "--template")
+                {
+                    if (!positionalOptions.Add(option)) throw new ArgumentException($"Duplicate argument: {option}");
+                    if (++index >= args.Length || args[index].StartsWith("--", StringComparison.Ordinal))
+                        throw new ArgumentException($"Missing value for {option}.\n{Usage}");
+                    if (option == "--output")
+                    {
+                        if (result is not null) throw new ArgumentException("Duplicate output argument.");
+                        result = args[index];
+                    }
+                    else forwarded.AddRange([option, args[index]]);
+                }
+                else if (option == "--visible") forwarded.Add(option);
+                else
+                {
+                    if (option.StartsWith("-", StringComparison.Ordinal) || result is not null) throw new ArgumentException(Usage);
+                    result = option;
+                }
+            }
+            forwarded.AddRange(["--output", result ?? Path.Combine(Path.GetDirectoryName(input)!, stem + ".result.hwp")]);
+            return Parse(forwarded.ToArray());
         }
         if (args.Length == 0 || args[0] != "render-tagged") throw new ArgumentException(Usage);
         string? ir = null, template = null, output = null;
@@ -92,8 +115,8 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
     }
     private const string Usage = """
         usage:
-          md2hwp-backend init-template [output.hwp]
-          md2hwp-backend <source.ir.json> [output.hwp]
+          md2hwp-backend init-template [[--output ]output.hwp]
+          md2hwp-backend <source.ir.json> [[--output ]output.hwp] [--template <template.hwp>] [--visible]
           md2hwp-backend render-tagged --ir <source.ir.json> --output <result.hwp> [--template <template.hwp>] [--visible]
         Default template: template.hwp beside the executable.
         """;

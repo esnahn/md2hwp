@@ -60,8 +60,10 @@ For paragraph deletion select paragraph beginning through next paragraph beginni
 (MoveSelNextParaBegin), then verify text. Do not use SetPos+SelectPara+Delete.
 Keep native coordinates inside the adapter; no fixture coordinates in public IR.
 
-Current shorthand: md2hwp source.md [output.hwp] creates source.ir.json and by
-default source.result.hwp; backend takes source.ir.json [output.hwp]. Existing
+Current shorthand: md2hwp source.md [[--output ]output.hwp] creates source.ir.json and by
+default source.result.hwp; backend takes source.ir.json [[--output ]output.hwp]. Both
+accept --template; Rust also accepts --worker and --dotnet. Option order is free.
+Explicit option paths resolve from caller cwd, independently of image resources. Existing
 option-based render modes remain. Defaults resolve beside the relevant EXE.
 Shorthand resources resolve within the source/IR directory; explicit render modes
 use cwd. Maintain source/template protection and successful-result replacement.
