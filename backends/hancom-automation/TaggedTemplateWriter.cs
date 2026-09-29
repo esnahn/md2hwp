@@ -39,7 +39,7 @@ internal static partial class HancomPreviewWriter
                 int? list = null;
                 foreach (var operation in plan.Operations)
                 {
-                    Console.Error.WriteLine($"render-tagged: {operation.Kind}/{operation.Label}");
+                    Console.Error.WriteLine($"ir2hwp: {operation.Kind}/{operation.Label}");
                     list = RenderOperation(hwp, operation, styles, box, caption, figureSource, list);
                 }
                 ClearNativeListAtCaret(hwp, styles.Resolve("body"));

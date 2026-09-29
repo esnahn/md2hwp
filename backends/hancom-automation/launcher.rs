@@ -115,7 +115,7 @@ pub fn run_with_resource_root(
     let mode = args.next().unwrap_or_default();
     let check = mode == "check-runtime";
     let init = mode == "init-template";
-    if !check && !init && mode != "render-hwp" {
+    if !check && !init && mode != "ir2hwp" {
         return Err(usage());
     }
     let (mut dotnet, mut worker, mut ir, mut template, mut output) = (None, None, None, None, None);
@@ -200,7 +200,7 @@ pub fn run_with_resource_root(
         worker,
         dotnet,
         vec![
-            "render-tagged".into(),
+            "ir2hwp".into(),
             "--ir".into(),
             ir.into_os_string(),
             "--template".into(),
@@ -260,7 +260,7 @@ fn adjacent_default(explicit: Option<PathBuf>, name: &str) -> Result<PathBuf, St
 }
 
 fn usage() -> String {
-    "usage: md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp".into()
+    "usage: md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp".into()
 }
 
 #[cfg(test)]

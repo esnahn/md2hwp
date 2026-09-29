@@ -49,8 +49,8 @@ Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔�
 
 ```powershell
 .\md2hwp.exe md2ir 원고.md --force
-.\md2hwp.exe render-hwp --ir 원고.ir.json --output 원고.output.hwp
-.\md2hwp-backend.exe render-tagged --ir 원고.ir.json --output 원고.output.hwp
+.\md2hwp.exe ir2hwp --ir 원고.ir.json --output 원고.output.hwp
+.\md2hwp-backend.exe ir2hwp --ir 원고.ir.json --output 원고.output.hwp
 ```
 
 `md2ir`도 `md2ir 원고.md [결과.ir.json]`처럼 위치 인자를 받으며, 기존 `--input`·`--output` 방식도 지원합니다. 같은 항목의 중복 지정은 거부합니다.
@@ -118,7 +118,7 @@ Source — {{md2hwp:slot:figure.source}}
 생성에는 한글·보안 모듈·.NET 런타임이 필요하며 Pandoc은 필요하지 않습니다.
 두 EXE만 배포한 뒤 이 명령으로 템플릿을 만들 수도 있습니다.
 생성 파일을 EXE 옆의 `template.hwp`로 두면 변환 시 자동으로 찾습니다.
-다른 위치의 템플릿은 `render-hwp`/`render-tagged`의 `--template`으로 지정합니다.
+다른 위치의 템플릿은 `ir2hwp`의 `--template`으로 지정합니다.
 
 ## 사용자 환경
 

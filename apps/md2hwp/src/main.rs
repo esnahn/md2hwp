@@ -71,7 +71,7 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
     }
     if arguments
         .first()
-        .is_some_and(|a| a == "check-runtime" || a == "render-hwp" || a == "init-template")
+        .is_some_and(|a| a == "check-runtime" || a == "ir2hwp" || a == "init-template")
     {
         return hancom::run(arguments).map_err(AppError::from);
     }
@@ -237,7 +237,7 @@ fn convert_manuscript(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError
     // Only the backend child receives the resource cwd; never change this process's cwd.
     // IR is retained if runtime/backend/template prerequisites or rendering fail.
     let mut backend = vec![
-        "render-hwp".into(),
+        "ir2hwp".into(),
         "--ir".into(),
         ir.as_os_str().into(),
         "--output".into(),
@@ -462,7 +462,7 @@ fn default_pandoc_path() -> PathBuf {
 }
 
 fn usage() -> String {
-    "usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp md2ir [--input] <source.md|source.json> [[--output] <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]".to_owned()
+    "usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp md2ir [--input] <source.md|source.json> [[--output] <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]".to_owned()
 }
 
 #[cfg(test)]

@@ -63,7 +63,7 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
             var stem = name.EndsWith(".ir.json", StringComparison.OrdinalIgnoreCase)
                 ? name[..^8] : Path.GetFileNameWithoutExtension(name);
             string? result = null;
-            var forwarded = new List<string> { "render-tagged", "--ir", input };
+            var forwarded = new List<string> { "ir2hwp", "--ir", input };
             var positionalOptions = new HashSet<string>(StringComparer.Ordinal);
             for (var index = 1; index < args.Length; index++)
             {
@@ -90,7 +90,7 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
             forwarded.AddRange(["--output", result ?? Path.Combine(Path.GetDirectoryName(input)!, stem + ".output.hwp")]);
             return Parse(forwarded.ToArray());
         }
-        if (args.Length == 0 || args[0] != "render-tagged") throw new ArgumentException(Usage);
+        if (args.Length == 0 || args[0] != "ir2hwp") throw new ArgumentException(Usage);
         string? ir = null, template = null, output = null;
         var visible = false;
         var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -117,7 +117,7 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
         usage:
           md2hwp-backend init-template [[--output] <template.hwp>]
           md2hwp-backend <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--visible]
-          md2hwp-backend render-tagged --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--visible]
+          md2hwp-backend ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--visible]
         Default template: template.hwp beside the executable.
         """;
 }
