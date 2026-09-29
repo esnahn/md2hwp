@@ -48,10 +48,12 @@ Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔�
 기존 옵션 방식도 사용할 수 있습니다.
 
 ```powershell
-.\md2hwp.exe md2ir --input 원고.md --force
+.\md2hwp.exe md2ir 원고.md --force
 .\md2hwp.exe render-hwp --ir 원고.ir.json --output 원고.output.hwp
 .\md2hwp-backend.exe render-tagged --ir 원고.ir.json --output 원고.output.hwp
 ```
+
+`md2ir`도 `md2ir 원고.md [결과.ir.json]`처럼 위치 인자를 받으며, 기존 `--input`·`--output` 방식도 지원합니다. 같은 항목의 중복 지정은 거부합니다.
 
 `md2ir`에서 `--output`을 생략하면 입력 옆의 `원고.ir.json`, `--from`을 생략하면 `commonmark`를 사용합니다. Pandoc JSON 입력은 `--from pandoc-json`으로 지정합니다.
 

@@ -391,30 +391,51 @@ impl Options {
         let mut pandoc = None;
         let mut input_format = None;
         let mut force = false;
+        let mut seen = std::collections::HashSet::new();
         while let Some(argument) = arguments.next() {
-            match argument.to_str() {
-                Some("--from") => {
-                    let reader = arguments.next().ok_or_else(usage)?;
-                    input_format = Some(match reader.to_str() {
-                        Some("commonmark") => InputFormat::CommonMark,
-                        Some("pandoc-json") => InputFormat::PandocJson,
-                        Some(reader) => {
-                            return Err(format!(
-                                "unsupported --from value {reader:?}; expected commonmark or pandoc-json"
-                            ));
-                        }
-                        None => return Err(usage()),
-                    });
+            if argument.to_string_lossy().starts_with('-') {
+                let option = argument.to_str().ok_or_else(usage)?;
+                if !matches!(
+                    option,
+                    "--input" | "--output" | "--from" | "--pandoc" | "--force"
+                ) {
+                    return Err(usage());
                 }
-                Some("--input") => input = Some(PathBuf::from(arguments.next().ok_or_else(usage)?)),
-                Some("--output") => {
-                    output = Some(PathBuf::from(arguments.next().ok_or_else(usage)?))
+                if !seen.insert(argument.clone()) {
+                    return Err(format!("duplicate option: {option}"));
                 }
-                Some("--pandoc") => {
-                    pandoc = Some(PathBuf::from(arguments.next().ok_or_else(usage)?))
+                if option == "--force" {
+                    force = true;
+                    continue;
                 }
-                Some("--force") => force = true,
-                _ => return Err(usage()),
+                let value = arguments.next().ok_or_else(usage)?;
+                if value.to_string_lossy().starts_with('-') {
+                    return Err(format!("missing value for {option}"));
+                }
+                match option {
+                    "--input" if input.is_none() => input = Some(PathBuf::from(value)),
+                    "--output" if output.is_none() => output = Some(PathBuf::from(value)),
+                    "--input" | "--output" => return Err(format!("duplicate {option}")),
+                    "--pandoc" => pandoc = Some(PathBuf::from(value)),
+                    "--from" => {
+                        input_format =
+                            Some(match value.to_str() {
+                                Some("commonmark") => InputFormat::CommonMark,
+                                Some("pandoc-json") => InputFormat::PandocJson,
+                                _ => return Err(
+                                    "unsupported --from value; expected commonmark or pandoc-json"
+                                        .to_owned(),
+                                ),
+                            })
+                    }
+                    _ => unreachable!(),
+                }
+            } else if input.is_none() {
+                input = Some(PathBuf::from(argument));
+            } else if output.is_none() {
+                output = Some(PathBuf::from(argument));
+            } else {
+                return Err("unexpected argument or duplicate output".to_owned());
             }
         }
         let input = input.ok_or_else(usage)?;
@@ -441,7 +462,7 @@ fn default_pandoc_path() -> PathBuf {
 }
 
 fn usage() -> String {
-    "usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp md2ir --input <source.md> [--output <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp setup-pandoc\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]".to_owned()
+    "usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp md2ir [--input] <source.md|source.json> [[--output] <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp setup-pandoc\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]".to_owned()
 }
 
 #[cfg(test)]
@@ -604,6 +625,44 @@ mod tests {
 
     fn arguments(values: &[&str]) -> Vec<std::ffi::OsString> {
         values.iter().map(std::ffi::OsString::from).collect()
+    }
+
+    #[test]
+    fn md2ir_accepts_positional_and_named_paths() {
+        for args in [
+            vec!["md2ir", "원고.md", "결과.ir.json"],
+            vec!["md2ir", "원고.md", "--output", "결과.ir.json"],
+            vec!["md2ir", "--output", "결과.ir.json", "--input", "원고.md"],
+        ] {
+            let options = Options::parse(args.into_iter().map(Into::into).collect()).unwrap();
+            assert_eq!(options.input, PathBuf::from("원고.md"));
+            assert_eq!(options.output, PathBuf::from("결과.ir.json"));
+        }
+        for args in [
+            vec!["md2ir", "a.md", "--input", "b.md"],
+            vec!["md2ir", "a.md", "a.json", "--output", "b.json"],
+            vec!["md2ir", "a.md", "--output", "a.json", "b.json"],
+            vec![
+                "md2ir",
+                "a.md",
+                "--from",
+                "commonmark",
+                "--from",
+                "pandoc-json",
+            ],
+            vec!["md2ir", "--input", "--force"],
+            vec!["md2ir", "a.md", "--unknown"],
+        ] {
+            assert!(Options::parse(args.into_iter().map(Into::into).collect()).is_err());
+        }
+        let options = Options::parse(
+            ["md2ir", "ast.json", "--from", "pandoc-json"]
+                .map(Into::into)
+                .to_vec(),
+        )
+        .unwrap();
+        assert_eq!(options.output, PathBuf::from("ast.ir.json"));
+        assert_eq!(options.input_format, InputFormat::PandocJson);
     }
 
     #[test]
