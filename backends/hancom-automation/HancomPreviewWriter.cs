@@ -478,6 +478,8 @@ internal static partial class HancomPreviewWriter
             throw new InvalidOperationException(
                 $"Native list depth {marker.Depth} exceeds profile maximum {listLayout.MaxDepth}.");
         }
+        // PutBullet/PutParaNumber toggle inherited list formatting; start from a non-list paragraph.
+        ClearNativeListAtCaret(hwp, bodyStyle);
         if (string.Equals(marker.Kind, "bullet", StringComparison.Ordinal))
         {
             Run(hwp, "PutBullet");
@@ -569,24 +571,31 @@ internal static partial class HancomPreviewWriter
         {
             case 0:
                 numbering.NumFormatLevel0 = 0;
+                numbering.StrFormatLevel0 = "^1.";
                 break;
             case 1:
                 numbering.NumFormatLevel1 = 0;
+                numbering.StrFormatLevel1 = "^2.";
                 break;
             case 2:
                 numbering.NumFormatLevel2 = 0;
+                numbering.StrFormatLevel2 = "^3.";
                 break;
             case 3:
                 numbering.NumFormatLevel3 = 0;
+                numbering.StrFormatLevel3 = "^4.";
                 break;
             case 4:
                 numbering.NumFormatLevel4 = 0;
+                numbering.StrFormatLevel4 = "^5.";
                 break;
             case 5:
                 numbering.NumFormatLevel5 = 0;
+                numbering.StrFormatLevel5 = "^6.";
                 break;
             case 6:
                 numbering.NumFormatLevel6 = 0;
+                numbering.StrFormatLevel6 = "^7.";
                 break;
             default:
                 throw new InvalidOperationException(
@@ -836,7 +845,8 @@ internal static partial class HancomPreviewWriter
             {
                 throw new InvalidOperationException(
                     $"Saved preview paragraph {index} did not match {expected.SymbolicStyle}/{nativeStyle.Name}: " +
-                    $"expected={expected.Text}, actual={actual.Text}, style={actual.Style}.");
+                    $"expected={expected.Text}, actual={actual.Text}, style={actual.Style}/{nativeStyle.Id}, " +
+                    $"list={actual.NativeList}, expectedList={expected.ListMarker}, baseMargin={nativeStyle.BaseLeftMargin}, depthIndent={styles.Profile.Lists.DepthIndentHwpUnits}.");
             }
         }
     }
@@ -1154,7 +1164,7 @@ internal static partial class HancomPreviewWriter
         {
             throw new InvalidOperationException(
                 $"Native ordered list {marker.ListId} did not start at " +
-                $"{marker.Number} for depth {marker.Depth}.");
+                $"{marker.Number} for depth {marker.Depth}: start={definition.Attribute("Start")?.Value}, level={level}.");
         }
     }
 
