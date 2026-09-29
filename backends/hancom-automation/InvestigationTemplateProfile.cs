@@ -12,7 +12,13 @@ internal sealed record ProfileFigureLayout(
 
 internal sealed record ProfileListLayout(
     int MaxDepth,
-    int DepthIndentHwpUnits);
+    int DepthIndentHwpUnits)
+{
+    public TemplateListPrototype? Bullet { get; init; }
+    public TemplateListPrototype? Ordered { get; init; }
+    public TemplateListPrototype Prototype(string kind) => (kind == "bullet" ? Bullet : Ordered)
+        ?? throw new InvalidDataException($"Template has no list.{kind} prototype; regenerate with init-template.");
+}
 
 internal sealed record ProfileInsertionTarget(
     string Kind,
@@ -132,11 +138,11 @@ internal sealed class InvestigationTemplateProfile
     internal static InvestigationTemplateProfile FromTaggedTemplate(
         string templatePath, IReadOnlyList<ProfileStyle> styles, string reset,
         double width, int maxDepth, int indent, ProfileCaptionSelector caption,
-        TemplateSource boxSource, TemplateSource figureSource) =>
+        TemplateSource boxSource, TemplateSource figureSource, TemplateListPrototype bullet, TemplateListPrototype ordered) =>
         new("ir-" + IrContract.Version, templatePath,
             Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(templatePath))),
             new FileInfo(templatePath).Length, styles, reset,
-            new(width), new(maxDepth, indent),
+            new(width), new(maxDepth, indent) { Bullet = bullet, Ordered = ordered },
             new("unique_text_marker", "{{md2hwp:content}}"),
             new("body", "block.box", 1, "box.source", 1,
                 "{{md2hwp:slot:box.content}}", boxSource.PrototypeText),

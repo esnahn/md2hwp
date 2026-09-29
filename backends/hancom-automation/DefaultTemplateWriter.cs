@@ -26,6 +26,19 @@ internal static partial class HancomPreviewWriter
                     blank.Descendants().Any(e => e.Name.LocalName is "TABLE" or "PICTURE" or "HEADER" or "FOOTER"))
                     throw new InvalidOperationException("Expected a fresh empty Hancom document.");
 
+                // Native list samples start from Hancom's fresh-document defaults.
+                foreach (var (kind, action) in new[] { ("bullet", "PutBullet"), ("ordered", "PutParaNumber") })
+                {
+                    Run(hwp, action);
+                    InsertText(hwp, TaggedTemplateBinding.Tag("list." + kind));
+                    Run(hwp, "BreakPara");
+                    _ = hwp.HAction.GetDefault("ParagraphShape", hwp.HParameterSet.HParaShape.HSet);
+                    hwp.HParameterSet.HParaShape.HeadingType = 0;
+                    hwp.HParameterSet.HParaShape.Level = 0;
+                    if (!(bool)hwp.HAction.Execute("ParagraphShape", hwp.HParameterSet.HParaShape.HSet))
+                        throw new InvalidOperationException("Could not end the native list sample.");
+                }
+
                 // Obtain native default table borders, cell margins and caption layout.
                 _ = hwp.HAction.GetDefault("TableCreate", hwp.HParameterSet.HTableCreation.HSet);
                 hwp.HParameterSet.HTableCreation.Rows = 1;
@@ -120,6 +133,14 @@ internal static partial class HancomPreviewWriter
             Declaration("lists.indent-hwp:1000") });
         foreach (var role in roles.Where(r => r == "body" || r.StartsWith("heading.", StringComparison.Ordinal) || r == "reset"))
             roots.Add(Declaration(role, role));
+        foreach (var kind in new[] { "bullet", "ordered" })
+        {
+            var native = AuriMinimalBoxPrototype.RootParagraphs(seed).Single(p =>
+                TaggedTemplateBinding.DirectText(p) == TaggedTemplateBinding.Tag("list." + kind));
+            var sample = Declaration("list." + kind);
+            sample.SetAttributeValue("ParaShape", (string)native.Attribute("ParaShape")!);
+            roots.Add(sample);
+        }
         roots.AddRange(new[] { Declaration("begin:block.box"), Paragraph("body", table), Declaration("end:block.box"),
             Declaration("begin:figure"), Declaration("slot:figure.image"), figureCaption,
             TextParagraph("figure.source", "출처: " + TaggedTemplateBinding.Tag("slot:figure.source")), Declaration("end:figure"),

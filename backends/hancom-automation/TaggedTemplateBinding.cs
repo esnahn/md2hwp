@@ -22,7 +22,7 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
                 .Where(x => DirectText(x.p) == Tag(token) &&
                     !x.p.Descendants().Any(e => e.Name.LocalName is "P" or "TABLE" or "PICTURE" or "AUTONUM"))
                 .ToArray();
-            if (matches.Length != 1) throw new InvalidDataException($"Expected one root declaration {token}; found {matches.Length}.");
+            if (matches.Length != 1) throw new InvalidDataException($"Expected one root declaration {token}; found {matches.Length}. Regenerate the template with init-template or add the required declaration.");
             accepted.Add(matches[0].p);
             return matches[0].i;
         }
@@ -68,6 +68,11 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
         }
         var depth = IntegerSetting("lists.max-depth", 6);
         var indent = IntegerSetting("lists.indent-hwp", 10000);
+        var bulletRoot = Single("list.bullet");
+        var orderedRoot = Single("list.ordered");
+        Inside(bulletRoot); Inside(orderedRoot);
+        var bullet = TemplateListPrototype.Read(document, roots[bulletRoot], bulletRoot, "bullet", depth);
+        var ordered = TemplateListPrototype.Read(document, roots[orderedRoot], orderedRoot, "ordered", depth);
         var definitions = document.Descendants().Where(e => e.Name.LocalName == "STYLE").ToArray();
         string StyleName(XElement paragraph)
         {
@@ -163,7 +168,7 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
         if (!beforeNumber.Contains(captionSlot, StringComparison.Ordinal) && !afterNumber.Contains(captionSlot, StringComparison.Ordinal))
             throw new InvalidDataException("Caption slot must not cross the automatic number control.");
         var selector = new ProfileCaptionSelector("figure.caption", beforeNumber, afterNumber, captionSlot);
-        var profile = InvestigationTemplateProfile.FromTaggedTemplate(templatePath, styles, reset, width, depth, indent, selector, boxSource, figureSource);
+        var profile = InvestigationTemplateProfile.FromTaggedTemplate(templatePath, styles, reset, width, depth, indent, selector, boxSource, figureSource, bullet, ordered);
         _ = AuriPreviewStyleBindings.BindDocument(document, profile);
         return new(profile, begin, end, content, boxBegin + 1, figureBegin + 2);
     }

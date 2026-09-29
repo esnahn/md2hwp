@@ -34,6 +34,8 @@ internal static partial class HancomPreviewWriter
                 var figureSource = FigureSourcePrototype.Bind(hwp, binding.CaptionRoot + 1, profile.FigureSource);
                 var box = plan.Summary.BoxOperations > 0 ? boundBox : null;
                 var caption = plan.Summary.FigureOperations > 0 ? boundCaption : null;
+                profile.Lists.Prototype("bullet").Bind(hwp);
+                profile.Lists.Prototype("ordered").Bind(hwp);
                 int start = PrepareInsertionTarget(hwp, profile);
 
                 int? list = null;

@@ -476,48 +476,22 @@ internal static partial class HancomPreviewWriter
             throw new InvalidOperationException(
                 $"Native list depth {marker.Depth} exceeds profile maximum {listLayout.MaxDepth}.");
         }
-        // PutBullet/PutParaNumber toggle inherited list formatting; start from a non-list paragraph.
         ClearNativeListAtCaret(hwp, bodyStyle);
-        if (string.Equals(marker.Kind, "bullet", StringComparison.Ordinal))
+        listLayout.Prototype(marker.Kind).Apply(hwp, marker, bodyStyle, listLayout);
+        if (marker.Kind == "bullet") return;
+        _ = hwp.HAction.GetDefault("ParagraphShape", hwp.HParameterSet.HParaShape.HSet);
+        if (marker.Kind == "ordered")
         {
-            Run(hwp, "PutBullet");
-            _ = hwp.HAction.GetDefault(
-                "ParagraphShape",
-                hwp.HParameterSet.HParaShape.HSet);
-            hwp.HParameterSet.HParaShape.HeadingType = 3;
+            hwp.HParameterSet.HParaShape.HeadingType = 2;
             hwp.HParameterSet.HParaShape.Level = marker.Depth;
-            hwp.HParameterSet.HParaShape.LeftMargin =
-                bodyStyle.BaseLeftMargin + (marker.Depth * listLayout.DepthIndentHwpUnits);
-            if (!(bool)hwp.HAction.Execute(
-                    "ParagraphShape",
-                    hwp.HParameterSet.HParaShape.HSet))
-            {
-                throw new InvalidOperationException(
-                    $"Hancom failed to apply a native bullet at depth {marker.Depth}.");
-            }
-            return;
+            hwp.HParameterSet.HParaShape.Numbering.NewList = 1;
+            hwp.HParameterSet.HParaShape.Numbering.StartNumber = marker.Number;
+            SetNativeListLevelStart(hwp.HParameterSet.HParaShape.Numbering, marker.Depth, marker.Number);
+            // Reapply the template level format alongside the heading/level and new start.
+            SetNativeListLevelNumberFormat(hwp.HParameterSet.HParaShape.Numbering, marker.Depth,
+                listLayout.Prototype("ordered").NumberFormat(marker.Depth),
+                listLayout.Prototype("ordered").StringFormat(marker.Depth));
         }
-        if (!string.Equals(marker.Kind, "ordered", StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException($"Unsupported native list kind: {marker.Kind}");
-        }
-        Run(hwp, "PutParaNumber");
-        _ = hwp.HAction.GetDefault(
-            "ParagraphShape",
-            hwp.HParameterSet.HParaShape.HSet);
-        hwp.HParameterSet.HParaShape.HeadingType = 2;
-        hwp.HParameterSet.HParaShape.Level = marker.Depth;
-        hwp.HParameterSet.HParaShape.LeftMargin =
-            bodyStyle.BaseLeftMargin + (marker.Depth * listLayout.DepthIndentHwpUnits);
-        hwp.HParameterSet.HParaShape.Numbering.NewList = 1;
-        hwp.HParameterSet.HParaShape.Numbering.StartNumber = marker.Number;
-        SetNativeListLevelStart(
-            hwp.HParameterSet.HParaShape.Numbering,
-            marker.Depth,
-            marker.Number);
-        SetNativeListLevelNumberFormat(
-            hwp.HParameterSet.HParaShape.Numbering,
-            marker.Depth);
         if (!(bool)hwp.HAction.Execute(
                 "ParagraphShape",
                 hwp.HParameterSet.HParaShape.HSet))
@@ -561,43 +535,18 @@ internal static partial class HancomPreviewWriter
         }
     }
 
-    private static void SetNativeListLevelNumberFormat(
-        dynamic numbering,
-        int depth)
+    private static void SetNativeListLevelNumberFormat(dynamic numbering, int depth, ushort format, string pattern)
     {
         switch (depth)
         {
-            case 0:
-                numbering.NumFormatLevel0 = 0;
-                numbering.StrFormatLevel0 = "^1.";
-                break;
-            case 1:
-                numbering.NumFormatLevel1 = 0;
-                numbering.StrFormatLevel1 = "^2.";
-                break;
-            case 2:
-                numbering.NumFormatLevel2 = 0;
-                numbering.StrFormatLevel2 = "^3.";
-                break;
-            case 3:
-                numbering.NumFormatLevel3 = 0;
-                numbering.StrFormatLevel3 = "^4.";
-                break;
-            case 4:
-                numbering.NumFormatLevel4 = 0;
-                numbering.StrFormatLevel4 = "^5.";
-                break;
-            case 5:
-                numbering.NumFormatLevel5 = 0;
-                numbering.StrFormatLevel5 = "^6.";
-                break;
-            case 6:
-                numbering.NumFormatLevel6 = 0;
-                numbering.StrFormatLevel6 = "^7.";
-                break;
-            default:
-                throw new InvalidOperationException(
-                    $"Native list depth is outside Hancom's supported range: {depth}");
+            case 0: numbering.NumFormatLevel0 = format; numbering.StrFormatLevel0 = pattern; break;
+            case 1: numbering.NumFormatLevel1 = format; numbering.StrFormatLevel1 = pattern; break;
+            case 2: numbering.NumFormatLevel2 = format; numbering.StrFormatLevel2 = pattern; break;
+            case 3: numbering.NumFormatLevel3 = format; numbering.StrFormatLevel3 = pattern; break;
+            case 4: numbering.NumFormatLevel4 = format; numbering.StrFormatLevel4 = pattern; break;
+            case 5: numbering.NumFormatLevel5 = format; numbering.StrFormatLevel5 = pattern; break;
+            case 6: numbering.NumFormatLevel6 = format; numbering.StrFormatLevel6 = pattern; break;
+            default: throw new InvalidOperationException($"Unsupported native list depth: {depth}");
         }
     }
 
@@ -1115,7 +1064,7 @@ internal static partial class HancomPreviewWriter
             }
             else
             {
-                VerifyListDefinition(document, actual, marker);
+                VerifyListDefinition(document, actual, marker, profile.Lists);
                 activeListId = marker.ListId;
                 activeDefinitionId = actual.DefinitionId;
             }
@@ -1131,7 +1080,7 @@ internal static partial class HancomPreviewWriter
     private static void VerifyListDefinition(
         XDocument document,
         SavedNativeList actual,
-        PreviewListMarker marker)
+        PreviewListMarker marker, ProfileListLayout layout)
     {
         var definitionName = marker.Kind == "bullet" ? "BULLET" : "NUMBERING";
         var definitions = document.Descendants()
@@ -1145,29 +1094,7 @@ internal static partial class HancomPreviewWriter
                 $"Expected one native {definitionName} definition {actual.DefinitionId}, " +
                 $"found {definitions.Length}.");
         }
-        if (marker.Kind == "bullet")
-        {
-            return;
-        }
-
-        var definition = definitions[0];
-        var level = definition.Elements()
-            .Where(element => element.Name.LocalName == "PARAHEAD")
-            .SingleOrDefault(element =>
-                int.TryParse(element.Attribute("Level")?.Value, out var parsedLevel) &&
-                parsedLevel == marker.Depth + 1);
-        if (!int.TryParse(definition.Attribute("Start")?.Value, out var start) ||
-            start != marker.Number ||
-            level is null ||
-            !int.TryParse(level.Attribute("Start")?.Value, out var levelStart) ||
-            levelStart != marker.Number ||
-            !string.Equals(level.Attribute("NumFormat")?.Value, "Digit", StringComparison.Ordinal) ||
-            !string.Equals(level.Value, $"^{marker.Depth + 1}.", StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException(
-                $"Native ordered list {marker.ListId} did not start at " +
-                $"{marker.Number} for depth {marker.Depth}: start={definition.Attribute("Start")?.Value}, level={level}.");
-        }
+        layout.Prototype(marker.Kind).Verify(definitions[0], marker);
     }
 
     private static IEnumerable<(string Symbolic, string Text)> StyledTexts(
