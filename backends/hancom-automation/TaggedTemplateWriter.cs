@@ -162,7 +162,7 @@ internal static partial class HancomPreviewWriter
         {
             if (operation.Kind == "text" && roots[index].Descendants().Count(e => e.Name.LocalName == "LINEBREAK") != operation.Lines.Count - 1)
                 throw new InvalidOperationException("IR line breaks did not remain within their paragraph.");
-            index += operation.Kind == "figure" ? 3 : 1;
+            index += operation.Kind == "figure" ? (operation.Lines[2].Length > 0 ? 3 : 2) : 1;
         }
     }
 
@@ -185,7 +185,7 @@ internal static partial class HancomPreviewWriter
                     Math.Abs(height - operation.ImageHeightMillimeters!.Value * unitsPerMillimeter) > 2)
                     throw new InvalidOperationException("Saved figure placement or aspect-preserving dimensions differ from the plan.");
             }
-            index += operation.Kind == "figure" ? 3 : 1;
+            index += operation.Kind == "figure" ? (operation.Lines[2].Length > 0 ? 3 : 2) : 1;
         }
     }
 
