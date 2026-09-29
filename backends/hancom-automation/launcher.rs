@@ -119,7 +119,15 @@ pub fn run_with_resource_root(
         return Err(usage());
     }
     let (mut dotnet, mut worker, mut ir, mut template, mut output) = (None, None, None, None, None);
+    let mut verbose = false;
     while let Some(key) = args.next() {
+        if key == "--verbose" && !check && !init {
+            if verbose {
+                return Err("duplicate --verbose".into());
+            }
+            verbose = true;
+            continue;
+        }
         if init && !key.to_string_lossy().starts_with('-') {
             if output.replace(PathBuf::from(key)).is_some() {
                 return Err("duplicate output argument".into());
@@ -196,20 +204,19 @@ pub fn run_with_resource_root(
     let content = fs::read(&ir).map_err(|e| e.to_string())?;
     md2hwp_core::read_ir(&content, &md2hwp_core::ValidationLimits::default())
         .map_err(|e| e.to_string())?;
-    launch_worker(
-        worker,
-        dotnet,
-        vec![
-            "ir2hwp".into(),
-            "--ir".into(),
-            ir.into_os_string(),
-            "--template".into(),
-            template.into_os_string(),
-            "--output".into(),
-            output.into_os_string(),
-        ],
-        resource_root,
-    )
+    let mut forwarded = vec![
+        "ir2hwp".into(),
+        "--ir".into(),
+        ir.into_os_string(),
+        "--template".into(),
+        template.into_os_string(),
+        "--output".into(),
+        output.into_os_string(),
+    ];
+    if verbose {
+        forwarded.push("--verbose".into());
+    }
+    launch_worker(worker, dotnet, forwarded, resource_root)
 }
 
 fn launch_worker(
@@ -260,7 +267,7 @@ fn adjacent_default(explicit: Option<PathBuf>, name: &str) -> Result<PathBuf, St
 }
 
 fn usage() -> String {
-    "usage: md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp".into()
+    "usage: md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp".into()
 }
 
 #[cfg(test)]

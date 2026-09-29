@@ -7,7 +7,7 @@ internal sealed record TaggedTemplateResult(string Output, string IrVersion, boo
 internal static partial class HancomPreviewWriter
 {
     public static TaggedTemplateResult RenderTaggedTemplate(string irPath, string templatePath,
-        string outputPath, string repositoryRoot, bool visible)
+        string outputPath, string repositoryRoot, bool visible, bool verbose = false)
     {
         var source = ValidateTemplate(templatePath);
         var output = ValidateRenderedOutput(outputPath, source, irPath);
@@ -39,7 +39,7 @@ internal static partial class HancomPreviewWriter
                 int? list = null;
                 foreach (var operation in plan.Operations)
                 {
-                    Console.Error.WriteLine($"ir2hwp: {operation.Kind}/{operation.Label}");
+                    if (verbose) Console.Error.WriteLine($"ir2hwp: {operation.Kind}/{operation.Label}");
                     list = RenderOperation(hwp, operation, styles, box, caption, figureSource, list);
                 }
                 ClearNativeListAtCaret(hwp, styles.Resolve("body"));
