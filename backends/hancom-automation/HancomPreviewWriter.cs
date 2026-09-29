@@ -1,9 +1,7 @@
 using System.Diagnostics;
-using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.Win32;
 
@@ -801,7 +799,11 @@ internal static partial class HancomPreviewWriter
         IrPreviewPlan plan,
         InvestigationTemplateProfile profile)
     {
-        var extracted = DecodeHwpTextTransport((string)hwp.GetTextFile("TEXT", ""));
+        // TEXT export can substitute Unicode characters (for example © with ⓒ).
+        // Verify the saved document's Unicode content through HWPML instead.
+        var document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var extracted = string.Join("\n", document.Descendants()
+            .Where(element => element.Name.LocalName == "P").Select(element => element.Value));
         foreach (var expected in StyledTexts(plan, profile).Select(item => item.Text).Where(text => text.Length > 0))
         {
             if (!extracted.Contains(expected, StringComparison.Ordinal))
@@ -1272,25 +1274,6 @@ internal static partial class HancomPreviewWriter
                         $"Unknown preview operation during paragraph verification: {operation.Kind}");
             }
         }
-    }
-
-    private static string DecodeHwpTextTransport(string transport)
-    {
-        var codeUnitsDecoded = Regex.Replace(
-            transport,
-            @"&#([0-9]+);",
-            match =>
-            {
-                if (!int.TryParse(match.Groups[1].Value, out var value) ||
-                    value is < 0 or > 0x10FFFF)
-                {
-                    return match.Value;
-                }
-                return value <= char.MaxValue
-                    ? new string((char)value, 1)
-                    : char.ConvertFromUtf32(value);
-            });
-        return WebUtility.HtmlDecode(codeUnitsDecoded);
     }
 
     private static int CountPictures(dynamic hwp)
