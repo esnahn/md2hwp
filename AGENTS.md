@@ -26,6 +26,8 @@ styles and prototype ranges, including roles unused by the manuscript;
 do not restore runtime external profiles. Preserve unrelated template content.
 Generated links render as formatted labels/plain text; strip automatic hyperlinks
 only in generated content. Figures embed PNGs; caption and source follow the figure.
+Native list.bullet/list.ordered sample paragraphs own bullet and per-level numbering
+formats; manuscript start numbers and existing depth indentation remain authoritative.
 Verbatim blocks may carry sources. Generated tables, HWPX and RST input are deferred.
 
 ## Dependencies
