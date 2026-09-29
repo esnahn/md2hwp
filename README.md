@@ -35,7 +35,7 @@ C# 단독 프로젝트는 `backends/hancom-automation/Md2Hwp.Backend.csproj`입�
 .\md2hwp-backend.exe 원고.ir.json --output 결과.hwp --template 내템플릿.hwp
 ```
 
-첫 명령은 원고 옆에 `원고.ir.json`, `원고.result.hwp`를 생성합니다.
+첫 명령은 원고 옆에 `원고.ir.json`, `원고.output.hwp`를 생성합니다.
 백엔드는 기존 IR에서 HWP만 생성합니다. 두 번째 인자는 선택적인 HWP 출력 경로입니다.
 검증된 IR은 교체하며, HWP는 생성·재열기 검증 성공 후 기존 결과를 교체합니다.
 실패한 HWP 생성은 이전 HWP를 보존합니다. 원고와 템플릿은 덮어쓰지 않습니다.
@@ -49,8 +49,8 @@ Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔�
 
 ```powershell
 .\md2hwp.exe md2ir --input 원고.md --output 원고.ir.json --from commonmark --force
-.\md2hwp.exe render-hwp --ir 원고.ir.json --output 원고.result.hwp
-.\md2hwp-backend.exe render-tagged --ir 원고.ir.json --output 원고.result.hwp
+.\md2hwp.exe render-hwp --ir 원고.ir.json --output 원고.output.hwp
+.\md2hwp-backend.exe render-tagged --ir 원고.ir.json --output 원고.output.hwp
 ```
 
 `--template`과 Rust의 `--worker`를 생략하면 각 EXE 옆의 `template.hwp`,

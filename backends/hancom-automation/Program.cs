@@ -16,7 +16,7 @@ internal static class Program
                     1 => "template.hwp",
                     2 when !args[1].StartsWith("--", StringComparison.Ordinal) => args[1],
                     3 when args[1] == "--output" && !args[2].StartsWith("--", StringComparison.Ordinal) => args[2],
-                    _ => throw new ArgumentException("usage: md2hwp-backend init-template [[--output] <output.hwp>]"),
+                    _ => throw new ArgumentException("usage: md2hwp-backend init-template [[--output] <template.hwp>]"),
                 };
                 Console.WriteLine(JsonSerializer.Serialize(HancomPreviewWriter.CreateDefaultTemplate(output), JsonOutput.Options));
                 return 0;
@@ -87,7 +87,7 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
                     result = option;
                 }
             }
-            forwarded.AddRange(["--output", result ?? Path.Combine(Path.GetDirectoryName(input)!, stem + ".result.hwp")]);
+            forwarded.AddRange(["--output", result ?? Path.Combine(Path.GetDirectoryName(input)!, stem + ".output.hwp")]);
             return Parse(forwarded.ToArray());
         }
         if (args.Length == 0 || args[0] != "render-tagged") throw new ArgumentException(Usage);
@@ -115,9 +115,9 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
     }
     private const string Usage = """
         usage:
-          md2hwp-backend init-template [[--output] <output.hwp>]
-          md2hwp-backend <source.ir.json> [[--output] <output.hwp>] [--template <template.hwp>] [--visible]
-          md2hwp-backend render-tagged --ir <source.ir.json> --output <result.hwp> [--template <template.hwp>] [--visible]
+          md2hwp-backend init-template [[--output] <template.hwp>]
+          md2hwp-backend <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--visible]
+          md2hwp-backend render-tagged --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--visible]
         Default template: template.hwp beside the executable.
         """;
 }

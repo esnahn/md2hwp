@@ -189,7 +189,7 @@ fn manuscript_options(arguments: &[std::ffi::OsString]) -> Result<ManuscriptOpti
             }
         }
     }
-    let output = output.unwrap_or_else(|| input.with_extension("result.hwp"));
+    let output = output.unwrap_or_else(|| input.with_extension("output.hwp"));
     if !output
         .extension()
         .is_some_and(|e| e.eq_ignore_ascii_case("hwp"))
@@ -439,7 +439,7 @@ fn default_pandoc_path() -> PathBuf {
 }
 
 fn usage() -> String {
-    "usage: md2hwp <source.md> [[--output] <output.hwp>] [--template <template.hwp>] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\n       md2hwp md2ir --input <file> --output <file.ir.json> --from <commonmark|pandoc-json> [--pandoc <pandoc.exe>] [--force]\n       md2hwp setup-pandoc\n       md2hwp init-template [[--output] <output.hwp>] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <file.ir.json> --output <new.hwp> [--template <template.hwp>] [--worker <worker.exe>] [--dotnet <dotnet.exe>]".to_owned()
+    "usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\n       md2hwp md2ir --input <file> --output <file.ir.json> --from <commonmark|pandoc-json> [--pandoc <pandoc.exe>] [--force]\n       md2hwp setup-pandoc\n       md2hwp init-template [[--output] <template.hwp>] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <worker.exe>] [--dotnet <dotnet.exe>]".to_owned()
 }
 
 #[cfg(test)]
@@ -456,7 +456,7 @@ mod tests {
             ..
         } = manuscript_options(std::slice::from_ref(&input)).unwrap();
         assert_eq!(ir, source.with_file_name("보고서.v2.ir.json"));
-        assert_eq!(output, source.with_file_name("보고서.v2.result.hwp"));
+        assert_eq!(output, source.with_file_name("보고서.v2.output.hwp"));
         let ManuscriptOptions {
             ir: explicit_ir,
             output: explicit_output,
@@ -481,13 +481,13 @@ mod tests {
             "--worker",
             "backend/worker.exe",
             "--output",
-            "출력/result.hwp",
+            "출력/output.hwp",
         ]
         .map(Into::into);
         let options = manuscript_options(&args).unwrap();
         assert_eq!(
             options.output,
-            std::path::absolute("출력/result.hwp").unwrap()
+            std::path::absolute("출력/output.hwp").unwrap()
         );
         assert_eq!(
             options.forwarded,
@@ -506,10 +506,10 @@ mod tests {
                     .into_os_string()
             ]
         );
-        let positional = ["source.md", "--template", "custom.hwp", "result.hwp"].map(Into::into);
+        let positional = ["source.md", "--template", "custom.hwp", "output.hwp"].map(Into::into);
         assert_eq!(
             manuscript_options(&positional).unwrap().output,
-            std::path::absolute("result.hwp").unwrap()
+            std::path::absolute("output.hwp").unwrap()
         );
         for tail in [
             vec!["a.hwp", "--output", "b.hwp"],
@@ -549,7 +549,7 @@ mod tests {
 
     #[test]
     fn invalid_source_preserves_existing_outputs() {
-        for extension in ["ir.json", "result.hwp"] {
+        for extension in ["ir.json", "output.hwp"] {
             let root = tempfile::tempdir().unwrap();
             let source = root.path().join("원고.md");
             fs::write(&source, [0xff]).unwrap();
