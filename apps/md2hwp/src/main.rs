@@ -417,13 +417,15 @@ impl Options {
                 _ => return Err(usage()),
             }
         }
-        let input_format = input_format.ok_or_else(usage)?;
+        let input = input.ok_or_else(usage)?;
+        let output = output.unwrap_or_else(|| input.with_extension("ir.json"));
+        let input_format = input_format.unwrap_or(InputFormat::CommonMark);
         if input_format == InputFormat::PandocJson && pandoc.is_some() {
             return Err("--pandoc is only valid with --from commonmark".to_owned());
         }
         Ok(Self {
-            input: input.ok_or_else(usage)?,
-            output: output.ok_or_else(usage)?,
+            input,
+            output,
             input_format,
             pandoc: match input_format {
                 InputFormat::CommonMark => Some(pandoc.unwrap_or_else(default_pandoc_path)),
@@ -439,7 +441,7 @@ fn default_pandoc_path() -> PathBuf {
 }
 
 fn usage() -> String {
-    "usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp md2ir --input <file> --output <file.ir.json> --from <commonmark|pandoc-json> [--pandoc <pandoc.exe>] [--force]\n       md2hwp setup-pandoc\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]".to_owned()
+    "usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp md2ir --input <source.md> [--output <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp setup-pandoc\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp render-hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]".to_owned()
 }
 
 #[cfg(test)]
@@ -602,6 +604,19 @@ mod tests {
 
     fn arguments(values: &[&str]) -> Vec<std::ffi::OsString> {
         values.iter().map(std::ffi::OsString::from).collect()
+    }
+
+    #[test]
+    fn md2ir_defaults_follow_source_and_commonmark() {
+        let args = ["md2ir", "--input", "원고/보고서.v2.md"].map(Into::into);
+        let options = Options::parse(args.to_vec()).unwrap();
+        assert_eq!(options.output, PathBuf::from("원고/보고서.v2.ir.json"));
+        assert_eq!(options.input_format, InputFormat::CommonMark);
+        assert!(options.pandoc.is_some());
+        let args = ["md2ir", "--input", "ast.json", "--from", "pandoc-json"].map(Into::into);
+        let options = Options::parse(args.to_vec()).unwrap();
+        assert_eq!(options.output, PathBuf::from("ast.ir.json"));
+        assert!(options.pandoc.is_none());
     }
 
     #[test]

@@ -48,10 +48,12 @@ Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔�
 기존 옵션 방식도 사용할 수 있습니다.
 
 ```powershell
-.\md2hwp.exe md2ir --input 원고.md --output 원고.ir.json --from commonmark --force
+.\md2hwp.exe md2ir --input 원고.md --force
 .\md2hwp.exe render-hwp --ir 원고.ir.json --output 원고.output.hwp
 .\md2hwp-backend.exe render-tagged --ir 원고.ir.json --output 원고.output.hwp
 ```
+
+`md2ir`에서 `--output`을 생략하면 입력 옆의 `원고.ir.json`, `--from`을 생략하면 `commonmark`를 사용합니다. Pandoc JSON 입력은 `--from pandoc-json`으로 지정합니다.
 
 `--template`과 Rust의 `--worker`를 생략하면 각 EXE 옆의 `template.hwp`,
 `md2hwp-backend.exe`를 찾습니다. 옵션 방식의 이미지 기준 폴더는 작업 폴더입니다.
