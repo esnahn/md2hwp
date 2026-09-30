@@ -46,6 +46,16 @@ internal static partial class HancomPreviewWriter
                 if (!(bool)hwp.HAction.Execute("TableCreate", hwp.HParameterSet.HTableCreation.HSet))
                     throw new InvalidOperationException("Could not create the default table.");
                 Run(hwp, "ShapeObjAttachCaption");
+                Run(hwp, "Cancel"); Run(hwp, "MoveDocEnd"); Run(hwp, "BreakPara");
+                var sample = Path.Combine(Path.GetTempPath(), $"md2hwp-sample-{Guid.NewGuid():N}.png");
+                try
+                {
+                    File.WriteAllBytes(sample, Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGO4e/cuAAUyApjDDfqPAAAAAElFTkSuQmCC"));
+                    if (!IndicatesSuccess(hwp.InsertPicture(sample, true, 1, false, false, 0, 142.0, 12.0)))
+                        throw new InvalidOperationException("Could not create sample picture.");
+                    Run(hwp, "MoveParaBegin"); Run(hwp, "SelectCtrlFront"); Run(hwp, "ShapeObjAttachCaption");
+                }
+                finally { if (File.Exists(sample)) File.Delete(sample); }
                 XDocument seed = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
                 var authored = BuildDefaultDeclarations(blank, seed);
                 _ = hwp.Clear(1);
@@ -60,9 +70,7 @@ internal static partial class HancomPreviewWriter
                 Open(hwp, temporary, false);
                 XDocument reopened = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
                 var binding = TaggedTemplateBinding.Read(reopened, temporary);
-                var styles = AuriPreviewStyleBindings.BindDocument(reopened, binding.Profile);
-                _ = AuriMinimalBoxPrototype.Bind(hwp, styles);
-                _ = AuriMinimalCaptionPrototype.Bind(hwp, styles);
+                _ = binding.Profile; // Read validates the native sample and all lowered roles.
                 return true;
             });
             // Never replace an edited template, including one created during generation.
@@ -124,12 +132,18 @@ internal static partial class HancomPreviewWriter
             new XElement("AUTONUMFORMAT", new XAttribute("Superscript", "false"), new XAttribute("Type", "Digit")));
         var figureCaption = Paragraph("figure.caption", new XElement("CHAR", "[그림 "), figureNumber,
             new XElement("CHAR", "] " + TaggedTemplateBinding.Tag("slot:figure.caption")));
+        var picture = new XElement(result.Descendants("PICTURE").Single());
+        var pictureShape = picture.Element("SHAPEOBJECT")!;
+        pictureShape.Element("POSITION")!.SetAttributeValue("TreatAsChar", "true");
+        var nativeCaption = pictureShape.Element("CAPTION") ?? throw new InvalidDataException("Sample picture has no native caption.");
+        nativeCaption.Element("PARALIST")!.ReplaceNodes(figureCaption,
+            TextParagraph("figure.source", "출처: " + TaggedTemplateBinding.Tag("slot:figure.source")));
         // Retain only the empty first paragraph's native section/page definition.
         var first = new XElement(blankRoot);
         first.SetAttributeValue("Style", ids["body"]);
         var roots = new List<XElement> { first, Declaration("begin:template"), Declaration("ir-version:" + IrContract.Version) };
         var figureWidth = Math.Min(142, width * 25.4 / 7200).ToString("0.###", CultureInfo.InvariantCulture);
-        roots.AddRange(new[] { Declaration("figure.max-width-mm:" + figureWidth), Declaration("lists.max-depth:6"),
+        roots.AddRange(new[] { Declaration("lists.max-depth:6"),
             Declaration("lists.indent-hwp:1000") });
         foreach (var role in roles.Where(r => r == "body" || r.StartsWith("heading.", StringComparison.Ordinal) || r == "reset"))
             roots.Add(Declaration(role, role));
@@ -142,8 +156,8 @@ internal static partial class HancomPreviewWriter
             roots.Add(sample);
         }
         roots.AddRange(new[] { Declaration("begin:block.box"), Paragraph("body", table), Declaration("end:block.box"),
-            Declaration("begin:figure"), Declaration("slot:figure.image"), figureCaption,
-            TextParagraph("figure.source", "출처: " + TaggedTemplateBinding.Tag("slot:figure.source")), Declaration("end:figure"),
+            Declaration("figure.max-width-mm:" + figureWidth), Declaration("begin:figure.caption"),
+            Paragraph("body", picture), Declaration("end:figure.caption"),
             Declaration("end:template"), Declaration("content"), TextParagraph("body", "") });
         section.ReplaceNodes(roots);
         return result;

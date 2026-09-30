@@ -25,7 +25,9 @@ Template-owned begin:template/end:template declarations supply all current IR
 styles and prototype ranges, including roles unused by the manuscript;
 do not restore runtime external profiles. Preserve unrelated template content.
 Generated links render as formatted labels/plain text; strip automatic hyperlinks
-only in generated content. Figures embed PNGs; caption and source follow the figure.
+only in generated content. Figures embed PNGs; caption and source belong to the picture's native caption.
+The begin:figure.caption/end:figure.caption sample contains one picture with a
+two-paragraph native caption. Ignore sample image content/size; inherit caption options.
 Native list.bullet/list.ordered sample paragraphs own bullet and per-level numbering
 formats; manuscript start numbers and existing depth indentation remain authoritative.
 Verbatim blocks may carry sources. Generated tables, HWPX and RST input are deferred.
