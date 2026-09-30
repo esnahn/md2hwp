@@ -7,6 +7,9 @@ internal sealed record TemplateCreationResult(string Output, string IrVersion, b
 
 internal static partial class HancomPreviewWriter
 {
+    private const string DefaultSourcePrefix = "출처: ";
+    private const string SourceMeasurementText = DefaultSourcePrefix + "X";
+
     public static TemplateCreationResult CreateDefaultTemplate(string outputPath)
     {
         var output = ValidateNewHwpPath(outputPath, "Template");
@@ -25,6 +28,19 @@ internal static partial class HancomPreviewWriter
                 if (originalRoots.Count != 1 || originalRoots[0].Value.Length != 0 ||
                     blank.Descendants().Any(e => e.Name.LocalName is "TABLE" or "PICTURE" or "HEADER" or "FOOTER"))
                     throw new InvalidOperationException("Expected a fresh empty Hancom document.");
+
+                // Measure with Hancom's Shift+Tab action in an ordinary paragraph.
+                // The section-control paragraph and HParaShape's cached Indentation
+                // do not reliably expose this action's result on Hancom 2020.
+                Run(hwp, "BreakPara");
+                InsertText(hwp, SourceMeasurementText);
+                Run(hwp, "MoveParaEnd"); Run(hwp, "MoveLeft");
+                Run(hwp, "ParagraphShapeIndentAtCaret");
+                Run(hwp, "MoveParaEnd"); Run(hwp, "BreakPara");
+                _ = hwp.HAction.GetDefault("ParagraphShape", hwp.HParameterSet.HParaShape.HSet);
+                hwp.HParameterSet.HParaShape.Indentation = 0;
+                if (!(bool)hwp.HAction.Execute("ParagraphShape", hwp.HParameterSet.HParaShape.HSet))
+                    throw new InvalidOperationException("Could not reset the source measurement paragraph shape.");
 
                 // Native list samples start from Hancom's fresh-document defaults.
                 foreach (var (kind, action) in new[] { ("bullet", "PutBullet"), ("ordered", "PutParaNumber") })
@@ -71,6 +87,17 @@ internal static partial class HancomPreviewWriter
                 XDocument reopened = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
                 var binding = TaggedTemplateBinding.Read(reopened, temporary);
                 _ = binding.Profile; // Read validates the native sample and all lowered roles.
+                foreach (var name in new[] { "md2hwp.box.source", "md2hwp.figure.source" })
+                {
+                    int SourceIndent(XDocument doc)
+                    {
+                        var style = doc.Descendants("STYLE").Single(e => (string?)e.Attribute("Name") == name);
+                        var shape = doc.Descendants("PARASHAPE").Single(e => (string?)e.Attribute("Id") == (string?)style.Attribute("ParaShape"));
+                        return (int)shape.Element("PARAMARGIN")!.Attribute("Indent")!;
+                    }
+                    if (SourceIndent(authored) >= 0 || SourceIndent(authored) != SourceIndent(reopened))
+                        throw new InvalidOperationException("The measured source hanging indent was not preserved on save.");
+                }
                 return true;
             });
             // Never replace an edited template, including one created during generation.
@@ -88,6 +115,11 @@ internal static partial class HancomPreviewWriter
         var defaultId = (string?)blankRoot.Attribute("Style") ?? throw new InvalidDataException("Missing default style.");
         var baseStyle = blank.Descendants().Single(e => e.Name.LocalName == "STYLE" && (string?)e.Attribute("Id") == defaultId);
         var paragraphShape = (string)baseStyle.Attribute("ParaShape")!;
+        var measured = AuriMinimalBoxPrototype.RootParagraphs(seed).Single(p => TaggedTemplateBinding.DirectText(p) == SourceMeasurementText);
+        var sourceShape = (string)measured.Attribute("ParaShape")!;
+        var sourceIndent = (int)seed.Descendants("PARASHAPE").Single(e => (string?)e.Attribute("Id") == sourceShape)
+            .Element("PARAMARGIN")!.Attribute("Indent")!;
+        if (sourceIndent >= 0) throw new InvalidOperationException("Hancom did not calculate a source hanging indent at the prefix boundary.");
         var charShape = (string)baseStyle.Attribute("CharShape")!;
         var styles = result.Descendants().Where(e => e.Name.LocalName == "STYLE").ToArray();
         var styleList = styles[0].Parent!;
@@ -103,11 +135,12 @@ internal static partial class HancomPreviewWriter
             style.SetAttributeValue("Name", "md2hwp." + role);
             style.SetAttributeValue("EngName", "md2hwp." + role);
             style.SetAttributeValue("NextStyle", ids["body"]);
+            if (role is "box.source" or "figure.source") style.SetAttributeValue("ParaShape", sourceShape);
             styleList.Add(style);
         }
         styleList.SetAttributeValue("Count", styleList.Elements().Count());
         XElement Paragraph(string role, params object[] contents) =>
-            new("P", new XAttribute("ParaShape", paragraphShape), new XAttribute("Style", ids[role]),
+            new("P", new XAttribute("ParaShape", role is "box.source" or "figure.source" ? sourceShape : paragraphShape), new XAttribute("Style", ids[role]),
                 new XElement("TEXT", new XAttribute("CharShape", charShape), contents));
         XElement TextParagraph(string role, string value) => Paragraph(role, new XElement("CHAR", value));
         XElement Declaration(string value, string role = "body") => TextParagraph(role, TaggedTemplateBinding.Tag(value));
@@ -126,7 +159,7 @@ internal static partial class HancomPreviewWriter
         cell.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(Declaration("slot:box.content", "block.box"));
         var caption = shape.Elements().Single(e => e.Name.LocalName == "CAPTION");
         caption.SetAttributeValue("LastWidth", width);
-        caption.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(TextParagraph("box.source", "출처: " + TaggedTemplateBinding.Tag("slot:box.source")));
+        caption.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(TextParagraph("box.source", DefaultSourcePrefix + TaggedTemplateBinding.Tag("slot:box.source")));
 
         var figureNumber = new XElement("AUTONUM", new XAttribute("Number", 1), new XAttribute("NumberType", "Figure"),
             new XElement("AUTONUMFORMAT", new XAttribute("Superscript", "false"), new XAttribute("Type", "Digit")));
@@ -137,7 +170,7 @@ internal static partial class HancomPreviewWriter
         pictureShape.Element("POSITION")!.SetAttributeValue("TreatAsChar", "true");
         var nativeCaption = pictureShape.Element("CAPTION") ?? throw new InvalidDataException("Sample picture has no native caption.");
         nativeCaption.Element("PARALIST")!.ReplaceNodes(figureCaption,
-            TextParagraph("figure.source", "출처: " + TaggedTemplateBinding.Tag("slot:figure.source")));
+            TextParagraph("figure.source", DefaultSourcePrefix + TaggedTemplateBinding.Tag("slot:figure.source")));
         // Retain only the empty first paragraph's native section/page definition.
         var first = new XElement(blankRoot);
         first.SetAttributeValue("Style", ids["body"]);
