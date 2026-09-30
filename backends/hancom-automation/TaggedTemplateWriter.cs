@@ -23,7 +23,11 @@ internal static partial class HancomPreviewWriter
             {
                 Open(hwp, temporary, visible);
                 XDocument document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
-                var binding = TaggedTemplateBinding.Read(document, temporary);
+                var nativeFigure = NativeFigureCaption.Lower(document);
+                _ = TaggedTemplateBinding.ReadFlat(nativeFigure.Document, temporary);
+                ImportFigureDocument(hwp, nativeFigure.Document);
+                document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+                var binding = TaggedTemplateBinding.ReadFlat(document, temporary);
                 var profile = binding.Profile;
                 var plan = IrPreviewPlan.Load(irPath, repositoryRoot, profile);
                 var styles = AuriPreviewStyleBindings.BindDocument(document, profile);
@@ -56,7 +60,9 @@ internal static partial class HancomPreviewWriter
                 // All clones are verified before removing the original prototypes.
                 DeleteRangeParagraphs(hwp, binding.TemplateBegin, binding.TemplateEnd + 1);
                 start -= binding.TemplateEnd + 1 - binding.TemplateBegin;
-                Run(hwp, "FileSave"); CloseDocument(hwp); Open(hwp, temporary, visible);
+                if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
+                    throw new InvalidOperationException("Could not save rendered document.");
+                CloseDocument(hwp); Open(hwp, temporary, visible);
                 VerifyText(hwp, plan, profile);
                 VerifyStyles(hwp, plan, styles, start);
                 VerifyCharacterMarks(hwp, plan, styles, start);
@@ -85,6 +91,13 @@ internal static partial class HancomPreviewWriter
                 if (finalRoots.SelectMany(p => p.Descendants()).Count(e => e.Name.LocalName == "AUTONUM" && (string?)e.Attribute("NumberType") == "Figure") !=
                     prefix.SelectMany(p => p.Descendants()).Count(e => e.Name.LocalName == "AUTONUM" && (string?)e.Attribute("NumberType") == "Figure") + plan.Summary.FigureOperations)
                     throw new InvalidOperationException("Unexpected generated caption count.");
+                var attached = nativeFigure.Layout.Attach(finalDocument, plan, start);
+                ImportFigureDocument(hwp, attached);
+                if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
+                    throw new InvalidOperationException("Could not save native figure captions.");
+                CloseDocument(hwp); Open(hwp, temporary, visible);
+                var nativeSaved = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+                RequireFigureDocument(attached, nativeSaved);
                 return true;
             });
             if (HashFile(source) != hash) throw new InvalidOperationException("Source template changed.");
@@ -92,6 +105,49 @@ internal static partial class HancomPreviewWriter
             return new(output, IrContract.Version, true, true);
         }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
+    }
+
+    private static void ImportFigureDocument(dynamic hwp, XDocument document)
+    {
+        _ = hwp.Clear(1);
+        object imported = hwp.SetTextFile("<?xml version=\"1.0\" encoding=\"UTF-16\" standalone=\"no\"?>" + document.ToString(SaveOptions.DisableFormatting), "HWPML2X", "");
+        if (imported is not int status || status != 1) throw new InvalidOperationException("Could not import native figure caption structure.");
+        RequireFigureDocument(document, HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", "")));
+    }
+
+    private static void RequireFigureDocument(XDocument expected, XDocument actual)
+    {
+        // Hancom adds identity scale/rotation pairs during HWPML import.
+        // Ignore only mathematically neutral matrices in comparison copies.
+        expected = NormalizeFigureMatrices(expected);
+        actual = NormalizeFigureMatrices(actual);
+        var before = AuriMinimalBoxPrototype.RootParagraphs(expected);
+        var after = AuriMinimalBoxPrototype.RootParagraphs(actual);
+        TemplateRangeStructure.RequireOriginalStyleDefinitions(expected, actual, before);
+        if (!TemplateRangeStructure.Equivalent(before, after, expected, actual))
+            throw new InvalidOperationException("Native caption import changed document structure: " + TemplateRangeStructure.DescribeDifference(before, after));
+        foreach (var image in before.SelectMany(p => p.Descendants("IMAGE")))
+        {
+            var id = (string?)image.Attribute("BinItem") ?? throw new InvalidOperationException("Missing embedded image reference.");
+            var original = expected.Descendants("BINDATA").Single(e => (string?)e.Attribute("Id") == id);
+            var saved = actual.Descendants("BINDATA").SingleOrDefault(e => (string?)e.Attribute("Id") == id);
+            if (saved is null || !Convert.FromBase64String(original.Value).SequenceEqual(Convert.FromBase64String(saved.Value)))
+                throw new InvalidOperationException($"Native caption import changed embedded image {id}.");
+        }
+    }
+
+    private static XDocument NormalizeFigureMatrices(XDocument document)
+    {
+        var copy = new XDocument(document);
+        foreach (var matrix in copy.Descendants("RENDERINGINFO").Elements()
+                     .Where(e => e.Name.LocalName is "SCAMATRIX" or "ROTMATRIX").ToArray())
+        {
+            var identity = new[] { 1m, 0m, 0m, 0m, 1m, 0m };
+            if (matrix.Attributes().Count() == 6 && Enumerable.Range(1, 6).All(i =>
+                decimal.TryParse((string?)matrix.Attribute("E" + i), System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var value) && value == identity[i - 1])) matrix.Remove();
+        }
+        return copy;
     }
 
     internal static string ValidateRenderedOutput(string outputPath, params string[] protectedPaths)

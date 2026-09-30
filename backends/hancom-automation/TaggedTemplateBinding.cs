@@ -14,6 +14,11 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
 
     public static TaggedTemplateBinding Read(XDocument document, string templatePath)
     {
+        return ReadFlat(NativeFigureCaption.Lower(document).Document, templatePath);
+    }
+
+    internal static TaggedTemplateBinding ReadFlat(XDocument document, string templatePath)
+    {
         var roots = AuriMinimalBoxPrototype.RootParagraphs(document).ToList();
         var accepted = new HashSet<XElement>();
         int Single(string token)
