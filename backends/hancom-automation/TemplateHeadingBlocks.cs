@@ -24,14 +24,24 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             if (first <= templateBegin || last >= templateEnd || last <= first + 1 || last - first > 65)
                 throw new InvalidDataException($"{role} block requires 1–64 paragraphs inside the template declarations.");
             var range = roots.Skip(first + 1).Take(last - first - 1).ToArray();
-            foreach (var paragraph in roots.Skip(first).Take(last - first + 1))
-                if (paragraph.Elements().Any(e => e.Name.LocalName != "TEXT") ||
-                    paragraph.Elements().SelectMany(e => e.Elements()).Any(e => e.Name.LocalName != "CHAR" || e.HasElements))
-                    throw new InvalidDataException($"{role} block supports plain text paragraphs only; objects, controls and manual line breaks are not supported.");
+            foreach (var boundary in new[] { begin[0], end[0] })
+                if (boundary.Elements().Any(e => e.Name.LocalName != "TEXT") ||
+                    boundary.Elements().SelectMany(e => e.Elements()).Any(e => e.Name.LocalName != "CHAR" || e.HasElements))
+                    throw new InvalidDataException($"{role} boundaries must be plain standalone paragraphs.");
+            // Section boundaries change the document container, rather than a
+            // paragraph range. Do not silently flatten them into this block.
+            if (range.SelectMany(p => p.Descendants()).Any(e => e.Name.LocalName is "SECDEF" or "COLDEF"))
+                throw new InvalidDataException($"{role} supports page breaks, but not section/column definitions inside its block.");
+            if (range.SelectMany(p => p.Descendants()).Any(e => e.Name.LocalName is "PICTURE" or "OLE" or "VIDEO"))
+                throw new InvalidDataException($"{role} embedded pictures, OLE and video are not supported; tables, drawing text and grouped shapes are supported.");
             var slot = TaggedTemplateBinding.Tag("slot:" + role);
-            var slots = range.Where(p => TaggedTemplateBinding.DirectText(p) == slot).ToArray();
-            if (slots.Length != 1 || range.Any(p => p != slots[0] && TaggedTemplateBinding.DirectText(p).Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal)))
-                throw new InvalidDataException($"{role} block requires one standalone slot:{role} paragraph and no nested declarations.");
+            var paragraphs = range.SelectMany(p => p.DescendantsAndSelf("P")).ToArray();
+            var slots = paragraphs.Where(p => TaggedTemplateBinding.DirectText(p) == slot).ToArray();
+            if (slots.Length != 1 || paragraphs.Any(p => p != slots[0] && TaggedTemplateBinding.DirectText(p).Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal)))
+                throw new InvalidDataException($"{role} block requires one standalone slot:{role} paragraph, including inside a table or text box, and no nested declarations.");
+            if (slots[0].Elements().Any(e => e.Name.LocalName != "TEXT") ||
+                slots[0].Elements().SelectMany(e => e.Elements()).Any(e => e.Name.LocalName != "CHAR" || e.HasElements))
+                throw new InvalidDataException($"slot:{role} must be its own text paragraph; place controls in adjacent paragraphs.");
             samples.Add(role, range.Select(p => new XElement(p)).ToArray());
             var declaration = new XElement(slots[0]);
             declaration.ReplaceNodes(new XElement("TEXT", new XAttribute("CharShape", (string?)slots[0].Element("TEXT")?.Attribute("CharShape") ?? "0"),
@@ -55,11 +65,28 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             var generated = roots[start + index];
             var slot = TaggedTemplateBinding.Tag("slot:" + operation.ParagraphStyle);
             var block = sample.Select(p => ImportParagraph(p, source, result)).ToArray();
-            var target = block.Single(p => TaggedTemplateBinding.DirectText(p) == slot);
+            var target = block.SelectMany(p => p.DescendantsAndSelf("P")).Single(p => TaggedTemplateBinding.DirectText(p) == slot);
             target.ReplaceNodes(generated.Nodes().Select(n => n is XElement e ? new XElement(e) : throw new InvalidDataException("Unexpected heading node.")));
             generated.ReplaceWith(block);
         }
+        if (samples.Values.SelectMany(p => p).SelectMany(p => p.Descendants("NEWNUM"))
+            .Any(e => (string?)e.Attribute("NumberType") == "Figure")) RecalculateFigureNumbers(result);
         return result;
+    }
+
+    // NEWNUM is retained verbatim. Update only the calculated Figure AUTONUM
+    // display value to agree with the native counter at its new position.
+    private static void RecalculateFigureNumbers(XDocument document)
+    {
+        var next = 1;
+        foreach (var element in document.Descendants("SECTION").SelectMany(s => s.Descendants()))
+        {
+            if (element.Ancestors().Any(a => a.Name.LocalName is "HEADER" or "FOOTER" or "MASTERPAGE")) continue;
+            if (element.Name.LocalName == "NEWNUM" && (string?)element.Attribute("NumberType") == "Figure")
+                next = (int)element.Attribute("Number")!;
+            else if (element.Name.LocalName == "AUTONUM" && (string?)element.Attribute("NumberType") == "Figure")
+                element.SetAttributeValue("Number", next++);
+        }
     }
 
     private static XElement ImportParagraph(XElement paragraph, XDocument source, XDocument destination)
@@ -94,7 +121,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
                 var table = attribute.Name.LocalName switch
                 {
                     "ParaShape" => "PARASHAPE", "CharShape" => "CHARSHAPE", "TabDef" => "TABDEF",
-                    "BorderFill" or "BorferFill" when attribute.Value != "0" => "BORDERFILL",
+                    "BorderFill" or "BorferFill" or "BorderFillId" when attribute.Value != "0" => "BORDERFILL",
                     "Heading" when element.Name.LocalName == "PARASHAPE" => (string?)element.Attribute("HeadingType") == "Bullet" ? "BULLET" : "NUMBERING",
                     _ => null,
                 };
@@ -103,6 +130,14 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
         }
         var copy = new XElement(paragraph);
         Resolve(copy);
+        var used = destination.Descendants().Attributes().Where(a => a.Name.LocalName is "InstId" or "InstID")
+            .Select(a => a.Value).ToHashSet(StringComparer.Ordinal);
+        foreach (var attribute in copy.DescendantsAndSelf().Attributes().Where(a => a.Name.LocalName is "InstId" or "InstID"))
+        {
+            string id;
+            do { id = BitConverter.ToUInt32(Guid.NewGuid().ToByteArray(), 0).ToString(System.Globalization.CultureInfo.InvariantCulture); } while (!used.Add(id));
+            attribute.Value = id;
+        }
         return copy;
     }
 }
