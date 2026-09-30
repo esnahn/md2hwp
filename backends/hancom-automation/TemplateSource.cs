@@ -26,7 +26,7 @@ internal sealed record TemplateSource(XElement Paragraph, string Slot, string Pr
             throw new InvalidOperationException("Source paragraph differs from its template and IR content.");
         foreach (var attribute in Paragraph.Attributes().Where(a => a.Name.LocalName is not "InstId"))
             if ((string?)paragraph.Attribute(attribute.Name) != attribute.Value)
-                throw new InvalidOperationException($"Source paragraph lost template attribute {attribute.Name}.");
+                throw new InvalidOperationException($"Source paragraph lost template attribute {attribute.Name}: expected {attribute.Value}, got {paragraph.Attribute(attribute.Name)?.Value}.");
     }
 }
 
