@@ -143,10 +143,10 @@ internal static partial class HancomPreviewWriter
         first.SetAttributeValue("Style", ids["body"]);
         var roots = new List<XElement> { first, Declaration("begin:template"), Declaration("ir-version:" + IrContract.Version) };
         var figureWidth = Math.Min(142, width * 25.4 / 7200).ToString("0.###", CultureInfo.InvariantCulture);
-        roots.AddRange(new[] { Declaration("lists.max-depth:6"),
-            Declaration("lists.indent-hwp:1000") });
         foreach (var role in roles.Where(r => r == "body" || r.StartsWith("heading.", StringComparison.Ordinal) || r == "reset"))
             roots.Add(Declaration(role, role));
+        roots.AddRange(new[] { Declaration("list.max-depth:6"),
+            Declaration("list.indent-hwp:1000") });
         foreach (var kind in new[] { "bullet", "ordered" })
         {
             var native = AuriMinimalBoxPrototype.RootParagraphs(seed).Single(p =>

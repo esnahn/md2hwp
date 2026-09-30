@@ -71,8 +71,8 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
                 throw new InvalidDataException($"Invalid positive setting {key}.");
             return value;
         }
-        var depth = IntegerSetting("lists.max-depth", 6);
-        var indent = IntegerSetting("lists.indent-hwp", 10000);
+        var depth = IntegerSetting("list.max-depth", 6);
+        var indent = IntegerSetting("list.indent-hwp", 10000);
         var bulletRoot = Single("list.bullet");
         var orderedRoot = Single("list.ordered");
         Inside(bulletRoot); Inside(orderedRoot);
