@@ -18,7 +18,7 @@ internal static class TemplateFormatting
             {
                 "ParaShape" => "PARASHAPE",
                 "CharShape" => "CHARSHAPE",
-                "BorderFill" or "BorferFill" => "BORDERFILL",
+                "BorderFill" or "BorferFill" or "BorderFillId" => "BORDERFILL",
                 "TabDef" => "TABDEF",
                 "Heading" when element.Name.LocalName == "PARASHAPE" =>
                     (string?)element.Attribute("HeadingType") == "Bullet" ? "BULLET" : "NUMBERING",

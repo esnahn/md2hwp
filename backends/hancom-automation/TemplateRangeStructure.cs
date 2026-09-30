@@ -23,6 +23,12 @@ internal static class TemplateRangeStructure
     private static XElement[] Canonicalize(IReadOnlyList<XElement> roots)
     {
         var copies = roots.Select(root => new XElement(root)).ToArray();
+        // Hancom assigns fresh identities to pasted drawing objects and their
+        // grouped components. Their geometry, content and stacking are checked.
+        foreach (var attribute in copies.SelectMany(p => p.DescendantsAndSelf())
+                     .Where(e => e.Name.LocalName is "P" or "SHAPEOBJECT" or "SHAPECOMPONENT")
+                     .Attributes().Where(a => a.Name.LocalName is "InstId" or "InstID").ToArray())
+            attribute.Remove();
         var orders = copies.SelectMany(root => root.DescendantsAndSelf())
             .Where(element => element.Name.LocalName == "SHAPEOBJECT")
             .Select(element => element.Attribute("ZOrder")).OfType<XAttribute>().ToArray();

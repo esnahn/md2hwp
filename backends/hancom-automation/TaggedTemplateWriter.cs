@@ -140,6 +140,15 @@ internal static partial class HancomPreviewWriter
     private static XDocument NormalizeFigureMatrices(XDocument document)
     {
         var copy = new XDocument(document);
+        // Group children retain original dimensions and transformation matrices;
+        // Hancom may omit their derived current dimensions after saving.
+        foreach (var component in copy.Descendants("SHAPECOMPONENT").Where(e => (int?)e.Attribute("GroupLevel") > 0))
+        {
+            component.Attribute("CurWidth")?.Remove();
+            component.Attribute("CurHeight")?.Remove();
+        }
+        // Text-box layout width is a calculated cache, not its frame geometry.
+        foreach (var text in copy.Descendants("DRAWTEXT")) text.Attribute("LastWidth")?.Remove();
         foreach (var matrix in copy.Descendants("RENDERINGINFO").Elements()
                      .Where(e => e.Name.LocalName is "SCAMATRIX" or "ROTMATRIX").ToArray())
         {
