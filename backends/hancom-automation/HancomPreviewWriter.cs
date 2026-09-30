@@ -1167,7 +1167,7 @@ internal static partial class HancomPreviewWriter
                     break;
                 case "box":
                     yield return new ExpectedParagraph(
-                        "body",
+                        profile.BoxSelector.RootStyle,
                         string.Concat(operation.Lines),
                         false,
                         true,

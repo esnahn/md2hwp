@@ -144,7 +144,7 @@ internal sealed class InvestigationTemplateProfile
             new FileInfo(templatePath).Length, styles, reset,
             new(width), new(maxDepth, indent) { Bullet = bullet, Ordered = ordered },
             new("unique_text_marker", "{{md2hwp:content}}"),
-            new("body", "block.box", 1, "box.source", 1,
+            new("box.anchor", "block.box", 1, "box.source", 1,
                 "{{md2hwp:slot:box.content}}", boxSource.PrototypeText),
             caption)
         { PreserveParagraphLineBreaks = true, BoxSource = boxSource, FigureSource = figureSource };

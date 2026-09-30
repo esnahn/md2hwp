@@ -101,8 +101,9 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
         if (boxEnd != boxBegin + 2) throw new InvalidDataException("Box range must contain exactly one root paragraph.");
         var box = roots[boxBegin + 1];
         var tables = box.Descendants().Where(e => e.Name.LocalName == "TABLE").ToArray();
-        if (tables.Length != 1 || StyleName(box) != styles.Single(s => s.Symbolic == "body").NativeName)
-            throw new InvalidDataException("Box must be one table anchored in the declared body style.");
+        if (tables.Length != 1)
+            throw new InvalidDataException("Box must contain exactly one table.");
+        styles.Add(new("box.anchor", StyleName(box)));
         var boxSlots = tables[0].Descendants().Where(e => e.Name.LocalName == "P" && DirectText(e) == Tag("slot:box.content")).ToArray();
         if (boxSlots.Length != 1 || !boxSlots[0].Ancestors().Any(e => e.Name.LocalName == "CELL"))
             throw new InvalidDataException("Box requires one content slot inside its cell.");
@@ -143,8 +144,6 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
         styles.Add(new("figure", StyleName(roots[image])));
         styles.Add(new("figure.caption", StyleName(caption)));
         styles.Add(new("figure.source", StyleName(roots[source])));
-        if (StyleName(roots[image]) != styles.Single(s => s.Symbolic == "body").NativeName)
-            throw new InvalidDataException("Figure anchor style differs from body.");
         // Reject hidden, duplicate, malformed, or unknown declarations, including
         // tokens in headers/footers/cells other than the declared box slot.
         foreach (var paragraph in document.Descendants().Where(e => e.Name.LocalName == "P"))
