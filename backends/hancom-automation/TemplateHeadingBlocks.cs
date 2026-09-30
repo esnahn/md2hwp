@@ -1,10 +1,31 @@
 using System.Xml.Linq;
+using System.Xml.XPath;
 
 namespace Md2Hwp.HancomIrPreview;
 
 // Optional, template-only presentation of an existing IR heading.
 internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string, XElement[]> samples)
 {
+    private readonly HashSet<string> titleHeightElements = [];
+
+    // Only containers enclosing a replaced title may reflow. All other geometry
+    // and all content/formatting remain part of the strict structural comparison.
+    internal void NormalizeTitleLayout(XDocument expected, XDocument actual, bool report)
+    {
+        var changes = 0;
+        foreach (var path in titleHeightElements)
+        {
+            var left = expected.XPathSelectElement(path)?.Attribute("Height");
+            var right = actual.XPathSelectElement(path)?.Attribute("Height");
+            if (left is null || right is null || left.Value == right.Value) continue;
+            if (!long.TryParse(left.Value, out var oldHeight) || !long.TryParse(right.Value, out var newHeight) || oldHeight <= 0 || newHeight <= 0) continue;
+            right.Value = left.Value;
+            changes++;
+        }
+        if (report && changes > 0)
+            Console.Error.WriteLine($"md2hwp-backend: heading layout notice: {changes} table/cell heights changed after title insertion; check wrapping and page placement in the output.");
+    }
+
     internal static (TemplateHeadingBlocks Layout, XDocument Document) Lower(XDocument source)
     {
         var document = new XDocument(source);
@@ -37,10 +58,10 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             var slot = TaggedTemplateBinding.Tag("slot:" + role);
             var paragraphs = range.SelectMany(p => p.DescendantsAndSelf("P")).ToArray();
             var slots = paragraphs.Where(p => TaggedTemplateBinding.DirectText(p) == slot).ToArray();
-            if (slots.Length != 1 || paragraphs.Any(p => p != slots[0] && TaggedTemplateBinding.DirectText(p).Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal)))
-                throw new InvalidDataException($"{role} block requires one standalone slot:{role} paragraph, including inside a table or text box, and no nested declarations.");
-            if (slots[0].Elements().Any(e => e.Name.LocalName != "TEXT") ||
-                slots[0].Elements().SelectMany(e => e.Elements()).Any(e => e.Name.LocalName != "CHAR" || e.HasElements))
+            if (slots.Length == 0 || paragraphs.Any(p => !slots.Contains(p) && TaggedTemplateBinding.DirectText(p).Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal)))
+                throw new InvalidDataException($"{role} block requires at least one standalone slot:{role} paragraph and no other nested declarations.");
+            if (slots.Any(p => p.Elements().Any(e => e.Name.LocalName != "TEXT") ||
+                p.Elements().SelectMany(e => e.Elements()).Any(e => e.Name.LocalName != "CHAR" || e.HasElements)))
                 throw new InvalidDataException($"slot:{role} must be its own text paragraph; place controls in adjacent paragraphs.");
             samples.Add(role, range.Select(p => new XElement(p)).ToArray());
             var declaration = new XElement(slots[0]);
@@ -56,6 +77,8 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
     // Native figure captions are already attached: each operation now owns one root.
     internal XDocument Attach(XDocument rendered, IrPreviewPlan plan, int start)
     {
+        titleHeightElements.Clear();
+        var reflow = new HashSet<XElement>();
         var result = new XDocument(rendered);
         var roots = AuriMinimalBoxPrototype.RootParagraphs(result).ToArray();
         for (var index = 0; index < plan.Operations.Count; index++)
@@ -65,12 +88,23 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             var generated = roots[start + index];
             var slot = TaggedTemplateBinding.Tag("slot:" + operation.ParagraphStyle);
             var block = sample.Select(p => ImportParagraph(p, source, result)).ToArray();
-            var target = block.SelectMany(p => p.DescendantsAndSelf("P")).Single(p => TaggedTemplateBinding.DirectText(p) == slot);
-            target.ReplaceNodes(generated.Nodes().Select(n => n is XElement e ? new XElement(e) : throw new InvalidDataException("Unexpected heading node.")));
+            var targets = block.SelectMany(p => p.DescendantsAndSelf("P")).Where(p => TaggedTemplateBinding.DirectText(p) == slot).ToArray();
+            foreach (var target in targets)
+            {
+                foreach (var table in target.Ancestors("TABLE"))
+                {
+                    foreach (var size in table.Elements("SHAPEOBJECT").Elements("SIZE")) reflow.Add(size);
+                    foreach (var cell in table.Elements("ROW").Elements("CELL")) reflow.Add(cell);
+                }
+                target.ReplaceNodes(generated.Nodes().Select(n => n is XElement e ? new XElement(e) : throw new InvalidDataException("Unexpected heading node.")));
+            }
             generated.ReplaceWith(block);
         }
         if (samples.Values.SelectMany(p => p).SelectMany(p => p.Descendants("NEWNUM"))
             .Any(e => (string?)e.Attribute("NumberType") == "Figure")) RecalculateFigureNumbers(result);
+        foreach (var element in reflow)
+            titleHeightElements.Add("/" + string.Join("/", element.AncestorsAndSelf().Reverse()
+                .Select(e => $"{e.Name.LocalName}[{e.ElementsBeforeSelf(e.Name).Count() + 1}]")));
         return result;
     }
 

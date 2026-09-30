@@ -93,12 +93,12 @@ internal static partial class HancomPreviewWriter
                     prefix.SelectMany(p => p.Descendants()).Count(e => e.Name.LocalName == "AUTONUM" && (string?)e.Attribute("NumberType") == "Figure") + plan.Summary.FigureOperations)
                     throw new InvalidOperationException("Unexpected generated caption count.");
                 var attached = headings.Layout.Attach(nativeFigure.Layout.Attach(finalDocument, plan, start), plan, start);
-                ImportFigureDocument(hwp, attached);
+                ImportFigureDocument(hwp, attached, headings.Layout);
                 if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
                     throw new InvalidOperationException("Could not save native figure captions.");
                 CloseDocument(hwp); Open(hwp, temporary, visible);
                 var nativeSaved = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
-                RequireFigureDocument(attached, nativeSaved);
+                RequireFigureDocument(attached, nativeSaved, headings.Layout, reportLayout: true);
                 return true;
             });
             if (HashFile(source) != hash) throw new InvalidOperationException("Source template changed.");
@@ -108,16 +108,19 @@ internal static partial class HancomPreviewWriter
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
 
-    private static void ImportFigureDocument(dynamic hwp, XDocument document)
+    private static void ImportFigureDocument(dynamic hwp, XDocument document, TemplateHeadingBlocks? headings = null)
     {
         _ = hwp.Clear(1);
         object imported = hwp.SetTextFile("<?xml version=\"1.0\" encoding=\"UTF-16\" standalone=\"no\"?>" + document.ToString(SaveOptions.DisableFormatting), "HWPML2X", "");
         if (imported is not int status || status != 1) throw new InvalidOperationException("Could not import native figure caption structure.");
-        RequireFigureDocument(document, HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", "")));
+        RequireFigureDocument(document, HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", "")), headings);
     }
 
-    private static void RequireFigureDocument(XDocument expected, XDocument actual)
+    private static void RequireFigureDocument(XDocument expected, XDocument actual, TemplateHeadingBlocks? headings = null, bool reportLayout = false)
     {
+        expected = new XDocument(expected);
+        actual = new XDocument(actual);
+        headings?.NormalizeTitleLayout(expected, actual, reportLayout);
         // Hancom adds identity scale/rotation pairs during HWPML import.
         // Ignore only mathematically neutral matrices in comparison copies.
         expected = NormalizeFigureMatrices(expected);
