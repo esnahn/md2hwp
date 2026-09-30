@@ -215,7 +215,7 @@ internal static partial class HancomPreviewWriter
         var figureWidth = Math.Min(142, width * 25.4 / 7200).ToString("0.###", CultureInfo.InvariantCulture);
         foreach (var role in roles.Where(r => r == "body" || r.StartsWith("heading.", StringComparison.Ordinal) || r == "reset"))
             roots.Add(Declaration(role, role));
-        roots.Add(TextParagraph("body", "헤딩을 여러 문단으로 구성하려면 해당 heading.N 선언을 begin:heading.N … slot:heading.N … end:heading.N 범위로 바꾸세요. 각 이름을 {{ 및 md2hwp: 및 }}로 감싸고, 경계와 제목 슬롯은 각각 독립 문단에 둡니다. N은 1~6이며 같은 수준에 두 방식을 함께 쓰지 않습니다. 블록에 표·글상자·묶음 도형·쪽 나눔과 머리말·감추기·새 번호 제어를 함께 둘 수 있습니다. 제목 슬롯은 표 셀·글상자 안의 독립 문단에도 놓을 수 있습니다."));
+        roots.Add(TextParagraph("body", "헤딩을 여러 문단으로 구성하려면 해당 heading.N 선언을 begin:heading.N … slot:heading.N … end:heading.N 범위로 바꾸세요. 각 이름을 {{ 및 md2hwp: 및 }}로 감싸고, 경계와 제목 슬롯은 각각 독립 문단에 둡니다. N은 1~6이며 같은 수준에 두 방식을 함께 쓰지 않습니다. 블록에 표·글상자·묶음 도형·쪽 나눔과 머리말·감추기·새 번호 제어를 함께 둘 수 있습니다. 제목 슬롯은 표 셀·글상자·머리말·꼬리말 안의 독립 문단에도 놓을 수 있고, 여러 개 두면 같은 제목으로 채웁니다."));
         roots.AddRange(new[] { Declaration("list.max-depth:6"),
             Declaration("list.indent-hwp:1000") });
         foreach (var kind in new[] { "bullet", "ordered" })
