@@ -573,7 +573,7 @@ internal sealed class AuriMinimalBoxPrototype
 
     private static string StableXml(XElement element)
     {
-        var clone = new XElement(element);
+        var clone = TemplateFormatting.Copy(element);
         // HWP 2020 regenerates these native instance-order attributes during
         // insertion. Box-only auto-layout fields are normalized separately so
         // non-box roots still receive the stricter comparison.
@@ -591,7 +591,7 @@ internal sealed class AuriMinimalBoxPrototype
         XElement root,
         AuriPreviewStyleBindings styles, bool omitSource = false)
     {
-        var clone = new XElement(root);
+        var clone = TemplateFormatting.Copy(root);
         if (!TryReadParts(clone, styles, requirePrototypeLineBreak: false, out var parts))
         {
             throw new InvalidOperationException(
@@ -623,7 +623,7 @@ internal sealed class AuriMinimalBoxPrototype
 
     private static string StableBoxCloneXml(XElement element)
     {
-        var clone = new XElement(element);
+        var clone = TemplateFormatting.Copy(element);
         // These two box-layout values are recalculated from current content.
         // Width, borders, cell properties, styles, and source text remain exact.
         foreach (var attribute in clone.DescendantsAndSelf()

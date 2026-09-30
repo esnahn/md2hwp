@@ -15,7 +15,7 @@ internal sealed record TemplateSource(XElement Paragraph, string Slot, string Pr
         var parts = text.Split(slot, StringSplitOptions.None);
         if (parts.Length != 2 || (parts[0] + parts[1]).Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal))
             throw new InvalidDataException("Source requires exactly one content slot and no other declarations.");
-        return new(new XElement(paragraph), slot, parts[0], parts[1]);
+        return new(TemplateFormatting.Copy(paragraph), slot, parts[0], parts[1]);
     }
 
     public void Verify(XElement paragraph, string content)
@@ -24,9 +24,10 @@ internal sealed record TemplateSource(XElement Paragraph, string Slot, string Pr
             paragraph.Elements().Any(e => e.Name.LocalName != "TEXT") ||
             paragraph.Elements().SelectMany(e => e.Elements()).Any(e => e.Name.LocalName != "CHAR" || e.HasElements))
             throw new InvalidOperationException("Source paragraph differs from its template and IR content.");
+        paragraph = TemplateFormatting.Copy(paragraph);
         foreach (var attribute in Paragraph.Attributes().Where(a => a.Name.LocalName is not "InstId"))
             if ((string?)paragraph.Attribute(attribute.Name) != attribute.Value)
-                throw new InvalidOperationException($"Source paragraph lost template attribute {attribute.Name}: expected {attribute.Value}, got {paragraph.Attribute(attribute.Name)?.Value}.");
+                throw new InvalidOperationException($"Source paragraph differs from template in {attribute.Name} (formatting references are compared by value).");
     }
 }
 

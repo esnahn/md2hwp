@@ -427,7 +427,7 @@ internal sealed class AuriMinimalCaptionPrototype
         XElement root,
         AuriPreviewStyleBindings styles)
     {
-        var clone = new XElement(root);
+        var clone = TemplateFormatting.Copy(root);
         // InsertFile makes HWP 2020 materialize a just-inserted picture's
         // previously-zero rotation centre. The picture geometry and transform
         // remain unchanged, so exclude only this lazy derived pair while
@@ -443,7 +443,7 @@ internal sealed class AuriMinimalCaptionPrototype
 
     private static string StableCaptionContentXml(XElement root)
     {
-        var clone = new XElement(root);
+        var clone = TemplateFormatting.Copy(root);
         foreach (var autoNumber in clone.Descendants()
                      .Where(element => element.Name.LocalName == "AUTONUM"))
         {
@@ -458,7 +458,7 @@ internal sealed class AuriMinimalCaptionPrototype
         XElement root,
         AuriPreviewStyleBindings styles)
     {
-        var clone = new XElement(root);
+        var clone = TemplateFormatting.Copy(root);
         if (!TryReadParts(clone, styles, requirePrototypeCaption: false, out var parts))
         {
             throw new InvalidOperationException(
@@ -475,7 +475,7 @@ internal sealed class AuriMinimalCaptionPrototype
 
     private static string StableXml(XElement element)
     {
-        var clone = new XElement(element);
+        var clone = TemplateFormatting.Copy(element);
         foreach (var attribute in clone.DescendantsAndSelf()
                      .Attributes()
                      .Where(attribute => attribute.Name.LocalName is "InstId" or "ZOrder")

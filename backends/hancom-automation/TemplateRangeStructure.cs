@@ -17,28 +17,8 @@ internal static class TemplateRangeStructure
 
     public static bool Equivalent(IReadOnlyList<XElement> before, IReadOnlyList<XElement> after,
         XDocument beforeDocument, XDocument afterDocument) =>
-        Equivalent(ResolveBorderFills(before, beforeDocument), ResolveBorderFills(after, afterDocument));
-
-    private static XElement[] ResolveBorderFills(IReadOnlyList<XElement> roots, XDocument document)
-    {
-        var definitions = document.Descendants().Where(e => e.Name.LocalName == "BORDERFILL")
-            .ToDictionary(e => e.Attribute("Id")!.Value, e => e);
-        var copies = roots.Select(root => new XElement(root)).ToArray();
-        foreach (var attribute in copies.SelectMany(root => root.DescendantsAndSelf()).Attributes()
-                     .Where(a => a.Name.LocalName is "BorderFill" or "BorferFill"))
-        {
-            if (!definitions.TryGetValue(attribute.Value, out var definition))
-            {
-                if (attribute.Value == "0") continue;
-                throw new InvalidOperationException($"Unknown border-fill reference {attribute.Value}.");
-            }
-            var normalized = new XElement(definition);
-            normalized.Attribute("Id")!.Remove();
-            // Comparison-only dereference, never written back to an HWP file.
-            attribute.Value = normalized.ToString(SaveOptions.DisableFormatting);
-        }
-        return copies;
-    }
+        Equivalent(before.Select(p => TemplateFormatting.Copy(p, beforeDocument)).ToArray(),
+            after.Select(p => TemplateFormatting.Copy(p, afterDocument)).ToArray());
 
     private static XElement[] Canonicalize(IReadOnlyList<XElement> roots)
     {
@@ -75,22 +55,15 @@ internal static class TemplateRangeStructure
     public static void RequireOriginalStyleDefinitions(XDocument before, XDocument after,
         IReadOnlyList<XElement>? preservedRoots = null)
     {
-        var styles = before.Descendants().Where(e => e.Name.LocalName == "STYLE").ToArray();
-        var preserved = (preservedRoots ?? []).SelectMany(e => e.DescendantsAndSelf()).ToArray();
-        foreach (var name in new[] { "STYLE", "CHARSHAPE", "PARASHAPE" })
+        // Named style identity remains stable; its formatting references need not.
+        // Retained paragraphs are checked separately through Equivalent.
+        var current = after.Descendants("STYLE").ToDictionary(e => (string)e.Attribute("Id")!);
+        foreach (var original in before.Descendants("STYLE"))
         {
-            var current = after.Descendants().Where(e => e.Name.LocalName == name)
-                .ToDictionary(e => e.Attribute("Id")!.Value, e => e);
-            var reference = name == "CHARSHAPE" ? "CharShape" : "ParaShape";
-            var required = styles.Concat(preserved).Select(e => (string?)e.Attribute(reference))
-                .OfType<string>().ToHashSet(StringComparer.Ordinal);
-            // Unused direct-format variants owned solely by removed samples may
-            // be discarded/reused by Hancom. Preserve every named style and all
-            // definitions referenced by it or by retained template content.
-            foreach (var original in before.Descendants().Where(e => e.Name.LocalName == name &&
-                         (name == "STYLE" || required.Contains(e.Attribute("Id")!.Value))))
-                if (!current.TryGetValue(original.Attribute("Id")!.Value, out var saved) || !XNode.DeepEquals(original, saved))
-                    throw new InvalidOperationException($"Original {name} definition changed: {original.Attribute("Id")?.Value}.");
+            var id = (string)original.Attribute("Id")!;
+            if (!current.TryGetValue(id, out var saved) ||
+                !XNode.DeepEquals(TemplateFormatting.Copy(original, before), TemplateFormatting.Copy(saved, after)))
+                throw new InvalidOperationException($"Original style formatting changed: {(string?)original.Attribute("Name")} ({id}).");
         }
     }
 }
