@@ -14,7 +14,7 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
 
     public static TaggedTemplateBinding Read(XDocument document, string templatePath)
     {
-        return ReadFlat(NativeFigureCaption.Lower(document).Document, templatePath);
+        return ReadFlat(NativeFigureCaption.Lower(TemplateHeadingBlocks.Lower(document).Document).Document, templatePath);
     }
 
     internal static TaggedTemplateBinding ReadFlat(XDocument document, string templatePath)

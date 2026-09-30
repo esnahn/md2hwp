@@ -23,7 +23,8 @@ internal static partial class HancomPreviewWriter
             {
                 Open(hwp, temporary, visible);
                 XDocument document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
-                var nativeFigure = NativeFigureCaption.Lower(document);
+                var headings = TemplateHeadingBlocks.Lower(document);
+                var nativeFigure = NativeFigureCaption.Lower(headings.Document);
                 _ = TaggedTemplateBinding.ReadFlat(nativeFigure.Document, temporary);
                 ImportFigureDocument(hwp, nativeFigure.Document);
                 document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
@@ -91,7 +92,7 @@ internal static partial class HancomPreviewWriter
                 if (finalRoots.SelectMany(p => p.Descendants()).Count(e => e.Name.LocalName == "AUTONUM" && (string?)e.Attribute("NumberType") == "Figure") !=
                     prefix.SelectMany(p => p.Descendants()).Count(e => e.Name.LocalName == "AUTONUM" && (string?)e.Attribute("NumberType") == "Figure") + plan.Summary.FigureOperations)
                     throw new InvalidOperationException("Unexpected generated caption count.");
-                var attached = nativeFigure.Layout.Attach(finalDocument, plan, start);
+                var attached = headings.Layout.Attach(nativeFigure.Layout.Attach(finalDocument, plan, start), plan, start);
                 ImportFigureDocument(hwp, attached);
                 if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
                     throw new InvalidOperationException("Could not save native figure captions.");
