@@ -37,6 +37,14 @@ internal static class TemplateRangeStructure
             .ToDictionary(pair => pair.value, pair => pair.rank);
         for (var i = 0; i < orders.Length; i++)
             orders[i].Value = ranks[values[i]].ToString(CultureInfo.InvariantCulture);
+        // XML attribute order is not formatting. Newly assigned break flags may
+        // be written in Hancom's canonical order on import/save.
+        foreach (var element in copies.SelectMany(p => p.DescendantsAndSelf()))
+        {
+            var attributes = element.Attributes().OrderBy(a => a.Name.ToString(), StringComparer.Ordinal)
+                .Select(a => new XAttribute(a)).ToArray();
+            element.ReplaceAttributes(attributes);
+        }
         return copies;
     }
 
