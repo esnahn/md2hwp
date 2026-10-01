@@ -32,6 +32,29 @@ Native list.bullet/list.ordered sample paragraphs own bullet and per-level numbe
 formats; manuscript start numbers and existing depth indentation remain authoritative.
 Verbatim blocks may carry sources. Generated tables, HWPX and RST input are deferred.
 
+## Template editing and release continuity
+
+Users may edit target/release/template.hwp directly. It can differ from the tracked
+templates/template.hwp; never assume the tracked copy contains their latest work.
+Before running build.ps1, compare the files and preserve any edited deployment
+template outside the build destination, restoring it afterward and verifying its
+hash. The build copies the tracked template into the deployment directory.
+Update the tracked default only when the user authorizes adopting the edited copy.
+
+Align release major/minor versions with the IR version (IR 0.2 corresponds to
+v0.2.0). A Git tag alone does not update application/package version metadata or
+README version labels; check their consistency when preparing a release.
+
+Chapter start numbers, chapter-number tracking and document-title substitution
+are deferred to a subsequent IR change. Until implemented explicitly, chapter
+markers such as # in covers and figure captions remain literal template text.
+Native page/figure/table restart controls are separate from chapter-number tracking.
+
+Fixed-size text boxes can overflow when titles or child-heading lists grow.
+Structural save/reopen checks do not detect visual clipping or overlap. Inspect
+representative rendered pages; do not claim layout safety from structural checks
+alone. Title-table height changes are reported separately from structural loss.
+
 ## Dependencies
 
 Pinned Rust and .NET SDK settings remain authoritative. Use the repository-local
