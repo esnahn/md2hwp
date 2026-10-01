@@ -7,6 +7,7 @@ namespace Md2Hwp.HancomIrPreview;
 internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string, XElement[]> samples)
 {
     private readonly HashSet<string> titleHeightElements = [];
+    private readonly HashSet<string> pageBreakAfter = [];
 
     // Only containers enclosing a replaced title may reflow. All other geometry
     // and all content/formatting remain part of the strict structural comparison.
@@ -30,6 +31,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
     {
         var document = new XDocument(source);
         var samples = new Dictionary<string, XElement[]>(StringComparer.Ordinal);
+        var pageBreakAfter = new HashSet<string>();
         for (var level = 1; level <= 6; level++)
         {
             var role = $"heading.{level}";
@@ -63,7 +65,10 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             if (slots.Any(p => p.Elements().Any(e => e.Name.LocalName != "TEXT") ||
                 p.Elements().SelectMany(e => e.Elements()).Any(e => e.Name.LocalName != "CHAR" || e.HasElements)))
                 throw new InvalidDataException($"slot:{role} must be its own text paragraph; place controls in adjacent paragraphs.");
-            samples.Add(role, range.Select(p => new XElement(p)).ToArray());
+            var prototype = range.Select(p => new XElement(p)).ToArray();
+            if ((string?)begin[0].Attribute("PageBreak") == "true") SetPageBreak(prototype[0]);
+            if ((string?)end[0].Attribute("PageBreak") == "true") pageBreakAfter.Add(role);
+            samples.Add(role, prototype);
             var declaration = new XElement(slots[0]);
             declaration.ReplaceNodes(new XElement("TEXT", new XAttribute("CharShape", (string?)slots[0].Element("TEXT")?.Attribute("CharShape") ?? "0"),
                 new XElement("CHAR", TaggedTemplateBinding.Tag(role))));
@@ -71,7 +76,9 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             foreach (var paragraph in range) paragraph.Remove();
             end[0].Remove();
         }
-        return (new(new XDocument(source), samples), document);
+        var layout = new TemplateHeadingBlocks(new XDocument(source), samples);
+        layout.pageBreakAfter.UnionWith(pageBreakAfter);
+        return (layout, document);
     }
 
     // Native figure captions are already attached: each operation now owns one root.
@@ -88,6 +95,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             var generated = roots[start + index];
             var slot = TaggedTemplateBinding.Tag("slot:" + operation.ParagraphStyle);
             var block = sample.Select(p => ImportParagraph(p, source, result)).ToArray();
+            if ((string?)generated.Attribute("PageBreak") == "true") SetPageBreak(block[0]);
             var targets = block.SelectMany(p => p.DescendantsAndSelf("P")).Where(p => TaggedTemplateBinding.DirectText(p) == slot).ToArray();
             foreach (var target in targets)
             {
@@ -96,9 +104,11 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
                     foreach (var size in table.Elements("SHAPEOBJECT").Elements("SIZE")) reflow.Add(size);
                     foreach (var cell in table.Elements("ROW").Elements("CELL")) reflow.Add(cell);
                 }
-                target.ReplaceNodes(generated.Nodes().Select(n => n is XElement e ? new XElement(e) : throw new InvalidDataException("Unexpected heading node.")));
+                FillTitle(target, operation, result);
             }
             generated.ReplaceWith(block);
+            if (pageBreakAfter.Contains(operation.ParagraphStyle) && start + index + 1 < roots.Length)
+                SetPageBreak(roots[start + index + 1]);
         }
         if (samples.Values.SelectMany(p => p).SelectMany(p => p.Descendants("NEWNUM"))
             .Any(e => (string?)e.Attribute("NumberType") == "Figure")) RecalculateFigureNumbers(result);
@@ -106,6 +116,41 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             titleHeightElements.Add("/" + string.Join("/", element.AncestorsAndSelf().Reverse()
                 .Select(e => $"{e.Name.LocalName}[{e.ElementsBeforeSelf(e.Name).Count() + 1}]")));
         return result;
+    }
+
+    private static void SetPageBreak(XElement paragraph)
+    {
+        paragraph.SetAttributeValue("PageBreak", "true");
+        if (paragraph.Attribute("ColumnBreak") is null) paragraph.SetAttributeValue("ColumnBreak", "false");
+    }
+
+    private static void FillTitle(XElement target, PreviewOperation operation, XDocument document)
+    {
+        var id = (string?)target.Elements("TEXT").FirstOrDefault(t => t.Elements("CHAR").Any(c => c.Value.Length > 0))?.Attribute("CharShape")
+            ?? throw new InvalidDataException("Heading slot has no character format.");
+        var baseline = document.Descendants("CHARSHAPE").Single(c => (string?)c.Attribute("Id") == id);
+        var table = baseline.Parent!;
+        var runs = operation.FormattedLines?.Single() ?? [new PreviewTextRun(operation.Lines.Single(), false, false)];
+        var texts = new List<XElement>();
+        foreach (var run in runs)
+        {
+            var shape = new XElement(baseline);
+            shape.Attribute("Id")!.Remove();
+            if (run.Strong && shape.Element("BOLD") is null) shape.Add(new XElement("BOLD"));
+            if (run.Emphasis && shape.Element("ITALIC") is null) shape.Add(new XElement("ITALIC"));
+            var match = table.Elements("CHARSHAPE").FirstOrDefault(c =>
+            {
+                var key = new XElement(c); key.Attribute("Id")?.Remove();
+                return XNode.DeepEquals(key, shape);
+            });
+            if (match is null)
+            {
+                shape.SetAttributeValue("Id", table.Elements("CHARSHAPE").Max(c => (int)c.Attribute("Id")!) + 1);
+                table.Add(shape); table.SetAttributeValue("Count", table.Elements().Count()); match = shape;
+            }
+            texts.Add(new XElement("TEXT", new XAttribute("CharShape", (string)match.Attribute("Id")!), new XElement("CHAR", run.Text)));
+        }
+        target.ReplaceNodes(texts);
     }
 
     // NEWNUM is retained verbatim. Update only the calculated Figure AUTONUM
