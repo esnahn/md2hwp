@@ -57,16 +57,9 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
                 throw new InvalidDataException($"{role} supports page breaks, but not section/column definitions inside its block.");
             if (range.SelectMany(p => p.Descendants()).Any(e => e.Name.LocalName is "PICTURE" or "OLE" or "VIDEO"))
                 throw new InvalidDataException($"{role} embedded pictures, OLE and video are not supported; tables, drawing text and grouped shapes are supported.");
-            var slot = TaggedTemplateBinding.Tag("slot:" + role);
             var checkedRange = range.Select(p => new XElement(p)).ToArray();
             TemplateOnceRanges.Apply(checkedRange, first: true);
-            var paragraphs = checkedRange.SelectMany(p => p.DescendantsAndSelf("P")).ToArray();
-            var slots = paragraphs.Where(p => TaggedTemplateBinding.DirectText(p) == slot).ToArray();
-            if (slots.Length == 0 || paragraphs.Any(p => !slots.Contains(p) && TaggedTemplateBinding.DirectText(p).Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal)))
-                throw new InvalidDataException($"{role} block requires at least one standalone slot:{role} paragraph and no other nested declarations.");
-            if (slots.Any(p => p.Elements().Any(e => e.Name.LocalName != "TEXT") ||
-                p.Elements().SelectMany(e => e.Elements()).Any(e => e.Name.LocalName != "CHAR" || e.HasElements)))
-                throw new InvalidDataException($"slot:{role} must be its own text paragraph; place controls in adjacent paragraphs.");
+            var slots = TemplateHeadingEach.Validate(checkedRange, level);
             var prototype = range.Select(p => new XElement(p)).ToArray();
             if ((string?)begin[0].Attribute("PageBreak") == "true") SetPageBreak(prototype[0]);
             if ((string?)end[0].Attribute("PageBreak") == "true") pageBreakAfter.Add(role);
@@ -96,20 +89,30 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             var operation = plan.Operations[index];
             if (operation.Kind != "text" || operation.ParagraphStyle is null || !samples.TryGetValue(operation.ParagraphStyle, out var sample)) continue;
             var generated = roots[start + index];
-            var slot = TaggedTemplateBinding.Tag("slot:" + operation.ParagraphStyle);
             var instance = sample.Select(p => new XElement(p)).ToArray();
             TemplateOnceRanges.Apply(instance, usedRoles.Add(operation.ParagraphStyle));
             var block = instance.Select(p => ImportParagraph(p, source, result)).ToArray();
             if ((string?)generated.Attribute("PageBreak") == "true") SetPageBreak(block[0]);
-            var targets = block.SelectMany(p => p.DescendantsAndSelf("P")).Where(p => TaggedTemplateBinding.DirectText(p) == slot).ToArray();
-            foreach (var target in targets)
-            {
-                foreach (var table in target.Ancestors("TABLE"))
+            block = TemplateHeadingEach.Expand(block, int.Parse(operation.ParagraphStyle[8..]), index, plan,
+                (target, title, ordinal) =>
                 {
-                    foreach (var size in table.Elements("SHAPEOBJECT").Elements("SIZE")) reflow.Add(size);
-                    foreach (var cell in table.Elements("ROW").Elements("CELL")) reflow.Add(cell);
-                }
-                FillTitle(target, operation, result);
+                    target.AddAnnotation(title);
+                    FillTitle(target, title, result);
+                    if (ordinal > 0) SetRepeatedNumber(target, ordinal, result);
+                });
+            foreach (var target in block.SelectMany(p => p.DescendantsAndSelf("P")).Where(p => p.Annotation<PreviewOperation>() is not null))
+            foreach (var table in target.Ancestors("TABLE"))
+            {
+                foreach (var size in table.Elements("SHAPEOBJECT").Elements("SIZE")) reflow.Add(size);
+                foreach (var cell in table.Elements("ROW").Elements("CELL")) reflow.Add(cell);
+            }
+            // Repetition duplicates object identities; assign fresh ids to all clones.
+            var identities = result.Descendants().Attributes().Where(a => a.Name.LocalName is "InstId" or "InstID").Select(a => a.Value).ToHashSet();
+            foreach (var attribute in block.SelectMany(p => p.DescendantsAndSelf()).Attributes().Where(a => a.Name.LocalName is "InstId" or "InstID"))
+            {
+                string id;
+                do { id = BitConverter.ToUInt32(Guid.NewGuid().ToByteArray(), 0).ToString(System.Globalization.CultureInfo.InvariantCulture); } while (!identities.Add(id));
+                attribute.Value = id;
             }
             generated.ReplaceWith(block);
             if (pageBreakAfter.Contains(operation.ParagraphStyle) && start + index + 1 < roots.Length)
@@ -121,6 +124,25 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             titleHeightElements.Add("/" + string.Join("/", element.AncestorsAndSelf().Reverse()
                 .Select(e => $"{e.Name.LocalName}[{e.ElementsBeforeSelf(e.Name).Count() + 1}]")));
         return result;
+    }
+
+    private static void SetRepeatedNumber(XElement paragraph, int number, XDocument document)
+    {
+        var shape = document.Descendants("PARASHAPE").Single(e => (string?)e.Attribute("Id") == (string?)paragraph.Attribute("ParaShape"));
+        if ((string?)shape.Attribute("HeadingType") != "Number") return;
+        var numbering = new XElement(document.Descendants("NUMBERING").Single(e => (string?)e.Attribute("Id") == (string?)shape.Attribute("Heading")));
+        numbering.SetAttributeValue("Start", number);
+        var level = (int?)shape.Attribute("Level") ?? 0;
+        numbering.Elements("PARAHEAD").Single(e => (int?)e.Attribute("Level") == level + 1).SetAttributeValue("Start", number);
+        string Add(XElement definition, XElement table)
+        {
+            definition.SetAttributeValue("Id", table.Elements(definition.Name).Max(e => (int)e.Attribute("Id")!) + 1);
+            table.Add(definition); table.SetAttributeValue("Count", table.Elements().Count());
+            return (string)definition.Attribute("Id")!;
+        }
+        var numberId = Add(numbering, document.Descendants("NUMBERING").First().Parent!);
+        var copy = new XElement(shape); copy.SetAttributeValue("Heading", numberId);
+        paragraph.SetAttributeValue("ParaShape", Add(copy, shape.Parent!));
     }
 
     private static void SetPageBreak(XElement paragraph)
