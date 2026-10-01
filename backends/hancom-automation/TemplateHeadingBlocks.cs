@@ -58,7 +58,9 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             if (range.SelectMany(p => p.Descendants()).Any(e => e.Name.LocalName is "PICTURE" or "OLE" or "VIDEO"))
                 throw new InvalidDataException($"{role} embedded pictures, OLE and video are not supported; tables, drawing text and grouped shapes are supported.");
             var slot = TaggedTemplateBinding.Tag("slot:" + role);
-            var paragraphs = range.SelectMany(p => p.DescendantsAndSelf("P")).ToArray();
+            var checkedRange = range.Select(p => new XElement(p)).ToArray();
+            TemplateOnceRanges.Apply(checkedRange, first: true);
+            var paragraphs = checkedRange.SelectMany(p => p.DescendantsAndSelf("P")).ToArray();
             var slots = paragraphs.Where(p => TaggedTemplateBinding.DirectText(p) == slot).ToArray();
             if (slots.Length == 0 || paragraphs.Any(p => !slots.Contains(p) && TaggedTemplateBinding.DirectText(p).Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal)))
                 throw new InvalidDataException($"{role} block requires at least one standalone slot:{role} paragraph and no other nested declarations.");
@@ -86,6 +88,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
     {
         titleHeightElements.Clear();
         var reflow = new HashSet<XElement>();
+        var usedRoles = new HashSet<string>(StringComparer.Ordinal);
         var result = new XDocument(rendered);
         var roots = AuriMinimalBoxPrototype.RootParagraphs(result).ToArray();
         for (var index = 0; index < plan.Operations.Count; index++)
@@ -94,7 +97,9 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             if (operation.Kind != "text" || operation.ParagraphStyle is null || !samples.TryGetValue(operation.ParagraphStyle, out var sample)) continue;
             var generated = roots[start + index];
             var slot = TaggedTemplateBinding.Tag("slot:" + operation.ParagraphStyle);
-            var block = sample.Select(p => ImportParagraph(p, source, result)).ToArray();
+            var instance = sample.Select(p => new XElement(p)).ToArray();
+            TemplateOnceRanges.Apply(instance, usedRoles.Add(operation.ParagraphStyle));
+            var block = instance.Select(p => ImportParagraph(p, source, result)).ToArray();
             if ((string?)generated.Attribute("PageBreak") == "true") SetPageBreak(block[0]);
             var targets = block.SelectMany(p => p.DescendantsAndSelf("P")).Where(p => TaggedTemplateBinding.DirectText(p) == slot).ToArray();
             foreach (var target in targets)
