@@ -1,7 +1,7 @@
 //! Repository investigation launcher; the C# worker remains a separate process.
 use std::{env, ffi::OsString, fs, path::PathBuf, process::Command};
 
-const INSTALL: &str = ".NET 10 런타임(x64)이 필요합니다.\n공식 페이지에서 .NET Runtime → Windows → x64를 설치한 뒤 다시 실행하세요.\nhttps://dotnet.microsoft.com/ko-kr/download/dotnet/10.0\nSDK는 필요하지 않습니다. 설치 위치가 별도라면 --dotnet <dotnet.exe>를 지정하세요.";
+const INSTALL: &str = ".NET 10 런타임(x64)이 필요합니다.\n공식 페이지에서 콘솔 앱용 .NET Runtime → Windows → x64를 설치한 뒤 다시 실행하세요.\nhttps://dotnet.microsoft.com/ko-kr/download/dotnet/10.0\nSDK는 필요하지 않습니다. 설치 위치가 별도라면 --dotnet <dotnet.exe>를 지정하세요.";
 
 fn compatible_runtime(list: &str) -> bool {
     list.lines().any(|line| {
