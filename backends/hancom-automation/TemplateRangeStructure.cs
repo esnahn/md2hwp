@@ -23,6 +23,11 @@ internal static class TemplateRangeStructure
     private static XElement[] Canonicalize(IReadOnlyList<XElement> roots)
     {
         var copies = roots.Select(root => new XElement(root)).ToArray();
+        // Hancom adds/removes empty character payloads in control-only and empty
+        // paragraphs. Preserve TEXT formatting, all whitespace and actual text.
+        copies.SelectMany(p => p.Descendants("CHAR"))
+            .Where(c => c.Parent?.Name.LocalName == "TEXT" && !c.HasAttributes && !c.HasElements && c.Value.Length == 0)
+            .Remove();
         // Hancom assigns fresh identities to pasted drawing objects and their
         // grouped components. Their geometry, content and stacking are checked.
         foreach (var attribute in copies.SelectMany(p => p.DescendantsAndSelf())
