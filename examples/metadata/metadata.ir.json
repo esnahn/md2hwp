@@ -1,0 +1,125 @@
+{
+  "schema": "md2hwp.ir",
+  "ir_version": "0.3",
+  "metadata": {
+    "author": [
+      "홍길동",
+      "김연구"
+    ],
+    "date": "2026년 1월 2일",
+    "date-meta": "2026-01-02",
+    "md2hwp-literal": "{{md2hwp:meta:title}}",
+    "md2hwp-report-number": "기본 2026-01",
+    "publisher": "건축공간연구원",
+    "subtitle": "메타데이터 검증 원고",
+    "title": "도시 공간 연구"
+  },
+  "blocks": [
+    {
+      "type": "heading",
+      "level": 1,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "첫"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "번째"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "장"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "본문입니다."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "첫"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "번째"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "절"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "본문입니다."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "두"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "번째"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "절"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "다음"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "본문입니다."
+        }
+      ]
+    }
+  ]
+}
