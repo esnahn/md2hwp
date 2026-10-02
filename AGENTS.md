@@ -14,6 +14,9 @@ were removed by this cleanup; do not claim they still exist or have passed.
 Rust application: apps/md2hwp. Shared semantic core: crates/md2hwp-core.
 C# backend: backends/hancom-automation/Md2Hwp.Backend.csproj.
 Template: templates/template.hwp. Build outputs: target/, bin/, obj/ (ignored).
+Use target/debug and target/release as the primary paths for current development
+builds and execution. target/dist is for versioned deployment archives; do not
+redirect ordinary builds there merely to preserve an older release.
 The JSON fixtures still tracked are included directly by Rust test compilation.
 
 ## Contracts

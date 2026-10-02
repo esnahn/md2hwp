@@ -19,6 +19,7 @@ cargo test --workspace
 
 Release 빌드 결과는 `target/release/`의 다음 세 파일입니다.
 `-Configuration Debug`를 주면 `target/debug/`에 모입니다.
+개발·실행에는 이 두 폴더를 기본으로 사용합니다. 	arget/dist/는 버전별 배포 파일과 ZIP의 보관용입니다.
 
 - `md2hwp.exe`
 - `md2hwp-backend.exe`
