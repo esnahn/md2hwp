@@ -13,6 +13,7 @@ internal static partial class HancomPreviewWriter
         var output = ValidateRenderedOutput(outputPath, source, irPath);
         var hash = HashFile(source);
         if (!File.Exists(irPath)) throw new FileNotFoundException("Missing IR input.", irPath);
+        var metadata = TemplateMetadata.Load(irPath);
         EnsureInteractiveContext(); EnsureNoExistingHwpProcess();
         var module = SecurityModuleRegistration.ReadAndValidate(repositoryRoot);
         var temporary = Path.Combine(Path.GetDirectoryName(output)!, $".tagged-render-{Guid.NewGuid():N}.hwp");
@@ -22,7 +23,8 @@ internal static partial class HancomPreviewWriter
             WithHwp(module, hwp =>
             {
                 Open(hwp, temporary, visible);
-                XDocument document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+                var preparedMetadata = TemplateMetadata.Prepare(HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", "")), metadata);
+                XDocument document = preparedMetadata.Document;
                 var headings = TemplateHeadingBlocks.Lower(document);
                 var nativeFigure = NativeFigureCaption.Lower(headings.Document);
                 _ = TaggedTemplateBinding.ReadFlat(nativeFigure.Document, temporary);
@@ -92,7 +94,7 @@ internal static partial class HancomPreviewWriter
                 if (finalRoots.SelectMany(p => p.Descendants()).Count(e => e.Name.LocalName == "AUTONUM" && (string?)e.Attribute("NumberType") == "Figure") !=
                     prefix.SelectMany(p => p.Descendants()).Count(e => e.Name.LocalName == "AUTONUM" && (string?)e.Attribute("NumberType") == "Figure") + plan.Summary.FigureOperations)
                     throw new InvalidOperationException("Unexpected generated caption count.");
-                var attached = headings.Layout.Attach(nativeFigure.Layout.Attach(finalDocument, plan, start), plan, start);
+                var attached = preparedMetadata.Restore(headings.Layout.Attach(nativeFigure.Layout.Attach(finalDocument, plan, start), plan, start));
                 ImportFigureDocument(hwp, attached, headings.Layout);
                 if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
                     throw new InvalidOperationException("Could not save native figure captions.");
@@ -140,7 +142,7 @@ internal static partial class HancomPreviewWriter
         }
     }
 
-    private static XDocument NormalizeFigureMatrices(XDocument document)
+    internal static XDocument NormalizeFigureMatrices(XDocument document)
     {
         var copy = new XDocument(document);
         // Group children retain original dimensions and transformation matrices;
