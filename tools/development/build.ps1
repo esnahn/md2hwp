@@ -16,8 +16,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Rust build failed.' }
     & (Join-Path $PSHOME 'pwsh.exe') -NoProfile -File (Join-Path $PSScriptRoot 'dotnet.ps1') publish $project --configuration $Configuration -p:PublishProfile=FrameworkDependent
     if ($LASTEXITCODE -ne 0) { throw 'Backend publish failed.' }
-    foreach ($name in @('md2hwp-backend.exe', 'template.hwp')) {
-        Copy-Item -LiteralPath (Join-Path $published $name) -Destination (Join-Path $destination $name) -Force
+    Copy-Item -LiteralPath (Join-Path $published 'md2hwp-backend.exe') -Destination (Join-Path $destination 'md2hwp-backend.exe') -Force
+    $templateDestination = Join-Path $destination 'template.hwp'
+    if (-not (Test-Path -LiteralPath $templateDestination)) {
+        Copy-Item -LiteralPath (Join-Path $published 'template.hwp') -Destination $templateDestination
     }
     Write-Output "Deployment files: $destination (md2hwp.exe, md2hwp-backend.exe, template.hwp)"
 } finally { Pop-Location }
