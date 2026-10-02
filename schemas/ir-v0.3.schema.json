@@ -58,6 +58,11 @@
         "date-meta": {
           "type": "string",
           "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "md2hwp-heading1-start": {
+          "type": "string",
+          "pattern": "^[0-9]+$",
+          "description": "Reserved heading1 start number, from 1 to 2147483647; defaults to 1. Semantic validation checks the range and total chapter count."
         }
       },
       "patternProperties": {

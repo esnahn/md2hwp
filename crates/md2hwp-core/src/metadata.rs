@@ -116,6 +116,7 @@ pub fn validate(metadata: &Metadata) -> Result<(), Error> {
             return Err((path, "Metadata value contains a control character".into()));
         }
     }
+    heading1_start(metadata)?;
     let expected = metadata.text("date").and_then(normalize_date);
     if metadata.text("date-meta") != expected.as_deref() {
         return Err((
@@ -125,6 +126,23 @@ pub fn validate(metadata: &Metadata) -> Result<(), Error> {
         ));
     }
     Ok(())
+}
+
+/// Reserved manuscript setting; other md2hwp-* values remain literal metadata.
+pub fn heading1_start(metadata: &Metadata) -> Result<u32, Error> {
+    let Some(value) = metadata.text("md2hwp-heading1-start") else {
+        return Ok(1);
+    };
+    value
+        .parse::<u32>()
+        .ok()
+        .filter(|n| (1..=i32::MAX as u32).contains(n) && value.bytes().all(|c| c.is_ascii_digit()))
+        .ok_or_else(|| {
+            (
+                "/metadata/md2hwp-heading1-start".into(),
+                "Expected a positive integer from 1 to 2147483647".into(),
+            )
+        })
 }
 
 static DATE_PATTERNS: LazyLock<Vec<Regex>> = LazyLock::new(|| {
@@ -303,5 +321,59 @@ mod tests {
         .unwrap();
         assert_eq!(unknown.text("date"), Some("미정"));
         assert_eq!(unknown.text("date-meta"), None);
+    }
+}
+
+#[cfg(test)]
+mod heading1_tests {
+    use super::*;
+    #[test]
+    fn heading1_count_must_not_overflow() {
+        use crate::ir::{Block, Document, IR_VERSION, SCHEMA_NAME};
+        let mut meta = Metadata::default();
+        meta.0.insert(
+            "md2hwp-heading1-start".into(),
+            MetadataValue::Text("2147483647".into()),
+        );
+        let heading = Block::Heading {
+            level: 1,
+            inlines: vec![crate::ir::Inline::Text {
+                value: "title".into(),
+            }],
+        };
+        let document = Document {
+            schema: SCHEMA_NAME.into(),
+            ir_version: IR_VERSION.into(),
+            metadata: meta,
+            blocks: vec![heading.clone(), heading],
+        };
+        let error =
+            crate::validate::validate(document, &crate::validate::ValidationLimits::default())
+                .unwrap_err();
+        assert_eq!(error.path, "/metadata/md2hwp-heading1-start");
+    }
+    #[test]
+    fn heading1_start_is_a_validated_reserved_setting() {
+        assert_eq!(heading1_start(&Metadata::default()).unwrap(), 1);
+        for value in ["3", "003", "2147483647"] {
+            let mut meta = Metadata::default();
+            meta.0.insert(
+                "md2hwp-heading1-start".into(),
+                MetadataValue::Text(value.into()),
+            );
+            assert!(validate(&meta).is_ok());
+            assert_eq!(
+                heading1_start(&meta).unwrap(),
+                value.parse::<u32>().unwrap()
+            );
+        }
+        for value in ["", "0", "-1", "+3", "1.5", " 3", "3 ", "2147483648", "３"] {
+            let mut meta = Metadata::default();
+            meta.0.insert(
+                "md2hwp-heading1-start".into(),
+                MetadataValue::Text(value.into()),
+            );
+            assert!(validate(&meta).is_err(), "{value}");
+        }
     }
 }

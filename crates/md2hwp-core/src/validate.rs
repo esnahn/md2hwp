@@ -96,6 +96,19 @@ pub fn validate(
             state.add_limited("text bytes", &format!("/metadata/{key}"), value.len())?;
         }
     }
+    let start = crate::metadata::heading1_start(&document.metadata)
+        .map_err(|(path, message)| SemanticError { path, message })?;
+    let headings = document
+        .blocks
+        .iter()
+        .filter(|b| matches!(b, Block::Heading { level: 1, .. }))
+        .count();
+    if headings > 0 && u64::from(start) + headings as u64 - 1 > i32::MAX as u64 {
+        return Err(SemanticError {
+            path: "/metadata/md2hwp-heading1-start".into(),
+            message: "Heading1 numbering exceeds 2147483647".into(),
+        });
+    }
     for (index, block) in document.blocks.iter().enumerate() {
         state.block(block, &format!("/blocks/{index}"))?;
     }
