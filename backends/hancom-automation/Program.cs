@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 
 namespace Md2Hwp.HancomIrPreview;
@@ -9,6 +10,14 @@ internal static class Program
     {
         try
         {
+            if (args is ["--version"])
+            {
+                var version = typeof(Program).Assembly
+                    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+                    ?? throw new InvalidOperationException("Missing application version metadata.");
+                Console.WriteLine($"md2hwp-backend {version.Split('+')[0]}");
+                return 0;
+            }
             if (args.Length > 0 && args[0] == "init-template")
             {
                 var output = args.Length switch
@@ -120,6 +129,7 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
           md2hwp-backend init-template [[--output] <template.hwp>]
           md2hwp-backend <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--visible] [--verbose]
           md2hwp-backend ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--visible] [--verbose]
+          md2hwp-backend --version
         Default template: template.hwp beside the executable.
         """;
 }

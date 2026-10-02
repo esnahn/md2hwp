@@ -50,6 +50,14 @@ Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔�
 옵션 입력 순서는 자유롭습니다. 명시한 경로는 실행한 작업 폴더 기준이며,
 이미지의 기준 폴더만 원고/IR 폴더로 유지됩니다.
 
+두 실행 파일은 `--version`으로 각 프로그램의 패키지 버전을 표시합니다.
+현재 개발 버전의 출력은 각각 `md2hwp 0.3.0`, `md2hwp-backend 0.3.0`입니다.
+
+```powershell
+.\md2hwp.exe --version
+.\md2hwp-backend.exe --version
+```
+
 기존 옵션 방식도 사용할 수 있습니다.
 
 ```powershell
