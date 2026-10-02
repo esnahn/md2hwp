@@ -1,7 +1,9 @@
 {
   "schema": "md2hwp.ir",
   "ir_version": "0.3",
-  "metadata": {},
+  "metadata": {
+    "title": "모든 기능 두 번 검증"
+  },
   "blocks": [
     {
       "type": "heading",
