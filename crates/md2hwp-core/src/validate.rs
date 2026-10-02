@@ -79,8 +79,23 @@ pub fn validate(
     state.require(
         document.ir_version == IR_VERSION,
         "/ir_version",
-        "IR version must be 0.2",
+        "IR version must be 0.3",
     )?;
+    crate::metadata::validate(&document.metadata)
+        .map_err(|(path, message)| SemanticError { path, message })?;
+    for (key, value) in &document.metadata.0 {
+        state.require_nfc(key, "/metadata", "metadata key")?;
+        let values: Vec<&str> = match value {
+            crate::ir::MetadataValue::Text(value) => vec![value.as_str()],
+            crate::ir::MetadataValue::Authors(values) => {
+                values.iter().map(String::as_str).collect()
+            }
+        };
+        for value in values {
+            state.require_nfc(value, &format!("/metadata/{key}"), "metadata value")?;
+            state.add_limited("text bytes", &format!("/metadata/{key}"), value.len())?;
+        }
+    }
     for (index, block) in document.blocks.iter().enumerate() {
         state.block(block, &format!("/blocks/{index}"))?;
     }

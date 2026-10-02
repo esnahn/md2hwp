@@ -1,13 +1,14 @@
 {
   "schema": "md2hwp.ir",
-  "ir_version": "0.2",
+  "ir_version": "0.3",
   "metadata": {},
   "blocks": [
     {
       "type": "paragraph",
       "inlines": [
         {
-          "type": "soft_break"
+          "type": "text",
+          "value": "가"
         }
       ]
     }

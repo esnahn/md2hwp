@@ -4,6 +4,7 @@
 pub mod ast2ir_rules;
 pub mod ir;
 pub mod ir_io;
+pub mod metadata;
 pub mod normalize;
 pub mod pandoc_input;
 pub mod validate;

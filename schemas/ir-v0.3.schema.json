@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:md2hwp:schema:ir:0.2",
-  "title": "md2hwp project IR v0.2",
-  "description": "Closed structural serialization contract for md2hwp IR version 0.2.",
+  "$id": "urn:md2hwp:schema:ir:0.3",
+  "title": "md2hwp project IR v0.3",
+  "description": "Closed structural serialization contract for md2hwp IR version 0.3.",
   "$comment": "Human-readable string values must use Unicode NFC. Opaque link targets and image paths retain exact scalar values and are exempt. This semantic invariant is enforced by typed validation because JSON Schema cannot express it.",
   "type": "object",
   "additionalProperties": false,
@@ -17,12 +17,55 @@
       "const": "md2hwp.ir"
     },
     "ir_version": {
-      "const": "0.2"
+      "const": "0.3"
     },
     "metadata": {
       "type": "object",
       "additionalProperties": false,
-      "maxProperties": 0
+      "properties": {
+        "title": {
+          "type": "string",
+          "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]*$"
+        },
+        "subtitle": {
+          "type": "string",
+          "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]*$"
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]*$"
+        },
+        "publisher": {
+          "type": "string",
+          "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]*$"
+        },
+        "author": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]*$"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]*$"
+              }
+            }
+          ]
+        },
+        "date-meta": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        }
+      },
+      "patternProperties": {
+        "^md2hwp-.+$": {
+          "type": "string",
+          "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]*$"
+        }
+      }
     },
     "blocks": {
       "type": "array",

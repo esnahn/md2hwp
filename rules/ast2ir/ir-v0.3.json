@@ -2,7 +2,7 @@
   "schema": "md2hwp.ast2ir-rules",
   "target_ir": {
     "schema": "md2hwp.ir",
-    "version": "0.2"
+    "version": "0.3"
   },
   "unlisted_constructor": "reject",
   "document": {

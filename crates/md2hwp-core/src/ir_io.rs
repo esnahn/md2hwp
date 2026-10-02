@@ -10,7 +10,7 @@ use serde_json::{Map, Number, Value};
 use crate::ir::{Document, IR_VERSION, SCHEMA_NAME};
 use crate::validate::{SemanticError, ValidatedDocument, ValidationLimits, validate};
 
-const IR_SCHEMA: &str = include_str!("../../../schemas/ir-v0.2.schema.json");
+const IR_SCHEMA: &str = include_str!("../../../schemas/ir-v0.3.schema.json");
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -321,11 +321,11 @@ mod tests {
     use super::*;
     use crate::ir::{Block, Inline};
 
-    const EXAMPLE: &[u8] = include_bytes!("../../../examples/ir-v0.2.json");
+    const EXAMPLE: &[u8] = include_bytes!("../../../examples/ir-v0.3.json");
 
     #[test]
     fn accepts_only_the_programs_current_ir_version() {
-        for version in ["0.1", "0.3", "1", ""] {
+        for version in ["0.1", "0.2", "0.4", "1", ""] {
             let value = serde_json::json!({"schema": SCHEMA_NAME, "ir_version": version,
                 "metadata": {}, "blocks": []});
             let error = read_ir(
@@ -341,9 +341,9 @@ mod tests {
     }
 
     #[test]
-    fn box_sources_require_v02_and_remain_validated() {
+    fn box_sources_remain_validated_in_current_ir() {
         let limits = ValidationLimits::default();
-        let mut value = serde_json::json!({"schema":"md2hwp.ir","ir_version":"0.2","metadata":{},
+        let mut value = serde_json::json!({"schema":"md2hwp.ir","ir_version":"0.3","metadata":{},
             "blocks":[{"type":"verbatim_block","lines":["본문"],"source":[{"type":"text","value":"작성자"}]}]});
         let input = serde_json::to_vec(&value).unwrap();
         let valid = read_ir(&input, &limits).unwrap();
@@ -358,7 +358,7 @@ mod tests {
         let mut old_typed = valid.into_document();
         old_typed.ir_version = "0.1".into();
         assert!(validate(old_typed, &limits).is_err());
-        value["ir_version"] = serde_json::json!("0.2");
+        value["ir_version"] = serde_json::json!("0.3");
         value["blocks"][0]["source"] = serde_json::json!([]);
         assert!(read_ir(&serde_json::to_vec(&value).unwrap(), &limits).is_err());
         value["blocks"][0]["source"] = serde_json::json!(null);
@@ -367,9 +367,9 @@ mod tests {
         assert!(read_ir(&serde_json::to_vec(&value).unwrap(), &limits).is_ok());
     }
     const COMMONMARK_EXAMPLE: &[u8] =
-        include_bytes!("../../../examples/commonmark-v0.2.expected.ir.json");
+        include_bytes!("../../../examples/commonmark-v0.3.expected.ir.json");
     const NON_NFC_EXAMPLE: &[u8] =
-        include_bytes!("../../../examples/ir-v0.2-rejected-non-nfc.json");
+        include_bytes!("../../../examples/ir-v0.3-rejected-non-nfc.json");
 
     #[test]
     fn reads_and_writes_normative_nfc_example() {
@@ -390,7 +390,7 @@ mod tests {
 
     #[test]
     fn rejects_literal_and_escaped_non_nfc_text_as_invalid_ir_semantics() {
-        let escaped = br#"{"schema":"md2hwp.ir","ir_version":"0.2","metadata":{},"blocks":[{"type":"paragraph","inlines":[{"type":"text","value":"\u1100\u1161"}]}]}"#;
+        let escaped = br#"{"schema":"md2hwp.ir","ir_version":"0.3","metadata":{},"blocks":[{"type":"paragraph","inlines":[{"type":"text","value":"\u1100\u1161"}]}]}"#;
         for input in [NON_NFC_EXAMPLE, escaped] {
             let error = read_ir(input, &ValidationLimits::default()).unwrap_err();
             assert_eq!(error.code, IrReadErrorCode::InvalidIrSemantics);
@@ -401,7 +401,7 @@ mod tests {
 
     #[test]
     fn preserves_non_nfc_link_targets_and_image_paths() {
-        let input = br#"{"schema":"md2hwp.ir","ir_version":"0.2","metadata":{},"blocks":[{"type":"paragraph","inlines":[{"type":"link","target":"https://example.test/\u1100\u1161","title":null,"inlines":[{"type":"text","value":"label"}]}]},{"type":"figure","image":{"path":"assets/\u1100\u1161.png","alt":[],"title":null},"caption":[{"type":"text","value":"caption"}],"source":null}]}"#;
+        let input = br#"{"schema":"md2hwp.ir","ir_version":"0.3","metadata":{},"blocks":[{"type":"paragraph","inlines":[{"type":"link","target":"https://example.test/\u1100\u1161","title":null,"inlines":[{"type":"text","value":"label"}]}]},{"type":"figure","image":{"path":"assets/\u1100\u1161.png","alt":[],"title":null},"caption":[{"type":"text","value":"caption"}],"source":null}]}"#;
         let limits = ValidationLimits::default();
         let document = read_ir(input, &limits).expect("NFD identifiers must remain valid");
 
@@ -437,7 +437,7 @@ mod tests {
 
     #[test]
     fn rejects_duplicate_members() {
-        let json = br#"{"schema":"md2hwp.ir","schema":"md2hwp.ir","ir_version":"0.2","metadata":{},"blocks":[]}"#;
+        let json = br#"{"schema":"md2hwp.ir","schema":"md2hwp.ir","ir_version":"0.3","metadata":{},"blocks":[]}"#;
         let error = read_ir(json, &ValidationLimits::default()).unwrap_err();
         assert_eq!(error.code, IrReadErrorCode::InvalidIrSchema);
         assert!(error.message.contains("duplicate object member"));
@@ -446,7 +446,7 @@ mod tests {
     #[test]
     fn reports_unsupported_version_before_schema_validation() {
         let json =
-            br#"{"schema":"md2hwp.ir","ir_version":"0.3","metadata":{},"blocks":[],"future":true}"#;
+            br#"{"schema":"md2hwp.ir","ir_version":"0.4","metadata":{},"blocks":[],"future":true}"#;
         let error = read_ir(json, &ValidationLimits::default()).unwrap_err();
         assert_eq!(error.code, IrReadErrorCode::UnsupportedIrVersion);
         assert_eq!(error.path, "/ir_version");
@@ -455,13 +455,13 @@ mod tests {
     #[test]
     fn rejects_unknown_node_and_member_through_closed_schema() {
         for json in [
-            include_bytes!("../../../examples/ir-v0.2-rejected-page-break.json").as_slice(),
-            include_bytes!("../../../examples/ir-v0.2-rejected-soft-break.json").as_slice(),
-            br#"{"schema":"md2hwp.ir","ir_version":"0.2","metadata":{},"blocks":[],"extra":1}"#
+            include_bytes!("../../../examples/ir-v0.3-rejected-page-break.json").as_slice(),
+            include_bytes!("../../../examples/ir-v0.3-rejected-soft-break.json").as_slice(),
+            br#"{"schema":"md2hwp.ir","ir_version":"0.3","metadata":{},"blocks":[],"extra":1}"#
                 .as_slice(),
-            br#"{"schema":"md2hwp.ir","ir_version":"0.2","metadata":{},"blocks":[{"type":"paragraph","style":"body","inlines":[{"type":"text","value":"legacy"}]}]}"#
+            br#"{"schema":"md2hwp.ir","ir_version":"0.3","metadata":{},"blocks":[{"type":"paragraph","style":"body","inlines":[{"type":"text","value":"legacy"}]}]}"#
                 .as_slice(),
-            br#"{"schema":"md2hwp.ir","ir_version":"0.2","metadata":{},"blocks":[{"type":"styled_block","role":"block.box","lines":["legacy"]}]}"#
+            br#"{"schema":"md2hwp.ir","ir_version":"0.3","metadata":{},"blocks":[{"type":"styled_block","role":"block.box","lines":["legacy"]}]}"#
                 .as_slice(),
         ] {
             assert_eq!(
@@ -498,7 +498,7 @@ mod tests {
         };
         assert_eq!(
             read_ir(
-                br#"{"schema":"md2hwp.ir","ir_version":"0.2","metadata":{},"blocks":[]}"#,
+                br#"{"schema":"md2hwp.ir","ir_version":"0.3","metadata":{},"blocks":[]}"#,
                 &limits
             )
             .unwrap_err()

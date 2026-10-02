@@ -10,3 +10,6 @@ icu_normalizer = { version = "2.3.0", default-features = false, features = ["com
 jsonschema = { version = "0.18.3", default-features = false, features = ["draft202012"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140", features = ["unbounded_depth"] }
+
+chrono = { version = "0.4.45", default-features = false, features = ["std"] }
+regex = "1.12.2"

@@ -1,4 +1,4 @@
-//! Closed Pandoc AST-to-IR 0.2 normalization handlers.
+//! Closed Pandoc AST-to-IR 0.3 normalization handlers.
 
 use std::fmt;
 
@@ -6,8 +6,7 @@ use serde_json::Value;
 
 use crate::ast2ir_rules::{Ast2IrRules, BlockRule, InlineRule, NumberDelimiter, NumberStyle};
 use crate::ir::{
-    Block, Document, IR_VERSION, ImageRef, Inline, ListItem, ListItemBlock, ListKind, Metadata,
-    SCHEMA_NAME,
+    Block, Document, IR_VERSION, ImageRef, Inline, ListItem, ListItemBlock, ListKind, SCHEMA_NAME,
 };
 use crate::pandoc_input::PandocDocument;
 use crate::validate::{ValidatedDocument, ValidationLimits, validate};
@@ -36,14 +35,9 @@ pub fn normalize_pandoc(
     limits: &ValidationLimits,
 ) -> Result<ValidatedDocument, NormalizeError> {
     let mut normalizer = Normalizer { rules, reader };
-    if !document.metadata.is_empty() {
-        return Err(normalizer.error(
-            "invalid_pandoc_structure",
-            "/meta",
-            None,
-            "Pandoc metadata must be empty for IR 0.2",
-        ));
-    }
+    let metadata = crate::metadata::normalize(&document.metadata).map_err(|(path, message)| {
+        normalizer.error("invalid_pandoc_metadata", &path, None, message)
+    })?;
     let mut blocks = Vec::with_capacity(document.blocks.len());
     let mut index = 0;
     while index < document.blocks.len() {
@@ -67,7 +61,7 @@ pub fn normalize_pandoc(
     let ir = Document {
         schema: SCHEMA_NAME.to_owned(),
         ir_version: IR_VERSION.to_owned(),
-        metadata: Metadata::default(),
+        metadata,
         blocks,
     };
     validate(ir, limits)
@@ -665,7 +659,7 @@ mod tests {
 
     const COMMONMARK_FIXTURE: &[u8] =
         include_bytes!("../../../tests/fixtures/pandoc-json/commonmark.json");
-    const EXPECTED_IR: &[u8] = include_bytes!("../../../examples/commonmark-v0.2.expected.ir.json");
+    const EXPECTED_IR: &[u8] = include_bytes!("../../../examples/commonmark-v0.3.expected.ir.json");
 
     #[test]
     fn normalizes_the_commonmark_fixture() {
@@ -718,7 +712,7 @@ mod tests {
         )
         .unwrap();
         let expected = read_ir(
-            include_bytes!("../../../examples/commonmark-sources-v0.2.expected.ir.json"),
+            include_bytes!("../../../examples/commonmark-sources-v0.3.expected.ir.json"),
             &limits,
         )
         .unwrap();
@@ -774,7 +768,7 @@ mod tests {
         ]))
         .unwrap()
         .into_document();
-        assert_eq!(result.ir_version, "0.2");
+        assert_eq!(result.ir_version, "0.3");
         assert_eq!(result.blocks.len(), 4);
         let Block::Figure {
             image,

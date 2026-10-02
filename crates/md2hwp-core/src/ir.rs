@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 pub const SCHEMA_NAME: &str = "md2hwp.ir";
-pub const IR_VERSION: &str = "0.2";
+pub const IR_VERSION: &str = "0.3";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -15,8 +15,24 @@ pub struct Document {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Metadata {}
+#[serde(transparent)]
+pub struct Metadata(pub std::collections::BTreeMap<String, MetadataValue>);
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum MetadataValue {
+    Text(String),
+    Authors(Vec<String>),
+}
+
+impl Metadata {
+    pub fn text(&self, key: &str) -> Option<&str> {
+        match self.0.get(key) {
+            Some(MetadataValue::Text(text)) => Some(text),
+            _ => None,
+        }
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
