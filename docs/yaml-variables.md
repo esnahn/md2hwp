@@ -139,7 +139,7 @@ Pandoc JSON에서 전달된 값을 Rust가 검증하여 IR metadata에 문자열
 
 ```text
 {{md2hwp:begin:heading1}}
-Chapter {{md2hwp:num:heading1}}
+제{{md2hwp:num:heading1}}장
 {{md2hwp:slot:heading1}}
 {{md2hwp:end:heading1}}
 ```
