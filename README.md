@@ -308,13 +308,51 @@ Source — {{md2hwp:slot:figure.source}}
 - .NET 10 x64 런타임이 필요합니다. Rust는 실행 전에 확인하고 없으면
   [공식 설치 페이지](https://dotnet.microsoft.com/ko-kr/download/dotnet/10.0)를 안내합니다.
   백엔드 직접 실행 시 별도 설치 런타임은 `DOTNET_ROOT_X64`로 지정합니다.
-- 한글 보안 모듈은 사용자가 [공식 안내](https://developer.hancom.com/hwpautomation)에
-  따라 설치·등록합니다. 앱은 설치·등록을 변경하지 않으며 RegisterModule 성공을 요구합니다.
+- 한글 보안 모듈의 설치·등록이 필요합니다. 아래 [설치 안내](#한글-보안-모듈-설치등록)를
+  따라 현재 사용자 계정에 등록하십시오. 앱은 RegisterModule 성공을 요구합니다.
 - Pandoc은 `md2hwp setup-pandoc`으로 공식 배포본을 다운로드할 수 있습니다.
   `%LOCALAPPDATA%\md2hwp\pandoc`에 원본 ZIP·문서·저작권 고지를 보관합니다.
   탐색 순서는 `--pandoc`, 관리 다운로드, PATH입니다. 변환 중 자동 설치는 하지 않습니다.
   다운로드 명령은 빌드 시 lock의 버전을 우선하고, 없으면 공식 최신 안정판을 확인합니다.
   버전 번호 대신 Pandoc JSON 계약의 호환성을 검사합니다.
+
+### 한글 보안 모듈 설치·등록
+
+[한컴 공식 한글 오토메이션 페이지](https://developer.hancom.com/hwpautomation)에서
+**보안모듈(Automation).zip**을 내려받아 압축을 풀고, 동봉된 안내에 따라 현재 사용자
+계정에 등록하십시오. DLL을 둘 폴더는 자유롭게 선택할 수 있습니다.
+
+- 레지스트리 키: `HKEY_CURRENT_USER\Software\HNC\HwpAutomation\Modules`
+- 값 이름: `FilePathCheckerModuleExample`
+- 값 형식: `REG_SZ`
+- 값 내용: DLL의 절대 경로
+
+등록 후 DLL은 해당 위치에 유지하십시오. DLL을 옮기면 등록 경로도 수정해야 합니다.
+프로그램은 보안 모듈을 자동으로 설치하거나 등록하지 않습니다. 등록이 없거나 등록된
+DLL을 찾을 수 없으면 안내와 함께 HWP 생성을 중단하고 기존 결과 파일을 보존합니다.
+
+> [!TIP]
+> 다운로드·설치·등록을 돕는 [설치 스크립트](dependencies/install-hancom-security-module.ps1)를
+> 사용할 수 있습니다. 저장소 루트에서 한글을 모두 닫고 다음 명령을 실행하십시오.
+>
+> ```powershell
+> powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\dependencies\install-hancom-security-module.ps1
+> ```
+>
+> 소스 ZIP 전체를 받을 필요는 없습니다. 스크립트와 [lock.json](dependencies/lock.json)을
+> 같은 폴더에 저장했다면, 그 폴더에서 다음 명령을 실행하십시오.
+>
+> ```powershell
+> powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install-hancom-security-module.ps1
+> ```
+>
+> 스크립트는 옆의 `lock.json`에서 다운로드 URL과 SHA-256 해시를 읽어 파일을 검증하고,
+> 같은 폴더에 DLL을 설치하여 현재 사용자 레지스트리에 등록합니다. 마지막으로 한글의
+> `RegisterModule` 성공 여부를 확인합니다. 등록된 DLL은 이후에도 그 위치에 유지하십시오.
+>
+> 실행용 배포 ZIP에는 스크립트와 `lock.json`이 포함되지 않습니다. 이들은 설치 보조 도구이며,
+> 프로그램 실행에 외부 `lock.json`은 필요하지 않습니다. 프로그램이 스크립트를 자동으로
+> 실행하지도 않습니다.
 
 IR 0.3의 YAML 메타데이터와 템플릿 태그는 [메타데이터 문서](docs/yaml-variables.md)에 정리했습니다.
 
