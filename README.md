@@ -65,6 +65,27 @@ Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔�
 입력 IR과 템플릿의 IR 버전은 프로그램의 현재 IR 버전과 정확히 같아야 합니다.
 변환 규칙과 템플릿에는 별도의 계약 버전을 두지 않습니다.
 
+## 기능 검증 원고
+
+[`examples/all-features-twice/`](examples/all-features-twice/)에는 검증 원고
+`all-features.md`, 예상 IR `all-features.ir.json`, 그림 `image.png`를 함께 보관합니다.
+제목 1~6단계, 본문 강조와 줄바꿈, 링크, 중첩 목록, 출처가 있는/없는 박스와 그림을
+두 장에서 반복합니다. 각 장에 2단계 제목을 세 개씩 두어 장 표지의 절 목록도 확인합니다.
+
+저장소 루트에서 빌드한 프로그램으로 실행합니다.
+
+```powershell
+.\target\release\md2hwp.exe .\examples\all-features-twice\all-features.md
+```
+
+원고 옆의 IR을 갱신하고 `all-features.output.hwp`를 생성합니다.
+IR은 Git에 포함하며, 생성된 HWP는 Git에서 제외합니다.
+IR 변환만 확인하려면 다음 명령을 사용합니다.
+
+```powershell
+.\target\release\md2hwp.exe md2ir .\examples\all-features-twice\all-features.md --force
+```
+
 ## 기본 서식 템플릿 만들기
 
 ```powershell

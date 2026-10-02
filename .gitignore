@@ -13,6 +13,7 @@ coverage/
 # Local reference material, generated evidence and temporary work (not tracked).
 /reference/
 /artifacts/
+/examples/all-features-twice/*.output.hwp
 /tmp/
 /tools/investigation/**/probe-logs/
 
