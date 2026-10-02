@@ -40,7 +40,15 @@ The begin:figure.caption/end:figure.caption sample contains one picture with a
 two-paragraph native caption. Ignore sample image content/size; inherit caption options.
 Native list.bullet/list.ordered sample paragraphs own bullet and per-level numbering
 formats; manuscript start numbers and existing depth indentation remain authoritative.
-Verbatim blocks may carry sources. Generated tables, HWPX and RST input are deferred.
+Verbatim blocks may carry sources. Expand each raw IR line into a separate box
+paragraph using the content sample's full formatting. Preserve spaces, tabs and
+body blank lines. Optional slot:box.title precedes the content sample in the same
+cell; only when this slot exists, interpret an exact first-line 제목: prefix as
+the title, removing the prefix and one following space, then skipping immediately
+following blank/whitespace-only lines. With no title slot, preserve all raw lines.
+Keep this template-dependent presentation in the backend; do not add an IR title
+field or parse Markdown syntax inside the remaining verbatim text.
+Generated tables, HWPX and RST input are deferred.
 
 ## Metadata and dates
 
