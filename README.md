@@ -65,6 +65,8 @@ Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔�
 입력 IR과 템플릿의 IR 버전은 프로그램의 현재 IR 버전과 정확히 같아야 합니다.
 변환 규칙과 템플릿에는 별도의 계약 버전을 두지 않습니다.
 
+개발 참고 자료의 파일명·SHA-256·출처는 [reference/README.md](reference/README.md)에 기록합니다.
+
 ## 기능 검증 원고
 
 [`examples/all-features-twice/`](examples/all-features-twice/)에는 검증 원고

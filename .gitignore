@@ -11,7 +11,8 @@ coverage/
 /dependencies/FilePathCheckerModuleExample.dll
 
 # Local reference material, generated evidence and temporary work (not tracked).
-/reference/
+/reference/*
+!/reference/README.md
 /artifacts/
 /examples/all-features-twice/*.output.hwp
 /tmp/
