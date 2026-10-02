@@ -195,7 +195,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
         }
     }
 
-    private static XElement ImportParagraph(XElement paragraph, XDocument source, XDocument destination)
+    internal static XElement ImportParagraph(XElement paragraph, XDocument source, XDocument destination)
     {
         string Import(string table, string id)
         {

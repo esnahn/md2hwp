@@ -26,7 +26,8 @@ internal static partial class HancomPreviewWriter
                 var preparedMetadata = TemplateMetadata.Prepare(HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", "")), metadata);
                 XDocument document = TemplateHeadingNumbers.Prepare(TaggedTemplateBinding.PreserveBeginSectionSettings(preparedMetadata.Document));
                 var headings = TemplateHeadingBlocks.Lower(document);
-                var nativeFigure = NativeFigureCaption.Lower(headings.Document);
+                var boxes = TemplateBoxParagraphs.Lower(headings.Document);
+                var nativeFigure = NativeFigureCaption.Lower(boxes.Document);
                 _ = TaggedTemplateBinding.ReadFlat(nativeFigure.Document, temporary);
                 ImportFigureDocument(hwp, nativeFigure.Document);
                 document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
@@ -94,15 +95,16 @@ internal static partial class HancomPreviewWriter
                 if (finalRoots.SelectMany(p => p.Descendants()).Count(e => e.Name.LocalName == "AUTONUM" && (string?)e.Attribute("NumberType") == "Figure") !=
                     prefix.SelectMany(p => p.Descendants()).Count(e => e.Name.LocalName == "AUTONUM" && (string?)e.Attribute("NumberType") == "Figure") + plan.Summary.FigureOperations)
                     throw new InvalidOperationException("Unexpected generated caption count.");
-                var attached = preparedMetadata.Restore(headings.Layout.Attach(nativeFigure.Layout.Attach(finalDocument, plan, start), plan, start));
+                var attached = preparedMetadata.Restore(headings.Layout.Attach(nativeFigure.Layout.Attach(boxes.Layout.Attach(finalDocument, plan, start), plan, start), plan, start));
                 TemplateHeadingNumbers.RequireResolved(attached);
                 TemplateHeadingBlocks.RecalculateFigureNumbers(attached);
-                ImportFigureDocument(hwp, attached, headings.Layout);
+                boxes.Layout.RecordLayout(attached);
+                ImportFigureDocument(hwp, attached, headings.Layout, boxes.Layout);
                 if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
                     throw new InvalidOperationException("Could not save native figure captions.");
                 CloseDocument(hwp); Open(hwp, temporary, visible);
                 var nativeSaved = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
-                RequireFigureDocument(attached, nativeSaved, headings.Layout, reportLayout: true);
+                RequireFigureDocument(attached, nativeSaved, headings.Layout, reportLayout: true, boxes: boxes.Layout);
                 return true;
             });
             if (HashFile(source) != hash) throw new InvalidOperationException("Source template changed.");
@@ -112,19 +114,20 @@ internal static partial class HancomPreviewWriter
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
 
-    private static void ImportFigureDocument(dynamic hwp, XDocument document, TemplateHeadingBlocks? headings = null)
+    private static void ImportFigureDocument(dynamic hwp, XDocument document, TemplateHeadingBlocks? headings = null, TemplateBoxParagraphs? boxes = null)
     {
         _ = hwp.Clear(1);
         object imported = hwp.SetTextFile("<?xml version=\"1.0\" encoding=\"UTF-16\" standalone=\"no\"?>" + document.ToString(SaveOptions.DisableFormatting), "HWPML2X", "");
         if (imported is not int status || status != 1) throw new InvalidOperationException("Could not import native figure caption structure.");
-        RequireFigureDocument(document, HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", "")), headings);
+        RequireFigureDocument(document, HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", "")), headings, boxes: boxes);
     }
 
-    private static void RequireFigureDocument(XDocument expected, XDocument actual, TemplateHeadingBlocks? headings = null, bool reportLayout = false)
+    private static void RequireFigureDocument(XDocument expected, XDocument actual, TemplateHeadingBlocks? headings = null, bool reportLayout = false, TemplateBoxParagraphs? boxes = null)
     {
         expected = new XDocument(expected);
         actual = new XDocument(actual);
         headings?.NormalizeTitleLayout(expected, actual, reportLayout);
+        boxes?.NormalizeLayout(expected, actual);
         // Hancom adds identity scale/rotation pairs during HWPML import.
         // Ignore only mathematically neutral matrices in comparison copies.
         expected = NormalizeFigureMatrices(expected);

@@ -162,7 +162,7 @@ internal static partial class HancomPreviewWriter
         var styles = result.Descendants().Where(e => e.Name.LocalName == "STYLE").ToArray();
         var styleList = styles[0].Parent!;
         var nextId = styles.Max(e => (int)e.Attribute("Id")!) + 1;
-        var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "block.box", "box.source", "figure.caption", "figure.source", "reset" };
+        var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "block.box", "box.title", "box.source", "figure.caption", "figure.source", "reset" };
         var ids = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var role in roles)
         {
@@ -193,7 +193,7 @@ internal static partial class HancomPreviewWriter
         shape.Elements().Single(e => e.Name.LocalName == "SIZE").SetAttributeValue("Width", width);
         var cell = table.Descendants().Single(e => e.Name.LocalName == "CELL");
         cell.SetAttributeValue("Width", width);
-        cell.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(Declaration("slot:box.content", "block.box"));
+        cell.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(Declaration("slot:box.title", "box.title"), Declaration("slot:box.content", "block.box"));
         var caption = shape.Elements().Single(e => e.Name.LocalName == "CAPTION");
         caption.SetAttributeValue("LastWidth", width);
         caption.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(TextParagraph("box.source", DefaultSourcePrefix + TaggedTemplateBinding.Tag("slot:box.source")));
