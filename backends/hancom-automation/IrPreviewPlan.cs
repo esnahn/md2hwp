@@ -91,7 +91,11 @@ internal sealed record PreviewListMarker(
 internal sealed record PreviewTextRun(
     string Text,
     bool Strong,
-    bool Emphasis);
+    bool Emphasis,
+    PreviewFootnote? Footnote = null);
+
+internal sealed record PreviewFootnote(
+    IReadOnlyList<PreviewInlineContent> Paragraphs);
 
 internal sealed record PreviewLine(
     string Text,
@@ -254,7 +258,7 @@ internal sealed class PlanBuilder(
         {
             if (JsonContract.ExpectArray(source, path + "/source").GetArrayLength() == 0)
                 throw JsonContract.Error(path + "/source", "source must not be empty");
-            sourceRuns = InlineText.Read(source, path + "/source").Flatten(" / ").Runs;
+            sourceRuns = InlineText.Read(source, path + "/source", allowFootnotes: false).Flatten(" / ").Runs;
         }
         operations.Add(new PreviewOperation(
             "box",
@@ -374,12 +378,12 @@ internal sealed class PlanBuilder(
         var (pixelWidth, pixelHeight) = PngDimensions.Read(imagePath);
         var width = profile.Figure.MaxWidthMillimeters;
         var height = width * pixelHeight / pixelWidth;
-        var alt = InlineText.Read(image.GetProperty("alt"), path + "/image/alt");
-        var caption = InlineText.Read(block.GetProperty("caption"), path + "/caption");
+        var alt = InlineText.Read(image.GetProperty("alt"), path + "/image/alt", allowFootnotes: false);
+        var caption = InlineText.Read(block.GetProperty("caption"), path + "/caption", allowFootnotes: false);
         var sourceElement = block.GetProperty("source");
         var source = sourceElement.ValueKind is JsonValueKind.Null
             ? PreviewInlineContent.Plain([string.Empty])
-            : InlineText.Read(sourceElement, path + "/source");
+            : InlineText.Read(sourceElement, path + "/source", allowFootnotes: false);
         var figureLines = new[]
         {
             alt.Flatten(" / "),
@@ -413,14 +417,14 @@ internal sealed class PlanBuilder(
 
 internal static class InlineText
 {
-    public static PreviewInlineContent Read(JsonElement element, string path)
+    public static PreviewInlineContent Read(JsonElement element, string path, bool allowFootnotes = true)
     {
         var inlines = JsonContract.ExpectArray(element, path);
         var builder = new PreviewRunBuilder();
         var index = 0;
         foreach (var inline in inlines.EnumerateArray())
         {
-            Append(inline, $"{path}/{index}", builder, false, false);
+            Append(inline, $"{path}/{index}", builder, false, false, allowFootnotes);
             index++;
         }
         return builder.Build();
@@ -431,7 +435,8 @@ internal static class InlineText
         string path,
         PreviewRunBuilder builder,
         bool strong,
-        bool emphasis)
+        bool emphasis,
+        bool allowFootnotes)
     {
         if (inline.ValueKind is not JsonValueKind.Object)
         {
@@ -462,7 +467,8 @@ internal static class InlineText
                     path + "/inlines",
                     builder,
                     true,
-                    emphasis);
+                    emphasis,
+                    allowFootnotes);
                 break;
             case "emph":
                 JsonContract.ExpectObject(inline, path, ["type", "inlines"]);
@@ -471,7 +477,8 @@ internal static class InlineText
                     path + "/inlines",
                     builder,
                     strong,
-                    true);
+                    true,
+                    allowFootnotes);
                 break;
             case "link":
                 JsonContract.ExpectObject(inline, path, ["type", "target", "title", "inlines"]);
@@ -482,7 +489,36 @@ internal static class InlineText
                     path + "/inlines",
                     builder,
                     strong,
-                    emphasis);
+                    emphasis,
+                    allowFootnotes);
+                break;
+            case "footnote":
+                if (!allowFootnotes)
+                {
+                    throw JsonContract.Error(path + "/type", "footnotes are not supported in this inline context, including nested footnotes");
+                }
+                JsonContract.ExpectObject(inline, path, ["type", "blocks"]);
+                var blocks = JsonContract.ExpectArray(inline.GetProperty("blocks"), path + "/blocks");
+                if (blocks.GetArrayLength() == 0)
+                {
+                    throw JsonContract.Error(path + "/blocks", "footnote must contain at least one paragraph");
+                }
+                var paragraphs = new List<PreviewInlineContent>();
+                var blockIndex = 0;
+                foreach (var block in blocks.EnumerateArray())
+                {
+                    var blockPath = $"{path}/blocks/{blockIndex}";
+                    JsonContract.ExpectObject(block, blockPath, ["type", "inlines"]);
+                    JsonContract.ExpectString(block.GetProperty("type"), blockPath + "/type", "paragraph");
+                    var inlines = JsonContract.ExpectArray(block.GetProperty("inlines"), blockPath + "/inlines");
+                    if (inlines.GetArrayLength() == 0)
+                    {
+                        throw JsonContract.Error(blockPath + "/inlines", "footnote paragraph must not be empty");
+                    }
+                    paragraphs.Add(Read(inlines, blockPath + "/inlines", allowFootnotes: false));
+                    blockIndex++;
+                }
+                builder.AppendFootnote(new PreviewFootnote(paragraphs), strong, emphasis);
                 break;
             default:
                 throw JsonContract.Error(path + "/type", $"unsupported IR inline type {type}");
@@ -494,13 +530,14 @@ internal static class InlineText
         string path,
         PreviewRunBuilder builder,
         bool strong,
-        bool emphasis)
+        bool emphasis,
+        bool allowFootnotes)
     {
         var children = JsonContract.ExpectArray(element, path);
         var index = 0;
         foreach (var child in children.EnumerateArray())
         {
-            Append(child, $"{path}/{index}", builder, strong, emphasis);
+            Append(child, $"{path}/{index}", builder, strong, emphasis, allowFootnotes);
             index++;
         }
     }
@@ -517,13 +554,17 @@ internal sealed class PreviewRunBuilder
             return;
         }
         var line = lines[^1];
-        if (line.Count > 0 && line[^1].Strong == strong && line[^1].Emphasis == emphasis)
+        if (line.Count > 0 && line[^1].Footnote is null && line[^1].Strong == strong && line[^1].Emphasis == emphasis)
         {
             line[^1] = line[^1] with { Text = line[^1].Text + text };
             return;
         }
         line.Add(new PreviewTextRun(text, strong, emphasis));
     }
+
+    public void AppendFootnote(PreviewFootnote footnote, bool strong, bool emphasis) =>
+        lines[^1].Add(new PreviewTextRun(
+            "MD2HWP_FOOTNOTE_" + Guid.NewGuid().ToString("N"), strong, emphasis, footnote));
 
     public void BreakLine() => lines.Add([]);
 
@@ -536,7 +577,14 @@ internal sealed class PreviewRunBuilder
         var builder = new PreviewRunBuilder();
         foreach (var run in source)
         {
-            builder.Append(run.Text, run.Strong, run.Emphasis);
+            if (run.Footnote is not null)
+            {
+                builder.lines[^1].Add(run);
+            }
+            else
+            {
+                builder.Append(run.Text, run.Strong, run.Emphasis);
+            }
         }
         return builder.lines[0].ToArray();
     }

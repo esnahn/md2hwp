@@ -288,6 +288,213 @@ Check(boxLayoutActual.Descendants("TABLE").Last().Element("SHAPEOBJECT")!.Elemen
     boxLayoutActual.Descendants("TABLE").Last().Descendants("P").Last().Attribute("ParaShape")!.Value == "1",
     "Box layout normalization concealed a width or paragraph formatting change.");
 Console.WriteLine("Box paragraph/title contract checks passed.");
+static PreviewInlineContent ReadContractInlines(string json, bool allowFootnotes = true)
+{
+    using var document = JsonDocument.Parse(json);
+    return InlineText.Read(document.RootElement, "/inlines", allowFootnotes);
+}
+const string contractFootnote = """
+{"type":"footnote","blocks":[
+  {"type":"paragraph","inlines":[{"type":"text","value":"첫째"},{"type":"space"},{"type":"strong","inlines":[{"type":"text","value":"굵게"}]},{"type":"line_break"},{"type":"emph","inlines":[{"type":"text","value":"기울임"}]}]},
+  {"type":"paragraph","inlines":[{"type":"link","target":"https://example.net","title":null,"inlines":[{"type":"text","value":"링크표시"}]}]}
+]}
+""";
+var footnoteInlines = ReadContractInlines("[{\"type\":\"text\",\"value\":\"앞\"},{\"type\":\"strong\",\"inlines\":[" + contractFootnote + "]}," + contractFootnote + ",{\"type\":\"text\",\"value\":\"뒤\"}]");
+var contractNoteRuns = footnoteInlines.Lines.Single().Runs.Where(r => r.Footnote is not null).ToArray();
+Check(contractNoteRuns.Length == 2 && contractNoteRuns.Select(r => r.Text).Distinct().Count() == 2, "Repeated footnote references must have independent native insertion markers.");
+Check(contractNoteRuns.All(r => r.Text.StartsWith("MD2HWP_FOOTNOTE_", StringComparison.Ordinal)), "Footnote runs lack the insertion marker.");
+Check(contractNoteRuns[0].Strong && !contractNoteRuns[1].Strong, "Footnote reference character formatting did not follow its enclosing span.");
+Check(footnoteInlines.Lines.Single().Runs.First().Text == "앞" && footnoteInlines.Lines.Single().Runs.Last().Text == "뒤", "Adjacent body text was merged into a footnote marker or dropped.");
+var noteParagraphs = contractNoteRuns[0].Footnote!.Paragraphs;
+Check(noteParagraphs.Count == 2 && noteParagraphs[0].Lines.Select(l => l.Text).SequenceEqual(new[] { "첫째 굵게", "기울임" }) && noteParagraphs[1].Flatten(" / ").Text == "링크표시", "Footnote paragraphs, explicit line breaks or link labels were lost.");
+Check(noteParagraphs[0].Lines[0].Runs.Last().Strong && noteParagraphs[0].Lines[1].Runs.Single().Emphasis, "Footnote content lost strong/emphasis formatting.");
+var coalescedNotes = PreviewRunBuilder.Coalesce(footnoteInlines.Lines.Single().Runs);
+Check(coalescedNotes.Where(r => r.Footnote is not null).Zip(contractNoteRuns).All(pair => pair.First.Text == pair.Second.Text && ReferenceEquals(pair.First.Footnote, pair.Second.Footnote)), "Run coalescing lost footnote marker associations.");
+var multiLineNotes = new PreviewInlineContent(new[] { footnoteInlines.Lines.Single(), new PreviewLine("tail", new[] { new PreviewTextRun("tail", false, false) }) });
+var flattenedNotes = multiLineNotes.Flatten(" / ");
+Check(flattenedNotes.Text.EndsWith("뒤 / tail", StringComparison.Ordinal) && flattenedNotes.Runs.Where(r => r.Footnote is not null).Zip(contractNoteRuns).All(pair => pair.First.Text == pair.Second.Text && ReferenceEquals(pair.First.Footnote, pair.Second.Footnote)), "Inline flattening lost footnote markers or associations.");
+foreach (var inline in new[] {
+    "{\"type\":\"footnote\",\"blocks\":[]}",
+    "{\"type\":\"footnote\",\"blocks\":[{\"type\":\"paragraph\",\"inlines\":[]}]}",
+    "{\"type\":\"footnote\",\"blocks\":[{\"type\":\"heading\",\"level\":1,\"inlines\":[{\"type\":\"text\",\"value\":\"heading\"}]}]}",
+    "{\"type\":\"footnote\",\"blocks\":[{\"type\":\"paragraph\",\"inlines\":[" + contractFootnote + "]}]}",
+    "{\"type\":\"footnote\",\"blocks\":[{\"type\":\"paragraph\",\"inlines\":[{\"type\":\"strong\",\"inlines\":[" + contractFootnote + "]}]}]}",
+    "{\"type\":\"footnote\",\"blocks\":[{\"type\":\"paragraph\",\"inlines\":[{\"type\":\"link\",\"target\":\"https://example.net\",\"title\":null,\"inlines\":[" + contractFootnote + "]}]}]}"
+}) Reject(() => ReadContractInlines("[" + inline + "]"));
+foreach (var wrapped in new[] { contractFootnote, "{\"type\":\"emph\",\"inlines\":[" + contractFootnote + "]}", "{\"type\":\"link\",\"target\":\"https://example.net\",\"title\":null,\"inlines\":[" + contractFootnote + "]}" })
+    Reject(() => ReadContractInlines("[" + wrapped + "]", allowFootnotes: false));
+var footnoteSource = new TemplateSource(BoxParagraph("source-slot"), "source-slot", "", "");
+var footnoteProfile = InvestigationTemplateProfile.FromTaggedTemplate(
+    typeof(IrPreviewPlan).Assembly.Location, Array.Empty<ProfileStyle>(), "fixture-reset", 100, 6, 0,
+    new ProfileCaptionSelector("fixture-caption", "[", "]caption", "caption"), footnoteSource, footnoteSource,
+    new TemplateListPrototype("bullet", 0, new XElement("BULLET")), new TemplateListPrototype("ordered", 0, new XElement("NUMBERING")));
+var fixtureResourceRoot = new DirectoryInfo(Directory.GetCurrentDirectory());
+while (!File.Exists(Path.Combine(fixtureResourceRoot.FullName, "examples", "all-features-twice", "image.png")))
+    fixtureResourceRoot = fixtureResourceRoot.Parent ?? throw new Exception("Cannot find tracked PNG contract fixture.");
+var fixtureIrPath = Path.Combine(fixtureResourceRoot.FullName, "examples", "all-features-twice", "contract.ir.json");
+static IrPreviewPlan ReadContractBlocks(string block, string irPath, string root, InvestigationTemplateProfile profile)
+{
+    using var document = JsonDocument.Parse(block);
+    var builder = new PlanBuilder(irPath, root, profile);
+    builder.AddBlock(document.RootElement, "/blocks/0");
+    return builder.Build(1);
+}
+foreach (var block in new[] {
+    "{\"type\":\"paragraph\",\"inlines\":[" + contractFootnote + "]}",
+    "{\"type\":\"heading\",\"level\":1,\"inlines\":[" + contractFootnote + "]}",
+    "{\"type\":\"list\",\"kind\":\"bullet\",\"tight\":true,\"items\":[{\"blocks\":[{\"type\":\"paragraph\",\"inlines\":[" + contractFootnote + "]}]}]}"
+})
+{
+    var plan = ReadContractBlocks(block, fixtureIrPath, fixtureResourceRoot.FullName, footnoteProfile);
+    Check(plan.Operations.Single().FormattedLines!.Single().Single().Footnote?.Paragraphs.Count == 2, "A body, heading or list paragraph discarded its footnote.");
+}
+Reject(() => ReadContractBlocks("{\"type\":\"verbatim_block\",\"lines\":[\"raw\"],\"source\":[" + contractFootnote + "]}", fixtureIrPath, fixtureResourceRoot.FullName, footnoteProfile));
+foreach (var context in new[] { "alt", "caption", "source" })
+{
+    const string textInline = "[{\"type\":\"text\",\"value\":\"caption\"}]";
+    var noteInline = "[" + contractFootnote + "]";
+    var figure = "{\"type\":\"figure\",\"image\":{\"path\":\"image.png\",\"title\":null,\"alt\":" + (context == "alt" ? noteInline : textInline) + "},\"caption\":" + (context == "caption" ? noteInline : textInline) + ",\"source\":" + (context == "source" ? noteInline : "null") + "}";
+    Reject(() => ReadContractBlocks(figure, fixtureIrPath, fixtureResourceRoot.FullName, footnoteProfile));
+}
+Console.WriteLine("Backend footnote IR, marker and context contract checks passed.");
+static XDocument FootnoteTemplate(string restart = "Continuous")
+{
+    var shapes = new XElement(BoxTemplate(withTitle: false).Root!.Element("HEAD")!);
+    var sample = BoxParagraph(TaggedTemplateBinding.Tag("footnote"), "1", "1", "2");
+    sample.SetAttributeValue("PageBreak", "false");
+    sample.SetAttributeValue("ColumnBreak", "false");
+    return new XDocument(new XElement("HWPML", shapes, new XElement("BODY", new XElement("SECTION",
+        new XElement("P", new XElement("TEXT", new XAttribute("CharShape", "0"), new XElement("SECDEF",
+            new XElement("FOOTNOTESHAPE", new XElement("AUTONUMFORMAT", new XAttribute("Type", "Digit"), new XAttribute("PrefixChar", ""), new XAttribute("SuffixChar", ")")),
+                new XElement("NOTENUMBERING", new XAttribute("Type", restart), new XAttribute("NewNumber", "1")),
+                new XElement("NOTEPLACEMENT", new XAttribute("Place", "BeneathText")))))),
+        BoxParagraph(TaggedTemplateBinding.Tag("begin:template")), sample, BoxParagraph(TaggedTemplateBinding.Tag("end:template"))))));
+}
+static XElement ExistingFootnote(int number) => new("FOOTNOTE", new XElement("PARALIST", BoxParagraph("static note")));
+static XDocument FootnoteRendered(XDocument template, params XElement[] paragraphs)
+{
+    var section = new XElement("SECTION", new XElement(AuriMinimalBoxPrototype.RootParagraphs(template)[0]), paragraphs);
+    return new XDocument(new XElement("HWPML", new XElement(template.Root!.Element("HEAD")!), new XElement("BODY", section)));
+}
+static IrPreviewPlan NativeFootnotePlan(PreviewInlineContent content) => new("fixture", "fixture", new PreviewSummary(1, 1, 0, 0, 0),
+    new[] { new PreviewOperation("text", "body", content.Lines.Select(l => l.Text).ToArray(), ParagraphStyle: "body", FormattedLines: content.Lines.Select(l => l.Runs).ToArray()) }, []);
+static XElement[] NativeNoteParagraphs(XDocument document) => document.Descendants("FOOTNOTE").SelectMany(n => n.Element("PARALIST")!.Elements("P")).ToArray();
+var nativeNoteTemplate = FootnoteTemplate();
+var originalNativeNoteTemplate = new XDocument(nativeNoteTemplate);
+var nativeNoteBinding = NativeFootnotes.Bind(nativeNoteTemplate);
+var noteMarkerA = contractNoteRuns[0].Text;
+var noteMarkerB = contractNoteRuns[1].Text;
+var beforeNote = BoxParagraph("before " + noteMarkerA + " middle " + noteMarkerB + " after");
+var nativeNoteRendered = FootnoteRendered(nativeNoteTemplate, beforeNote);
+var originalNativeNoteRendered = new XDocument(nativeNoteRendered);
+var attachedNotes = nativeNoteBinding.Attach(nativeNoteRendered, NativeFootnotePlan(footnoteInlines));
+Check(XNode.DeepEquals(nativeNoteTemplate, originalNativeNoteTemplate) && XNode.DeepEquals(nativeNoteRendered, originalNativeNoteRendered), "Native footnote binding or attachment mutated input XML.");
+Check(attachedNotes.Descendants("FOOTNOTE").Count() == 2 && !attachedNotes.ToString().Contains("MD2HWP_FOOTNOTE_", StringComparison.Ordinal), "Multiple footnotes in one CHAR were not all replaced with native controls.");
+Check(TaggedTemplateBinding.DirectText(AuriMinimalBoxPrototype.RootParagraphs(attachedNotes)[1]) == "before  middle  after", "Native insertion altered text surrounding the footnote references.");
+Check(attachedNotes.Descendants("AUTONUM").Select(n => (string?)n.Attribute("Number")).SequenceEqual(new[] { "1", "2" }) && attachedNotes.Descendants("AUTONUM").All(n => (string?)n.Attribute("NumberType") == "Footnote"), "Generated footnotes do not use native continuous numbering.");
+var nativeNoteParagraphs = NativeNoteParagraphs(attachedNotes);
+Check(nativeNoteParagraphs.Length == 4 && nativeNoteParagraphs.All(p => (string?)p.Attribute("ParaShape") == "1" && (string?)p.Attribute("Style") == "1"), "Footnotes lost the sample paragraph's formatting or paragraph boundaries.");
+Check(nativeNoteParagraphs.All(p => p.Attribute("PageBreak") is null && p.Attribute("ColumnBreak") is null), "Footnote paragraphs inherited page-break flags.");
+Check(nativeNoteParagraphs[0].Elements("TEXT").First().Elements().Select(e => e.Name.LocalName).SequenceEqual(new[] { "AUTONUM", "CHAR" }) && nativeNoteParagraphs[0].Elements("TEXT").First().Element("CHAR")!.Value.StartsWith(" 첫째", StringComparison.Ordinal), "The first footnote paragraph lacks native AUTONUM followed by one space.");
+Check(nativeNoteParagraphs[1].Descendants("AUTONUM").Count() == 0 && TaggedTemplateBinding.DirectText(nativeNoteParagraphs[1]) == "링크표시", "A later note paragraph acquired a number or lost its link label.");
+Check(nativeNoteParagraphs[0].Descendants("LINEBREAK").Count() == 1, "Explicit line break in a note became a paragraph or vanished.");
+Check(attachedNotes.Descendants("AUTONUM").All(n => XNode.DeepEquals(n.Element("AUTONUMFORMAT"), nativeNoteTemplate.Descendants("FOOTNOTESHAPE").Single().Element("AUTONUMFORMAT"))), "Native note numbering format did not follow the template section.");
+var boldNoteRun = nativeNoteParagraphs[0].Elements("TEXT").Single(t => t.Value == "굵게");
+var italicNoteRun = nativeNoteParagraphs[0].Elements("TEXT").Single(t => t.Value == "기울임");
+Check(attachedNotes.Descendants("CHARSHAPE").Single(c => (string?)c.Attribute("Id") == (string?)boldNoteRun.Attribute("CharShape")).Element("BOLD") is not null &&
+    attachedNotes.Descendants("CHARSHAPE").Single(c => (string?)c.Attribute("Id") == (string?)italicNoteRun.Attribute("CharShape")).Element("ITALIC") is not null,
+    "Native note rich text did not create bold/italic character shapes.");
+var splitNoteReference = BoxParagraph("prefix " + noteMarkerA[..12]);
+splitNoteReference.Add(new XElement("TEXT", new XAttribute("CharShape", "3"), new XElement("CHAR", noteMarkerA[12..] + " suffix")));
+var singleNoteContent = new PreviewInlineContent(new[] { new PreviewLine(noteMarkerA, new[] { contractNoteRuns[0] }) });
+var splitAttachedNote = nativeNoteBinding.Attach(FootnoteRendered(nativeNoteTemplate, splitNoteReference), NativeFootnotePlan(singleNoteContent));
+var splitRoot = AuriMinimalBoxPrototype.RootParagraphs(splitAttachedNote)[1];
+Check(splitRoot.Descendants("FOOTNOTE").Count() == 1 && TaggedTemplateBinding.DirectText(splitRoot) == "prefix  suffix" && (string?)splitRoot.Elements("TEXT").First().Attribute("CharShape") == "0", "Split-run reference changed surrounding text or its first character format.");
+var noNotePlan = NativeFootnotePlan(PreviewInlineContent.Plain(new[] { "untouched" }));
+Check(XNode.DeepEquals(nativeNoteRendered, nativeNoteBinding.Attach(nativeNoteRendered, noNotePlan)), "An empty native-note plan changed unrelated template XML.");
+foreach (var invalidSample in new[] { "missing", "duplicate", "control", "page-break", "outside", "nested" })
+{
+    var invalid = FootnoteTemplate();
+    var rootSamples = AuriMinimalBoxPrototype.RootParagraphs(invalid);
+    var sample = rootSamples[2];
+    switch (invalidSample)
+    {
+        case "missing": sample.Remove(); break;
+        case "duplicate": sample.AddAfterSelf(new XElement(sample)); break;
+        case "control": sample.Element("TEXT")!.Add(new XElement("AUTONUM")); break;
+        case "page-break": sample.SetAttributeValue("PageBreak", "true"); break;
+        case "outside": sample.Remove(); rootSamples[3].AddAfterSelf(sample); break;
+        case "nested": sample.Remove(); rootSamples[1].Element("TEXT")!.Add(new XElement("TABLE", new XElement("ROW", new XElement("CELL", new XElement("PARALIST", sample))))); break;
+    }
+    Reject(() => NativeFootnotes.Bind(invalid));
+}
+var splitNoteSampleTemplate = FootnoteTemplate();
+var splitNoteSample = AuriMinimalBoxPrototype.RootParagraphs(splitNoteSampleTemplate)[2];
+splitNoteSample.Element("TEXT")!.Element("CHAR")!.Value = "{{md2hwp:foot";
+splitNoteSample.Add(new XElement("TEXT", new XAttribute("CharShape", "3"), new XElement("CHAR", "note}}")));
+_ = NativeFootnotes.Bind(splitNoteSampleTemplate);
+foreach (var host in new[] { "HEADER", "FOOTER", "MASTERPAGE", "FOOTNOTE", "ENDNOTE" })
+{
+    var hostDocument = FootnoteRendered(nativeNoteTemplate, new XElement("P", new XElement("TEXT", new XAttribute("CharShape", "0"), new XElement(host, new XElement("PARALIST", BoxParagraph(noteMarkerA))))));
+    Reject(() => nativeNoteBinding.Attach(hostDocument, NativeFootnotePlan(singleNoteContent)));
+}
+var controlSeparatedReference = BoxParagraph(noteMarkerA[..12]);
+controlSeparatedReference.Element("TEXT")!.Add(new XElement("AUTONUM", new XAttribute("NumberType", "Figure"), new XAttribute("Number", "4")), new XElement("CHAR", noteMarkerA[12..]));
+try { nativeNoteBinding.Attach(FootnoteRendered(nativeNoteTemplate, controlSeparatedReference), NativeFootnotePlan(singleNoteContent)); throw new Exception("A footnote marker spanning a native control was accepted."); }
+catch (InvalidOperationException) { }
+var noNumberingFormat = FootnoteRendered(nativeNoteTemplate, BoxParagraph(noteMarkerA));
+noNumberingFormat.Descendants("AUTONUMFORMAT").Remove();
+Reject(() => nativeNoteBinding.Attach(noNumberingFormat, NativeFootnotePlan(singleNoteContent)));
+var pageNoteTemplate = FootnoteTemplate("OnPage");
+var pageNoteBinding = NativeFootnotes.Bind(pageNoteTemplate);
+var existingNote = ExistingFootnote(1);
+existingNote.Descendants("TEXT").Single().AddFirst(new XElement("AUTONUM", new XAttribute("NumberType", "Footnote"), new XAttribute("Number", "1")));
+var staticNumberParagraph = BoxParagraph("static");
+staticNumberParagraph.Element("TEXT")!.Add(existingNote, new XElement("AUTONUM", new XAttribute("NumberType", "Figure"), new XAttribute("Number", "42")));
+var pageNoteExpected = pageNoteBinding.Attach(FootnoteRendered(pageNoteTemplate, staticNumberParagraph, beforeNote), NativeFootnotePlan(footnoteInlines));
+var pageNoteActual = new XDocument(pageNoteExpected);
+foreach (var number in pageNoteActual.Descendants("AUTONUM")) number.SetAttributeValue("Number", "99");
+pageNoteActual.Descendants("FOOTNOTE").Last().Descendants("P").First().SetAttributeValue("ParaShape", "0");
+pageNoteBinding.NormalizeNumbers(pageNoteExpected, pageNoteActual);
+Check(pageNoteActual.Descendants("FOOTNOTE").First().Descendants("AUTONUM").Single().Attribute("Number")!.Value == "99" && pageNoteActual.Descendants("AUTONUM").Single(n => (string?)n.Attribute("NumberType") == "Figure").Attribute("Number")!.Value == "99", "Page note normalization concealed a pre-existing note or unrelated numbering change.");
+Check(pageNoteActual.Descendants("FOOTNOTE").Skip(1).Select(n => (string?)n.Descendants("AUTONUM").Single().Attribute("Number")).SequenceEqual(new[] { "2", "3" }), "Page-restart note display values were not normalized locally.");
+Check(pageNoteActual.Descendants("FOOTNOTE").Last().Descendants("P").First().Attribute("ParaShape")!.Value == "0", "Page note normalization concealed paragraph formatting changes.");
+var invalidPageNumber = new XDocument(pageNoteExpected);
+invalidPageNumber.Descendants("FOOTNOTE").Last().Descendants("AUTONUM").Single().SetAttributeValue("Number", "0");
+pageNoteBinding.NormalizeNumbers(pageNoteExpected, invalidPageNumber);
+Check(invalidPageNumber.Descendants("FOOTNOTE").Last().Descendants("AUTONUM").Single().Attribute("Number")!.Value == "0", "Invalid page-based note number was silently accepted.");
+var continuousExpected = nativeNoteBinding.Attach(nativeNoteRendered, NativeFootnotePlan(footnoteInlines));
+var continuousActual = new XDocument(continuousExpected);
+continuousActual.Descendants("AUTONUM").Last().SetAttributeValue("Number", "8");
+nativeNoteBinding.NormalizeNumbers(continuousExpected, continuousActual);
+Check(continuousActual.Descendants("AUTONUM").Last().Attribute("Number")!.Value == "8", "Continuous note counters were incorrectly normalized.");
+var mixedNoteReference = BoxParagraph("unused");
+mixedNoteReference.Element("TEXT")!.Element("CHAR")!.ReplaceNodes("before", new XElement("LINEBREAK"), "line " + noteMarkerA + " after");
+var mixedNoteResult = nativeNoteBinding.Attach(FootnoteRendered(nativeNoteTemplate, mixedNoteReference), NativeFootnotePlan(singleNoteContent));
+var mixedRoot = AuriMinimalBoxPrototype.RootParagraphs(mixedNoteResult)[1];
+Check(mixedRoot.Descendants("FOOTNOTE").Count() == 1 && mixedRoot.Elements("TEXT").Elements("CHAR").Descendants("LINEBREAK").Count() == 1 && TaggedTemplateBinding.DirectText(mixedRoot) == "beforeline  after", "A reference alongside a native mixed-text line break was lost or changed.");
+var formattedReference = BoxParagraph("before ");
+formattedReference.Add(new XElement("TEXT", new XAttribute("CharShape", "0"), new XElement("CHAR", noteMarkerA)));
+var mergedNoteResult = nativeNoteBinding.Attach(FootnoteRendered(nativeNoteTemplate, formattedReference), NativeFootnotePlan(singleNoteContent));
+Check(AuriMinimalBoxPrototype.RootParagraphs(mergedNoteResult)[1].Elements("TEXT").Count() == 1, "Identically formatted note reference runs were not combined for native import.");
+var initialNumberTemplate = FootnoteTemplate();
+initialNumberTemplate.Root!.Element("HEAD")!.Add(new XElement("DOCSETTING", new XElement("BEGINNUMBER", new XAttribute("Footnote", "5"))));
+initialNumberTemplate.Descendants("NOTENUMBERING").Single().SetAttributeValue("NewNumber", "7");
+var initialNumberBinding = NativeFootnotes.Bind(initialNumberTemplate);
+var initialNumberResult = initialNumberBinding.Attach(FootnoteRendered(initialNumberTemplate, beforeNote), NativeFootnotePlan(footnoteInlines));
+Check(initialNumberResult.Descendants("AUTONUM").Select(n => (string?)n.Attribute("Number")).SequenceEqual(new[] { "5", "6" }), "Continuous notes did not inherit the document's footnote start number.");
+initialNumberTemplate.Descendants("NOTENUMBERING").Single().SetAttributeValue("Type", "OnSection");
+var sectionNumberResult = NativeFootnotes.Bind(initialNumberTemplate).Attach(FootnoteRendered(initialNumberTemplate, beforeNote), NativeFootnotePlan(footnoteInlines));
+Check(sectionNumberResult.Descendants("AUTONUM").Select(n => (string?)n.Attribute("Number")).SequenceEqual(new[] { "7", "8" }), "Section note restart did not inherit its NewNumber.");
+var restartRoot = BoxParagraph("restart");
+restartRoot.Element("TEXT")!.Add(new XElement("NEWNUM", new XAttribute("NumberType", "Footnote"), new XAttribute("Number", "9")));
+var restartedNotes = nativeNoteBinding.Attach(FootnoteRendered(nativeNoteTemplate, restartRoot, beforeNote), NativeFootnotePlan(footnoteInlines));
+Check(restartedNotes.Descendants("AUTONUM").Select(n => (string?)n.Attribute("Number")).SequenceEqual(new[] { "9", "10" }), "A retained native footnote restart was ignored.");
+var boldFirstNote = ReadContractInlines("[{\"type\":\"footnote\",\"blocks\":[{\"type\":\"paragraph\",\"inlines\":[{\"type\":\"strong\",\"inlines\":[{\"type\":\"text\",\"value\":\"bold\"}]}]}]}]");
+var boldFirstResult = nativeNoteBinding.Attach(FootnoteRendered(nativeNoteTemplate, BoxParagraph(boldFirstNote.Lines.Single().Text)), NativeFootnotePlan(boldFirstNote));
+var numberRun = boldFirstResult.Descendants("FOOTNOTE").Single().Descendants("AUTONUM").Single().Parent!;
+Check((string?)numberRun.Attribute("CharShape") == "2" && (string?)numberRun.ElementsAfterSelf("TEXT").Single().Attribute("CharShape") != "2", "Footnote numbering acquired boldness from its first content span.");
+Console.WriteLine("Native footnote structure, rich text, preserved controls and local numbering checks passed.");
 if (args.Length==2) {
     var expected=HancomPreviewWriter.NormalizeFigureMatrices(HwpMarkup.Parse(File.ReadAllText(args[0])));
     var actual=HancomPreviewWriter.NormalizeFigureMatrices(HwpMarkup.Parse(File.ReadAllText(args[1])));

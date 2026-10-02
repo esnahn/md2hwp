@@ -162,7 +162,7 @@ internal static partial class HancomPreviewWriter
         var styles = result.Descendants().Where(e => e.Name.LocalName == "STYLE").ToArray();
         var styleList = styles[0].Parent!;
         var nextId = styles.Max(e => (int)e.Attribute("Id")!) + 1;
-        var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "block.box", "box.title", "box.source", "figure.caption", "figure.source", "reset" };
+        var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "footnote", "block.box", "box.title", "box.source", "figure.caption", "figure.source", "reset" };
         var ids = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var role in roles)
         {
@@ -213,7 +213,7 @@ internal static partial class HancomPreviewWriter
         first.SetAttributeValue("Style", ids["body"]);
         var roots = new List<XElement> { first, Declaration("begin:template"), Declaration("ir-version:" + IrContract.Version) };
         var figureWidth = Math.Min(142, width * 25.4 / 7200).ToString("0.###", CultureInfo.InvariantCulture);
-        foreach (var role in roles.Where(r => r == "body" || r.StartsWith("heading", StringComparison.Ordinal) || r == "reset"))
+        foreach (var role in roles.Where(r => r == "body" || r == "footnote" || r.StartsWith("heading", StringComparison.Ordinal) || r == "reset"))
             roots.Add(Declaration(role, role));
         roots.Add(TextParagraph("body", "헤딩을 여러 문단으로 구성하려면 해당 headingN 선언을 begin:headingN … slot:headingN … end:headingN 범위로 바꾸세요. 각 이름을 {{ 및 md2hwp: 및 }}로 감싸고, 경계와 제목 슬롯은 각각 독립 문단에 둡니다. N은 1~6이며 같은 수준에 두 방식을 함께 쓰지 않습니다. 블록에 표·글상자·묶음 도형·쪽 나눔과 머리말·감추기·새 번호 제어를 함께 둘 수 있습니다. 제목 슬롯은 표 셀·글상자·머리말·꼬리말 안의 독립 문단에도 놓을 수 있고, 여러 개 두면 같은 제목으로 채웁니다. 절 목록은 begin:each.child:heading2 … slot:heading2 … end:each.child:heading2 범위로 반복하고, 안에 heading3 반복을 중첩할 수 있습니다. 같은 문단 안의 begin:once … end:once 범위는 해당 수준의 첫 헤딩에서만 포함하며, 중첩하거나 제목 슬롯을 감싸지 않습니다."));
         roots.AddRange(new[] { Declaration("list.max-depth:6"),

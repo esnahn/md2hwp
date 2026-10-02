@@ -121,12 +121,13 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
             return matches[0].Attribute("Name")!.Value;
         }
         var styles = new List<ProfileStyle>();
-        foreach (var role in new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6" })
+        foreach (var role in new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "footnote" })
         {
             var index = Single(role);
             Inside(index);
             styles.Add(new(role, StyleName(roots[index])));
         }
+        _ = NativeFootnotes.Bind(document);
         var resetIndex = Single("reset");
         Inside(resetIndex);
         var reset = StyleName(roots[resetIndex]);
