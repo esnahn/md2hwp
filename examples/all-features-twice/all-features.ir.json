@@ -190,6 +190,96 @@
           "value": "확인합니다."
         },
         {
+          "type": "footnote",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "첫"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "번째"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "장의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "참조형"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "각주입니다."
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "strong",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "굵게"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "와"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "link",
+                  "target": "https://example.com/first-note",
+                  "title": null,
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "자료"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "안내"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "확인합니다."
+                }
+              ]
+            }
+          ]
+        },
+        {
           "type": "space"
         },
         {
@@ -3385,6 +3475,96 @@
         {
           "type": "text",
           "value": "확인합니다."
+        },
+        {
+          "type": "footnote",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "두"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "번째"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "장의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "참조형"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "각주입니다."
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "emph",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "기울임"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "과"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "link",
+                  "target": "https://example.com/second-note",
+                  "title": null,
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "자료"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "안내"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "확인합니다."
+                }
+              ]
+            }
+          ]
         },
         {
           "type": "space"

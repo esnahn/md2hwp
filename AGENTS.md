@@ -48,6 +48,30 @@ the title, removing the prefix and one following space, then skipping immediatel
 following blank/whitespace-only lines. With no title slot, preserve all raw lines.
 Keep this template-dependent presentation in the backend; do not add an IR title
 field or parse Markdown syntax inside the remaining verbatim text.
+Markdown input uses commonmark+yaml_metadata_block+footnotes. Reference-style
+footnotes are enabled; inline_notes remains disabled. The 제목: and 출처: rules
+are md2hwp conventions, not CommonMark or Pandoc extension syntax. Document these
+separately in README.md.
+IR inline footnote contains nonempty paragraph blocks. Allow notes in document
+paragraphs, headings and list paragraphs, including formatted spans and link labels.
+Footnote bodies allow multiple paragraphs and existing inline formatting/links/line
+breaks. Reject nested footnotes, nonparagraph footnote blocks, and notes in figure
+alt/caption or box/figure sources explicitly. Count footnote blocks, inlines and text
+against the existing cumulative resource limits. Preserve native FOOTNOTE and
+AUTONUM controls, then verify them after save/reopen.
+Require a plain root paragraph {{md2hwp:footnote}} inside template definitions;
+its full paragraph/character formatting owns generated note body paragraphs.
+The source document SECDEF owns native note numbering, separator and placement
+options. Preserve those options and document/section start numbers. Notes cannot be copied
+into headers, footers or master pages; fail explicitly for such heading slots.
+Never derive options from inline text or hardcoded
+fixture coordinates.
+Hancom 2020 may export OnPage AUTONUM Number="1" for every note while displaying
+1, 2 on each page. Normalize only generated note Number attributes for OnPage;
+keep continuous/section numbering and all other structures exact. Verify the
+rendered footnote numbers visually; XML counters alone do not establish display numbering.
+Existing user deployment templates require explicit adoption
+of new declarations or regeneration, even while the development IR remains 0.3.
 Generated tables, HWPX and RST input are deferred.
 
 ## Metadata and dates

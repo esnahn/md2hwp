@@ -113,7 +113,7 @@ IR에는 고정 문서 정보와 지원하는 임의 키의 값, 인식한 날�
 
 [원고 YAML 블록](https://pandoc.org/MANUAL.html#extension-yaml_metadata_block)은
 `commonmark+yaml_metadata_block`으로 읽을 수 있음을 로컬 Pandoc 3.10.1에서 확인했습니다.
-0.3 앱은 `commonmark+yaml_metadata_block`을 사용합니다. 이전 IR 0.2는 메타데이터를 지원하지 않습니다.
+0.3 앱은 `commonmark+yaml_metadata_block+footnotes`를 사용합니다. 이전 IR 0.2는 메타데이터를 지원하지 않습니다.
 
 ## 버전 전환
 
