@@ -1,8 +1,11 @@
-# md2hwp v0.2.0
+# md2hwp v0.3.0 (개발 중)
 
 지원하는 CommonMark 원고를 IR JSON으로 정규화한 뒤, 태그가 있는 기존 HWP
 템플릿을 한글 COM으로 편집합니다. 현재 지원 대상은 Windows x64와 HWP입니다.
 HWPX, 생성 표, 각주, RST 직접 입력은 이번 배포 범위에 포함하지 않습니다.
+
+기본 템플릿과 프로그램은 IR 0.3을 사용합니다. 이전 0.2 원고는 IR을 다시 생성하고,
+사용자 템플릿은 `init-template`으로 0.3 파일을 새로 생성하여 사용하십시오.
 
 ## 빌드
 
@@ -61,7 +64,7 @@ Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔�
 
 `--template`과 Rust의 `--worker`를 생략하면 각 EXE 옆의 `template.hwp`,
 `md2hwp-backend.exe`를 찾습니다. 옵션 방식의 이미지 기준 폴더는 작업 폴더입니다.
-현재 IR `0.2`, 정규화 규칙과 스키마는 실행 파일에 포함됩니다.
+현재 IR `0.3`, 정규화 규칙과 스키마는 실행 파일에 포함됩니다.
 입력 IR과 템플릿의 IR 버전은 프로그램의 현재 IR 버전과 정확히 같아야 합니다.
 변환 규칙과 템플릿에는 별도의 계약 버전을 두지 않습니다.
 
@@ -108,7 +111,7 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 
 ```text
 {{md2hwp:begin:template}}
-{{md2hwp:ir-version:0.2}}
+{{md2hwp:ir-version:0.3}}
 스타일 선언과 목록·박스·그림·출처 원형
 {{md2hwp:end:template}}
 {{md2hwp:content}}
@@ -129,7 +132,7 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 | 태그 이름 | 필수 여부 | 의미·배치 |
 | --- | --- | --- |
 | `begin:template` / `end:template` | 필수 | 템플릿 정의 영역의 시작·끝. 각각 독립 문단 |
-| `ir-version:0.2` | 필수 | 프로그램과 일치해야 하는 IR 버전 |
+| `ir-version:0.3` | 필수 | 프로그램과 일치해야 하는 IR 버전 |
 | `content` | 필수 | 정의 영역 바로 뒤의 삽입 위치. 독립 문단이며 뒤에 마지막 빈 문단 필요 |
 | `body` | 필수 | 본문에 사용할 한글 문단 스타일을 지정하는 샘플 문단 |
 | `heading.N` | 수준별 필수, 블록으로 대체 가능 | N=1~6. 단일 제목 스타일 샘플 |
@@ -177,7 +180,7 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 시작 번호·항목 순서는 원고에서 가져오며 목록 본문은 `body` 스타일을 사용합니다.
 단계별 왼쪽 들여쓰기는 기존 `list.indent-hwp` 계산을 유지합니다.
 목록이 없는 원고에도 두 선언은 필수입니다. 이전 템플릿에는 두 샘플 문단을 추가하거나
-`init-template`으로 새 파일을 생성해야 합니다. IR 버전은 0.2 그대로입니다.
+`init-template`으로 새 파일을 생성해야 합니다. 현재 IR 버전은 0.3입니다.
 
 박스 원형은 다음처럼 구성합니다. 대괄호 안은 배치 설명이며 입력할 문구가 아닙니다.
 
@@ -209,7 +212,7 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 샘플 이미지 내용과 크기는 출력에 사용하지 않습니다. 원고 이미지를 비율에 맞춰 삽입하고,
 샘플의 캡션 위치·간격·폭 설정과 캡션 문단 서식을 가져옵니다. 결과의 설명과 출처는
 실제 그림 개체에 붙은 캡션입니다. 기존 `begin:figure`/`slot:figure.image` 템플릿은
-`init-template`으로 다시 생성하거나 위 구조로 변경해야 합니다. IR은 0.2를 유지합니다.
+`init-template`으로 다시 생성하거나 위 구조로 변경해야 합니다. 현재 IR 버전은 0.3입니다.
 
 그림 캡션은 `{{md2hwp:slot:figure.caption}}`이 들어 있는 **한 문단 전체**를
 원형으로 복제합니다. 같은 문단에 실제 한글 그림 자동번호 개체가 하나 있어야 합니다.
@@ -313,11 +316,55 @@ Source — {{md2hwp:slot:figure.source}}
   다운로드 명령은 빌드 시 lock의 버전을 우선하고, 없으면 공식 최신 안정판을 확인합니다.
   버전 번호 대신 Pandoc JSON 계약의 호환성을 검사합니다.
 
-## v0.1.0 저장소 정리
+IR 0.3의 YAML 메타데이터와 템플릿 태그는 [메타데이터 문서](docs/yaml-variables.md)에 정리했습니다.
 
-빌드에 불필요한 탐색 스크립트, 외부 프로필, 과거 설계·검증 문서와 독립 스모크
-테스트는 Git 이력으로 남겼습니다. 현재 코드·빌드 설정·템플릿과 Rust 테스트에서
-직접 포함하는 JSON fixture만 유지합니다. C#의 일부 클래스 이름은 이전 탐색 시기의
-이름을 유지하지만 현재 렌더러가 사용하는 코드입니다. 과거 탐색 명령은 제공하지 않습니다.
+## YAML 메타데이터와 날짜
+
+원고 맨 앞의 YAML에서 `title`, `subtitle`, `author`, `date`, `publisher`와
+최상위 `md2hwp-<이름>` 문자열 키를 사용할 수 있습니다. author는 문자열 목록도 받습니다.
+템플릿 태그는 `{{md2hwp:meta:<키>}}`이며 표지·문단·표 셀·글상자·머리말·꼬리말과 반복 원형에 넣을 수 있습니다.
+참조하는 값이 없거나 비어 있으면 해당 태그를 포함한 오류를 냅니다.
+
+```yaml
+---
+title: 도시 공간 연구
+author: [홍길동, 김연구]
+date: "2026년 1월 2일"
+publisher: 건축공간연구원
+md2hwp-report-number: "기본 2026-01"
+---
+```
+
+`date`는 원문을 보존합니다. Rust core에서 인식한 날짜는 `date-meta`에 `YYYY-MM-DD`로 저장합니다.
+연도만 입력하면 1월 1일, 연월만 입력하면 1일로 보완하며 현재 날짜는 사용하지 않습니다.
+인식하지 못하는 문구는 date만 보존합니다. YAML에서 date-meta를 직접 지정할 수는 없습니다.
+
+```text
+{{md2hwp:meta:title}}
+{{md2hwp:meta:date}}
+{{md2hwp:meta:date-meta}}
+{{md2hwp:meta:date-meta:fmt:%Y년 %-m월 %-d일}}
+{{md2hwp:meta:md2hwp-report-number}}
+```
+
+입력 형식과 fmt 지시자는 [날짜 계약](docs/date-metadata.md)에 정리했습니다.
+검증 원고와 IR은 [`examples/metadata/`](examples/metadata/)에 있습니다.
+0.2 IR은 원고에서 다시 생성해야 하며, 템플릿도 0.3으로 다시 생성하여 사용하십시오.
+
+백엔드의 COM 없는 메타데이터 계약 검증:
+
+```powershell
+pwsh -NoProfile -File tools/development/dotnet.ps1 run --project tests/backend-contract/Md2Hwp.Backend.Tests.csproj
+```
+
+## 저장소 구성과 정리 이력
+
+첫 릴리스 준비 과정에서 빌드에 불필요한 탐색 스크립트, 외부 프로필, 과거 설계·검증
+문서와 독립 스모크 테스트를 정리했으며, 실제 릴리스 버전은 v0.2.0으로 확정했습니다.
+삭제한 자료는 Git 이력에 남아 있습니다. 현재는 코드·빌드 설정·템플릿뿐 아니라 사용
+문서, 검증 원고·이미지·IR, 테스트 fixture와 유지하는 의존성 스크립트도 추적합니다.
+Rust 테스트에서 직접 포함하는 JSON fixture는 테스트 빌드에 필요합니다. C#의 일부
+클래스 이름은 이전 탐색 시기의 이름을 유지하지만 현재 렌더러가 사용하는 코드입니다.
+과거 탐색 명령은 제공하지 않습니다.
 `dependencies/lock.json`은 개발 재현성 메타데이터이며 배포 파일이 아닙니다.
 한글 보안 모듈 개발 pin은 유지하되 사용자 런타임에서는 강제하지 않습니다.

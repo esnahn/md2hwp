@@ -1,10 +1,12 @@
 # AGENTS.md
 
-## v0.1.0 repository boundary
+## Repository boundary
 
-The user requested removal of tracked files not needed to build the v0.1.0
-application. Historical investigations and documentation are recoverable from
-Git history; do not recreate scaffolding or obsolete investigation workflows.
+The repository was cleaned up while preparing the first release, ultimately
+published as v0.2.0. Keep current application/build sources, templates, active
+documentation, test fixtures and examples, and maintained dependency scripts.
+Historical investigations and obsolete documentation are recoverable from Git
+history; do not recreate scaffolding or obsolete investigation workflows.
 Keep README.md accurate. Build via tools/development/build.ps1; verify Rust with
 cargo test --workspace. The old standalone smoke scripts and canonical COM probe
 were removed by this cleanup; do not claim they still exist or have passed.
@@ -18,7 +20,7 @@ The JSON fixtures still tracked are included directly by Rust test compilation.
 
 Keep Pandoc invocation in the app and Pandoc AST handling in the core. Backends
 consume validated IR. Preserve Unicode. Reject unsupported constructors explicitly.
-Use only the current IR 0.2 closed schema. AST2IR rules target that IR without
+Use only the current IR 0.3 closed schema. AST2IR rules target that IR without
 an independent rules version. Input IR and template ir-version must match the
 program's current IR exactly; reject old versions with regeneration guidance.
 Template-owned begin:template/end:template declarations supply all current IR
@@ -32,6 +34,39 @@ Native list.bullet/list.ordered sample paragraphs own bullet and per-level numbe
 formats; manuscript start numbers and existing depth indentation remain authoritative.
 Verbatim blocks may carry sources. Generated tables, HWPX and RST input are deferred.
 
+## Metadata and dates
+
+Markdown front matter supports title, subtitle, author, date, publisher and
+nonempty top-level md2hwp-<name> keys. Custom values are strings; author also
+accepts a nonempty string list, displayed in order with comma-space separators.
+Document title metadata is separate from heading 1; substitution does not create
+headings or implement chapter-number tracking.
+
+Use {{md2hwp:meta:<key>}} for template substitution. Values are literal text,
+not recursively interpreted as tags, and do not create automatic hyperlinks.
+Tags may span character runs within one paragraph but must not cross controls;
+replacement inherits the first tag character's formatting. Referenced missing
+values are errors. Preserve unrelated template content and native structures.
+
+Rust core preserves the interpreted date display text and derives date-meta as
+YYYY-MM-DD when recognized. YAML cannot supply date-meta directly. Supported
+formats, partial-date defaults and two-digit-year boundaries are specified in
+docs/date-metadata.md; never substitute the current date. Unrecognized or invalid
+dates retain date and omit date-meta. Rust validates the derived value against
+date. The backend validates ISO date-meta and formats it without reparsing date.
+
+Only date-meta accepts fmt, for example
+{{md2hwp:meta:date-meta:fmt:%Y년 %-m월 %-d일}}.
+Supported directives are %Y, %y, %m, %-m, %d, %-d, %F and %%.
+Reject unsupported directives and empty or control-containing format strings.
+Keep docs/yaml-variables.md and docs/date-metadata.md consistent with the code.
+
+Verify Rust with cargo test --workspace and
+cargo clippy --workspace --all-targets -- -D warnings. Run backend contract tests
+through the pinned SDK:
+pwsh -NoProfile -File tools/development/dotnet.ps1 run --project tests/backend-contract/Md2Hwp.Backend.Tests.csproj
+These contract tests do not establish live Hancom or visual layout correctness.
+
 ## Template editing and release continuity
 
 Users may edit target/release/template.hwp directly. It can differ from the tracked
@@ -41,12 +76,12 @@ template outside the build destination, restoring it afterward and verifying its
 hash. The build copies the tracked template into the deployment directory.
 Update the tracked default only when the user authorizes adopting the edited copy.
 
-Align release major/minor versions with the IR version (IR 0.2 corresponds to
-v0.2.0). A Git tag alone does not update application/package version metadata or
+Align release major/minor versions with the IR version (IR 0.3 corresponds to
+v0.3.0). A Git tag alone does not update application/package version metadata or
 README version labels; check their consistency when preparing a release.
 
-Chapter start numbers, chapter-number tracking and document-title substitution
-are deferred to a subsequent IR change. Until implemented explicitly, chapter
+Chapter start numbers and chapter-number tracking are deferred to a subsequent
+IR change. Until implemented explicitly, chapter
 markers such as # in covers and figure captions remain literal template text.
 Native page/figure/table restart controls are separate from chapter-number tracking.
 
