@@ -1,4 +1,4 @@
-# 개발 참고 자료와 로컬 검증 파일
+# 개발 참고 자료
 
 IR 0.2 / v0.2.0 개발에 참고하는 ignored 파일의 보존 목록입니다.
 자료를 별도 압축본으로 전달하거나 다시 준비할 때 파일과 SHA-256을 확인하세요.
@@ -25,7 +25,8 @@ IR 0.2 / v0.2.0 개발에 참고하는 ignored 파일의 보존 목록입니다.
 로컬 출처: AURI 편집양식(2026)의 `서체/` 폴더.
 관련 배포 페이지: [한국출판인회의 KoPubWorld](https://www.kopus.org/biz-electronic-font2/).
 확인 시 해당 페이지가 HTTP 403을 반환했습니다. 개별 파일의 원본 다운로드 주소와 배포 버전은 미확인입니다.
-기본 템플릿에 선언된 바탕체·돋움체의 Bold/Light/Medium을 확인·설치할 때 사용합니다.
+로컬에 보관된 KoPubWorld 바탕체·돋움체의 TTF 6개와 Pro OTF 6개를 함께 기록합니다.
+기본 템플릿의 선언만으로 실제 사용 여부를 판정하지 않으며, 아래 표는 보존할 서체 파일의 목록입니다.
 
 | 파일 | 서체 | SHA-256 |
 | --- | --- | --- |
@@ -35,8 +36,12 @@ IR 0.2 / v0.2.0 개발에 참고하는 ignored 파일의 보존 목록입니다.
 | `auri/auri 연구보고서 편집양식(2026)/서체/KoPubWorld Dotum Bold.ttf` | 돋움체 Bold | `C9DC58E806CF639AD33D7C59B06848D2F4C3CF3B367CE52CD456F79A68407635` |
 | `auri/auri 연구보고서 편집양식(2026)/서체/KoPubWorld Dotum Light.ttf` | 돋움체 Light | `069494CCE21A4222C88E537F256B6F46FEE209375ABA769F82431B2D382BC84F` |
 | `auri/auri 연구보고서 편집양식(2026)/서체/KoPubWorld Dotum Medium.ttf` | 돋움체 Medium | `6269624BD0C5AE8746A8E731B8087F056088AF930A7BBC0EFB76902BF732A293` |
-
-표에는 TTF를 기록했습니다. 별도로 보관된 OTF는 서체 형식의 대안입니다.
+| `auri/auri 연구보고서 편집양식(2026)/서체/KoPubWorld Batang_Pro Bold.otf` | 바탕체 Pro Bold (OTF) | `E7B2E5AB08D0D39B5A09417A1970FD8E0D7FD5464821339ACCD40AA61583B4DD` |
+| `auri/auri 연구보고서 편집양식(2026)/서체/KoPubWorld Batang_Pro Light.otf` | 바탕체 Pro Light (OTF) | `895FDC6DE0FF0FE24B1A63AE16601C174C810B24DAA23ADE78115B7E134C4C0A` |
+| `auri/auri 연구보고서 편집양식(2026)/서체/KoPubWorld Batang_Pro Medium.otf` | 바탕체 Pro Medium (OTF) | `2D385FFBB351F41CBE82D981A0BC10315E01F4E113424A0ED1B7291A801479BB` |
+| `auri/auri 연구보고서 편집양식(2026)/서체/KoPubWorld Dotum_Pro Bold.otf` | 돋움체 Pro Bold (OTF) | `650F21FD744674BE266F7A40095FC8838A2C2FEF05A3F4634362C022D2F81216` |
+| `auri/auri 연구보고서 편집양식(2026)/서체/KoPubWorld Dotum_Pro Light.otf` | 돋움체 Pro Light (OTF) | `529B2F02B96276D9209124A72181FCD7BFC656A567718670D0C3934F6C11ADEA` |
+| `auri/auri 연구보고서 편집양식(2026)/서체/KoPubWorld Dotum_Pro Medium.otf` | 돋움체 Pro Medium (OTF) | `073A3426827351E393BA290A59A072AECD830A5DAF2E9692828CA20F3D5FF4A0` |
 
 ## 한글 자동화 API 문서
 
@@ -57,29 +62,12 @@ IR 0.2 / v0.2.0 개발에 참고하는 ignored 파일의 보존 목록입니다.
 `hwpautomation/ParameterSetTable_2504.pdf`는 위 표의 `hancom-api/ParameterSetTable_2504.pdf`와 동일한 해시입니다.
 PDF에서 추출한 `.txt` 파일은 검색 편의를 위한 자료이며 PDF로 다시 만들 수 있습니다.
 
-## reference 밖의 파일
-
-다음 경로는 저장소 루트 기준입니다.
-
-| 파일 | 용도 | SHA-256 | 출처·복구 방법 |
-| --- | --- | --- | --- |
-| `dependencies/FilePathCheckerModuleExample.dll` | 현재 개발 환경의 한글 보안 모듈 | `9AC5B97C47AC8AED1E8BCA27A3EEF39411361D8F68C262509F0C40A8F9D21BB6` | [한컴 공식 안내](https://developer.hancom.com/hwpautomation), [다운로드·설치 스크립트](../dependencies/install-hancom-security-module.ps1), [개발 pin](../dependencies/lock.json) |
-
-보안 모듈의 해시는 DLL 자체의 해시입니다. 다운로드 ZIP의 해시가 아닙니다.
-위 스크립트는 명시적으로 실행하면 DLL 교체와 사용자 레지스트리 등록을 수행합니다.
-앱 변환과 빌드는 스크립트를 자동 실행하지 않습니다.
-
-검증 원고·IR·그림은 [examples/all-features-twice/](../examples/all-features-twice/)에 Git으로 보관합니다.
-생성된 HWP·페이지 이미지, 빌드 캐시와 EXE는 검증·빌드로 다시 만들 수 있습니다.
-.NET SDK와 Pandoc은 [dependencies/lock.json](../dependencies/lock.json)에 버전·다운로드 주소·해시가 기록되어 있습니다.
-SDK는 [설치 스크립트](../dependencies/install-dotnet-sdk.ps1), Pandoc은 `md2hwp setup-pandoc`으로 준비할 수 있습니다.
-
 ## 해시 확인
 
 저장소 루트의 PowerShell에서 다음처럼 확인합니다.
 
 ```powershell
-Get-FileHash -Algorithm SHA256 -LiteralPath '.eferenceuri auri 기본연구보고서 작성양식.hwp'
+Get-FileHash -Algorithm SHA256 -LiteralPath './reference/auri/01 auri 기본연구보고서 작성양식.hwp'
 ```
 
 다른 해시의 자료를 받았다면 변경된 판본인지 확인하고 이 목록을 갱신하세요.
