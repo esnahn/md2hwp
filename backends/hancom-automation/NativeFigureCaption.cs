@@ -57,6 +57,7 @@ internal sealed class NativeFigureCaption(XElement settings)
         var result = new XDocument(rendered);
         var roots = AuriMinimalBoxPrototype.RootParagraphs(result);
         var index = start;
+        int? lastChapter = null;
         foreach (var operation in plan.Operations)
         {
             if (operation.Kind != "figure") { index++; continue; }
@@ -67,7 +68,12 @@ internal sealed class NativeFigureCaption(XElement settings)
             var paragraphs = new List<XElement> { new(roots[index + 1]) };
             var count = operation.Lines[2].Length > 0 ? 2 : 1;
             if (count == 2) paragraphs.Add(new(roots[index + 2]));
-            caption.Element("PARALIST")!.ReplaceNodes(paragraphs);
+            caption.Element("PARALIST")!.ReplaceNodes(TemplateHeadingNumbers.Fill(paragraphs, operation.Heading1Number));
+            if (operation.Heading1Number is not null && operation.Heading1Number != lastChapter)
+            {
+                root.Elements("TEXT").First().AddFirst(new XElement("NEWNUM",new XAttribute("Number","1"),new XAttribute("NumberType","Figure")));
+                lastChapter = operation.Heading1Number;
+            }
             // LastWidth is Hancom's calculated layout cache, not a user option.
             caption.SetAttributeValue("LastWidth", (string?)caption.Attribute("Side") is "Left" or "Right"
                 ? (string?)caption.Attribute("Width") : (string?)shape.Element("SIZE")?.Attribute("Width"));

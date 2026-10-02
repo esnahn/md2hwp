@@ -54,6 +54,40 @@ var renderedHeading=new XDocument(new XElement("HWPML",new XElement(headingDefin
 var attachPlan=new IrPreviewPlan("fixture","fixture",new PreviewSummary(1,1,0,0,0),new[]{new PreviewOperation("text","title",new[]{"attached title"},ParagraphStyle:"heading1")},[]);
 Check(TaggedTemplateBinding.DirectText(AuriMinimalBoxPrototype.RootParagraphs(attachLayout.Attach(renderedHeading,attachPlan,0)).Single())=="attached title","heading1 block attachment did not parse and fill its title.");
 Console.WriteLine("Heading role, block attachment and child repetition checks passed.");
+var startMetadata=new Dictionary<string,string>{{"md2hwp-heading1-start","3"}};
+Check(TemplateHeadingNumbers.Start(startMetadata)==3 && TemplateHeadingNumbers.Start(new Dictionary<string,string>())==1,"Heading1 start setting.");
+foreach(var invalidStart in new[]{"0","-1","1.5","2147483648"," 3","+3"}) Reject(()=>TemplateHeadingNumbers.Start(new Dictionary<string,string>{{"md2hwp-heading1-start",invalidStart}}));
+var trackedChapters=TemplateHeadingNumbers.Track(headingOperations,3);
+Check(trackedChapters.Select(o=>o.Heading1Number).SequenceEqual(new int?[]{3,3,3,3,4,4}),"Heading1 tracking incremented child headings.");
+Check(TemplateHeadingNumbers.Track(new[]{new PreviewOperation("figure","figure",[])},3).Single().Heading1Number is null,"Figure before first heading1 acquired a chapter.");
+Reject(()=>TemplateHeadingNumbers.Track(headingOperations,int.MaxValue));
+var chapterSlots=XDocument.Parse("<DOC><P><TEXT CharShape='4'><CHAR>Chapter {{md2hwp:slot:heading1.</CHAR></TEXT><TEXT CharShape='5'><CHAR>number}} 끝</CHAR></TEXT></P></DOC>");
+var preparedChapterSlots=TemplateHeadingNumbers.Prepare(chapterSlots);
+var filledChapterSlots=TemplateHeadingNumbers.Fill(preparedChapterSlots.Root!.Elements(),3);
+Check(TaggedTemplateBinding.DirectText(filledChapterSlots.Single())=="Chapter 3 끝","Split-run heading1 number slot.");
+Check((string?)filledChapterSlots.Single().Element("TEXT")!.Attribute("CharShape")=="4","Heading1 number formatting changed.");
+Reject(()=>TemplateHeadingNumbers.Fill(preparedChapterSlots.Root!.Elements(),null));
+Reject(()=>TemplateHeadingNumbers.RequireResolved(preparedChapterSlots));
+var unresolvedText=TaggedTemplateBinding.DirectText(preparedChapterSlots.Root!.Elements().Single());
+var splitUnresolved=new XDocument(new XElement("DOC",new XElement("P",new XElement("TEXT",new XElement("CHAR",unresolvedText[..(unresolvedText.Length/2)])),new XElement("TEXT",new XElement("CHAR",unresolvedText[(unresolvedText.Length/2)..])))));
+Reject(()=>TemplateHeadingNumbers.RequireResolved(splitUnresolved));
+var nativeCaptionRoots=new List<XElement>();
+foreach(var chapter in new[]{3,3,4,4}) {
+    nativeCaptionRoots.Add(new XElement("P",new XElement("TEXT",new XAttribute("CharShape","0"),new XElement("PICTURE",new XElement("SHAPEOBJECT",new XElement("SIZE",new XAttribute("Width","10000")))))));
+    var paragraph=HeadingParagraph("[그림 "+TemplateHeadingNumbers.Tag+"-");
+    paragraph.Element("TEXT")!.Add(new XElement("AUTONUM",new XAttribute("NumberType","Figure"),new XAttribute("Number","99")),new XElement("CHAR","] caption"));
+    nativeCaptionRoots.Add(paragraph);
+}
+var fakeCaptionDocument=TemplateHeadingNumbers.Prepare(new XDocument(new XElement("HWPML",new XElement("BODY",new XElement("SECTION",nativeCaptionRoots)))));
+var captionPlan=new IrPreviewPlan("fixture","fixture",new PreviewSummary(4,0,0,4,0),new[]{3,3,4,4}.Select(n=>new PreviewOperation("figure","figure",new[]{"image","caption",""},Heading1Number:n)).ToArray(),[]);
+var captionLayout=new NativeFigureCaption(new XElement("CAPTION",new XAttribute("Side","Bottom"),new XElement("PARALIST")));
+var chapterPictures=captionLayout.Attach(fakeCaptionDocument,captionPlan,0);
+TemplateHeadingBlocks.RecalculateFigureNumbers(chapterPictures);
+TemplateHeadingNumbers.RequireResolved(chapterPictures);
+Check(chapterPictures.Descendants("NEWNUM").Count()==2,"Figure counters must restart once per chapter.");
+Check(chapterPictures.Descendants("AUTONUM").Select(e=>(string)e.Attribute("Number")!).SequenceEqual(new[]{"1","2","1","2"}),"Figure counters did not restart at the second chapter.");
+Check(chapterPictures.Descendants("CAPTION").Select(c=>TaggedTemplateBinding.DirectText(c.Descendants("P").Single())).SequenceEqual(new[]{"[그림 3-] caption","[그림 3-] caption","[그림 4-] caption","[그림 4-] caption"}),"Caption chapter numbers were not filled from the figure operation.");
+Console.WriteLine("Heading1 start, number slots and native figure restart checks passed.");
 var metadata = new Dictionary<string,string> {
     ["title"]="문서 제목", ["date"]="2026년 1월 2일", ["date-meta"]="2026-01-02",
     ["md2hwp-report-number"]="기본 2026-01", ["md2hwp-literal"]="{{md2hwp:meta:title}}"

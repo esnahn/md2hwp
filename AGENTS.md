@@ -48,7 +48,8 @@ Markdown front matter supports title, subtitle, author, date, publisher and
 nonempty top-level md2hwp-<name> keys. Custom values are strings; author also
 accepts a nonempty string list, displayed in order with comma-space separators.
 Document title metadata is separate from heading 1; substitution does not create
-headings or implement chapter-number tracking.
+headings. md2hwp-heading1-start is a reserved positive decimal setting (default 1),
+validated by Rust and the backend; the IR carries its string value in metadata.
 
 Use {{md2hwp:meta:<key>}} for template substitution. Values are literal text,
 not recursively interpreted as tags, and do not create automatic hyperlinks.
@@ -89,10 +90,12 @@ Align release major/minor versions with the IR version (IR 0.3 corresponds to
 v0.3.0). A Git tag alone does not update application/package version metadata or
 README version labels; check their consistency when preparing a release.
 
-Chapter start numbers and chapter-number tracking are deferred to a subsequent
-IR change. Until implemented explicitly, chapter
-markers such as # in covers and figure captions remain literal template text.
-Native page/figure/table restart controls are separate from chapter-number tracking.
+Track heading1 from md2hwp-heading1-start, incrementing only for heading1.
+Use slot:heading1.number inside heading blocks and native figure captions; preserve
+its first character formatting, reject unresolved or orphan slots. Figure counters
+restart with a native NEWNUM Figure=1 at the first figure of each chapter. Keep
+AUTONUM as native controls. Literal # markers remain unchanged without the new slot.
+User deployment templates require explicit authorization before adopting new slots.
 
 Fixed-size text boxes can overflow when titles or child-heading lists grow.
 Structural save/reopen checks do not detect visual clipping or overlap. Inspect

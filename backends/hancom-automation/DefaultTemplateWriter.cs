@@ -200,7 +200,7 @@ internal static partial class HancomPreviewWriter
 
         var figureNumber = new XElement("AUTONUM", new XAttribute("Number", 1), new XAttribute("NumberType", "Figure"),
             new XElement("AUTONUMFORMAT", new XAttribute("Superscript", "false"), new XAttribute("Type", "Digit")));
-        var figureCaption = Paragraph("figure.caption", new XElement("CHAR", "[그림 "), figureNumber,
+        var figureCaption = Paragraph("figure.caption", new XElement("CHAR", "[그림 " + TemplateHeadingNumbers.Tag + "-"), figureNumber,
             new XElement("CHAR", "] " + TaggedTemplateBinding.Tag("slot:figure.caption")));
         var picture = new XElement(result.Descendants("PICTURE").Single());
         var pictureShape = picture.Element("SHAPEOBJECT")!;

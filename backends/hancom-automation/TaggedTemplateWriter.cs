@@ -24,7 +24,7 @@ internal static partial class HancomPreviewWriter
             {
                 Open(hwp, temporary, visible);
                 var preparedMetadata = TemplateMetadata.Prepare(HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", "")), metadata);
-                XDocument document = TaggedTemplateBinding.PreserveBeginSectionSettings(preparedMetadata.Document);
+                XDocument document = TemplateHeadingNumbers.Prepare(TaggedTemplateBinding.PreserveBeginSectionSettings(preparedMetadata.Document));
                 var headings = TemplateHeadingBlocks.Lower(document);
                 var nativeFigure = NativeFigureCaption.Lower(headings.Document);
                 _ = TaggedTemplateBinding.ReadFlat(nativeFigure.Document, temporary);
@@ -95,6 +95,8 @@ internal static partial class HancomPreviewWriter
                     prefix.SelectMany(p => p.Descendants()).Count(e => e.Name.LocalName == "AUTONUM" && (string?)e.Attribute("NumberType") == "Figure") + plan.Summary.FigureOperations)
                     throw new InvalidOperationException("Unexpected generated caption count.");
                 var attached = preparedMetadata.Restore(headings.Layout.Attach(nativeFigure.Layout.Attach(finalDocument, plan, start), plan, start));
+                TemplateHeadingNumbers.RequireResolved(attached);
+                TemplateHeadingBlocks.RecalculateFigureNumbers(attached);
                 ImportFigureDocument(hwp, attached, headings.Layout);
                 if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
                     throw new InvalidOperationException("Could not save native figure captions.");

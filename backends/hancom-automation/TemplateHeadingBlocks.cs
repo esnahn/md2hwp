@@ -93,7 +93,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             TemplateOnceRanges.Apply(instance, usedRoles.Add(operation.ParagraphStyle));
             var block = instance.Select(p => ImportParagraph(p, source, result)).ToArray();
             if ((string?)generated.Attribute("PageBreak") == "true") SetPageBreak(block[0]);
-            block = TemplateHeadingEach.Expand(block, int.Parse(operation.ParagraphStyle[7..]), index, plan,
+            block = TemplateHeadingEach.Expand(TemplateHeadingNumbers.Fill(block, operation.Heading1Number), int.Parse(operation.ParagraphStyle[7..]), index, plan,
                 (target, title, ordinal) =>
                 {
                     target.AddAnnotation(title);
@@ -182,7 +182,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
 
     // NEWNUM is retained verbatim. Update only the calculated Figure AUTONUM
     // display value to agree with the native counter at its new position.
-    private static void RecalculateFigureNumbers(XDocument document)
+    internal static void RecalculateFigureNumbers(XDocument document)
     {
         var next = 1;
         foreach (var element in document.Descendants("SECTION").SelectMany(s => s.Descendants()))

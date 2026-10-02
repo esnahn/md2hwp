@@ -43,13 +43,13 @@ internal sealed record IrPreviewPlan(
         IrContract.RequireCurrent(version, "Input");
 
         var metadata = document.RootElement.GetProperty("metadata");
-        _ = TemplateMetadata.Read(metadata);
+        var metadataValues = TemplateMetadata.Read(metadata);
         var blocks = JsonContract.ExpectArray(document.RootElement.GetProperty("blocks"), "/blocks");
 
         var builder = new PlanBuilder(
             Path.GetFullPath(irPath),
             Path.GetFullPath(repositoryRoot),
-            profile);
+            profile, TemplateHeadingNumbers.Start(metadataValues));
         var index = 0;
         foreach (var block in blocks.EnumerateArray())
         {
@@ -77,7 +77,8 @@ internal sealed record PreviewOperation(
     string? ParagraphStyle = null,
     IReadOnlyList<IReadOnlyList<PreviewTextRun>>? FormattedLines = null,
     PreviewListMarker? ListMarker = null,
-    IReadOnlyList<PreviewTextRun>? SourceRuns = null);
+    IReadOnlyList<PreviewTextRun>? SourceRuns = null,
+    int? Heading1Number = null);
 
 internal sealed record PreviewListMarker(
     int ListId,
@@ -124,7 +125,7 @@ internal sealed record PreviewInlineContent(
 internal sealed class PlanBuilder(
     string irPath,
     string repositoryRoot,
-    InvestigationTemplateProfile profile)
+    InvestigationTemplateProfile profile, int heading1Start = 1)
 {
     private readonly List<PreviewOperation> operations = [];
     private int listItems;
@@ -161,6 +162,7 @@ internal sealed class PlanBuilder(
 
     public IrPreviewPlan Build(int sourceBlocks)
     {
+        var numberedOperations = TemplateHeadingNumbers.Track(operations, heading1Start);
         var textOperations = operations.Count(operation => operation.Kind == "text");
         var boxOperations = operations.Count(operation => operation.Kind == "box");
         var figureOperations = operations.Count(operation => operation.Kind == "figure");
@@ -173,7 +175,7 @@ internal sealed class PlanBuilder(
                 boxOperations,
                 figureOperations,
                 listItems),
-            operations,
+            numberedOperations,
             [
                 "This is an investigation preview, not backend lowering.",
                 "AURI paragraph styles are bound by unique native names during render.",

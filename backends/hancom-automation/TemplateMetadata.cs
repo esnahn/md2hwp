@@ -48,6 +48,7 @@ internal static class TemplateMetadata
             if (!values.ContainsKey("date") || !DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
                 throw new InvalidDataException("/metadata/date-meta: expected derived ISO date with original date.");
         }
+        _ = TemplateHeadingNumbers.Start(values);
         return values;
     }
 
@@ -101,7 +102,7 @@ internal static class TemplateMetadata
 
     // Delayed replacements let native template binding inspect declarations
     // without interpreting literal tag-like text supplied in manuscript metadata.
-    private static XDocument Transform(XDocument source, string prefix, Regex tokens, Func<Match,string> resolve)
+    internal static XDocument Transform(XDocument source, string prefix, Regex tokens, Func<Match,string> resolve)
     {
         var document = new XDocument(source);
         foreach (var paragraph in document.Descendants("P").ToArray())
