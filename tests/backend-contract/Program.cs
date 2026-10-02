@@ -18,7 +18,7 @@ Check(XNode.DeepEquals(retainedSection,sectionRoots[0].Descendants("SECDEF").Sin
 Check(!sectionRoots[1].Descendants("SECDEF").Any() && !sectionRoots[1].Descendants("P").Any(),"Section settings retained in disposable declaration.");
 Check(sectionRoots[1].Attribute("PageBreak") is null && sectionRoots[1].Attribute("ColumnBreak") is null,"False break flags retained in noninitial declaration.");
 Check(XNode.DeepEquals(separatedSection,TaggedTemplateBinding.PreserveBeginSectionSettings(separatedSection)),"Section normalization is not idempotent.");
-foreach (var tag in new[]{"end:template", "body", "begin:heading.1", "begin:figure.caption"}) {
+foreach (var tag in new[]{"end:template", "body", "begin:heading1", "begin:figure.caption"}) {
     var other=new XDocument(sectionFixture);
     other.Descendants("CHAR").Last().Value="unchanged";
     var otherFirst=AuriMinimalBoxPrototype.RootParagraphs(other)[0];
@@ -36,6 +36,24 @@ var unsupportedSection = new XDocument(sectionFixture);
 AuriMinimalBoxPrototype.RootParagraphs(unsupportedSection)[0].Element("TEXT")!.Add(new XElement("TABLE"));
 Check(XNode.DeepEquals(unsupportedSection,TaggedTemplateBinding.PreserveBeginSectionSettings(unsupportedSection)),"Unrelated table control accepted on begin:template.");
 Console.WriteLine("Begin-template section preservation checks passed.");
+static XElement HeadingParagraph(string text) => new("P", new XAttribute("Style", "0"), new XAttribute("ParaShape", "0"), new XElement("TEXT", new XAttribute("CharShape", "0"), new XElement("CHAR", text)));
+var headingFixture = new XDocument(new XElement("HWPML",new XElement("BODY",new XElement("SECTION",new[]{"begin:template","begin:heading1","slot:heading1","begin:each.child:heading2","slot:heading2","end:each.child:heading2","end:heading1","end:template"}.Select(t=>HeadingParagraph(TaggedTemplateBinding.Tag(t)))))));
+var loweredHeading = TemplateHeadingBlocks.Lower(headingFixture);
+Check(AuriMinimalBoxPrototype.RootParagraphs(loweredHeading.Document).Any(p=>TaggedTemplateBinding.DirectText(p)=="{{md2hwp:heading1}}"),"heading1 block was not lowered to the new role.");
+var repeatFixture = new[]{"slot:heading1","begin:each.child:heading2","slot:heading2","end:each.child:heading2"}.Select(t=>HeadingParagraph(TaggedTemplateBinding.Tag(t))).ToArray();
+var headingOperations = new[]{new PreviewOperation("text","parent",[],ParagraphStyle:"heading1"),new PreviewOperation("text","child A",[],ParagraphStyle:"heading2"),new PreviewOperation("text","nested",[],ParagraphStyle:"heading3"),new PreviewOperation("text","child B",[],ParagraphStyle:"heading2"),new PreviewOperation("text","next parent",[],ParagraphStyle:"heading1"),new PreviewOperation("text","other child",[],ParagraphStyle:"heading2")};
+var headingPlan = new IrPreviewPlan("fixture","fixture",new PreviewSummary(6,6,0,0,0),headingOperations,[]);
+var repeatedHeadings=TemplateHeadingEach.Expand(repeatFixture,1,0,headingPlan,(p,operation,_)=>p.Element("TEXT")!.Element("CHAR")!.Value=operation.Label);
+Check(repeatedHeadings.Select(TaggedTemplateBinding.DirectText).SequenceEqual(new[]{"parent","child A","child B"}),"heading2 child repetition parsed the wrong heading level or crossed the next heading1.");
+Reject(()=>TemplateHeadingEach.Validate(new[]{HeadingParagraph("{{md2hwp:slot:heading.1}}")},1));
+var attachFixture=new XDocument(headingFixture);
+var headingDefinitions=new XElement("HEAD",new XElement("PARASHAPELIST",new XElement("PARASHAPE",new XAttribute("Id","0"))),new XElement("CHARSHAPELIST",new XElement("CHARSHAPE",new XAttribute("Id","0"))));
+attachFixture.Root!.AddFirst(headingDefinitions);
+var attachLayout=TemplateHeadingBlocks.Lower(attachFixture).Layout;
+var renderedHeading=new XDocument(new XElement("HWPML",new XElement(headingDefinitions),new XElement("BODY",new XElement("SECTION",HeadingParagraph("generated title")))));
+var attachPlan=new IrPreviewPlan("fixture","fixture",new PreviewSummary(1,1,0,0,0),new[]{new PreviewOperation("text","title",new[]{"attached title"},ParagraphStyle:"heading1")},[]);
+Check(TaggedTemplateBinding.DirectText(AuriMinimalBoxPrototype.RootParagraphs(attachLayout.Attach(renderedHeading,attachPlan,0)).Single())=="attached title","heading1 block attachment did not parse and fill its title.");
+Console.WriteLine("Heading role, block attachment and child repetition checks passed.");
 var metadata = new Dictionary<string,string> {
     ["title"]="문서 제목", ["date"]="2026년 1월 2일", ["date-meta"]="2026-01-02",
     ["md2hwp-report-number"]="기본 2026-01", ["md2hwp-literal"]="{{md2hwp:meta:title}}"
@@ -75,5 +93,7 @@ if (args.Length==2) {
     var after=AuriMinimalBoxPrototype.RootParagraphs(actual);
     TemplateRangeStructure.RequireOriginalStyleDefinitions(expected,actual,before);
     Check(TemplateRangeStructure.Equivalent(before,after,expected,actual),"Native template changed: "+TemplateRangeStructure.DescribeDifference(before,after));
-    Console.WriteLine("Native template save/reopen structure and styles preserved.");
+    _ = TaggedTemplateBinding.Read(TemplateMetadata.Prepare(actual,metadata).Document,args[1]);
+    Check(expected.Descendants("BINDATA").Select(e=>e.Value).SequenceEqual(actual.Descendants("BINDATA").Select(e=>e.Value)),"Embedded template image data changed.");
+    Console.WriteLine("Native template save/reopen structure, styles, embedded images and new heading tags preserved.");
 }

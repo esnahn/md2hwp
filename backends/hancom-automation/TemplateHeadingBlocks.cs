@@ -34,7 +34,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
         var pageBreakAfter = new HashSet<string>();
         for (var level = 1; level <= 6; level++)
         {
-            var role = $"heading.{level}";
+            var role = $"heading{level}";
             var roots = AuriMinimalBoxPrototype.RootParagraphs(document).ToArray();
             var begin = roots.Where(p => TaggedTemplateBinding.DirectText(p) == TaggedTemplateBinding.Tag("begin:" + role)).ToArray();
             var end = roots.Where(p => TaggedTemplateBinding.DirectText(p) == TaggedTemplateBinding.Tag("end:" + role)).ToArray();
@@ -93,7 +93,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             TemplateOnceRanges.Apply(instance, usedRoles.Add(operation.ParagraphStyle));
             var block = instance.Select(p => ImportParagraph(p, source, result)).ToArray();
             if ((string?)generated.Attribute("PageBreak") == "true") SetPageBreak(block[0]);
-            block = TemplateHeadingEach.Expand(block, int.Parse(operation.ParagraphStyle[8..]), index, plan,
+            block = TemplateHeadingEach.Expand(block, int.Parse(operation.ParagraphStyle[7..]), index, plan,
                 (target, title, ordinal) =>
                 {
                     target.AddAnnotation(title);

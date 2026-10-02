@@ -121,7 +121,7 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
             return matches[0].Attribute("Name")!.Value;
         }
         var styles = new List<ProfileStyle>();
-        foreach (var role in new[] { "body", "heading.1", "heading.2", "heading.3", "heading.4", "heading.5", "heading.6" })
+        foreach (var role in new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6" })
         {
             var index = Single(role);
             Inside(index);

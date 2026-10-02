@@ -196,7 +196,7 @@ internal sealed class PlanBuilder(
         {
             throw JsonContract.Error(path + "/level", "heading level must be between 1 and 6");
         }
-        var style = $"heading.{level}";
+        var style = $"heading{level}";
         operations.Add(Text(style, style, InlineText.Read(block.GetProperty("inlines"), path + "/inlines")));
     }
 

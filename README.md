@@ -162,7 +162,7 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 | `ir-version:0.3` | 필수 | 프로그램과 일치해야 하는 IR 버전 |
 | `content` | 필수 | 정의 영역 바로 뒤의 삽입 위치. 독립 문단이며 뒤에 마지막 빈 문단 필요 |
 | `body` | 필수 | 본문에 사용할 한글 문단 스타일을 지정하는 샘플 문단 |
-| `heading.N` | 수준별 필수, 블록으로 대체 가능 | N=1~6. 단일 제목 스타일 샘플 |
+| `headingN` | 수준별 필수, 블록으로 대체 가능 | N=1~6. 단일 제목 스타일 샘플 |
 | `reset` | 필수 | 스타일 재적용 때 잠시 거치는 별도 문단 스타일 |
 | `list.max-depth:값` | 필수 설정 | 허용할 중첩 깊이. 정수 1~6 |
 | `list.indent-hwp:값` | 필수 설정 | 깊이별 추가 왼쪽 들여쓰기. 정수 1~10000 HWPUNIT |
@@ -173,9 +173,9 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 | `figure.max-width-mm:값` | 필수 설정 | 그림 최대 폭. 0 초과~142mm, 소수점은 `.` 사용 |
 | `begin:figure.caption` / `end:figure.caption` | 필수 | 실제 캡션이 붙은 샘플 그림 문단 하나를 감싸는 독립 경계 문단 |
 | `slot:figure.caption` / `slot:figure.source` | 둘 다 필수 | 그림의 실제 캡션 안에 설명·출처 순서로 각각 한 문단 |
-| `begin:heading.N` / `end:heading.N` | 선택 | 해당 수준의 단일 제목 선언 대신 사용하는 블록 경계 |
-| `slot:heading.N` | 헤딩 블록·반복 범위에서 필수 | 해당 범위의 제목을 넣는 독립 문단. 여러 개 사용 가능 |
-| `begin:each.child:heading.N` / `end:each.child:heading.N` | 선택 | 헤딩 블록 안에서 바로 아래 수준의 제목마다 반복. 중첩 가능 |
+| `begin:headingN` / `end:headingN` | 선택 | 해당 수준의 단일 제목 선언 대신 사용하는 블록 경계 |
+| `slot:headingN` | 헤딩 블록·반복 범위에서 필수 | 해당 범위의 제목을 넣는 독립 문단. 여러 개 사용 가능 |
+| `begin:each.child:headingN` / `end:each.child:headingN` | 선택 | 헤딩 블록 안에서 바로 아래 수준의 제목마다 반복. 중첩 가능 |
 | `begin:once` / `end:once` | 선택 | 헤딩 블록 안의 같은 문단에서 첫 사용에만 남길 인라인 범위 |
 
 ### 필수 선언과 샘플
@@ -273,15 +273,16 @@ Source — {{md2hwp:slot:figure.source}}
 
 ### 선택적인 헤딩 블록
 
-기본 `heading.1`~`heading.6`은 단일 문단 선언입니다. 특정 수준을 여러 문단으로
+제목 태그는 `heading1`~`heading6`으로 표기합니다. 이전 `heading.1` 형식은 지원하지 않습니다.
+기본 `heading1`~`heading6`은 단일 문단 선언입니다. 특정 수준을 여러 문단으로
 구성하려면 그 선언 대신 다음 범위를 사용합니다. `init-template`에도 안내가 포함됩니다.
 
 ```text
-{{md2hwp:begin:heading.1}}
+{{md2hwp:begin:heading1}}
 장 제목 앞에 반복할 문구
-{{md2hwp:slot:heading.1}}
+{{md2hwp:slot:heading1}}
 장 제목 뒤에 반복할 문구
-{{md2hwp:end:heading.1}}
+{{md2hwp:end:heading1}}
 ```
 
 범위 안의 문단과 표·글상자·묶음 도형을 복제하고 독립 문단인 제목 슬롯만 원고의 제목으로
@@ -301,15 +302,15 @@ Source — {{md2hwp:slot:figure.source}}
 독립 문단이며, 경계 쌍은 같은 본문·표 셀·글상자 문단 목록 안에 있어야 합니다.
 
 ```text
-{{md2hwp:begin:each.child:heading.2}}
-{{md2hwp:slot:heading.2}}
-{{md2hwp:begin:each.child:heading.3}}
-{{md2hwp:slot:heading.3}}
-{{md2hwp:end:each.child:heading.3}}
-{{md2hwp:end:each.child:heading.2}}
+{{md2hwp:begin:each.child:heading2}}
+{{md2hwp:slot:heading2}}
+{{md2hwp:begin:each.child:heading3}}
+{{md2hwp:slot:heading3}}
+{{md2hwp:end:each.child:heading3}}
+{{md2hwp:end:each.child:heading2}}
 ```
 
-`heading.1` 블록에서는 그 장의 헤딩2를, 안쪽 반복에서는 현재 헤딩2의 헤딩3을 원고
+`heading1` 블록에서는 그 장의 헤딩2를, 안쪽 반복에서는 현재 헤딩2의 헤딩3을 원고
 순서대로 가져옵니다. 다음 같은 수준 또는 상위 헤딩에서 소속 범위가 끝납니다.
 반복 대상은 정확히 한 단계 아래여야 하며, 건너뛴 수준은 끌어올리지 않습니다.
 자식이 없으면 반복 내용은 생략합니다. 빈 글상자·표 셀 자체는 유지됩니다.

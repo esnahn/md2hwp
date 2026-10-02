@@ -791,7 +791,7 @@ internal static partial class HancomPreviewWriter
                     expected.ListMarker,
                     nativeStyle,
                     styles.Profile.Lists,
-                    expected.SymbolicStyle.StartsWith("heading.", StringComparison.Ordinal)) ||
+                    expected.SymbolicStyle.StartsWith("heading", StringComparison.Ordinal)) ||
                 !actual.Text.Contains(expected.Text, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(

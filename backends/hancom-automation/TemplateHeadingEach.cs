@@ -5,7 +5,7 @@ namespace Md2Hwp.HancomIrPreview;
 
 internal static class TemplateHeadingEach
 {
-    private static readonly Regex Marker = new(@"^\{\{md2hwp:(begin|end):each\.child:heading\.([1-6])\}\}$", RegexOptions.CultureInvariant);
+    private static readonly Regex Marker = new(@"^\{\{md2hwp:(begin|end):each\.child:heading([1-6])\}\}$", RegexOptions.CultureInvariant);
 
     internal static XElement[] Validate(IEnumerable<XElement> roots, int level)
     {
@@ -34,7 +34,7 @@ internal static class TemplateHeadingEach
                 Plain(p);
                 if (marker.Groups[1].Value != "begin") throw new InvalidDataException("Unmatched each.child end boundary.");
                 var childLevel = int.Parse(marker.Groups[2].Value);
-                if (childLevel != level + 1) throw new InvalidDataException($"heading.{level} can repeat only each.child:heading.{level + 1}.");
+                if (childLevel != level + 1) throw new InvalidDataException($"heading{level} can repeat only each.child:heading{level + 1}.");
                 var stack = new Stack<int>(); stack.Push(childLevel);
                 int end = i + 1;
                 for (; end < paragraphs.Length; end++)
@@ -71,10 +71,10 @@ internal static class TemplateHeadingEach
                 if (element.Name.LocalName == "P")
                 {
                     var direct = TaggedTemplateBinding.DirectText(element);
-                    if (direct == TaggedTemplateBinding.Tag($"slot:heading.{level}"))
+                    if (direct == TaggedTemplateBinding.Tag($"slot:heading{level}"))
                     { Plain(element); slots++; fill(element, plan is null ? null : plan.Operations[index!.Value], ordinal); return; }
                     if (direct.Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal))
-                        throw new InvalidDataException($"Unexpected declaration in heading.{level} scope: {direct}");
+                        throw new InvalidDataException($"Unexpected declaration in heading{level} scope: {direct}");
                 }
                 if (element.Elements("P").Any())
                 {
@@ -99,7 +99,7 @@ internal static class TemplateHeadingEach
             Visit(p); output.Add(p);
         }
         reportCount?.Invoke(slots);
-        if (requireSlot && slots == 0) throw new InvalidDataException($"heading.{level} scope requires at least one standalone slot:heading.{level} paragraph.");
+        if (requireSlot && slots == 0) throw new InvalidDataException($"heading{level} scope requires at least one standalone slot:heading{level} paragraph.");
         return output.ToArray();
     }
 
@@ -116,8 +116,8 @@ internal static class TemplateHeadingEach
         for (var i = index + 1; i < plan.Operations.Count; i++)
         {
             var role = plan.Operations[i].ParagraphStyle;
-            if (plan.Operations[i].Kind != "text" || role is null || !role.StartsWith("heading.", StringComparison.Ordinal)) continue;
-            var next = int.Parse(role[8..]);
+            if (plan.Operations[i].Kind != "text" || role is null || !role.StartsWith("heading", StringComparison.Ordinal)) continue;
+            var next = int.Parse(role[7..]);
             if (next <= level) yield break;
             if (next == level + 1) yield return i;
         }

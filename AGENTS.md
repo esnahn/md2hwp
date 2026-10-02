@@ -29,6 +29,8 @@ program's current IR exactly; reject old versions with regeneration guidance.
 Template-owned begin:template/end:template declarations supply all current IR
 styles and prototype ranges, including roles unused by the manuscript;
 do not restore runtime external profiles. Preserve unrelated template content.
+Heading roles and template tags use heading1 through heading6 (no dot between
+heading and its level), including begin/end/slot and each.child ranges.
 Only begin:template may carry native SECDEF/COLDEF controls. Preserve those
 settings outside disposable definitions in the working document, without changing
 the source template. Do not extend this exception to other declarations.
