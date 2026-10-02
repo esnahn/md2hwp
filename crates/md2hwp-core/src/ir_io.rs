@@ -506,4 +506,36 @@ mod tests {
             IrReadErrorCode::InvalidIrSemantics
         );
     }
+    #[test]
+    fn footnote_schema_is_closed_and_its_body_is_paragraph_only() {
+        use serde_json::json;
+        let limits = ValidationLimits::default();
+        let base = json!({"schema":"md2hwp.ir","ir_version":"0.3","metadata":{},
+        "blocks":[{"type":"paragraph","inlines":[{"type":"footnote","blocks":[
+            {"type":"paragraph","inlines":[{"type":"text","value":"note"}]}
+        ]}]}]});
+        for (field, value) in [
+            ("extra", json!(true)),
+            ("blocks", json!([])),
+            (
+                "blocks",
+                json!([{"type":"heading","level":1,"inlines":[{"type":"text","value":"note"}]}]),
+            ),
+        ] {
+            let mut input = base.clone();
+            input["blocks"][0]["inlines"][0][field] = value;
+            assert_eq!(
+                read_ir(&serde_json::to_vec(&input).unwrap(), &limits)
+                    .unwrap_err()
+                    .code,
+                IrReadErrorCode::InvalidIrSchema
+            );
+        }
+        let mut input = base.clone();
+        input["blocks"][0]["inlines"][0]["blocks"][0]["inlines"][0] =
+            base["blocks"][0]["inlines"][0].clone();
+        let error = read_ir(&serde_json::to_vec(&input).unwrap(), &limits).unwrap_err();
+        assert_eq!(error.code, IrReadErrorCode::InvalidIrSemantics);
+        assert_eq!(error.path, "/blocks/0/inlines/0/blocks/0/inlines/0");
+    }
 }

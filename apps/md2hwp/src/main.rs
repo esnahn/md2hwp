@@ -338,7 +338,10 @@ fn is_pandoc_version_line(line: &str) -> bool {
 
 fn invoke_pandoc(path: &Path, source: &[u8]) -> Result<Vec<u8>, AppError> {
     let mut child = Command::new(path)
-        .args(["--from=commonmark+yaml_metadata_block", "--to=json"])
+        .args([
+            "--from=commonmark+yaml_metadata_block+footnotes",
+            "--to=json",
+        ])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

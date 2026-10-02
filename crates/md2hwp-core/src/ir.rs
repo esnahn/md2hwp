@@ -101,7 +101,16 @@ pub struct ImageRef {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+pub enum FootnoteBlock {
+    Paragraph { inlines: Vec<Inline> },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Inline {
+    Footnote {
+        blocks: Vec<FootnoteBlock>,
+    },
     Text {
         value: String,
     },

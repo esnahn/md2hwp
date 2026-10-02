@@ -216,6 +216,9 @@
       "additionalProperties": false,
       "minProperties": 1,
       "properties": {
+        "Note": {
+          "$ref": "#/$defs/footnote_handler"
+        },
         "Str": {
           "$ref": "#/$defs/text_handler"
         },
@@ -259,6 +262,12 @@
           }
         }
       }
+    },
+    "footnote_handler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["handler"],
+      "properties": {"handler": {"const": "footnote"}}
     },
     "text_handler": {
       "type": "object",

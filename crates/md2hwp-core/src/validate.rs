@@ -5,7 +5,8 @@ use std::fmt;
 use icu_normalizer::ComposingNormalizerBorrowed;
 
 use crate::ir::{
-    Block, Document, IR_VERSION, Inline, ListItem, ListItemBlock, ListKind, SCHEMA_NAME,
+    Block, Document, FootnoteBlock, IR_VERSION, Inline, ListItem, ListItemBlock, ListKind,
+    SCHEMA_NAME,
 };
 
 const NFC: ComposingNormalizerBorrowed<'static> = ComposingNormalizerBorrowed::new_nfc();
@@ -169,7 +170,7 @@ impl State<'_> {
         self.add_limited("blocks", path, 1)?;
         match block {
             Block::Paragraph { inlines } => {
-                self.inline_array(inlines, &format!("{path}/inlines"), false)
+                self.inline_array(inlines, &format!("{path}/inlines"), false, true)
             }
             Block::Heading { level, inlines } => {
                 self.require(
@@ -177,7 +178,7 @@ impl State<'_> {
                     &format!("{path}/level"),
                     "heading level must be between 1 and 6",
                 )?;
-                self.inline_array(inlines, &format!("{path}/inlines"), false)
+                self.inline_array(inlines, &format!("{path}/inlines"), false, true)
             }
             Block::VerbatimBlock { lines, source } => {
                 self.require(
@@ -196,7 +197,7 @@ impl State<'_> {
                     self.add_limited("text bytes", &line_path, line.len())?;
                 }
                 if let Some(source) = source {
-                    self.inline_array(source, &format!("{path}/source"), false)?;
+                    self.inline_array(source, &format!("{path}/source"), false, false)?;
                 }
                 Ok(())
             }
@@ -219,10 +220,10 @@ impl State<'_> {
                         "image title",
                     )?;
                 }
-                self.inline_array(&image.alt, &format!("{path}/image/alt"), true)?;
-                self.inline_array(caption, &format!("{path}/caption"), false)?;
+                self.inline_array(&image.alt, &format!("{path}/image/alt"), true, false)?;
+                self.inline_array(caption, &format!("{path}/caption"), false, false)?;
                 if let Some(source) = source {
-                    self.inline_array(source, &format!("{path}/source"), false)?;
+                    self.inline_array(source, &format!("{path}/source"), false, false)?;
                 }
                 Ok(())
             }
@@ -284,7 +285,7 @@ impl State<'_> {
             self.add_limited("blocks", &block_path, 1)?;
             match block {
                 ListItemBlock::Paragraph { inlines } => {
-                    self.inline_array(inlines, &format!("{block_path}/inlines"), false)?;
+                    self.inline_array(inlines, &format!("{block_path}/inlines"), false, true)?;
                 }
                 ListItemBlock::List {
                     kind,
@@ -302,12 +303,13 @@ impl State<'_> {
         inlines: &[Inline],
         path: &str,
         allow_empty: bool,
+        allow_footnote: bool,
     ) -> Result<(), SemanticError> {
         if !allow_empty {
             self.require(!inlines.is_empty(), path, "inline array must not be empty")?;
         }
         for (index, inline) in inlines.iter().enumerate() {
-            self.inline(inline, &format!("{path}/{index}"), false)?;
+            self.inline(inline, &format!("{path}/{index}"), false, allow_footnote)?;
         }
         Ok(())
     }
@@ -317,9 +319,26 @@ impl State<'_> {
         inline: &Inline,
         path: &str,
         inside_link: bool,
+        allow_footnote: bool,
     ) -> Result<(), SemanticError> {
         self.add_limited("inlines", path, 1)?;
         match inline {
+            Inline::Footnote { blocks } => {
+                self.require(allow_footnote, path,
+                    "footnotes are allowed only in document paragraphs, headings and list paragraphs; nested footnotes are not supported")?;
+                self.require(
+                    !blocks.is_empty(),
+                    &format!("{path}/blocks"),
+                    "footnote must contain at least one paragraph",
+                )?;
+                for (index, block) in blocks.iter().enumerate() {
+                    let block_path = format!("{path}/blocks/{index}");
+                    self.add_limited("blocks", &block_path, 1)?;
+                    let FootnoteBlock::Paragraph { inlines } = block;
+                    self.inline_array(inlines, &format!("{block_path}/inlines"), false, false)?;
+                }
+                Ok(())
+            }
             Inline::Text { value } => {
                 self.require(
                     !value.is_empty(),
@@ -342,7 +361,12 @@ impl State<'_> {
                     "marked inline array must not be empty",
                 )?;
                 for (index, child) in inlines.iter().enumerate() {
-                    self.inline(child, &format!("{path}/inlines/{index}"), inside_link)?;
+                    self.inline(
+                        child,
+                        &format!("{path}/inlines/{index}"),
+                        inside_link,
+                        allow_footnote,
+                    )?;
                 }
                 Ok(())
             }
@@ -362,7 +386,12 @@ impl State<'_> {
                     "link label must not be empty",
                 )?;
                 for (index, child) in inlines.iter().enumerate() {
-                    self.inline(child, &format!("{path}/inlines/{index}"), true)?;
+                    self.inline(
+                        child,
+                        &format!("{path}/inlines/{index}"),
+                        true,
+                        allow_footnote,
+                    )?;
                 }
                 Ok(())
             }
@@ -704,5 +733,110 @@ mod tests {
             source: None,
         }]);
         validate(input, &ValidationLimits::default()).unwrap();
+    }
+    fn footnote(inlines: Vec<Inline>) -> Inline {
+        Inline::Footnote {
+            blocks: vec![FootnoteBlock::Paragraph { inlines }],
+        }
+    }
+
+    #[test]
+    fn footnotes_share_cumulative_block_inline_and_text_limits() {
+        let input = document(vec![Block::Paragraph {
+            inlines: vec![footnote(vec![text("abcdef")])],
+        }]);
+        for (limits, expected) in [
+            (
+                ValidationLimits {
+                    max_blocks: 1,
+                    ..ValidationLimits::default()
+                },
+                "blocks limit",
+            ),
+            (
+                ValidationLimits {
+                    max_inlines: 1,
+                    ..ValidationLimits::default()
+                },
+                "inlines limit",
+            ),
+            (
+                ValidationLimits {
+                    max_text_bytes: 5,
+                    ..ValidationLimits::default()
+                },
+                "text bytes limit",
+            ),
+        ] {
+            assert!(
+                validate(input.clone(), &limits)
+                    .unwrap_err()
+                    .message
+                    .contains(expected)
+            );
+        }
+    }
+
+    #[test]
+    fn validates_note_body_text_and_rejects_empty_or_nested_notes() {
+        let error = validate(
+            document(vec![Block::Paragraph {
+                inlines: vec![footnote(vec![text("가")])],
+            }]),
+            &ValidationLimits::default(),
+        )
+        .unwrap_err();
+        assert_eq!(error.path, "/blocks/0/inlines/0/blocks/0/inlines/0/value");
+        assert!(error.message.contains("Unicode NFC"));
+        for note in [
+            Inline::Footnote { blocks: vec![] },
+            footnote(vec![]),
+            footnote(vec![Inline::Strong {
+                inlines: vec![footnote(vec![text("nested")])],
+            }]),
+        ] {
+            assert!(
+                validate(
+                    document(vec![Block::Paragraph {
+                        inlines: vec![note]
+                    }]),
+                    &ValidationLimits::default()
+                )
+                .is_err()
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_direct_ir_notes_in_every_figure_and_source_field() {
+        let figure = Block::Figure {
+            image: ImageRef {
+                path: "image.png".into(),
+                alt: vec![],
+                title: None,
+            },
+            caption: vec![text("caption")],
+            source: None,
+        };
+        for field in ["alt", "caption", "source"] {
+            let mut block = figure.clone();
+            let Block::Figure {
+                image,
+                caption,
+                source,
+            } = &mut block
+            else {
+                unreachable!()
+            };
+            let value = vec![footnote(vec![text("note")])];
+            match field {
+                "alt" => image.alt = value,
+                "caption" => *caption = value,
+                "source" => *source = Some(value),
+                _ => unreachable!(),
+            }
+            let error = validate(document(vec![block]), &ValidationLimits::default()).unwrap_err();
+            assert!(error.message.contains("footnotes are allowed only"));
+        }
     }
 }

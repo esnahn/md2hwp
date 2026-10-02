@@ -1,0 +1,401 @@
+{
+  "schema": "md2hwp.ir",
+  "ir_version": "0.3",
+  "metadata": {
+    "title": "참조형 각주 검증"
+  },
+  "blocks": [
+    {
+      "type": "heading",
+      "level": 2,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "제목의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "각주"
+        },
+        {
+          "type": "footnote",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "제목에"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "붙은"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "각주입니다."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "강제"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "줄바꿈"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "앞입니다."
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "본문의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "각주"
+        },
+        {
+          "type": "footnote",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "strong",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "굵게"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "와"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "emph",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "기울임"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": ","
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "link",
+                  "target": "https://example.net",
+                  "title": "링크 설명",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "링크"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "담습니다."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "둘째"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "문단입니다."
+                },
+                {
+                  "type": "line_break"
+                },
+                {
+                  "type": "text",
+                  "value": "강제"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "줄바꿈을"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "보존합니다."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": "를"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표시합니다."
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "같은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "참조를"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다시"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "씁니다."
+        },
+        {
+          "type": "footnote",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "strong",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "굵게"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "와"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "emph",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "기울임"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": ","
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "link",
+                  "target": "https://example.net",
+                  "title": "링크 설명",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "링크"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "담습니다."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "둘째"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "문단입니다."
+                },
+                {
+                  "type": "line_break"
+                },
+                {
+                  "type": "text",
+                  "value": "강제"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "줄바꿈을"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "보존합니다."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "list",
+      "kind": "bullet",
+      "tight": true,
+      "items": [
+        {
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "목록"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "항목에도"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "각주가"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "있습니다."
+                },
+                {
+                  "type": "footnote",
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "inlines": [
+                        {
+                          "type": "text",
+                          "value": "목록에"
+                        },
+                        {
+                          "type": "space"
+                        },
+                        {
+                          "type": "text",
+                          "value": "붙은"
+                        },
+                        {
+                          "type": "space"
+                        },
+                        {
+                          "type": "text",
+                          "value": "각주입니다."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

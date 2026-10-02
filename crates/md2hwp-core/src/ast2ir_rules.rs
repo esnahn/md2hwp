@@ -120,6 +120,7 @@ pub enum InlineRule {
     Text,
     Space,
     LineBreak,
+    Footnote,
     Strong,
     Emph,
     Reject,
@@ -234,7 +235,7 @@ mod tests {
         let envelope: Value = serde_json::from_str(RULES_JSON).unwrap();
         assert!(envelope.get("rules_version").is_none());
         assert_eq!(rules.blocks.len(), 6);
-        assert_eq!(rules.inlines.len(), 7);
+        assert_eq!(rules.inlines.len(), 8);
         assert!(matches!(
             rules.inlines.get("SoftBreak"),
             Some(InlineRule::Space)

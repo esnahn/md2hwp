@@ -410,6 +410,9 @@
     "inline": {
       "oneOf": [
         {
+          "$ref": "#/$defs/footnote"
+        },
+        {
           "$ref": "#/$defs/text"
         },
         {
@@ -428,6 +431,20 @@
           "$ref": "#/$defs/link"
         }
       ]
+    },
+    "footnote": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "blocks"],
+      "properties": {
+        "type": {"const": "footnote"},
+        "blocks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/paragraph"}
+        }
+      },
+      "$comment": "Footnotes are permitted in document paragraphs, headings and list paragraphs. Nested footnotes and notes in figure alt/caption or object sources are rejected by semantic validation."
     },
     "text": {
       "type": "object",

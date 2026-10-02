@@ -6,7 +6,8 @@ use serde_json::Value;
 
 use crate::ast2ir_rules::{Ast2IrRules, BlockRule, InlineRule, NumberDelimiter, NumberStyle};
 use crate::ir::{
-    Block, Document, IR_VERSION, ImageRef, Inline, ListItem, ListItemBlock, ListKind, SCHEMA_NAME,
+    Block, Document, FootnoteBlock, IR_VERSION, ImageRef, Inline, ListItem, ListItemBlock,
+    ListKind, SCHEMA_NAME,
 };
 use crate::pandoc_input::PandocDocument;
 use crate::validate::{ValidatedDocument, ValidationLimits, validate};
@@ -34,7 +35,11 @@ pub fn normalize_pandoc(
     reader: &str,
     limits: &ValidationLimits,
 ) -> Result<ValidatedDocument, NormalizeError> {
-    let mut normalizer = Normalizer { rules, reader };
+    let mut normalizer = Normalizer {
+        rules,
+        reader,
+        inside_footnote: false,
+    };
     let metadata = crate::metadata::normalize(&document.metadata).map_err(|(path, message)| {
         normalizer.error("invalid_pandoc_metadata", &path, None, message)
     })?;
@@ -71,6 +76,7 @@ pub fn normalize_pandoc(
 struct Normalizer<'a> {
     rules: &'a Ast2IrRules,
     reader: &'a str,
+    inside_footnote: bool,
 }
 
 impl Normalizer<'_> {
@@ -478,6 +484,7 @@ impl Normalizer<'_> {
             }
             ("Space", InlineRule::Space) | ("SoftBreak", InlineRule::Space) => Ok(Inline::Space),
             ("LineBreak", InlineRule::LineBreak) => Ok(Inline::LineBreak),
+            ("Note", InlineRule::Footnote) => self.footnote(content, path),
             ("Strong", InlineRule::Strong) => Ok(Inline::Strong {
                 inlines: self.inlines(
                     self.array(content, &format!("{path}/c"))?,
@@ -524,6 +531,41 @@ impl Normalizer<'_> {
                 "constructor and configured handler do not match",
             )),
         }
+    }
+
+    fn footnote(&mut self, content: Option<&Value>, path: &str) -> Result<Inline, NormalizeError> {
+        if self.inside_footnote {
+            return Err(self.invalid(path, "Note", "footnotes must not be nested"));
+        }
+        let nodes = self.array(content, &format!("{path}/c"))?;
+        if nodes.is_empty() {
+            return Err(self.invalid(path, "Note", "footnote must contain at least one paragraph"));
+        }
+        self.inside_footnote = true;
+        let result = nodes
+            .iter()
+            .enumerate()
+            .map(|(index, node)| {
+                let block_path = format!("{path}/c/{index}");
+                let (constructor, content) = self.node(node, &block_path)?;
+                if !matches!(constructor, "Para" | "Plain") {
+                    return Err(self.error(
+                        "unsupported_pandoc_node",
+                        &block_path,
+                        Some(constructor),
+                        "footnotes support only paragraph blocks",
+                    ));
+                }
+                Ok(FootnoteBlock::Paragraph {
+                    inlines: self.inlines(
+                        self.array(content, &format!("{block_path}/c"))?,
+                        &format!("{block_path}/c"),
+                    )?,
+                })
+            })
+            .collect::<Result<Vec<_>, NormalizeError>>();
+        self.inside_footnote = false;
+        Ok(Inline::Footnote { blocks: result? })
     }
 
     fn node<'a>(
@@ -831,5 +873,106 @@ mod tests {
         let mut node = image();
         node["c"][1] = json!([]);
         assert!(normalize_blocks(json!([{"t":"Para","c":[node]}])).is_err());
+    }
+    #[test]
+    fn normalizes_reference_footnotes_in_headings_body_and_list_items() {
+        let limits = ValidationLimits::default();
+        let pandoc = read_pandoc_json(
+            include_bytes!("../../../tests/fixtures/pandoc-json/commonmark-footnotes-v0.3.json"),
+            &limits,
+        )
+        .unwrap();
+        let actual = normalize_pandoc(
+            pandoc,
+            &load_builtin_rules().unwrap(),
+            "commonmark+yaml_metadata_block+footnotes",
+            &limits,
+        )
+        .unwrap();
+        let expected = read_ir(
+            include_bytes!("../../../examples/footnotes/footnotes.ir.json"),
+            &limits,
+        )
+        .unwrap();
+        assert_eq!(actual, expected);
+        let encoded = crate::ir_io::write_ir(&actual).unwrap();
+        assert_eq!(read_ir(&encoded, &limits).unwrap(), actual);
+    }
+
+    fn note(inlines: Value) -> Value {
+        serde_json::json!({"t":"Note","c":[{"t":"Para","c":inlines}]})
+    }
+
+    #[test]
+    fn rejects_nested_notes_and_nonparagraph_note_blocks() {
+        use serde_json::json;
+        let nested = normalize_blocks(json!([{"t":"Para","c":[note(json!([
+            {"t":"Strong","c":[note(json!([{"t":"Str","c":"nested"}]))]}
+        ]))]}]))
+        .unwrap_err();
+        assert_eq!(nested.constructor.as_deref(), Some("Note"));
+        assert_eq!(nested.path, "/blocks/0/c/0/c/0/c/0/c/0");
+        assert!(nested.message.contains("nested"));
+        for constructor in [
+            "Header",
+            "BulletList",
+            "OrderedList",
+            "CodeBlock",
+            "BlockQuote",
+            "Table",
+        ] {
+            let error = normalize_blocks(json!([{"t":"Para","c":[
+                {"t":"Note","c":[{"t":constructor,"c":[]}]}
+            ]}]))
+            .unwrap_err();
+            assert_eq!(error.constructor.as_deref(), Some(constructor));
+            assert_eq!(error.path, "/blocks/0/c/0/c/0");
+            assert!(error.message.contains("only paragraph"));
+        }
+        for content in [json!([]), json!({}), json!(null)] {
+            assert!(
+                normalize_blocks(json!([{"t":"Para","c":[{"t":"Note","c":content}]}])).is_err()
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_footnotes_in_image_labels_and_object_sources() {
+        use serde_json::json;
+        let n = note(json!([{"t":"Str","c":"note"}]));
+        let mut i = image();
+        i["c"][1] = json!([n.clone()]);
+        let error = normalize_blocks(json!([{"t":"Para","c":[i]}])).unwrap_err();
+        assert_eq!(error.code, "invalid_ir_semantics");
+        assert_eq!(error.path, "/blocks/0/image/alt/0");
+        for object in [
+            json!({"t":"CodeBlock","c":[["",[],[]],"raw"]}),
+            json!({"t":"Para","c":[image()]}),
+        ] {
+            let error = normalize_blocks(json!([object,
+                {"t":"Para","c":[{"t":"Str","c":"출처:"},{"t":"Space"},n.clone()]}
+            ]))
+            .unwrap_err();
+            assert_eq!(error.code, "invalid_ir_semantics");
+            assert_eq!(error.path, "/blocks/0/source/0");
+        }
+    }
+
+    #[test]
+    fn accepts_plain_paragraphs_in_pandoc_notes_without_attaching_sources() {
+        use serde_json::json;
+        let result = normalize_blocks(json!([{"t":"Para","c":[{"t":"Note","c":[
+            {"t":"Plain","c":[{"t":"Str","c":"출처:"},{"t":"Space"},{"t":"Str","c":"그대로"}]}
+        ]}]}]))
+        .unwrap()
+        .into_document();
+        let Block::Paragraph { inlines } = &result.blocks[0] else {
+            panic!("paragraph")
+        };
+        let Inline::Footnote { blocks } = &inlines[0] else {
+            panic!("footnote")
+        };
+        let FootnoteBlock::Paragraph { inlines } = &blocks[0];
+        assert_eq!(inlines.len(), 3);
     }
 }

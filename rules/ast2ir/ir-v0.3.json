@@ -60,6 +60,9 @@
     }
   },
   "inlines": {
+    "Note": {
+      "handler": "footnote"
+    },
     "Str": {
       "handler": "text"
     },
