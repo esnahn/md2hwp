@@ -91,7 +91,7 @@ v0.3.0). A Git tag alone does not update application/package version metadata or
 README version labels; check their consistency when preparing a release.
 
 Track heading1 from md2hwp-heading1-start, incrementing only for heading1.
-Use slot:heading1.number inside heading blocks and native figure captions; preserve
+Use num:heading1 inside heading blocks and native figure captions; preserve
 its first character formatting, reject unresolved or orphan slots. Figure counters
 restart with a native NEWNUM Figure=1 at the first figure of each chapter. Keep
 AUTONUM as native controls. Literal # markers remain unchanged without the new slot.

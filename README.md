@@ -174,7 +174,7 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 | `begin:figure.caption` / `end:figure.caption` | 필수 | 실제 캡션이 붙은 샘플 그림 문단 하나를 감싸는 독립 경계 문단 |
 | `slot:figure.caption` / `slot:figure.source` | 둘 다 필수 | 그림의 실제 캡션 안에 설명·출처 순서로 각각 한 문단 |
 | `begin:headingN` / `end:headingN` | 선택 | 해당 수준의 단일 제목 선언 대신 사용하는 블록 경계 |
-| `slot:heading1.number` | 선택 | 헤딩 블록·그림 캡션에서 현재 장 번호를 넣는 인라인 태그 |
+| `num:heading1` | 선택 | 헤딩 블록·그림 캡션에서 현재 장 번호를 넣는 인라인 태그 |
 | `slot:headingN` | 헤딩 블록·반복 범위에서 필수 | 해당 범위의 제목을 넣는 독립 문단. 여러 개 사용 가능 |
 | `begin:each.child:headingN` / `end:each.child:headingN` | 선택 | 헤딩 블록 안에서 바로 아래 수준의 제목마다 반복. 중첩 가능 |
 | `begin:once` / `end:once` | 선택 | 헤딩 블록 안의 같은 문단에서 첫 사용에만 남길 인라인 범위 |
@@ -328,7 +328,7 @@ Source — {{md2hwp:slot:figure.source}}
 대괄호 설명을 입력하는 것이 아니라 조판 부호 표시로 확인한 실제 제어문자 앞뒤에 태그를 넣습니다.
 범위 밖의 그림·표 번호 제어와 문단 자체의 서식·쪽 나눔은 매번 유지됩니다.
 
-절 목록 반복과 장 번호 표시는 별개입니다. 장 번호에는 `slot:heading1.number`를 사용합니다.
+절 목록 반복과 장 번호 표시는 별개입니다. 장 번호에는 `num:heading1`를 사용합니다.
 
 ## 사용자 환경
 
@@ -440,7 +440,7 @@ Rust 테스트에서 직접 포함하는 JSON fixture는 테스트 빌드에 필
 
 원고 YAML의 `md2hwp-heading1-start: 3`은 첫 장 번호를 3으로 지정합니다.
 생략하면 1이며 heading1마다 증가합니다. 템플릿의 헤딩 블록·그림 캡션에
-`{{md2hwp:slot:heading1.number}}`를 넣어 현재 장 번호를 표시합니다.
+`{{md2hwp:num:heading1}}`를 넣어 현재 장 번호를 표시합니다.
 그림 자동번호는 장마다 한글 새 번호 제어로 1부터 재시작합니다.
 기존 템플릿의 `#` 표시는 직접 새 슬롯으로 바꾸십시오.
 입력 범위와 예시는 [YAML 변수 문서](docs/yaml-variables.md#장-시작-번호)를 참고하십시오.

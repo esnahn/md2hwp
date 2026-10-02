@@ -61,7 +61,7 @@ var trackedChapters=TemplateHeadingNumbers.Track(headingOperations,3);
 Check(trackedChapters.Select(o=>o.Heading1Number).SequenceEqual(new int?[]{3,3,3,3,4,4}),"Heading1 tracking incremented child headings.");
 Check(TemplateHeadingNumbers.Track(new[]{new PreviewOperation("figure","figure",[])},3).Single().Heading1Number is null,"Figure before first heading1 acquired a chapter.");
 Reject(()=>TemplateHeadingNumbers.Track(headingOperations,int.MaxValue));
-var chapterSlots=XDocument.Parse("<DOC><P><TEXT CharShape='4'><CHAR>Chapter {{md2hwp:slot:heading1.</CHAR></TEXT><TEXT CharShape='5'><CHAR>number}} 끝</CHAR></TEXT></P></DOC>");
+var chapterSlots=XDocument.Parse("<DOC><P><TEXT CharShape='4'><CHAR>Chapter {{md2hwp:num:head</CHAR></TEXT><TEXT CharShape='5'><CHAR>ing1}} 끝</CHAR></TEXT></P></DOC>");
 var preparedChapterSlots=TemplateHeadingNumbers.Prepare(chapterSlots);
 var filledChapterSlots=TemplateHeadingNumbers.Fill(preparedChapterSlots.Root!.Elements(),3);
 Check(TaggedTemplateBinding.DirectText(filledChapterSlots.Single())=="Chapter 3 끝","Split-run heading1 number slot.");

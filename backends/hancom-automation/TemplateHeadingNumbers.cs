@@ -6,7 +6,7 @@ namespace Md2Hwp.HancomIrPreview;
 
 internal static class TemplateHeadingNumbers
 {
-    internal const string Tag = "{{md2hwp:slot:heading1.number}}";
+    internal const string Tag = "{{md2hwp:num:heading1}}";
     private const string Marker = "MD2HWP_HEADING1_NUMBER_47C7C3F9";
     internal static int Start(IReadOnlyDictionary<string,string> metadata)
     {
@@ -38,12 +38,12 @@ internal static class TemplateHeadingNumbers
     {
         var document=new XDocument(new XElement("ROOT",paragraphs.Select(p=>new XElement(p))));
         var result=TemplateMetadata.Transform(document,Marker,new Regex(Regex.Escape(Marker)),_=>
-            number?.ToString(CultureInfo.InvariantCulture) ?? throw new InvalidDataException("slot:heading1.number requires a preceding heading1 in the manuscript."));
+            number?.ToString(CultureInfo.InvariantCulture) ?? throw new InvalidDataException("num:heading1 requires a preceding heading1 in the manuscript."));
         return result.Root!.Elements().ToArray();
     }
     internal static void RequireResolved(XDocument document)
     {
         if (document.Descendants("P").Any(p=>TaggedTemplateBinding.DirectText(p).Contains(Marker,StringComparison.Ordinal)))
-            throw new InvalidDataException("slot:heading1.number is allowed only inside heading blocks and figure captions.");
+            throw new InvalidDataException("num:heading1 is allowed only inside heading blocks and figure captions.");
     }
 }

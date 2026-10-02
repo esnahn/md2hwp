@@ -80,7 +80,7 @@ Pandoc의 날짜 입력 형식 전체와 한국어·점·슬래시 구분자 형
 ## 장 번호와의 관계
 
 문서 제목 치환과 장 번호 추적은 별개입니다. 시작 번호는 md2hwp-heading1-start로 지정하고,
-현재 장 번호는 slot:heading1.number로 표시합니다. 아래 장 시작 번호 절을 참고하십시오.
+현재 장 번호는 num:heading1로 표시합니다. 아래 장 시작 번호 절을 참고하십시오.
 
 ## 치환 규칙
 
@@ -135,16 +135,16 @@ Pandoc JSON에서 전달된 값을 Rust가 검증하여 IR metadata에 문자열
 `meta:md2hwp-heading1-start`는 시작 값 자체이며 현재 장 번호를 추적하지 않습니다.
 
 현재 장 번호는 헤딩 블록이나 그림 캡션 안의 인라인 태그
-`{{md2hwp:slot:heading1.number}}`로 표시합니다. 첫 태그 글자의 서식을 유지합니다.
+`{{md2hwp:num:heading1}}`로 표시합니다. 첫 태그 글자의 서식을 유지합니다.
 
 ```text
 {{md2hwp:begin:heading1}}
-Chapter {{md2hwp:slot:heading1.number}}
+Chapter {{md2hwp:num:heading1}}
 {{md2hwp:slot:heading1}}
 {{md2hwp:end:heading1}}
 ```
 
-그림 캡션에는 `[그림 {{md2hwp:slot:heading1.number}}-<그림 자동번호>]`처럼 배치합니다.
+그림 캡션에는 `[그림 {{md2hwp:num:heading1}}-<그림 자동번호>]`처럼 배치합니다.
 `<그림 자동번호>`는 설명용 표기이며 실제 한글 자동번호 제어를 사용하십시오.
 장마다 첫 그림에 한글의 `NEWNUM` 제어를 넣어 그림 번호를 1로 재시작합니다.
 첫 heading1 앞의 그림에 장 번호 슬롯을 쓰면 오류입니다. 고정 표지 등 지원 범위 밖의 슬롯도 오류입니다.
