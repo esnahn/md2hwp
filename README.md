@@ -1,4 +1,4 @@
-# md2hwp v0.1.0
+# md2hwp v0.2.0
 
 지원하는 CommonMark 원고를 IR JSON으로 정규화한 뒤, 태그가 있는 기존 HWP
 템플릿을 한글 COM으로 편집합니다. 현재 지원 대상은 Windows x64와 HWP입니다.
