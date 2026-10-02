@@ -100,6 +100,65 @@ fn resolve_runtime(explicit: Option<PathBuf>) -> Result<PathBuf, String> {
     Err(format!("{INSTALL}\n확인 결과:\n{}", diagnostics.join("\n")))
 }
 
+struct VersionOptions {
+    worker: Option<PathBuf>,
+    dotnet: Option<PathBuf>,
+}
+
+impl VersionOptions {
+    fn parse(arguments: Vec<OsString>) -> Result<Self, String> {
+        let mut result = Self {
+            worker: None,
+            dotnet: None,
+        };
+        let mut version = false;
+        let mut args = arguments.into_iter();
+        while let Some(key) = args.next() {
+            if key == "--version" {
+                if version {
+                    return Err("Duplicate --version".into());
+                }
+                version = true;
+                continue;
+            }
+            let slot = match key.to_str() {
+                Some("--worker") => &mut result.worker,
+                Some("--dotnet") => &mut result.dotnet,
+                _ => return Err(version_usage()),
+            };
+            if slot.is_some() {
+                return Err(format!("Duplicate argument: {}", key.to_string_lossy()));
+            }
+            let value = args
+                .next()
+                .filter(|value| !value.to_string_lossy().starts_with('-'))
+                .ok_or_else(version_usage)?;
+            *slot = Some(PathBuf::from(value));
+        }
+        if !version {
+            return Err(version_usage());
+        }
+        Ok(result)
+    }
+}
+
+fn version_usage() -> String {
+    "usage: md2hwp --version [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]".into()
+}
+
+pub fn run_version(arguments: Vec<OsString>) -> Result<(), String> {
+    let options = VersionOptions::parse(arguments)?;
+    if !cfg!(all(target_os = "windows", target_arch = "x86_64")) {
+        return Err("Hancom requires Windows x64.".into());
+    }
+    launch_worker(
+        adjacent_default(options.worker, "md2hwp-backend.exe")?,
+        options.dotnet,
+        vec!["--version".into()],
+        None,
+    )
+}
+
 pub fn run(arguments: Vec<OsString>) -> Result<(), String> {
     run_with_resource_root(arguments, None)
 }
@@ -273,6 +332,45 @@ fn usage() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn version_options_support_free_order_and_reject_ambiguous_inputs() {
+        let defaults = VersionOptions::parse(vec!["--version".into()]).unwrap();
+        assert!(defaults.worker.is_none() && defaults.dotnet.is_none());
+        for args in [
+            vec![
+                "--version",
+                "--worker",
+                "custom worker.exe",
+                "--dotnet",
+                "custom dotnet.exe",
+            ],
+            vec![
+                "--dotnet",
+                "custom dotnet.exe",
+                "--worker",
+                "custom worker.exe",
+                "--version",
+            ],
+        ] {
+            let options =
+                VersionOptions::parse(args.into_iter().map(OsString::from).collect()).unwrap();
+            assert_eq!(options.worker, Some(PathBuf::from("custom worker.exe")));
+            assert_eq!(options.dotnet, Some(PathBuf::from("custom dotnet.exe")));
+        }
+        for args in [
+            vec![],
+            vec!["--version", "--version"],
+            vec!["--version", "--worker"],
+            vec!["--worker", "--version"],
+            vec!["--version", "--dotnet", "--worker", "x.exe"],
+            vec!["--version", "--worker", "a.exe", "--worker", "b.exe"],
+            vec!["--version", "--dotnet", "a.exe", "--dotnet", "b.exe"],
+            vec!["--version", "--template", "template.hwp"],
+            vec!["source.md", "--version"],
+        ] {
+            assert!(VersionOptions::parse(args.into_iter().map(OsString::from).collect()).is_err());
+        }
+    }
     #[test]
     #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
     fn template_creation_rejects_unsafe_targets_before_starting_worker() {

@@ -51,13 +51,26 @@ Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔�
 옵션 입력 순서는 자유롭습니다. 명시한 경로는 실행한 작업 폴더 기준이며,
 이미지의 기준 폴더만 원고/IR 폴더로 유지됩니다.
 
-두 실행 파일은 `--version`으로 각 프로그램의 패키지 버전을 표시합니다.
-현재 개발 버전의 출력은 각각 `md2hwp 0.3.0`, `md2hwp-backend 0.3.0`입니다.
+`md2hwp --version`은 앱 자체와 실제로 사용할 백엔드의 버전을 함께 표시합니다.
+`md2hwp-backend --version`은 백엔드 자체 버전만 표시합니다.
 
 ```powershell
 .\md2hwp.exe --version
+.\md2hwp.exe --version --worker 다른폴더\md2hwp-backend.exe --dotnet 경로\dotnet.exe
 .\md2hwp-backend.exe --version
 ```
+
+현재 개발 버전의 첫 명령 출력은 다음과 같습니다.
+
+```text
+md2hwp 0.3.0
+md2hwp-backend 0.3.0
+```
+
+`--worker`를 생략하면 md2hwp.exe 옆의 백엔드를 확인합니다. `--worker`와 `--dotnet`은
+현재 작업 폴더 기준이며 옵션 순서는 자유롭습니다. 백엔드 확인에는 .NET 런타임이 필요하며,
+한글이나 보안 모듈은 사용하지 않습니다. 백엔드 확인에 실패하면 앱 자체 버전을 표시하고
+오류와 함께 종료 코드 1을 반환합니다. 버전이 달라도 확인한 값을 그대로 표시합니다.
 
 기존 옵션 방식도 사용할 수 있습니다.
 
