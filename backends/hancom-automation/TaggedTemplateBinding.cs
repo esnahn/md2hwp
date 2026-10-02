@@ -14,7 +14,40 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
 
     public static TaggedTemplateBinding Read(XDocument document, string templatePath)
     {
-        return ReadFlat(NativeFigureCaption.Lower(TemplateHeadingBlocks.Lower(document).Document).Document, templatePath);
+        return ReadFlat(NativeFigureCaption.Lower(TemplateHeadingBlocks.Lower(PreserveBeginSectionSettings(document)).Document).Document, templatePath);
+    }
+
+    // Section settings may own master-page paragraphs. Keep them outside the
+    // disposable definitions only for begin:template; never edit the source file.
+    internal static XDocument PreserveBeginSectionSettings(XDocument source)
+    {
+        var document = new XDocument(source);
+        var roots = AuriMinimalBoxPrototype.RootParagraphs(document);
+        var matches = roots.Where(p => DirectText(p) == Tag("begin:template")).ToArray();
+        if (matches.Length != 1) return document;
+        var begin = matches[0];
+        if (begin.Elements().Any(e => e.Name.LocalName != "TEXT")) return document;
+        var children = begin.Elements().SelectMany(e => e.Elements()).ToArray();
+        if (!children.Any(e => e.Name.LocalName == "SECDEF") ||
+            children.Any(e => e.Name.LocalName is not ("CHAR" or "SECDEF" or "COLDEF")) ||
+            children.Where(e => e.Name.LocalName == "CHAR").Any(e => e.HasElements))
+            return document;
+        var retained = new XElement(begin);
+        foreach (var text in retained.Elements().ToArray())
+        {
+            text.Elements().Where(e => e.Name.LocalName == "CHAR").Remove();
+            if (!text.HasElements) text.Remove();
+        }
+        var firstText = retained.Elements().First();
+        firstText.Add(new XElement("CHAR", ""));
+        var declaration = new XElement(begin);
+        declaration.Elements().SelectMany(e => e.Elements())
+            .Where(e => e.Name.LocalName is "SECDEF" or "COLDEF").Remove();
+        declaration.Elements().Where(e => !e.HasElements).Remove();
+        // Hancom omits explicit false break flags on the new noninitial paragraph.
+        declaration.Attributes().Where(a => (a.Name.LocalName is "PageBreak" or "ColumnBreak") && a.Value == "false").Remove();
+        begin.ReplaceWith(retained, declaration);
+        return document;
     }
 
     internal static TaggedTemplateBinding ReadFlat(XDocument document, string templatePath)

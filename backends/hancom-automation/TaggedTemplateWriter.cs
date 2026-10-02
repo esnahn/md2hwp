@@ -24,7 +24,7 @@ internal static partial class HancomPreviewWriter
             {
                 Open(hwp, temporary, visible);
                 var preparedMetadata = TemplateMetadata.Prepare(HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", "")), metadata);
-                XDocument document = preparedMetadata.Document;
+                XDocument document = TaggedTemplateBinding.PreserveBeginSectionSettings(preparedMetadata.Document);
                 var headings = TemplateHeadingBlocks.Lower(document);
                 var nativeFigure = NativeFigureCaption.Lower(headings.Document);
                 _ = TaggedTemplateBinding.ReadFlat(nativeFigure.Document, temporary);

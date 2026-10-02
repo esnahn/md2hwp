@@ -7,6 +7,35 @@ static void Reject(Action operation) {
     try { operation(); } catch (InvalidDataException) { return; }
     throw new Exception("Expected rejection.");
 }
+var sectionFixture = XDocument.Parse("<HWPML><BODY><SECTION><P Style='0' PageBreak='false' ColumnBreak='false'><TEXT CharShape='1'><COLDEF/><SECDEF><MASTERPAGE Type='Even'><PARALIST><P><TEXT><LINE/><CHAR/></TEXT></P></PARALIST></MASTERPAGE></SECDEF><CHAR>{{md2hwp:begin:template}}</CHAR></TEXT></P><P><TEXT><CHAR>{{md2hwp:ir-version:0.3}}</CHAR></TEXT></P></SECTION></BODY></HWPML>");
+var originalSectionFixture = sectionFixture.ToString();
+var retainedSection = new XElement(sectionFixture.Descendants("SECDEF").Single());
+var separatedSection = TaggedTemplateBinding.PreserveBeginSectionSettings(sectionFixture);
+var sectionRoots = AuriMinimalBoxPrototype.RootParagraphs(separatedSection);
+Check(sectionFixture.ToString()==originalSectionFixture,"Section-boundary normalization mutated source.");
+Check(sectionRoots.Count==3 && TaggedTemplateBinding.DirectText(sectionRoots[0])=="" && TaggedTemplateBinding.DirectText(sectionRoots[1])=="{{md2hwp:begin:template}}","Section settings not separated from the declaration.");
+Check(XNode.DeepEquals(retainedSection,sectionRoots[0].Descendants("SECDEF").Single()),"Section or master-page settings changed.");
+Check(!sectionRoots[1].Descendants("SECDEF").Any() && !sectionRoots[1].Descendants("P").Any(),"Section settings retained in disposable declaration.");
+Check(sectionRoots[1].Attribute("PageBreak") is null && sectionRoots[1].Attribute("ColumnBreak") is null,"False break flags retained in noninitial declaration.");
+Check(XNode.DeepEquals(separatedSection,TaggedTemplateBinding.PreserveBeginSectionSettings(separatedSection)),"Section normalization is not idempotent.");
+foreach (var tag in new[]{"end:template", "body", "begin:heading.1", "begin:figure.caption"}) {
+    var other=new XDocument(sectionFixture);
+    other.Descendants("CHAR").Last().Value="unchanged";
+    var otherFirst=AuriMinimalBoxPrototype.RootParagraphs(other)[0];
+    otherFirst.Elements("TEXT").Elements("CHAR").Single().Value=TaggedTemplateBinding.Tag(tag);
+    Check(XNode.DeepEquals(other,TaggedTemplateBinding.PreserveBeginSectionSettings(other)),"Section exception leaked into another declaration.");
+}
+var splitSection = new XDocument(sectionFixture);
+var splitFirst = AuriMinimalBoxPrototype.RootParagraphs(splitSection)[0];
+splitFirst.Elements("TEXT").Elements("CHAR").Remove();
+splitFirst.Add(new XElement("TEXT",new XAttribute("CharShape","2"),new XElement("CHAR","{{md2hwp:begin:")),new XElement("TEXT",new XAttribute("CharShape","3"),new XElement("CHAR","template}}")));
+var splitSectionRoots=AuriMinimalBoxPrototype.RootParagraphs(TaggedTemplateBinding.PreserveBeginSectionSettings(splitSection));
+Check(TaggedTemplateBinding.DirectText(splitSectionRoots[0])=="" && TaggedTemplateBinding.DirectText(splitSectionRoots[1])=="{{md2hwp:begin:template}}","Split declaration runs leaked into retained section paragraph.");
+Check(splitSectionRoots[1].Elements("TEXT").All(e=>e.HasElements),"Empty control-only run retained in declaration.");
+var unsupportedSection = new XDocument(sectionFixture);
+AuriMinimalBoxPrototype.RootParagraphs(unsupportedSection)[0].Element("TEXT")!.Add(new XElement("TABLE"));
+Check(XNode.DeepEquals(unsupportedSection,TaggedTemplateBinding.PreserveBeginSectionSettings(unsupportedSection)),"Unrelated table control accepted on begin:template.");
+Console.WriteLine("Begin-template section preservation checks passed.");
 var metadata = new Dictionary<string,string> {
     ["title"]="문서 제목", ["date"]="2026년 1월 2일", ["date-meta"]="2026-01-02",
     ["md2hwp-report-number"]="기본 2026-01", ["md2hwp-literal"]="{{md2hwp:meta:title}}"

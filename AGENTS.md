@@ -29,6 +29,9 @@ program's current IR exactly; reject old versions with regeneration guidance.
 Template-owned begin:template/end:template declarations supply all current IR
 styles and prototype ranges, including roles unused by the manuscript;
 do not restore runtime external profiles. Preserve unrelated template content.
+Only begin:template may carry native SECDEF/COLDEF controls. Preserve those
+settings outside disposable definitions in the working document, without changing
+the source template. Do not extend this exception to other declarations.
 Generated links render as formatted labels/plain text; strip automatic hyperlinks
 only in generated content. Figures embed PNGs; caption and source belong to the picture's native caption.
 The begin:figure.caption/end:figure.caption sample contains one picture with a
@@ -74,9 +77,10 @@ These contract tests do not establish live Hancom or visual layout correctness.
 
 Users may edit target/release/template.hwp directly. It can differ from the tracked
 templates/template.hwp; never assume the tracked copy contains their latest work.
-Before running build.ps1, compare the files and preserve any edited deployment
-template outside the build destination, restoring it afterward and verifying its
-hash. The build copies the tracked template into the deployment directory.
+Never overwrite or modify the user-owned target/release/template.hwp for builds
+or verification. build.ps1 copies a deployment template only when it is missing;
+existing Debug and Release templates remain unchanged. Use a separate template
+copy and explicit --template for experiments and live verification.
 Update the tracked default only when the user authorizes adopting the edited copy.
 
 Align release major/minor versions with the IR version (IR 0.3 corresponds to
