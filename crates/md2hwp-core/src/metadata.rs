@@ -336,6 +336,7 @@ mod heading1_tests {
             MetadataValue::Text("2147483647".into()),
         );
         let heading = Block::Heading {
+            id: None,
             level: 1,
             inlines: vec![crate::ir::Inline::Text {
                 value: "title".into(),

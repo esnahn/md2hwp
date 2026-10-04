@@ -1,13 +1,14 @@
 //! Closed Pandoc AST-to-IR 0.3 normalization handlers.
 
+use std::collections::BTreeMap;
 use std::fmt;
 
 use serde_json::Value;
 
 use crate::ast2ir_rules::{Ast2IrRules, BlockRule, InlineRule, NumberDelimiter, NumberStyle};
 use crate::ir::{
-    Block, Document, FootnoteBlock, IR_VERSION, ImageRef, Inline, ListItem, ListItemBlock,
-    ListKind, SCHEMA_NAME,
+    Block, CrossReferenceKind, Document, FootnoteBlock, IR_VERSION, ImageRef, Inline, ListItem,
+    ListItemBlock, ListKind, SCHEMA_NAME, is_target_id,
 };
 use crate::pandoc_input::PandocDocument;
 use crate::validate::{ValidatedDocument, ValidationLimits, validate};
@@ -69,6 +70,14 @@ pub fn normalize_pandoc(
         metadata,
         blocks,
     };
+    // Validate every original label/title and cumulative input resource count
+    // before replacing internal Link labels with template-owned references.
+    let mut ir = validate(ir, limits)
+        .map_err(|error| {
+            normalizer.error("invalid_ir_semantics", &error.path, None, error.message)
+        })?
+        .into_document();
+    normalizer.resolve_references(&mut ir)?;
     validate(ir, limits)
         .map_err(|error| normalizer.error("invalid_ir_semantics", &error.path, None, error.message))
 }
@@ -98,30 +107,39 @@ impl Normalizer<'_> {
         if inlines.len() != 1 || inlines[0].get("t").and_then(Value::as_str) != Some("Image") {
             return Ok(None);
         }
-        let image_path = format!("{path}/c/0");
-        let (_, content) = self.node(&inlines[0], &image_path)?;
-        let values = self.fixed_array(content, 3, &format!("{image_path}/c"))?;
-        self.require_empty_attr(&values[0], &format!("{image_path}/c/0"), "Image")?;
+        Ok(Some(
+            self.image_figure(&inlines[0], &format!("{path}/c/0"))?,
+        ))
+    }
+
+    fn image_figure(&mut self, node: &Value, path: &str) -> Result<Block, NormalizeError> {
+        let (constructor, content) = self.node(node, path)?;
+        if constructor != "Image" {
+            return Err(self.invalid(path, constructor, "figure content must be a single Image"));
+        }
+        let values = self.fixed_array(content, 3, &format!("{path}/c"))?;
+        let id = self.optional_id(&values[0], &format!("{path}/c/0"), "Image")?;
         let alt = self.inlines(
-            self.array(Some(&values[1]), &format!("{image_path}/c/1"))?,
-            &format!("{image_path}/c/1"),
+            self.array(Some(&values[1]), &format!("{path}/c/1"))?,
+            &format!("{path}/c/1"),
         )?;
-        let target = self.fixed_array(Some(&values[2]), 2, &format!("{image_path}/c/2"))?;
+        let target = self.fixed_array(Some(&values[2]), 2, &format!("{path}/c/2"))?;
         let resource = target[0].as_str().ok_or_else(|| {
             self.invalid(
-                &format!("{image_path}/c/2/0"),
+                &format!("{path}/c/2/0"),
                 "Image",
                 "image target must be a string",
             )
         })?;
         let title = target[1].as_str().ok_or_else(|| {
             self.invalid(
-                &format!("{image_path}/c/2/1"),
+                &format!("{path}/c/2/1"),
                 "Image",
                 "image title must be a string",
             )
         })?;
-        Ok(Some(Block::Figure {
+        Ok(Block::Figure {
+            id,
             caption: alt.clone(),
             image: ImageRef {
                 path: resource.to_owned(),
@@ -129,7 +147,89 @@ impl Normalizer<'_> {
                 title: (!title.is_empty()).then(|| title.to_owned()),
             },
             source: None,
-        }))
+        })
+    }
+
+    fn native_figure(
+        &mut self,
+        content: Option<&Value>,
+        path: &str,
+    ) -> Result<Block, NormalizeError> {
+        let values = self.fixed_array(content, 3, &format!("{path}/c"))?;
+        let outer_id = self.optional_id(&values[0], &format!("{path}/c/0"), "Figure")?;
+        let caption = self.fixed_array(Some(&values[1]), 2, &format!("{path}/c/1"))?;
+        if !caption[0].is_null() {
+            return Err(self.invalid(
+                &format!("{path}/c/1/0"),
+                "Figure",
+                "figure short captions are not supported",
+            ));
+        }
+        let caption_blocks = self.array(Some(&caption[1]), &format!("{path}/c/1/1"))?;
+        if caption_blocks.len() != 1 {
+            return Err(self.invalid(
+                &format!("{path}/c/1/1"),
+                "Figure",
+                "figure caption must contain exactly one paragraph",
+            ));
+        }
+        let caption_path = format!("{path}/c/1/1/0");
+        let (kind, caption_content) = self.node(&caption_blocks[0], &caption_path)?;
+        if !matches!(kind, "Plain" | "Para") {
+            return Err(self.invalid(
+                &caption_path,
+                kind,
+                "figure caption supports only one Plain or Para paragraph",
+            ));
+        }
+        let caption = self.inlines(
+            self.array(caption_content, &format!("{caption_path}/c"))?,
+            &format!("{caption_path}/c"),
+        )?;
+        let body = self.array(Some(&values[2]), &format!("{path}/c/2"))?;
+        if body.len() != 1 {
+            return Err(self.invalid(
+                &format!("{path}/c/2"),
+                "Figure",
+                "figure content must contain exactly one image paragraph",
+            ));
+        }
+        let body_path = format!("{path}/c/2/0");
+        let (kind, body_content) = self.node(&body[0], &body_path)?;
+        if !matches!(kind, "Plain" | "Para") {
+            return Err(self.invalid(
+                &body_path,
+                kind,
+                "figure content must contain one Plain or Para image paragraph",
+            ));
+        }
+        let images = self.array(body_content, &format!("{body_path}/c"))?;
+        if images.len() != 1 {
+            return Err(self.invalid(
+                &body_path,
+                "Figure",
+                "figure content must contain exactly one Image",
+            ));
+        }
+        let mut figure = self.image_figure(&images[0], &format!("{body_path}/c/0"))?;
+        let Block::Figure {
+            id,
+            caption: output_caption,
+            ..
+        } = &mut figure
+        else {
+            unreachable!()
+        };
+        if let (Some(outer), Some(inner)) = (&outer_id, &id)
+            && outer != inner
+        {
+            return Err(self.invalid(path, "Figure", "figure and image have conflicting IDs"));
+        }
+        if outer_id.is_some() {
+            *id = outer_id;
+        }
+        *output_caption = caption;
+        Ok(figure)
     }
 
     fn object_source(
@@ -184,6 +284,7 @@ impl Normalizer<'_> {
             .get(constructor)
             .ok_or_else(|| self.unsupported(path, constructor))?;
         match (constructor, rule) {
+            ("Figure", BlockRule::Figure { .. }) => self.native_figure(content, path),
             ("Para", BlockRule::Paragraph { .. }) => Ok(Block::Paragraph {
                 inlines: self.inlines(
                     self.array(content, &format!("{path}/c"))?,
@@ -213,8 +314,9 @@ impl Normalizer<'_> {
                         "heading level is outside the configured range",
                     ));
                 }
-                self.require_empty_attr(&values[1], &format!("{path}/c/1"), constructor)?;
+                let id = self.optional_id(&values[1], &format!("{path}/c/1"), constructor)?;
                 Ok(Block::Heading {
+                    id,
                     level: u8::try_from(level).expect("configured heading levels fit in u8"),
                     inlines: self.inlines(
                         self.array(Some(&values[2]), &format!("{path}/c/2"))?,
@@ -641,6 +743,185 @@ impl Normalizer<'_> {
         Ok(values)
     }
 
+    fn optional_id(
+        &self,
+        value: &Value,
+        path: &str,
+        constructor: &str,
+    ) -> Result<Option<String>, NormalizeError> {
+        let values = self.fixed_array(Some(value), 3, path)?;
+        let id = values[0]
+            .as_str()
+            .ok_or_else(|| self.invalid(path, constructor, "ID must be a string"))?;
+        if !values[1].as_array().is_some_and(Vec::is_empty)
+            || !values[2].as_array().is_some_and(Vec::is_empty)
+        {
+            return Err(self.invalid(path, constructor, "attributes support only an optional ID; classes and key/value attributes are unsupported"));
+        }
+        if id.is_empty() {
+            return Ok(None);
+        }
+        if !is_target_id(id) {
+            return Err(self.invalid(
+                path,
+                constructor,
+                "ID must be nonempty and contain no whitespace, controls or '#'",
+            ));
+        }
+        Ok(Some(id.to_owned()))
+    }
+
+    fn resolve_references(&self, document: &mut Document) -> Result<(), NormalizeError> {
+        let mut targets = BTreeMap::new();
+        for block in &document.blocks {
+            let target = match block {
+                Block::Heading { id: Some(id), .. } => {
+                    Some((id, CrossReferenceKind::HeadingNumber))
+                }
+                Block::Figure { id: Some(id), .. } => Some((id, CrossReferenceKind::FigureNumber)),
+                _ => None,
+            };
+            if let Some((id, kind)) = target {
+                targets.insert(id.clone(), kind);
+            }
+        }
+        for (index, block) in document.blocks.iter_mut().enumerate() {
+            let path = format!("/blocks/{index}");
+            match block {
+                Block::Paragraph { inlines } | Block::Heading { inlines, .. } => {
+                    self.resolve_inlines(inlines, &format!("{path}/inlines"), &targets)?
+                }
+                Block::Figure {
+                    image,
+                    caption,
+                    source,
+                    ..
+                } => {
+                    self.resolve_inlines(&mut image.alt, &format!("{path}/image/alt"), &targets)?;
+                    self.resolve_inlines(caption, &format!("{path}/caption"), &targets)?;
+                    if let Some(source) = source {
+                        self.resolve_inlines(source, &format!("{path}/source"), &targets)?;
+                    }
+                }
+                Block::VerbatimBlock { source, .. } => {
+                    if let Some(source) = source {
+                        self.resolve_inlines(source, &format!("{path}/source"), &targets)?;
+                    }
+                }
+                Block::List { items, .. } => self.resolve_list(items, &path, &targets)?,
+            }
+        }
+        Ok(())
+    }
+
+    fn resolve_list(
+        &self,
+        items: &mut [ListItem],
+        path: &str,
+        targets: &BTreeMap<String, CrossReferenceKind>,
+    ) -> Result<(), NormalizeError> {
+        for (item_index, item) in items.iter_mut().enumerate() {
+            for (block_index, block) in item.blocks.iter_mut().enumerate() {
+                let path = format!("{path}/items/{item_index}/blocks/{block_index}");
+                match block {
+                    ListItemBlock::Paragraph { inlines } => {
+                        self.resolve_inlines(inlines, &format!("{path}/inlines"), targets)?
+                    }
+                    ListItemBlock::List { items, .. } => {
+                        self.resolve_list(items, &path, targets)?
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn resolve_inlines(
+        &self,
+        inlines: &mut [Inline],
+        path: &str,
+        targets: &BTreeMap<String, CrossReferenceKind>,
+    ) -> Result<(), NormalizeError> {
+        for (index, inline) in inlines.iter_mut().enumerate() {
+            let path = format!("{path}/{index}");
+            match inline {
+                Inline::Link {
+                    target, inlines, ..
+                } => {
+                    if target.starts_with('#') && contains_footnote(inlines) {
+                        return Err(self.error("unsupported_cross_reference", &format!("{path}/inlines"), Some("Link"), "number reference labels cannot contain footnotes; place the note after the link"));
+                    }
+                    self.resolve_inlines(inlines, &format!("{path}/inlines"), targets)?;
+                    if let Some(fragment) = target.strip_prefix('#') {
+                        let id = self.decode_fragment(fragment, &format!("{path}/target"))?;
+                        let kind = targets.get(&id).ok_or_else(|| self.error("unresolved_cross_reference", &format!("{path}/target"), Some("Link"), format!("unknown internal target '{id}'; references require a defined heading or figure ID; table numbers are not supported")))?;
+                        *inline = Inline::CrossReference {
+                            kind: kind.clone(),
+                            target: id,
+                        };
+                    }
+                }
+                Inline::Strong { inlines } | Inline::Emph { inlines } => {
+                    self.resolve_inlines(inlines, &format!("{path}/inlines"), targets)?
+                }
+                Inline::Footnote { blocks } => {
+                    for (block_index, block) in blocks.iter_mut().enumerate() {
+                        let FootnoteBlock::Paragraph { inlines } = block;
+                        self.resolve_inlines(
+                            inlines,
+                            &format!("{path}/blocks/{block_index}/inlines"),
+                            targets,
+                        )?;
+                    }
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+
+    fn decode_fragment(&self, fragment: &str, path: &str) -> Result<String, NormalizeError> {
+        let mut decoded = Vec::with_capacity(fragment.len());
+        let bytes = fragment.as_bytes();
+        let mut index = 0;
+        while index < bytes.len() {
+            if bytes[index] == b'%' {
+                let pair = bytes.get(index + 1..index + 3).ok_or_else(|| {
+                    self.invalid(
+                        path,
+                        "Link",
+                        "internal fragment contains an incomplete percent escape",
+                    )
+                })?;
+                let high = (pair[0] as char).to_digit(16);
+                let low = (pair[1] as char).to_digit(16);
+                let (Some(high), Some(low)) = (high, low) else {
+                    return Err(self.invalid(
+                        path,
+                        "Link",
+                        "internal fragment contains an invalid percent escape",
+                    ));
+                };
+                decoded.push((high * 16 + low) as u8);
+                index += 3;
+            } else {
+                decoded.push(bytes[index]);
+                index += 1;
+            }
+        }
+        let id = String::from_utf8(decoded).map_err(|_| {
+            self.invalid(
+                path,
+                "Link",
+                "internal fragment percent escapes do not form valid UTF-8",
+            )
+        })?;
+        if !is_target_id(&id) {
+            return Err(self.invalid(path, "Link", "internal fragment must decode to a nonempty ID without whitespace, controls or '#'"));
+        }
+        Ok(id)
+    }
+
     fn require_empty_attr(
         &self,
         value: &Value,
@@ -690,6 +971,16 @@ impl Normalizer<'_> {
             message: message.into(),
         }
     }
+}
+
+fn contains_footnote(inlines: &[Inline]) -> bool {
+    inlines.iter().any(|inline| match inline {
+        Inline::Footnote { .. } => true,
+        Inline::Strong { inlines } | Inline::Emph { inlines } | Inline::Link { inlines, .. } => {
+            contains_footnote(inlines)
+        }
+        _ => false,
+    })
 }
 
 #[cfg(test)]
@@ -816,6 +1107,7 @@ mod tests {
             image,
             caption,
             source: Some(source),
+            ..
         } = &result.blocks[0]
         else {
             panic!("figure")
@@ -868,7 +1160,7 @@ mod tests {
             assert!(normalize_blocks(json!([{"t":"Para","c":[node]}])).is_err());
         }
         let mut node = image();
-        node["c"][0][0] = json!("id");
+        node["c"][0][1] = json!(["unsupported-class"]);
         assert!(normalize_blocks(json!([{"t":"Para","c":[node]}])).is_err());
         let mut node = image();
         node["c"][1] = json!([]);

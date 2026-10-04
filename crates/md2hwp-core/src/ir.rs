@@ -41,6 +41,8 @@ pub enum Block {
         inlines: Vec<Inline>,
     },
     Heading {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        id: Option<String>,
         level: u8,
         inlines: Vec<Inline>,
     },
@@ -57,6 +59,8 @@ pub enum Block {
         items: Vec<ListItem>,
     },
     Figure {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        id: Option<String>,
         image: ImageRef,
         caption: Vec<Inline>,
         source: Option<Vec<Inline>>,
@@ -108,6 +112,10 @@ pub enum FootnoteBlock {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Inline {
+    CrossReference {
+        kind: CrossReferenceKind,
+        target: String,
+    },
     Footnote {
         blocks: Vec<FootnoteBlock>,
     },
@@ -127,4 +135,18 @@ pub enum Inline {
         title: Option<String>,
         inlines: Vec<Inline>,
     },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CrossReferenceKind {
+    HeadingNumber,
+    FigureNumber,
+}
+
+pub(crate) fn is_target_id(value: &str) -> bool {
+    !value.is_empty()
+        && !value
+            .chars()
+            .any(|ch| ch.is_whitespace() || ch.is_control() || ch == '#')
 }

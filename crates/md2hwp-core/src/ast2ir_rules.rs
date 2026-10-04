@@ -59,9 +59,15 @@ pub struct ObjectSources {
 #[serde(deny_unknown_fields)]
 pub struct StandaloneFigure {
     pub handler: String,
-    pub attributes: RequireEmpty,
+    pub attributes: OptionalId,
     pub caption: String,
     pub context: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OptionalId {
+    OptionalIdOnly,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
@@ -73,13 +79,18 @@ pub enum RequireEmpty {
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 #[serde(tag = "handler", rename_all = "snake_case", deny_unknown_fields)]
 pub enum BlockRule {
+    Figure {
+        attributes: OptionalId,
+        caption: String,
+        content: String,
+    },
     Paragraph {
         figure: StandaloneFigure,
     },
     Heading {
         minimum_level: u8,
         maximum_level: u8,
-        attributes: RequireEmpty,
+        attributes: OptionalId,
     },
     ListItemParagraph {
         context: ListItemOnly,
@@ -128,7 +139,14 @@ pub enum InlineRule {
         attributes: RequireEmpty,
         target: RequireNonempty,
         absent_title: NullPolicy,
+        internal_target: InternalTargetPolicy,
     },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum InternalTargetPolicy {
+    ResolveHeadingOrFigure,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
@@ -234,7 +252,7 @@ mod tests {
         assert_eq!(rules.target_ir.version, IR_VERSION);
         let envelope: Value = serde_json::from_str(RULES_JSON).unwrap();
         assert!(envelope.get("rules_version").is_none());
-        assert_eq!(rules.blocks.len(), 6);
+        assert_eq!(rules.blocks.len(), 7);
         assert_eq!(rules.inlines.len(), 8);
         assert!(matches!(
             rules.inlines.get("SoftBreak"),

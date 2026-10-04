@@ -87,12 +87,20 @@
             },
             "figure": {
               "const": {
-                "attributes": "require_empty",
+                "attributes": "optional_id_only",
                 "context": "document_only",
                 "handler": "standalone_image",
                 "caption": "alt"
               }
             }
+          }
+        },
+        "Figure": {
+          "const": {
+            "handler": "figure",
+            "attributes": "optional_id_only",
+            "caption": "single_paragraph",
+            "content": "single_image"
           }
         },
         "Header": {
@@ -119,7 +127,7 @@
               "maximum": 6
             },
             "attributes": {
-              "const": "require_empty"
+              "const": "optional_id_only"
             }
           }
         },
@@ -244,7 +252,8 @@
             "handler",
             "attributes",
             "target",
-            "absent_title"
+            "absent_title",
+            "internal_target"
           ],
           "properties": {
             "handler": {
@@ -258,6 +267,9 @@
             },
             "absent_title": {
               "const": "null"
+            },
+            "internal_target": {
+              "const": "resolve_heading_or_figure"
             }
           }
         }

@@ -15,6 +15,7 @@ coverage/
 !/reference/README.md
 /artifacts/
 /examples/all-features-twice/*.output.hwp
+/examples/cross-references/*.output.hwp
 /tmp/
 /tools/investigation/**/probe-logs/
 

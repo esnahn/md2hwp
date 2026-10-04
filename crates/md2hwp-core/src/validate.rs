@@ -1,12 +1,13 @@
 //! IR-local semantic and resource validation.
 
+use std::collections::BTreeMap;
 use std::fmt;
 
 use icu_normalizer::ComposingNormalizerBorrowed;
 
 use crate::ir::{
-    Block, Document, FootnoteBlock, IR_VERSION, Inline, ListItem, ListItemBlock, ListKind,
-    SCHEMA_NAME,
+    Block, CrossReferenceKind, Document, FootnoteBlock, IR_VERSION, Inline, ListItem,
+    ListItemBlock, ListKind, SCHEMA_NAME, is_target_id,
 };
 
 const NFC: ComposingNormalizerBorrowed<'static> = ComposingNormalizerBorrowed::new_nfc();
@@ -71,6 +72,8 @@ pub fn validate(
         list_items: 0,
         inlines: 0,
         text_bytes: 0,
+        targets: BTreeMap::new(),
+        references: Vec::new(),
     };
     state.require(
         document.schema == SCHEMA_NAME,
@@ -113,6 +116,17 @@ pub fn validate(
     for (index, block) in document.blocks.iter().enumerate() {
         state.block(block, &format!("/blocks/{index}"))?;
     }
+    for (kind, target, path) in &state.references {
+        let (actual_kind, _) = state.targets.get(target).ok_or_else(|| SemanticError {
+            path: format!("{path}/target"),
+            message: format!("unknown cross-reference target '{target}'"),
+        })?;
+        state.require(
+            kind == actual_kind,
+            &format!("{path}/kind"),
+            "cross-reference kind does not match the target block",
+        )?;
+    }
     Ok(ValidatedDocument(document))
 }
 
@@ -122,6 +136,8 @@ struct State<'a> {
     list_items: usize,
     inlines: usize,
     text_bytes: usize,
+    targets: BTreeMap<String, (CrossReferenceKind, String)>,
+    references: Vec<(CrossReferenceKind, String, String)>,
 }
 
 impl State<'_> {
@@ -170,15 +186,18 @@ impl State<'_> {
         self.add_limited("blocks", path, 1)?;
         match block {
             Block::Paragraph { inlines } => {
-                self.inline_array(inlines, &format!("{path}/inlines"), false, true)
+                self.inline_array(inlines, &format!("{path}/inlines"), false, true, true)
             }
-            Block::Heading { level, inlines } => {
+            Block::Heading { id, level, inlines } => {
+                if let Some(id) = id {
+                    self.register_id(id, CrossReferenceKind::HeadingNumber, &format!("{path}/id"))?;
+                }
                 self.require(
                     (1..=6).contains(level),
                     &format!("{path}/level"),
                     "heading level must be between 1 and 6",
                 )?;
-                self.inline_array(inlines, &format!("{path}/inlines"), false, true)
+                self.inline_array(inlines, &format!("{path}/inlines"), false, true, true)
             }
             Block::VerbatimBlock { lines, source } => {
                 self.require(
@@ -197,7 +216,7 @@ impl State<'_> {
                     self.add_limited("text bytes", &line_path, line.len())?;
                 }
                 if let Some(source) = source {
-                    self.inline_array(source, &format!("{path}/source"), false, false)?;
+                    self.inline_array(source, &format!("{path}/source"), false, false, false)?;
                 }
                 Ok(())
             }
@@ -208,10 +227,14 @@ impl State<'_> {
                 items,
             } => self.list(kind, *start, *tight, items, path),
             Block::Figure {
+                id,
                 image,
                 caption,
                 source,
             } => {
+                if let Some(id) = id {
+                    self.register_id(id, CrossReferenceKind::FigureNumber, &format!("{path}/id"))?;
+                }
                 self.image_path(&image.path, &format!("{path}/image/path"))?;
                 if let Some(title) = &image.title {
                     self.nonempty_nfc_control_free(
@@ -220,10 +243,10 @@ impl State<'_> {
                         "image title",
                     )?;
                 }
-                self.inline_array(&image.alt, &format!("{path}/image/alt"), true, false)?;
-                self.inline_array(caption, &format!("{path}/caption"), false, false)?;
+                self.inline_array(&image.alt, &format!("{path}/image/alt"), true, false, false)?;
+                self.inline_array(caption, &format!("{path}/caption"), false, false, false)?;
                 if let Some(source) = source {
-                    self.inline_array(source, &format!("{path}/source"), false, false)?;
+                    self.inline_array(source, &format!("{path}/source"), false, false, false)?;
                 }
                 Ok(())
             }
@@ -285,7 +308,13 @@ impl State<'_> {
             self.add_limited("blocks", &block_path, 1)?;
             match block {
                 ListItemBlock::Paragraph { inlines } => {
-                    self.inline_array(inlines, &format!("{block_path}/inlines"), false, true)?;
+                    self.inline_array(
+                        inlines,
+                        &format!("{block_path}/inlines"),
+                        false,
+                        true,
+                        true,
+                    )?;
                 }
                 ListItemBlock::List {
                     kind,
@@ -304,12 +333,19 @@ impl State<'_> {
         path: &str,
         allow_empty: bool,
         allow_footnote: bool,
+        allow_reference: bool,
     ) -> Result<(), SemanticError> {
         if !allow_empty {
             self.require(!inlines.is_empty(), path, "inline array must not be empty")?;
         }
         for (index, inline) in inlines.iter().enumerate() {
-            self.inline(inline, &format!("{path}/{index}"), false, allow_footnote)?;
+            self.inline(
+                inline,
+                &format!("{path}/{index}"),
+                false,
+                allow_footnote,
+                allow_reference,
+            )?;
         }
         Ok(())
     }
@@ -320,9 +356,18 @@ impl State<'_> {
         path: &str,
         inside_link: bool,
         allow_footnote: bool,
+        allow_reference: bool,
     ) -> Result<(), SemanticError> {
         self.add_limited("inlines", path, 1)?;
         match inline {
+            Inline::CrossReference { kind, target } => {
+                self.require(allow_reference, path,
+                    "cross references are allowed only in document paragraphs, headings, list paragraphs and footnote bodies; figure alt/caption and object sources are unsupported")?;
+                self.target_id(target, &format!("{path}/target"))?;
+                self.references
+                    .push((kind.clone(), target.clone(), path.to_owned()));
+                Ok(())
+            }
             Inline::Footnote { blocks } => {
                 self.require(allow_footnote, path,
                     "footnotes are allowed only in document paragraphs, headings and list paragraphs; nested footnotes are not supported")?;
@@ -335,7 +380,13 @@ impl State<'_> {
                     let block_path = format!("{path}/blocks/{index}");
                     self.add_limited("blocks", &block_path, 1)?;
                     let FootnoteBlock::Paragraph { inlines } = block;
-                    self.inline_array(inlines, &format!("{block_path}/inlines"), false, false)?;
+                    self.inline_array(
+                        inlines,
+                        &format!("{block_path}/inlines"),
+                        false,
+                        false,
+                        true,
+                    )?;
                 }
                 Ok(())
             }
@@ -366,6 +417,7 @@ impl State<'_> {
                         &format!("{path}/inlines/{index}"),
                         inside_link,
                         allow_footnote,
+                        allow_reference,
                     )?;
                 }
                 Ok(())
@@ -391,11 +443,40 @@ impl State<'_> {
                         &format!("{path}/inlines/{index}"),
                         true,
                         allow_footnote,
+                        allow_reference,
                     )?;
                 }
                 Ok(())
             }
         }
+    }
+
+    fn target_id(&mut self, value: &str, path: &str) -> Result<(), SemanticError> {
+        self.require(
+            is_target_id(value),
+            path,
+            "ID must be nonempty and contain no whitespace, controls or '#'",
+        )?;
+        self.add_limited("text bytes", path, value.len())
+    }
+
+    fn register_id(
+        &mut self,
+        value: &str,
+        kind: CrossReferenceKind,
+        path: &str,
+    ) -> Result<(), SemanticError> {
+        self.target_id(value, path)?;
+        if let Some((_, previous)) = self
+            .targets
+            .insert(value.to_owned(), (kind, path.to_owned()))
+        {
+            return self.fail(
+                path,
+                format!("duplicate target ID '{value}'; first declared at {previous}"),
+            );
+        }
+        Ok(())
     }
 
     fn nonempty_control_free(
@@ -543,6 +624,7 @@ mod tests {
         ] {
             let error = validate(
                 document(vec![Block::Figure {
+                    id: None,
                     image: ImageRef {
                         path: path.to_owned(),
                         alt: vec![],
@@ -596,6 +678,7 @@ mod tests {
             ),
             (
                 Block::Figure {
+                    id: None,
                     image: ImageRef {
                         path: "assets/image.png".to_owned(),
                         alt: vec![],
@@ -608,6 +691,7 @@ mod tests {
             ),
             (
                 Block::Figure {
+                    id: None,
                     image: ImageRef {
                         path: "assets/image.png".to_owned(),
                         alt: vec![text("가")],
@@ -620,6 +704,7 @@ mod tests {
             ),
             (
                 Block::Figure {
+                    id: None,
                     image: ImageRef {
                         path: "assets/image.png".to_owned(),
                         alt: vec![],
@@ -632,6 +717,7 @@ mod tests {
             ),
             (
                 Block::Figure {
+                    id: None,
                     image: ImageRef {
                         path: "assets/image.png".to_owned(),
                         alt: vec![],
@@ -665,6 +751,7 @@ mod tests {
                     }],
                 },
                 Block::Figure {
+                    id: None,
                     image: ImageRef {
                         path: image_path.to_owned(),
                         alt: vec![],
@@ -810,6 +897,7 @@ mod tests {
     #[test]
     fn rejects_direct_ir_notes_in_every_figure_and_source_field() {
         let figure = Block::Figure {
+            id: None,
             image: ImageRef {
                 path: "image.png".into(),
                 alt: vec![],
@@ -824,6 +912,7 @@ mod tests {
                 image,
                 caption,
                 source,
+                ..
             } = &mut block
             else {
                 unreachable!()

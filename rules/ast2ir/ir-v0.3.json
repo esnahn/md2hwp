@@ -22,17 +22,23 @@
     "Para": {
       "handler": "paragraph",
       "figure": {
-        "attributes": "require_empty",
+        "attributes": "optional_id_only",
         "context": "document_only",
         "handler": "standalone_image",
         "caption": "alt"
       }
     },
+    "Figure": {
+      "handler": "figure",
+      "attributes": "optional_id_only",
+      "caption": "single_paragraph",
+      "content": "single_image"
+    },
     "Header": {
       "handler": "heading",
       "minimum_level": 1,
       "maximum_level": 6,
-      "attributes": "require_empty"
+      "attributes": "optional_id_only"
     },
     "Plain": {
       "handler": "list_item_paragraph",
@@ -85,7 +91,8 @@
       "handler": "link",
       "attributes": "require_empty",
       "target": "require_nonempty",
-      "absent_title": "null"
+      "absent_title": "null",
+      "internal_target": "resolve_heading_or_figure"
     }
   }
 }
