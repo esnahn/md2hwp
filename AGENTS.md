@@ -48,7 +48,7 @@ the title, removing the prefix and one following space, then skipping immediatel
 following blank/whitespace-only lines. With no title slot, preserve all raw lines.
 Keep this template-dependent presentation in the backend; do not add an IR title
 field or parse Markdown syntax inside the remaining verbatim text.
-Markdown input uses commonmark+yaml_metadata_block+footnotes. Reference-style
+Markdown input uses commonmark+yaml_metadata_block+footnotes+attributes+implicit_figures. Reference-style
 footnotes are enabled; inline_notes remains disabled. The 제목: and 출처: rules
 are md2hwp conventions, not CommonMark or Pandoc extension syntax. Document these
 separately in README.md.
@@ -72,6 +72,32 @@ keep continuous/section numbering and all other structures exact. Verify the
 rendered footnote numbers visually; XML counters alone do not establish display numbering.
 Existing user deployment templates require explicit adoption
 of new declarations or regeneration, even while the development IR remains 0.3.
+IDs on headings and figures are document-wide unique Unicode strings without
+whitespace, control characters or #. Preserve them in IR; decode internal Link
+fragments strictly as UTF-8 URI escapes and resolve by actual target kind, without
+requiring sec:/fig: prefixes. Normalize both Para/Image and one-image, one-paragraph
+Pandoc Figure inputs. Reject unsupported caption/body structures explicitly.
+Use xrefs_number-compatible internal Links for number references; do not parse
+raw [@...] strings or enable citations/citeproc/pandoc-crossref for this feature.
+Validate source link labels and resource limits before replacing them with symbolic
+IR cross_reference {kind: heading_number|figure_number, target: id}.
+Require single-paragraph ref.figure.number and ref.heading.number prototypes even
+when unused. Import their inline formatting. In figure references num:heading1 is
+the target figure's fixed chapter; the figure-number slot is a native Crossref.
+Heading references use a native outline Crossref and GetHeadingString, never a
+computed heading number. Missing or ambiguous outline targets are errors; repeated
+title copies count only when they carry real Outline paragraph formatting.
+Default headings remain plain; users configure native outline numbering when needed.
+Do not infer native number settings from ID prefixes or manuscript link labels.
+No generated reference hyperlinks. Verify native field target/cache/format and
+surrounding structures after save/reopen. Keep unreferenced template fields intact.
+Use Action.Execute for sets returned by Action.CreateSet; passing those sets to
+HAction.Execute fails COM interface conversion on this Hancom 2020 workstation.
+Hancom reuses Crossref FieldId values across distinct fields. Require matching local
+begin/end FieldId and unique field InstId; do not require global FieldId uniqueness.
+Coalesce adjacent identical-format target-marker runs before HWPML import. Reject
+empty native outline display formats without calculating a replacement number.
+Table/page and other reference roles remain reserved and unsupported.
 Generated tables, HWPX and RST input are deferred.
 
 ## Metadata and dates

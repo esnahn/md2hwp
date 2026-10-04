@@ -9,19 +9,21 @@ HWPX, 생성 표, RST 직접 입력은 이번 배포 범위에 포함하지 않�
 
 ## 원고 문법
 
-Markdown은 Pandoc의 `commonmark+yaml_metadata_block+footnotes`로 읽습니다.
-CommonMark를 기본으로 하며 다음 두 확장을 사용합니다.
+Markdown은 Pandoc의 `commonmark+yaml_metadata_block+footnotes+attributes+implicit_figures`로 읽습니다.
+CommonMark를 기본으로 하며 다음 네 확장을 사용합니다.
 
 | 확장 | 용도 |
 | --- | --- |
 | `yaml_metadata_block` | 원고 맨 앞 YAML의 문서 정보·설정값 |
 | `footnotes` | `[^이름]` 참조와 `[^이름]: 내용` 정의로 작성하는 각주 |
+| `attributes` | 헤딩·그림의 `{#ID}` 수동 식별자 |
+| `implicit_figures` | 독립 이미지를 Pandoc Figure로 해석 |
 
 CommonMark 요소 중 본문, 제목 1~6단계, 굵게·기울임, 링크, 강제 줄바꿈,
 코드 블록, 글머리표·번호 목록과 독립된 PNG 그림을 지원합니다. 모든 CommonMark
 요소를 출력하는 것은 아닙니다. 인용 블록, 인라인 코드, HTML 등 지원하지 않는
 Pandoc 요소가 있으면 오류를 냅니다. 일반 문단의 원고 줄바꿈은 공백으로 합칩니다.
-링크는 서식 있는 표기 텍스트로 출력하며 자동 하이퍼링크를 만들지 않습니다.
+일반 링크는 서식 있는 표기 텍스트로 출력하며 자동 하이퍼링크를 만들지 않습니다.
 
 ### 참조형 각주
 
@@ -45,6 +47,28 @@ Pandoc 요소가 있으면 오류를 냅니다. 일반 문단의 원고 줄바�
 각주 문단 서식은 템플릿의 `{{md2hwp:footnote}}` 샘플에서 가져옵니다.
 구분선·번호 모양·위치는 템플릿 문서의 한글 각주 설정을 따릅니다.
 각주 검증 원고와 예상 IR은 [`examples/footnotes/`](examples/footnotes/)에 있습니다.
+
+### 번호 상호참조
+
+```markdown
+## 절 제목 {#section-one}
+
+![대상지 현황](site.png){#site}
+
+[그림 참조](#site)를 보십시오. [개요 참조](#section-one)를 참고하십시오.
+```
+
+Pandoc `xrefs_number`와 같은 내부 링크 문법을 사용합니다. 대상의 실제 종류로
+헤딩·그림을 판별하며 `fig:`·`sec:` 접두사는 필수가 아닙니다. 링크 표시문은
+템플릿의 번호 참조 표기로 대체합니다. 그림 참조의 장 번호는 대상 그림이 속한 장에서
+계산하고, 그림 번호는 한글의 실제 상호참조 필드로 넣습니다. 개요 참조는 대상
+헤딩에 설정된 한글의 실제 개요 번호를 참조합니다. 제목 스타일만 있는 문단은
+개요 참조 대상이 될 수 없습니다. 표 번호 참조는 현재 지원하지 않습니다.
+
+템플릿에는 `begin:ref.figure.number`와 `begin:ref.heading.number` 범위가
+필요합니다. 기존 템플릿에 추가하거나 `init-template`으로 별도 템플릿을 생성하십시오.
+문법·서식·지원 범위는 [번호 상호참조 설명](docs/cross-references.md), 검증 원고와
+IR은 [`examples/cross-references/`](examples/cross-references/)를 참고하십시오.
 
 ### md2hwp의 제목·출처 규칙
 
@@ -83,7 +107,7 @@ cargo test --workspace
 
 Release 빌드 결과는 `target/release/`의 다음 세 파일입니다.
 `-Configuration Debug`를 주면 `target/debug/`에 모입니다.
-개발·실행에는 이 두 폴더를 기본으로 사용합니다. 	arget/dist/는 버전별 배포 파일과 ZIP의 보관용입니다.
+개발·실행에는 이 두 폴더를 기본으로 사용합니다. `target/dist/`는 버전별 배포 파일과 ZIP의 보관용입니다.
 
 - `md2hwp.exe`
 - `md2hwp-backend.exe`
@@ -190,7 +214,8 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 
 기존 템플릿 파일 없이 한글의 새 빈 문서 기본 서식에서 시작합니다. 현재 IR의
 필수 선언, 제목 1~6단계·본문·각주 스타일, 글머리표·번호 목록 원형, 단일 셀 박스와 선택적 제목·출처, 샘플 그림과 실제 자동번호 캡션·출처를
-구성하고 저장·재열기 및 프로토타입 검증이 성공한 파일만 내보냅니다.
+구성하고 그림·개요 번호 참조의 인라인 서식 원형도 포함합니다. 저장·재열기 및
+프로토타입 검증이 성공한 파일만 내보냅니다.
 제목을 포함한 역할별 `md2hwp.*` 스타일은 처음에는 같은 기본 서식이며,
 생성한 템플릿에서 각 스타일을 편집해 문서 디자인을 정할 수 있습니다.
 템플릿 정의 영역은 변환 결과에서 제거됩니다.
@@ -198,7 +223,7 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 ```text
 {{md2hwp:begin:template}}
 {{md2hwp:ir-version:0.3}}
-스타일 선언과 목록·박스·그림·출처 원형
+스타일 선언과 목록·박스·그림·출처·번호 참조 원형
 {{md2hwp:end:template}}
 {{md2hwp:content}}
 [빈 문단]
@@ -240,7 +265,11 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 | `begin:figure.caption` / `end:figure.caption` | 필수 | 실제 캡션이 붙은 샘플 그림 문단 하나를 감싸는 독립 경계 문단 |
 | `slot:figure.caption` / `slot:figure.source` | 둘 다 필수 | 그림의 실제 캡션 안에 설명·출처 순서로 각각 한 문단 |
 | `begin:headingN` / `end:headingN` | 선택 | 해당 수준의 단일 제목 선언 대신 사용하는 블록 경계 |
-| `num:heading1` | 선택 | 헤딩 블록·그림 캡션에서 현재 장 번호를 넣는 인라인 태그 |
+| `num:heading1` | 선택 | 헤딩 블록·그림 캡션에서는 현재 장 번호, 그림 참조 샘플에서는 대상 장 번호 |
+| `begin:ref.figure.number` / `end:ref.figure.number` | 필수 | 그림 번호 참조의 한 문단 인라인 서식 샘플 범위 |
+| `slot:ref.figure.number` | 필수 | 그림 참조 샘플에 정확히 한 개. 실제 그림 번호 상호참조 필드 위치 |
+| `begin:ref.heading.number` / `end:ref.heading.number` | 필수 | 개요 번호 참조의 한 문단 인라인 서식 샘플 범위 |
+| `slot:ref.heading.number` | 필수 | 개요 참조 샘플에 정확히 한 개. 실제 개요 번호 상호참조 필드 위치 |
 | `slot:headingN` | 헤딩 블록·반복 범위에서 필수 | 해당 범위의 제목을 넣는 독립 문단. 여러 개 사용 가능 |
 | `begin:each.child:headingN` / `end:each.child:headingN` | 선택 | 헤딩 블록 안에서 바로 아래 수준의 제목마다 반복. 중첩 가능 |
 | `begin:once` / `end:once` | 선택 | 헤딩 블록 안의 같은 문단에서 첫 사용에만 남길 인라인 범위 |
