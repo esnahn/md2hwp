@@ -168,7 +168,6 @@ fn ordinary_links_and_literal_at_strings_keep_existing_labels() {
 #[test]
 fn source_labels_titles_and_unsupported_ast_are_validated_before_replacement() {
     for label in [
-        json!([]),
         json!([{"t":"Str","c":""}]),
         json!([{"t":"Str","c":"contains space"}]),
         json!([{"t":"Str","c":"가"}]),
@@ -467,4 +466,134 @@ fn reference_label_notes_fail_explicitly_while_notes_after_refs_and_external_lab
         unreachable!()
     };
     assert!(matches!(inlines[1], Inline::Footnote { .. }));
+}
+
+#[test]
+fn empty_internal_reference_labels_use_actual_targets_without_hidden_label_text() {
+    let limits = ValidationLimits::default();
+    let fixture = include_bytes!(
+        "../../../tests/fixtures/pandoc-json/cross-reference-empty-labels-v0.3.json"
+    );
+    let raw: Value = serde_json::from_slice(fixture).unwrap();
+    assert_eq!(raw["blocks"][0]["c"][0]["t"], "Link");
+    assert_eq!(raw["blocks"][0]["c"][0]["c"][1], json!([]));
+    let actual = normalize_pandoc(
+        read_pandoc_json(fixture, &limits).unwrap(),
+        &load_builtin_rules().unwrap(),
+        "commonmark+yaml_metadata_block+footnotes+attributes+implicit_figures",
+        &limits,
+    )
+    .unwrap();
+    let Block::Paragraph { inlines } = &actual.as_document().blocks[0] else {
+        unreachable!()
+    };
+    assert_eq!(
+        inlines,
+        &vec![
+            reference(CrossReferenceKind::HeadingNumber, "h"),
+            Inline::Space,
+            reference(CrossReferenceKind::FigureNumber, "f")
+        ]
+    );
+    assert_eq!(
+        read_ir(&write_ir(&actual).unwrap(), &limits).unwrap(),
+        actual
+    );
+    for target in ["#missing", "#"] {
+        let mut node = link(target);
+        node["c"][1] = json!([]);
+        let error = normalize(json!([{"t":"Para","c":[node]}])).unwrap_err();
+        assert!(!error.message.contains("link label must not be empty"));
+    }
+}
+
+#[test]
+fn empty_labels_remain_invalid_for_external_source_links_and_public_ir_links() {
+    for target in [
+        "https://example.net",
+        "relative.md",
+        "https://example.net/#h",
+    ] {
+        let mut node = link(target);
+        node["c"][1] = json!([]);
+        assert!(
+            normalize(json!([{"t":"Para","c":[node]}]))
+                .unwrap_err()
+                .message
+                .contains("link label must not be empty")
+        );
+    }
+    let source = document(vec![
+        Block::Heading {
+            id: Some("h".into()),
+            level: 2,
+            inlines: vec![Inline::Text {
+                value: "heading".into(),
+            }],
+        },
+        Block::Paragraph {
+            inlines: vec![Inline::Link {
+                target: "#h".into(),
+                title: None,
+                inlines: vec![],
+            }],
+        },
+    ]);
+    assert!(
+        validate(source.clone(), &ValidationLimits::default())
+            .unwrap_err()
+            .message
+            .contains("link label must not be empty")
+    );
+    let error = read_ir(
+        &serde_json::to_vec(&source).unwrap(),
+        &ValidationLimits::default(),
+    )
+    .unwrap_err();
+    assert_eq!(error.code, md2hwp_core::IrReadErrorCode::InvalidIrSchema);
+}
+
+#[test]
+fn empty_reference_labels_still_count_source_targets_ids_inlines_and_blocks() {
+    let mut h = link("#h");
+    h["c"][1] = json!([]);
+    let mut f = link("#f");
+    f["c"][1] = json!([]);
+    let blocks = json!([{"t":"Para","c":[h,f]},heading("h"),para_image("f")]);
+    let exact = ValidationLimits {
+        max_text_bytes: 20,
+        max_inlines: 5,
+        max_blocks: 3,
+        ..ValidationLimits::default()
+    };
+    normalize_with_limits(blocks.clone(), &exact).unwrap();
+    for limits in [
+        ValidationLimits {
+            max_text_bytes: 19,
+            ..exact.clone()
+        },
+        ValidationLimits {
+            max_inlines: 4,
+            ..exact.clone()
+        },
+        ValidationLimits {
+            max_blocks: 2,
+            ..exact.clone()
+        },
+    ] {
+        assert!(
+            normalize_with_limits(blocks.clone(), &limits)
+                .unwrap_err()
+                .message
+                .contains("limit exceeded")
+        );
+    }
+    let mut titled = blocks;
+    titled[0]["c"][0]["c"][2][1] = json!("title");
+    assert!(
+        normalize_with_limits(titled, &exact)
+            .unwrap_err()
+            .message
+            .contains("text bytes limit exceeded")
+    );
 }

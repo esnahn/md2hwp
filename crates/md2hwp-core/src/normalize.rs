@@ -11,7 +11,7 @@ use crate::ir::{
     ListItemBlock, ListKind, SCHEMA_NAME, is_target_id,
 };
 use crate::pandoc_input::PandocDocument;
-use crate::validate::{ValidatedDocument, ValidationLimits, validate};
+use crate::validate::{ValidatedDocument, ValidationLimits, validate, validate_pandoc_source};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NormalizeError {
@@ -64,7 +64,7 @@ pub fn normalize_pandoc(
         blocks.push(block);
         index += 1;
     }
-    let ir = Document {
+    let mut ir = Document {
         schema: SCHEMA_NAME.to_owned(),
         ir_version: IR_VERSION.to_owned(),
         metadata,
@@ -72,11 +72,9 @@ pub fn normalize_pandoc(
     };
     // Validate every original label/title and cumulative input resource count
     // before replacing internal Link labels with template-owned references.
-    let mut ir = validate(ir, limits)
-        .map_err(|error| {
-            normalizer.error("invalid_ir_semantics", &error.path, None, error.message)
-        })?
-        .into_document();
+    validate_pandoc_source(&ir, limits).map_err(|error| {
+        normalizer.error("invalid_ir_semantics", &error.path, None, error.message)
+    })?;
     normalizer.resolve_references(&mut ir)?;
     validate(ir, limits)
         .map_err(|error| normalizer.error("invalid_ir_semantics", &error.path, None, error.message))

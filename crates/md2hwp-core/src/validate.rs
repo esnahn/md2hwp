@@ -66,8 +66,33 @@ pub fn validate(
     document: Document,
     limits: &ValidationLimits,
 ) -> Result<ValidatedDocument, SemanticError> {
+    validate_semantics(&document, limits, ValidationMode::Ir)?;
+    Ok(ValidatedDocument(document))
+}
+
+// Only Pandoc's original internal Link labels may be empty. This check returns
+// no ValidatedDocument: normalization must resolve them and validate public IR.
+pub(crate) fn validate_pandoc_source(
+    document: &Document,
+    limits: &ValidationLimits,
+) -> Result<(), SemanticError> {
+    validate_semantics(document, limits, ValidationMode::PandocSource)
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ValidationMode {
+    Ir,
+    PandocSource,
+}
+
+fn validate_semantics(
+    document: &Document,
+    limits: &ValidationLimits,
+    mode: ValidationMode,
+) -> Result<(), SemanticError> {
     let mut state = State {
         limits,
+        mode,
         blocks: 0,
         list_items: 0,
         inlines: 0,
@@ -127,11 +152,12 @@ pub fn validate(
             "cross-reference kind does not match the target block",
         )?;
     }
-    Ok(ValidatedDocument(document))
+    Ok(())
 }
 
 struct State<'a> {
     limits: &'a ValidationLimits,
+    mode: ValidationMode,
     blocks: usize,
     list_items: usize,
     inlines: usize,
@@ -433,7 +459,8 @@ impl State<'_> {
                     self.nonempty_nfc_control_free(title, &format!("{path}/title"), "link title")?;
                 }
                 self.require(
-                    !inlines.is_empty(),
+                    !inlines.is_empty()
+                        || self.mode == ValidationMode::PandocSource && target.starts_with('#'),
                     &format!("{path}/inlines"),
                     "link label must not be empty",
                 )?;
