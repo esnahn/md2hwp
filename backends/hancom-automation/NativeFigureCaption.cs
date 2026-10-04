@@ -6,6 +6,9 @@ namespace Md2Hwp.HancomIrPreview;
 // verified output to each generated picture. The intermediate form is never published.
 internal sealed class NativeFigureCaption(XElement settings)
 {
+    private readonly Dictionary<string, string> generatedFigureInstances = new(StringComparer.Ordinal);
+    internal IReadOnlyDictionary<string, string> GeneratedFigureInstances => generatedFigureInstances;
+
     internal static (NativeFigureCaption Layout, XDocument Document) Lower(XDocument source)
     {
         var document = new XDocument(source);
@@ -54,6 +57,7 @@ internal sealed class NativeFigureCaption(XElement settings)
 
     internal XDocument Attach(XDocument rendered, IrPreviewPlan plan, int start)
     {
+        generatedFigureInstances.Clear();
         var result = new XDocument(rendered);
         var roots = AuriMinimalBoxPrototype.RootParagraphs(result);
         var index = start;
@@ -63,6 +67,15 @@ internal sealed class NativeFigureCaption(XElement settings)
             if (operation.Kind != "figure") { index++; continue; }
             var root = roots[index];
             var shape = root.Descendants("PICTURE").Single().Element("SHAPEOBJECT")!;
+            shape.SetAttributeValue("NumberingType", "Figure");
+            if (operation.FigureId is { } figureId)
+            {
+                var instance = (string?)shape.Attribute("InstId") ?? (string?)shape.Attribute("InstID")
+                    ?? throw new InvalidOperationException($"Generated figure {figureId} has no native instance ID.");
+                if (!generatedFigureInstances.TryAdd(figureId, instance) ||
+                    generatedFigureInstances.Values.Count(id => id == instance) != 1)
+                    throw new InvalidOperationException($"Generated figure {figureId} has an ambiguous native identity.");
+            }
             if (shape.Element("CAPTION") is not null) throw new InvalidOperationException("Generated picture already has a caption.");
             var caption = new XElement(settings);
             var paragraphs = new List<XElement> { new(roots[index + 1]) };

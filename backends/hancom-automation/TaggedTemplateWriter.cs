@@ -26,7 +26,8 @@ internal static partial class HancomPreviewWriter
                 var preparedMetadata = TemplateMetadata.Prepare(HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", "")), metadata);
                 XDocument document = TemplateHeadingNumbers.Prepare(TaggedTemplateBinding.PreserveBeginSectionSettings(preparedMetadata.Document));
                 var footnotes = NativeFootnotes.Bind(document);
-                var headings = TemplateHeadingBlocks.Lower(document);
+                var referenceTemplate = TemplateCrossReferences.Lower(document);
+                var headings = TemplateHeadingBlocks.Lower(referenceTemplate.Document);
                 var boxes = TemplateBoxParagraphs.Lower(headings.Document);
                 var nativeFigure = NativeFigureCaption.Lower(boxes.Document);
                 _ = TaggedTemplateBinding.ReadFlat(nativeFigure.Document, temporary);
@@ -100,13 +101,17 @@ internal static partial class HancomPreviewWriter
                 attached = footnotes.Attach(attached, plan);
                 TemplateHeadingNumbers.RequireResolved(attached);
                 TemplateHeadingBlocks.RecalculateFigureNumbers(attached);
+                var references = NativeCrossReferences.Prepare(attached, plan, referenceTemplate.Layout,
+                    nativeFigure.Layout.GeneratedFigureInstances, headings.Layout.GeneratedHeadingInstances);
+                attached = references.Document;
                 boxes.Layout.RecordLayout(attached);
                 ImportFigureDocument(hwp, attached, headings.Layout, boxes.Layout, footnotes);
+                references.Layout.Insert(hwp);
                 if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
                     throw new InvalidOperationException("Could not save native figure captions.");
                 CloseDocument(hwp); Open(hwp, temporary, visible);
                 var nativeSaved = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
-                RequireFigureDocument(attached, nativeSaved, headings.Layout, reportLayout: true, boxes: boxes.Layout, footnotes: footnotes);
+                RequireFigureDocument(attached, nativeSaved, headings.Layout, reportLayout: true, boxes: boxes.Layout, footnotes: footnotes, references: references.Layout);
                 return true;
             });
             if (HashFile(source) != hash) throw new InvalidOperationException("Source template changed.");
@@ -124,13 +129,14 @@ internal static partial class HancomPreviewWriter
         RequireFigureDocument(document, HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", "")), headings, boxes: boxes, footnotes: footnotes);
     }
 
-    private static void RequireFigureDocument(XDocument expected, XDocument actual, TemplateHeadingBlocks? headings = null, bool reportLayout = false, TemplateBoxParagraphs? boxes = null, NativeFootnotes? footnotes = null)
+    private static void RequireFigureDocument(XDocument expected, XDocument actual, TemplateHeadingBlocks? headings = null, bool reportLayout = false, TemplateBoxParagraphs? boxes = null, NativeFootnotes? footnotes = null, NativeCrossReferences? references = null)
     {
         expected = new XDocument(expected);
         actual = new XDocument(actual);
         headings?.NormalizeTitleLayout(expected, actual, reportLayout);
         boxes?.NormalizeLayout(expected, actual);
         footnotes?.NormalizeNumbers(expected, actual);
+        references?.NormalizeExpected(expected, actual);
         // Hancom adds identity scale/rotation pairs during HWPML import.
         // Ignore only mathematically neutral matrices in comparison copies.
         expected = NormalizeFigureMatrices(expected);

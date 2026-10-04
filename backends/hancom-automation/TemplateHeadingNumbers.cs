@@ -41,9 +41,12 @@ internal static class TemplateHeadingNumbers
             number?.ToString(CultureInfo.InvariantCulture) ?? throw new InvalidDataException("num:heading1 requires a preceding heading1 in the manuscript."));
         return result.Root!.Elements().ToArray();
     }
+    internal static bool ContainsNumberSlot(XElement paragraph) =>
+        TaggedTemplateBinding.DirectText(paragraph).Contains(Tag, StringComparison.Ordinal) ||
+        TaggedTemplateBinding.DirectText(paragraph).Contains(Marker, StringComparison.Ordinal);
     internal static void RequireResolved(XDocument document)
     {
         if (document.Descendants("P").Any(p=>TaggedTemplateBinding.DirectText(p).Contains(Marker,StringComparison.Ordinal)))
-            throw new InvalidDataException("num:heading1 is allowed only inside heading blocks and figure captions.");
+            throw new InvalidDataException("num:heading1 is allowed only inside heading blocks, figure captions and ref.figure.number samples.");
     }
 }

@@ -8,6 +8,8 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
 {
     private readonly HashSet<string> titleHeightElements = [];
     private readonly HashSet<string> pageBreakAfter = [];
+    private readonly Dictionary<string, IReadOnlyList<string>> generatedHeadingInstances = new(StringComparer.Ordinal);
+    internal IReadOnlyDictionary<string, IReadOnlyList<string>> GeneratedHeadingInstances => generatedHeadingInstances;
 
     // Only containers enclosing a replaced title may reflow. All other geometry
     // and all content/formatting remain part of the strict structural comparison.
@@ -80,6 +82,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
     internal XDocument Attach(XDocument rendered, IrPreviewPlan plan, int start)
     {
         titleHeightElements.Clear();
+        generatedHeadingInstances.Clear();
         var reflow = new HashSet<XElement>();
         var usedRoles = new HashSet<string>(StringComparer.Ordinal);
         var result = new XDocument(rendered);
@@ -87,8 +90,13 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
         for (var index = 0; index < plan.Operations.Count; index++)
         {
             var operation = plan.Operations[index];
-            if (operation.Kind != "text" || operation.ParagraphStyle is null || !samples.TryGetValue(operation.ParagraphStyle, out var sample)) continue;
+            if (operation.Kind != "text" || operation.ParagraphStyle is null) continue;
             var generated = roots[start + index];
+            if (!samples.TryGetValue(operation.ParagraphStyle, out var sample))
+            {
+                if (operation.ParagraphStyle.StartsWith("heading", StringComparison.Ordinal)) RecordHeadingInstance(generated, operation);
+                continue;
+            }
             var instance = sample.Select(p => new XElement(p)).ToArray();
             TemplateOnceRanges.Apply(instance, usedRoles.Add(operation.ParagraphStyle));
             var block = instance.Select(p => ImportParagraph(p, source, result)).ToArray();
@@ -114,6 +122,8 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
                 do { id = BitConverter.ToUInt32(Guid.NewGuid().ToByteArray(), 0).ToString(System.Globalization.CultureInfo.InvariantCulture); } while (!identities.Add(id));
                 attribute.Value = id;
             }
+            foreach (var target in block.SelectMany(paragraph => paragraph.DescendantsAndSelf("P")))
+                if (target.Annotation<PreviewOperation>() is { } title) RecordHeadingInstance(target, title);
             generated.ReplaceWith(block);
             if (pageBreakAfter.Contains(operation.ParagraphStyle) && start + index + 1 < roots.Length)
                 SetPageBreak(roots[start + index + 1]);
@@ -126,6 +136,16 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
         return result;
     }
 
+    // Retain every title copy. The native adapter selects genuine outline
+    // paragraphs and rejects a target with multiple eligible native identities.
+    private void RecordHeadingInstance(XElement paragraph, PreviewOperation operation)
+    {
+        if (operation.HeadingId is not { } headingId) return;
+        var instance = (string?)paragraph.Attribute("InstId") ?? (string?)paragraph.Attribute("InstID");
+        if (instance is null) return;
+        generatedHeadingInstances[headingId] = generatedHeadingInstances.TryGetValue(headingId, out var prior)
+            ? prior.Append(instance).ToArray() : [instance];
+    }
     private static void SetRepeatedNumber(XElement paragraph, int number, XDocument document)
     {
         var shape = document.Descendants("PARASHAPE").Single(e => (string?)e.Attribute("Id") == (string?)paragraph.Attribute("ParaShape"));

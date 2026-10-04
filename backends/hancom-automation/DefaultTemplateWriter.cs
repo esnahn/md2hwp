@@ -162,7 +162,7 @@ internal static partial class HancomPreviewWriter
         var styles = result.Descendants().Where(e => e.Name.LocalName == "STYLE").ToArray();
         var styleList = styles[0].Parent!;
         var nextId = styles.Max(e => (int)e.Attribute("Id")!) + 1;
-        var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "footnote", "block.box", "box.title", "box.source", "figure.caption", "figure.source", "reset" };
+        var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "footnote", "block.box", "box.title", "box.source", "figure.caption", "figure.source", "ref.figure.number", "ref.heading.number", "reset" };
         var ids = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var role in roles)
         {
@@ -229,6 +229,12 @@ internal static partial class HancomPreviewWriter
         roots.AddRange(new[] { Declaration("begin:block.box"), Paragraph("body", table), Declaration("end:block.box"),
             Declaration("figure.max-width-mm:" + figureWidth), Declaration("begin:figure.caption"),
             Paragraph("body", picture), Declaration("end:figure.caption"),
+            Declaration("begin:ref.figure.number"),
+            TextParagraph("ref.figure.number", "그림 " + TemplateHeadingNumbers.Tag + "-" + TemplateCrossReferences.FigureNumberSlot),
+            Declaration("end:ref.figure.number"),
+            Declaration("begin:ref.heading.number"),
+            TextParagraph("ref.heading.number", TemplateCrossReferences.HeadingNumberSlot),
+            Declaration("end:ref.heading.number"),
             Declaration("end:template"), Declaration("content"), TextParagraph("body", "") });
         section.ReplaceNodes(roots);
         return result;

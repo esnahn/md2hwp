@@ -495,6 +495,9 @@ var boldFirstResult = nativeNoteBinding.Attach(FootnoteRendered(nativeNoteTempla
 var numberRun = boldFirstResult.Descendants("FOOTNOTE").Single().Descendants("AUTONUM").Single().Parent!;
 Check((string?)numberRun.Attribute("CharShape") == "2" && (string?)numberRun.ElementsAfterSelf("TEXT").Single().Attribute("CharShape") != "2", "Footnote numbering acquired boldness from its first content span.");
 Console.WriteLine("Native footnote structure, rich text, preserved controls and local numbering checks passed.");
+FigureReferenceContractTests.Run();
+TemplateCrossReferenceTests.Run();
+NativeCrossReferenceTests.Run();
 if (args.Length==2) {
     var expected=HancomPreviewWriter.NormalizeFigureMatrices(HwpMarkup.Parse(File.ReadAllText(args[0])));
     var actual=HancomPreviewWriter.NormalizeFigureMatrices(HwpMarkup.Parse(File.ReadAllText(args[1])));

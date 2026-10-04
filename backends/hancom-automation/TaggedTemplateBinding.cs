@@ -14,7 +14,7 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
 
     public static TaggedTemplateBinding Read(XDocument document, string templatePath)
     {
-        return ReadFlat(NativeFigureCaption.Lower(TemplateBoxParagraphs.Lower(TemplateHeadingBlocks.Lower(TemplateHeadingNumbers.Prepare(PreserveBeginSectionSettings(document))).Document).Document).Document, templatePath);
+        return ReadFlat(NativeFigureCaption.Lower(TemplateBoxParagraphs.Lower(TemplateHeadingBlocks.Lower(TemplateCrossReferences.Lower(TemplateHeadingNumbers.Prepare(PreserveBeginSectionSettings(document))).Document).Document).Document).Document, templatePath);
     }
 
     // Section settings may own master-page paragraphs. Keep them outside the
