@@ -78,7 +78,9 @@ internal sealed record PreviewOperation(
     IReadOnlyList<IReadOnlyList<PreviewTextRun>>? FormattedLines = null,
     PreviewListMarker? ListMarker = null,
     IReadOnlyList<PreviewTextRun>? SourceRuns = null,
-    int? Heading1Number = null);
+    int? Heading1Number = null,
+    string? FigureId = null,
+    string? HeadingId = null);
 
 internal sealed record PreviewListMarker(
     int ListId,
@@ -92,7 +94,10 @@ internal sealed record PreviewTextRun(
     string Text,
     bool Strong,
     bool Emphasis,
-    PreviewFootnote? Footnote = null);
+    PreviewFootnote? Footnote = null,
+    PreviewCrossReference? CrossReference = null);
+
+internal sealed record PreviewCrossReference(string Kind, string Target);
 
 internal sealed record PreviewFootnote(
     IReadOnlyList<PreviewInlineContent> Paragraphs);
@@ -167,6 +172,7 @@ internal sealed class PlanBuilder(
     public IrPreviewPlan Build(int sourceBlocks)
     {
         var numberedOperations = TemplateHeadingNumbers.Track(operations, heading1Start);
+        FigureReferenceContract.Validate(numberedOperations);
         var textOperations = operations.Count(operation => operation.Kind == "text");
         var boxOperations = operations.Count(operation => operation.Kind == "box");
         var figureOperations = operations.Count(operation => operation.Kind == "figure");
@@ -196,14 +202,15 @@ internal sealed class PlanBuilder(
 
     private void AddHeading(JsonElement block, string path)
     {
-        JsonContract.ExpectObject(block, path, ["type", "level", "inlines"]);
+        JsonContract.ExpectObject(block, path, ["type", "level", "inlines"], ["id"]);
+        var headingId = FigureReferenceContract.ReadOptionalId(block, path);
         var level = JsonContract.RequiredInt32(block, "level", path);
         if (level is < 1 or > 6)
         {
             throw JsonContract.Error(path + "/level", "heading level must be between 1 and 6");
         }
         var style = $"heading{level}";
-        operations.Add(Text(style, style, InlineText.Read(block.GetProperty("inlines"), path + "/inlines")));
+        operations.Add(Text(style, style, InlineText.Read(block.GetProperty("inlines"), path + "/inlines")) with { HeadingId = headingId });
     }
 
     private void AddParagraph(JsonElement block, string path, string? listLabel)
@@ -258,7 +265,7 @@ internal sealed class PlanBuilder(
         {
             if (JsonContract.ExpectArray(source, path + "/source").GetArrayLength() == 0)
                 throw JsonContract.Error(path + "/source", "source must not be empty");
-            sourceRuns = InlineText.Read(source, path + "/source", allowFootnotes: false).Flatten(" / ").Runs;
+            sourceRuns = InlineText.Read(source, path + "/source", allowFootnotes: false, allowCrossReferences: false).Flatten(" / ").Runs;
         }
         operations.Add(new PreviewOperation(
             "box",
@@ -353,7 +360,8 @@ internal sealed class PlanBuilder(
 
     private void AddFigure(JsonElement block, string path)
     {
-        JsonContract.ExpectObject(block, path, ["type", "image", "caption", "source"]);
+        JsonContract.ExpectObject(block, path, ["type", "image", "caption", "source"], ["id"]);
+        var figureId = FigureReferenceContract.ReadOptionalId(block, path);
         var image = block.GetProperty("image");
         JsonContract.ExpectObject(image, path + "/image", ["path", "alt", "title"]);
         var relativePath = JsonContract.RequiredString(image, "path", path + "/image");
@@ -378,12 +386,12 @@ internal sealed class PlanBuilder(
         var (pixelWidth, pixelHeight) = PngDimensions.Read(imagePath);
         var width = profile.Figure.MaxWidthMillimeters;
         var height = width * pixelHeight / pixelWidth;
-        var alt = InlineText.Read(image.GetProperty("alt"), path + "/image/alt", allowFootnotes: false);
-        var caption = InlineText.Read(block.GetProperty("caption"), path + "/caption", allowFootnotes: false);
+        var alt = InlineText.Read(image.GetProperty("alt"), path + "/image/alt", allowFootnotes: false, allowCrossReferences: false);
+        var caption = InlineText.Read(block.GetProperty("caption"), path + "/caption", allowFootnotes: false, allowCrossReferences: false);
         var sourceElement = block.GetProperty("source");
         var source = sourceElement.ValueKind is JsonValueKind.Null
             ? PreviewInlineContent.Plain([string.Empty])
-            : InlineText.Read(sourceElement, path + "/source", allowFootnotes: false);
+            : InlineText.Read(sourceElement, path + "/source", allowFootnotes: false, allowCrossReferences: false);
         var figureLines = new[]
         {
             alt.Flatten(" / "),
@@ -398,7 +406,7 @@ internal sealed class PlanBuilder(
             width,
             height,
             "body",
-            figureLines.Select(line => line.Runs).ToArray()));
+            figureLines.Select(line => line.Runs).ToArray(), FigureId: figureId));
     }
 
     private static PreviewOperation Text(
@@ -417,14 +425,14 @@ internal sealed class PlanBuilder(
 
 internal static class InlineText
 {
-    public static PreviewInlineContent Read(JsonElement element, string path, bool allowFootnotes = true)
+    public static PreviewInlineContent Read(JsonElement element, string path, bool allowFootnotes = true, bool allowCrossReferences = true)
     {
         var inlines = JsonContract.ExpectArray(element, path);
         var builder = new PreviewRunBuilder();
         var index = 0;
         foreach (var inline in inlines.EnumerateArray())
         {
-            Append(inline, $"{path}/{index}", builder, false, false, allowFootnotes);
+            Append(inline, $"{path}/{index}", builder, false, false, allowFootnotes, allowCrossReferences);
             index++;
         }
         return builder.Build();
@@ -436,7 +444,8 @@ internal static class InlineText
         PreviewRunBuilder builder,
         bool strong,
         bool emphasis,
-        bool allowFootnotes)
+        bool allowFootnotes,
+        bool allowCrossReferences)
     {
         if (inline.ValueKind is not JsonValueKind.Object)
         {
@@ -468,7 +477,8 @@ internal static class InlineText
                     builder,
                     true,
                     emphasis,
-                    allowFootnotes);
+                    allowFootnotes,
+                    allowCrossReferences);
                 break;
             case "emph":
                 JsonContract.ExpectObject(inline, path, ["type", "inlines"]);
@@ -478,7 +488,8 @@ internal static class InlineText
                     builder,
                     strong,
                     true,
-                    allowFootnotes);
+                    allowFootnotes,
+                    allowCrossReferences);
                 break;
             case "link":
                 JsonContract.ExpectObject(inline, path, ["type", "target", "title", "inlines"]);
@@ -490,7 +501,19 @@ internal static class InlineText
                     builder,
                     strong,
                     emphasis,
-                    allowFootnotes);
+                    allowFootnotes,
+                    allowCrossReferences);
+                break;
+            case "cross_reference":
+                if (!allowCrossReferences)
+                    throw JsonContract.Error(path + "/type", "cross references are not supported in figure alt/caption or object sources");
+                JsonContract.ExpectObject(inline, path, ["type", "kind", "target"]);
+                var kind = JsonContract.RequiredString(inline, "kind", path);
+                if (kind is not ("figure_number" or "heading_number"))
+                    throw JsonContract.Error(path + "/kind", "supported reference kinds are figure_number and heading_number");
+                var target = JsonContract.RequiredString(inline, "target", path);
+                FigureReferenceContract.RequireId(target, path + "/target");
+                builder.AppendCrossReference(new PreviewCrossReference(kind, target), strong, emphasis);
                 break;
             case "footnote":
                 if (!allowFootnotes)
@@ -515,7 +538,7 @@ internal static class InlineText
                     {
                         throw JsonContract.Error(blockPath + "/inlines", "footnote paragraph must not be empty");
                     }
-                    paragraphs.Add(Read(inlines, blockPath + "/inlines", allowFootnotes: false));
+                    paragraphs.Add(Read(inlines, blockPath + "/inlines", allowFootnotes: false, allowCrossReferences: allowCrossReferences));
                     blockIndex++;
                 }
                 builder.AppendFootnote(new PreviewFootnote(paragraphs), strong, emphasis);
@@ -531,13 +554,14 @@ internal static class InlineText
         PreviewRunBuilder builder,
         bool strong,
         bool emphasis,
-        bool allowFootnotes)
+        bool allowFootnotes,
+        bool allowCrossReferences)
     {
         var children = JsonContract.ExpectArray(element, path);
         var index = 0;
         foreach (var child in children.EnumerateArray())
         {
-            Append(child, $"{path}/{index}", builder, strong, emphasis, allowFootnotes);
+            Append(child, $"{path}/{index}", builder, strong, emphasis, allowFootnotes, allowCrossReferences);
             index++;
         }
     }
@@ -554,7 +578,7 @@ internal sealed class PreviewRunBuilder
             return;
         }
         var line = lines[^1];
-        if (line.Count > 0 && line[^1].Footnote is null && line[^1].Strong == strong && line[^1].Emphasis == emphasis)
+        if (line.Count > 0 && line[^1].Footnote is null && line[^1].CrossReference is null && line[^1].Strong == strong && line[^1].Emphasis == emphasis)
         {
             line[^1] = line[^1] with { Text = line[^1].Text + text };
             return;
@@ -565,6 +589,10 @@ internal sealed class PreviewRunBuilder
     public void AppendFootnote(PreviewFootnote footnote, bool strong, bool emphasis) =>
         lines[^1].Add(new PreviewTextRun(
             "MD2HWP_FOOTNOTE_" + Guid.NewGuid().ToString("N"), strong, emphasis, footnote));
+
+    public void AppendCrossReference(PreviewCrossReference reference, bool strong, bool emphasis) =>
+        lines[^1].Add(new PreviewTextRun("MD2HWP_CROSS_REFERENCE_" + Guid.NewGuid().ToString("N"),
+            strong, emphasis, CrossReference: reference));
 
     public void BreakLine() => lines.Add([]);
 
@@ -577,7 +605,7 @@ internal sealed class PreviewRunBuilder
         var builder = new PreviewRunBuilder();
         foreach (var run in source)
         {
-            if (run.Footnote is not null)
+            if (run.Footnote is not null || run.CrossReference is not null)
             {
                 builder.lines[^1].Add(run);
             }
