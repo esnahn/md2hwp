@@ -154,8 +154,100 @@ internal static class TableContractTests
         TemplateTables.RecalculateTableNumbers(sectionCounter);
         Check(sectionCounter.Descendants("AUTONUM").Select(number => (int)number.Attribute("Number")!).SequenceEqual(new[] { 5, 2 }),
             "Zero section start should continue the table counter.");
-        Console.WriteLine("Table IR, sample rows, source omission, rich cells, native captions and geometry contracts passed.");
+        TestHeaderPagination(tableOperation);
+        Console.WriteLine("Table IR, sample rows, source omission, rich cells, native captions, geometry and local header pagination contracts passed.");
     }
+
+    private static void TestHeaderPagination(PreviewOperation operation)
+    {
+        var fixture = Fixture();
+        var fixtureBefore = fixture.ToString();
+        var layout = TemplateTables.Lower(fixture).Layout;
+        var staticParagraph = new XElement(fixture.Descendants("TABLE").Single().Ancestors("P").Last());
+        var destination = Destination(staticParagraph, Paragraph("MARKER"), Paragraph("MARKER"), Paragraph("after"));
+        var plan = new IrPreviewPlan("fixture", "fixture", new(2, 0, 0, 0, 0, 2), [operation, operation], []);
+        XDocument Generate() => layout.Attach(destination, plan, 1, (_, _, _) => [4000, 10400]);
+        var generated = Generate();
+        Check(layout.GeneratedTableBodyInstances.Count == 2, "Body-bearing generated tables were not recorded.");
+        var expected = new XDocument(generated);
+        var expectedRoot = AuriMinimalBoxPrototype.RootParagraphs(expected)[1];
+        expectedRoot.SetAttributeValue("PageBreak", "true"); expectedRoot.SetAttributeValue("ColumnBreak", "false");
+        var calls = new List<int>();
+        var imports = 0;
+        var corrected = NativeTablePagination.Correct(generated, NativeTablePagination.ResolveAnchors(generated, layout.GeneratedTableBodyInstances), anchor =>
+        {
+            Check(anchor.Columns == 2, "Native pagination did not use the manuscript's column count.");
+            calls.Add(anchor.RootParagraph);
+            return anchor.RootParagraph == 1
+                ? new NativeTablePagination.StartPages(1, imports == 0 ? 2 : 1)
+                : new NativeTablePagination.StartPages(3, imports == 0 ? 4 : 3);
+        }, document =>
+        {
+            imports++;
+            Check(ReferenceEquals(document, generated), "Native reflow did not import the corrected working document.");
+        });
+        Check(corrected == 1 && imports == 1 && calls.SequenceEqual(new[] { 1, 1, 2 }),
+            "Later table pagination was not re-read after a preceding correction.");
+        Check(XNode.DeepEquals(generated, expected),
+            "Orphan-header correction changed table formats, native captions, cells, surrounding content or the static table.");
+        Check(fixture.ToString() == fixtureBefore, "Native pagination mutated the source template.");
+
+        var samePage = Generate();
+        var sameBefore = samePage.ToString();
+        Check(NativeTablePagination.Correct(samePage, NativeTablePagination.ResolveAnchors(samePage, layout.GeneratedTableBodyInstances),
+            _ => new(2, 2), _ => throw new Exception("Unneeded table reimport.")) == 0 && samePage.ToString() == sameBefore,
+            "Tables with a first body row on the header page acquired a forced page break.");
+        var renumbered = Generate();
+        var nativeAnchors = NativeTablePagination.ResolveAnchors(renumbered, layout.GeneratedTableBodyInstances);
+        foreach (var shape in renumbered.Descendants("SHAPEOBJECT")) shape.SetAttributeValue("InstId", Guid.NewGuid().ToString("N"));
+        var renumberedBefore = renumbered.ToString();
+        Check(NativeTablePagination.Correct(renumbered, nativeAnchors, _ => new(2, 2),
+            _ => throw new Exception("Unneeded renumbered table import.")) == 0 && renumbered.ToString() == renumberedBefore,
+            "Native reassignment of drawing identities invalidated verified table coordinates.");
+        var nextColumn = Generate();
+        var columnImports = 0;
+        var columnAnchors = NativeTablePagination.ResolveAnchors(nextColumn, layout.GeneratedTableBodyInstances);
+        Check(NativeTablePagination.Correct(nextColumn, columnAnchors, _ => columnImports == 0 ? new(2, 2, 1, 2) : new(3, 3),
+            _ => columnImports++) == 1 && columnImports == 1,
+            "A first body row in a later text column was mistaken for the header's position.");
+        NativeTablePagination.Verify(columnAnchors, _ => new(3, 3));
+        RejectPagination(() => NativeTablePagination.Verify(columnAnchors, _ => new(3, 4)));
+        RejectPagination(() => NativeTablePagination.Verify(columnAnchors, _ => new(3, 3, 1, 2)));
+        var firstRoot = AuriMinimalBoxPrototype.RootParagraphs(samePage)[1];
+        firstRoot.SetAttributeValue("PageBreak", "true");
+        RejectPagination(() => NativeTablePagination.Correct(samePage, NativeTablePagination.ResolveAnchors(samePage, layout.GeneratedTableBodyInstances),
+            _ => new(2, 3), _ => throw new Exception("An already forced table was imported again.")));
+
+        var cannotFit = Generate();
+        var failedImports = 0;
+        RejectPagination(() => NativeTablePagination.Correct(cannotFit, NativeTablePagination.ResolveAnchors(cannotFit, layout.GeneratedTableBodyInstances),
+            _ => new(2, 3), _ => failedImports++));
+        Check(failedImports == 1, "Pagination failure caused repeated forced breaks instead of a bounded failure.");
+        foreach (var invalid in new[] { new NativeTablePagination.StartPages(0, 2), new NativeTablePagination.StartPages(3, 2),
+            new NativeTablePagination.StartPages(2, 2, 2, 1), new NativeTablePagination.StartPages(2, 2, 0, 1) })
+        {
+            var invalidDocument = Generate();
+            var before = invalidDocument.ToString();
+            RejectPagination(() => NativeTablePagination.Correct(invalidDocument, NativeTablePagination.ResolveAnchors(invalidDocument, layout.GeneratedTableBodyInstances),
+                _ => invalid, _ => throw new Exception("Invalid native pages were imported.")));
+            Check(invalidDocument.ToString() == before, "Invalid page positions changed the working document.");
+        }
+        RejectPagination(() => NativeTablePagination.ResolveAnchors(Generate(), ["missing-instance"]));
+        RejectPagination(() => NativeTablePagination.Correct(Generate(), [new(999, 2)],
+            _ => throw new Exception("Missing generated table was read."), _ => throw new Exception("Missing generated table was imported.")));
+
+        var headerOnly = operation with { Table = operation.Table! with { Rows = [] } };
+        var headerPlan = plan with { Operations = [headerOnly, headerOnly] };
+        var headerDocument = layout.Attach(destination, headerPlan, 1, (_, _, _) => [4000, 10400]);
+        Check(layout.GeneratedTableInstances.Count == 2 && layout.GeneratedTableBodyInstances.Count == 0,
+            "A source row was mistaken for a manuscript body row.");
+        Check(NativeTablePagination.Correct(headerDocument, NativeTablePagination.ResolveAnchors(headerDocument, layout.GeneratedTableBodyInstances),
+            _ => throw new Exception("Header-only table was measured."), _ => throw new Exception("Header-only table was imported.")) == 0,
+            "Header-only tables acquired a forced page break.");
+    }
+
+    private static void RejectPagination(Action action)
+    { try { action(); } catch (InvalidOperationException) { return; } throw new Exception("Expected native table pagination rejection."); }
 
     private static PreviewInlineContent Inline(string json)
     { using var input = JsonDocument.Parse(json); return InlineText.Read(input.RootElement, "/inlines"); }

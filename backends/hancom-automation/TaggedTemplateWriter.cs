@@ -129,8 +129,36 @@ internal static partial class HancomPreviewWriter
                 tables.Layout.RecordLayout(attached);
                 attachTiming.Dispose();
                 var nativeTiming = RenderProfile.Measure("phase.import-native-references");
+                var tableStarts = NativeTablePagination.ResolveAnchors(attached, tables.Layout.GeneratedTableBodyInstances);
                 ImportFigureDocument(hwp, attached, headings.Layout, boxes.Layout, footnotes, tables.Layout);
                 references.Layout.Insert(hwp);
+                // Measure the completed fields, whose displayed text can be much
+                // shorter than the temporary reference markers in table cells.
+                if (tableStarts.Count > 0)
+                {
+                    using var paginationTiming = RenderProfile.Measure("table.pagination");
+                    var completed = RenderProfile.ReadDocument((object)hwp);
+                    RequireFigureDocument(attached, completed, headings.Layout, boxes: boxes.Layout,
+                        footnotes: footnotes, references: references.Layout, tables: tables.Layout);
+                    var moved = NativeTablePagination.Reflow((object)hwp, completed,
+                        tableStarts, corrected =>
+                        {
+                            ImportFigureDocument(hwp, corrected, headings.Layout, boxes.Layout, footnotes, tables.Layout);
+                            references.Layout.Verify(RenderProfile.ReadDocument((object)hwp));
+                        });
+                    if (moved > 0)
+                    {
+                        var expectedRoots = AuriMinimalBoxPrototype.RootParagraphs(attached);
+                        var completedRoots = AuriMinimalBoxPrototype.RootParagraphs(completed);
+                        foreach (var anchor in tableStarts)
+                        {
+                            var i = anchor.RootParagraph;
+                            expectedRoots[i].SetAttributeValue("PageBreak", (string?)completedRoots[i].Attribute("PageBreak"));
+                            expectedRoots[i].SetAttributeValue("ColumnBreak", (string?)completedRoots[i].Attribute("ColumnBreak"));
+                        }
+                        if (verbose) Console.Error.WriteLine($"ir2hwp: moved {moved} orphaned table header(s) to the first body row's page.");
+                    }
+                }
                 nativeTiming.Dispose();
                 var saveNativeTiming = RenderProfile.Measure("phase.save-native-reopen");
                 if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
@@ -140,6 +168,7 @@ internal static partial class HancomPreviewWriter
                 using var verifyNativeTiming = RenderProfile.Measure("phase.verify-native-reopened");
                 var nativeSaved = RenderProfile.ReadDocument((object)hwp);
                 RequireFigureDocument(attached, nativeSaved, headings.Layout, reportLayout: true, boxes: boxes.Layout, footnotes: footnotes, references: references.Layout, tables: tables.Layout);
+                NativeTablePagination.VerifyReopened((object)hwp, tableStarts);
                 return true;
             });
             if (HashFile(source) != hash) throw new InvalidOperationException("Source template changed.");
