@@ -55,7 +55,11 @@ internal static class FigureReferenceContract
     }
 
     internal static IEnumerable<PreviewTextRun> ReadRuns(IEnumerable<PreviewOperation> operations) =>
-        operations.SelectMany(o => (o.FormattedLines ?? []).SelectMany(r => r).Concat(o.SourceRuns ?? []))
+        operations.SelectMany(o => (o.FormattedLines ?? []).SelectMany(r => r).Concat(o.SourceRuns ?? [])
+            .Concat(o.Table is null ? [] : o.Table.Header.Concat(o.Table.Rows.SelectMany(row => row))
+                .Concat(o.Table.Caption is null ? [] : [o.Table.Caption])
+                .Concat(o.Table.Source is null ? [] : [o.Table.Source])
+                .SelectMany(content => content.Lines).SelectMany(line => line.Runs)))
             .SelectMany(Descendants);
 
     private static IEnumerable<PreviewTextRun> Descendants(PreviewTextRun run)

@@ -10,6 +10,7 @@ internal sealed class NativeFootnotes(XDocument source, XElement sample)
 {
     private static readonly Regex ReferenceMarker = new("MD2HWP_FOOTNOTE_[0-9a-f]{32}", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
     private readonly HashSet<string> generatedNumbers = [];
+    private readonly HashSet<string> generatedNoteParagraphIds = new(StringComparer.Ordinal);
 
     internal static NativeFootnotes Bind(XDocument document)
     {
@@ -32,9 +33,9 @@ internal sealed class NativeFootnotes(XDocument source, XElement sample)
     internal XDocument Attach(XDocument rendered, IrPreviewPlan plan)
     {
         generatedNumbers.Clear();
+        generatedNoteParagraphIds.Clear();
         var result = new XDocument(rendered);
-        var notes = plan.Operations.SelectMany(o => o.FormattedLines ?? [])
-            .SelectMany(line => line).Where(r => r.Footnote is not null)
+        var notes = FigureReferenceContract.ReadRuns(plan.Operations).Where(r => r.Footnote is not null)
             .ToDictionary(r => r.Text, r => r.Footnote!, StringComparer.Ordinal);
         if (notes.Count == 0) return result;
         var found = new HashSet<string>(StringComparer.Ordinal);
@@ -63,6 +64,22 @@ internal sealed class NativeFootnotes(XDocument source, XElement sample)
                 var first = atoms[replacement.Offset];
                 var last = atoms[replacement.Offset + replacement.Marker.Length - 1];
                 var control = Create(replacement.Note, result);
+                // Track the first body paragraph through later reference TEXT
+                // splitting. Native paragraph identities survive XML cloning;
+                // paths below are recaptured only after all attachments finish.
+                var firstParagraph = control.Elements("PARALIST").Single().Elements("P").First();
+                var used = result.Descendants().Attributes().Where(attribute =>
+                    attribute.Name.LocalName is "InstId" or "InstID").Select(attribute => attribute.Value)
+                    .Concat(control.Descendants().Attributes().Where(attribute =>
+                        attribute.Name.LocalName is "InstId" or "InstID").Select(attribute => attribute.Value))
+                    .Concat(generatedNoteParagraphIds).ToHashSet(StringComparer.Ordinal);
+                string identity;
+                do { identity = BitConverter.ToUInt32(Guid.NewGuid().ToByteArray(), 0).ToString(System.Globalization.CultureInfo.InvariantCulture); }
+                while (!used.Add(identity));
+                var identityAttribute = firstParagraph.Attribute("InstId") ?? firstParagraph.Attribute("InstID");
+                if (identityAttribute is null) firstParagraph.SetAttributeValue("InstId", identity);
+                else identityAttribute.Value = identity;
+                generatedNoteParagraphIds.Add(identity);
                 generated.Add(control); found.Add(replacement.Marker);
                 var prefix = first.Element.Value[..first.Offset];
                 var suffix = last.Element.Value[(last.Offset + 1)..];
@@ -113,9 +130,29 @@ internal sealed class NativeFootnotes(XDocument source, XElement sample)
                 next++;
             }
         }
-        foreach (var control in generated)
-            generatedNumbers.Add(Path(control.Descendants("AUTONUM").Single()));
+        RecordLayout(result);
         return result;
+    }
+
+    internal void RecordLayout(XDocument document)
+    {
+        generatedNumbers.Clear();
+        var found = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var control in document.Descendants("FOOTNOTE"))
+        {
+            var firstParagraph = control.Elements("PARALIST").SingleOrDefault()?.Elements("P").FirstOrDefault();
+            var identity = (string?)firstParagraph?.Attribute("InstId") ?? (string?)firstParagraph?.Attribute("InstID");
+            if (identity is null || !generatedNoteParagraphIds.Contains(identity)) continue;
+            if (!found.Add(identity))
+                throw new InvalidOperationException("A generated footnote paragraph has an ambiguous native identity.");
+            var numbers = control.Descendants("AUTONUM").Where(number =>
+                (string?)number.Attribute("NumberType") == "Footnote").ToArray();
+            if (numbers.Length != 1)
+                throw new InvalidOperationException("A generated footnote lost its unique native automatic-number control.");
+            generatedNumbers.Add(Path(numbers[0]));
+        }
+        if (!found.SetEquals(generatedNoteParagraphIds))
+            throw new InvalidOperationException("A generated footnote was lost before final layout capture.");
     }
 
     internal void NormalizeNumbers(XDocument expected, XDocument actual)

@@ -65,7 +65,8 @@ internal sealed record PreviewSummary(
     int TextOperations,
     int BoxOperations,
     int FigureOperations,
-    int ListItems);
+    int ListItems,
+    int TableOperations = 0);
 
 internal sealed record PreviewOperation(
     string Kind,
@@ -80,7 +81,15 @@ internal sealed record PreviewOperation(
     IReadOnlyList<PreviewTextRun>? SourceRuns = null,
     int? Heading1Number = null,
     string? FigureId = null,
-    string? HeadingId = null);
+    string? HeadingId = null,
+    PreviewTable? Table = null);
+
+internal sealed record PreviewTable(
+    IReadOnlyList<string> Columns,
+    IReadOnlyList<PreviewInlineContent> Header,
+    IReadOnlyList<IReadOnlyList<PreviewInlineContent>> Rows,
+    PreviewInlineContent? Caption = null,
+    PreviewInlineContent? Source = null);
 
 internal sealed record PreviewListMarker(
     int ListId,
@@ -164,6 +173,9 @@ internal sealed class PlanBuilder(
             case "figure":
                 AddFigure(block, path);
                 break;
+            case "table":
+                AddTable(block, path);
+                break;
             default:
                 throw JsonContract.Error(path + "/type", $"unsupported IR block type {type}");
         }
@@ -184,7 +196,8 @@ internal sealed class PlanBuilder(
                 textOperations,
                 boxOperations,
                 figureOperations,
-                listItems),
+                listItems,
+                operations.Count(operation => operation.Kind == "table")),
             numberedOperations,
             [
                 "This is an investigation preview, not backend lowering.",
@@ -407,6 +420,44 @@ internal sealed class PlanBuilder(
             height,
             "body",
             figureLines.Select(line => line.Runs).ToArray(), FigureId: figureId));
+    }
+
+    private void AddTable(JsonElement block, string path)
+    {
+        JsonContract.ExpectObject(block, path, ["type", "columns", "header", "rows"], ["caption", "source"]);
+        var columnsElement = JsonContract.ExpectArray(block.GetProperty("columns"), path + "/columns");
+        var columns = columnsElement.EnumerateArray().Select((value, index) =>
+            JsonContract.ReadString(value, $"{path}/columns/{index}")).ToArray();
+        if (columns.Length == 0)
+            throw JsonContract.Error(path + "/columns", "table must have at least one column");
+        if (columns.Any(alignment => alignment is not ("default" or "left" or "center" or "right")))
+            throw JsonContract.Error(path + "/columns", "table column alignment must be default, left, center or right");
+
+        IReadOnlyList<PreviewInlineContent> ReadRow(JsonElement element, string rowPath)
+        {
+            var cells = JsonContract.ExpectArray(element, rowPath);
+            if (cells.GetArrayLength() != columns.Length)
+                throw JsonContract.Error(rowPath, "table row must contain exactly one cell for every column");
+            return cells.EnumerateArray().Select((cell, index) =>
+                InlineText.Read(cell, $"{rowPath}/{index}")).ToArray();
+        }
+
+        PreviewInlineContent? ReadOptional(string name)
+        {
+            if (!block.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null) return null;
+            if (JsonContract.ExpectArray(value, path + "/" + name).GetArrayLength() == 0)
+                throw JsonContract.Error(path + "/" + name, "table caption/source must not be empty when supplied");
+            return InlineText.Read(value, path + "/" + name, allowFootnotes: false, allowCrossReferences: false);
+        }
+
+        var header = ReadRow(block.GetProperty("header"), path + "/header");
+        var rowsElement = JsonContract.ExpectArray(block.GetProperty("rows"), path + "/rows");
+        var rows = rowsElement.EnumerateArray().Select((row, index) =>
+            ReadRow(row, $"{path}/rows/{index}")).ToArray();
+        var table = new PreviewTable(columns, header, rows, ReadOptional("caption"), ReadOptional("source"));
+        var marker = "MD2HWP_GENERATED_TABLE_" + Guid.NewGuid().ToString("N");
+        operations.Add(new PreviewOperation("table", "table", [marker], ParagraphStyle: "body",
+            FormattedLines: PreviewInlineContent.Plain([marker]).Lines.Select(line => line.Runs).ToArray(), Table: table));
     }
 
     private static PreviewOperation Text(
