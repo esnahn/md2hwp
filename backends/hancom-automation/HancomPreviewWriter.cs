@@ -587,16 +587,11 @@ internal static partial class HancomPreviewWriter
 
     private static void ApplyResolvedParagraphStyle(dynamic hwp, AuriPreviewStyleBindings styles, NativeStyle target)
     {
-        // Reapplying a modified current style can open a modal confirmation in
-        // HWP 2020. Read its ID, switch to a distinct declared style, then apply
-        // the requested base. Never accept the dialog or overwrite a definition.
-        // Both investigation render paths append to the final root paragraph.
-        // Style/GetDefault's Apply value was not reliable after native box
-        // insertion on the reference host; inspect the actual root instead.
-        Run(hwp, "MoveDocEnd");
-        XDocument currentDocument = RenderProfile.ReadDocument((object)hwp);
-        var current = int.Parse(AuriMinimalBoxPrototype.RootParagraphs(currentDocument)[^1].Attribute("Style")!.Value);
-        if (current == target.Id)
+        // Reapplying the modified current style can open a modal in HWP 2020.
+        // Keep the distinct-style detour, but sample only the final paragraph.
+        // Block exports renumber IDs; compare names and apply original IDs.
+        var current = CurrentParagraphStyle.Read((object)hwp);
+        if (string.Equals(current, target.Name, StringComparison.Ordinal))
         {
             var detour = target.Id == styles.ResetStyle.Id ? styles.Resolve("body") : styles.ResetStyle;
             if (detour.Id == target.Id) throw new InvalidOperationException("No distinct style detour is bound.");

@@ -27,16 +27,23 @@ internal sealed class RenderProfile : IDisposable
 
     internal static XDocument ReadDocument(object automation,
         [CallerMemberName] string caller = "", [CallerFilePath] string file = "")
+        => ReadMarkup(automation, "", "hwpml", caller, file);
+
+    internal static XDocument ReadBlock(object automation,
+        [CallerMemberName] string caller = "", [CallerFilePath] string file = "")
+        => ReadMarkup(automation, "saveblock", "hwpml.block", caller, file);
+
+    private static XDocument ReadMarkup(object automation, string options, string prefix, string caller, string file)
     {
         dynamic hwp = automation;
-        if (current is null) return HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        if (current is null) return HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", options));
         var location = Path.GetFileNameWithoutExtension(file) + "." + caller;
         string xml;
-        using (Measure("hwpml.export/" + location))
-            xml = (string)hwp.GetTextFile("HWPML2X", "");
+        using (Measure(prefix + ".export/" + location))
+            xml = (string)hwp.GetTextFile("HWPML2X", options);
         if (current is { } profile)
-            profile.metrics["hwpml.export/" + location].CodeUnits += xml.Length;
-        using (Measure("hwpml.parse/" + location))
+            profile.metrics[prefix + ".export/" + location].CodeUnits += xml.Length;
+        using (Measure(prefix + ".parse/" + location))
             return HwpMarkup.Parse(xml);
     }
 
