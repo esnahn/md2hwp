@@ -115,15 +115,12 @@
               "type": "cross_reference",
               "kind": "heading_number",
               "target": "section-1-1"
+            },
+            {
+              "type": "text",
+              "value": "는"
             }
           ]
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "는"
         },
         {
           "type": "space"

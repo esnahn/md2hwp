@@ -4540,17 +4540,18 @@
           "type": "space"
         },
         {
-          "type": "text",
-          "value": "**"
-        },
-        {
-          "type": "cross_reference",
-          "kind": "heading_number",
-          "target": "section-1-1"
-        },
-        {
-          "type": "text",
-          "value": "**는"
+          "type": "strong",
+          "inlines": [
+            {
+              "type": "cross_reference",
+              "kind": "heading_number",
+              "target": "section-1-1"
+            },
+            {
+              "type": "text",
+              "value": "는"
+            }
+          ]
         },
         {
           "type": "space"
@@ -28299,17 +28300,18 @@
           "type": "space"
         },
         {
-          "type": "text",
-          "value": "**"
-        },
-        {
-          "type": "cross_reference",
-          "kind": "heading_number",
-          "target": "section-1-4"
-        },
-        {
-          "type": "text",
-          "value": "**는"
+          "type": "strong",
+          "inlines": [
+            {
+              "type": "cross_reference",
+              "kind": "heading_number",
+              "target": "section-1-4"
+            },
+            {
+              "type": "text",
+              "value": "는"
+            }
+          ]
         },
         {
           "type": "space"
@@ -83735,17 +83737,18 @@
           "type": "space"
         },
         {
-          "type": "text",
-          "value": "**"
-        },
-        {
-          "type": "cross_reference",
-          "kind": "heading_number",
-          "target": "section-3-3"
-        },
-        {
-          "type": "text",
-          "value": "**는"
+          "type": "strong",
+          "inlines": [
+            {
+              "type": "cross_reference",
+              "kind": "heading_number",
+              "target": "section-3-3"
+            },
+            {
+              "type": "text",
+              "value": "는"
+            }
+          ]
         },
         {
           "type": "space"
@@ -107338,17 +107341,18 @@
           "type": "space"
         },
         {
-          "type": "text",
-          "value": "**"
-        },
-        {
-          "type": "cross_reference",
-          "kind": "heading_number",
-          "target": "section-4-2"
-        },
-        {
-          "type": "text",
-          "value": "**는"
+          "type": "strong",
+          "inlines": [
+            {
+              "type": "cross_reference",
+              "kind": "heading_number",
+              "target": "section-4-2"
+            },
+            {
+              "type": "text",
+              "value": "는"
+            }
+          ]
         },
         {
           "type": "space"
