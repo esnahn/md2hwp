@@ -48,17 +48,19 @@ the title, removing the prefix and one following space, then skipping immediatel
 following blank/whitespace-only lines. With no title slot, preserve all raw lines.
 Keep this template-dependent presentation in the backend; do not add an IR title
 field or parse Markdown syntax inside the remaining verbatim text.
-Markdown input uses commonmark+yaml_metadata_block+footnotes+attributes+implicit_figures. Reference-style
+Markdown input uses commonmark+yaml_metadata_block+footnotes+attributes+implicit_figures+pipe_tables. Reference-style
 footnotes are enabled; inline_notes remains disabled. The 제목: and 출처: rules
 are md2hwp conventions, not CommonMark or Pandoc extension syntax. Document these
 separately in README.md.
 IR inline footnote contains nonempty paragraph blocks. Allow notes in document
-paragraphs, headings and list paragraphs, including formatted spans and link labels.
+paragraphs, headings, list paragraphs and table cells, including formatted spans and link labels.
 Footnote bodies allow multiple paragraphs and existing inline formatting/links/line
 breaks. Reject nested footnotes, nonparagraph footnote blocks, and notes in figure
-alt/caption or box/figure sources explicitly. Count footnote blocks, inlines and text
+alt/caption, table captions or box/figure/table sources explicitly. Count footnote blocks, inlines and text
 against the existing cumulative resource limits. Preserve native FOOTNOTE and
-AUTONUM controls, then verify them after save/reopen.
+AUTONUM controls, then verify them after save/reopen. Recapture generated
+note paths from their first-body-paragraph native identities after cross-reference
+run replacement; only generated OnPage counters may be normalized.
 Require a plain root paragraph {{md2hwp:footnote}} inside template definitions;
 its full paragraph/character formatting owns generated note body paragraphs.
 The source document SECDEF owns native note numbering, separator and placement
@@ -98,7 +100,52 @@ begin/end FieldId and unique field InstId; do not require global FieldId uniquen
 Coalesce adjacent identical-format target-marker runs before HWPML import. Reject
 empty native outline display formats without calculating a replacement number.
 Table/page and other reference roles remain reserved and unsupported.
-Generated tables, HWPX and RST input are deferred.
+HWPX and RST input are deferred.
+
+## Tables
+
+Normalize simple Pandoc Table inputs to IR table {columns, header, rows, caption, source}.
+Columns carry default/left/center/right alignment; header and row cells contain inline
+arrays, including empty cells. Require one header row, one body, rectangular cells
+and ColWidthDefault column widths only. Reject table IDs/attributes, merged cells, row-header
+columns, multiple/intermediate headers or bodies, footer rows and nonparagraph or
+multiple-paragraph cell blocks explicitly. Table number references remain unsupported.
+Cells allow rich text, footnotes and current heading/figure references; caption and
+source reject footnotes/references. Include rows/cells and every inline/text in
+cumulative validation limits.
+
+CommonMark does not support table_captions. Attach standalone Table:/table:/: plus
+whitespace and nonempty content before or after an adjacent table, preserving rich
+inlines and stripping the prefix. Reject ambiguous ownership, captions on both sides
+and native-plus-adjacent duplicates. Attach the following 출처: paragraph, allowing
+an intervening below-table caption. Place captions above tables in sample manuscripts.
+Keep README.md and docs/tables.md accurate; these caption conventions are compatible
+with Pandoc Markdown table_captions, not an enabled CommonMark extension.
+
+Require table.width-mm before begin:table/end:table, containing one native table
+anchor with exactly three one-cell rows: slot:table.header, slot:table.content and
+slot:table.source. Header/content slots occupy their whole single paragraphs. The
+last cell must be transparent and is cloned as a merged source row only when source
+exists. Require a one-paragraph native CAPTION with slot:table.caption and one Table
+AUTONUM; num:heading1 is optional there. Omit the native caption when manuscript
+caption is absent. Preserve caption options and native Table numbering/restart controls;
+do not add chapter-dependent table counter restarts. Ignore prototype dimensions,
+copy its formats, and rebuild rows/columns from IR. Default table prototypes disable
+TreatAsChar so Cell page breaks and RepeatHeader work across pages. Default alignment preserves
+template paragraph alignment; explicit manuscript alignment overrides it.
+
+Calculate content widths using Windows font measurements of the actual header/body
+formats, character size/ratio/spacing and emphasis, plus cell/paragraph margins and
+1% text-width allowance. Paragraph margins use URC and require conversion to
+HWPUNIT; do not double their width. Require installed Windows TTF/OTF faces and
+reject HFT or silent GDI font fallback. Fit minimum/preferred widths within table.width-mm (142mm
+in the default template); source/caption are excluded. Fail when minimums do not fit.
+Require the width to fit the active section/text column, rejecting unequal-width
+multi-column documents. Let content expand generated row heights; normalize only
+known generated table/cell heights after import and save/reopen, keeping structure,
+widths, native captions/numbering and all surrounding content exact. Structural checks
+do not establish clipping safety; inspect representative and long-table rendered pages.
+
 
 ## Metadata and dates
 
@@ -149,7 +196,7 @@ v0.3.0). A Git tag alone does not update application/package version metadata or
 README version labels; check their consistency when preparing a release.
 
 Track heading1 from md2hwp-heading1-start, incrementing only for heading1.
-Use num:heading1 inside heading blocks and native figure captions; preserve
+Use num:heading1 inside heading blocks and native figure/table captions; preserve
 its first character formatting, reject unresolved or orphan slots. Figure counters
 restart with a native NEWNUM Figure=1 at the first figure of each chapter. Keep
 AUTONUM as native controls. Literal # markers remain unchanged without the new slot.
