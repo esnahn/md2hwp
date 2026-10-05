@@ -69,7 +69,7 @@ internal static partial class HancomPreviewWriter
                 // Locate each native caption's slot. Hancom MoveLeft leaves the
                 // selection one character before its start; MoveRight returns to
                 // the tag boundary without depending on the prefix length.
-                foreach (var role in new[] { "box.source", "figure.source" })
+                foreach (var role in new[] { "box.source", "figure.source", "table.source" })
                 {
                     Run(hwp, "MoveDocBegin");
                     FindTaggedText(hwp, TaggedTemplateBinding.Tag("slot:" + role));
@@ -78,7 +78,7 @@ internal static partial class HancomPreviewWriter
                     Run(hwp, "ParagraphShapeIndentAtCaret");
                 }
                 XDocument adjusted = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
-                foreach (var role in new[] { "box.source", "figure.source" })
+                foreach (var role in new[] { "box.source", "figure.source", "table.source" })
                 {
                     var slot = TaggedTemplateBinding.Tag("slot:" + role);
                     var measuredParagraph = adjusted.Descendants("P").Single(p =>
@@ -130,7 +130,7 @@ internal static partial class HancomPreviewWriter
                 XDocument reopened = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
                 var binding = TaggedTemplateBinding.Read(reopened, temporary);
                 _ = binding.Profile; // Read validates the native sample and all lowered roles.
-                foreach (var name in new[] { "md2hwp.box.source", "md2hwp.figure.source" })
+                foreach (var name in new[] { "md2hwp.box.source", "md2hwp.figure.source", "md2hwp.table.source" })
                 {
                     int SourceIndent(XDocument doc)
                     {
@@ -162,7 +162,7 @@ internal static partial class HancomPreviewWriter
         var styles = result.Descendants().Where(e => e.Name.LocalName == "STYLE").ToArray();
         var styleList = styles[0].Parent!;
         var nextId = styles.Max(e => (int)e.Attribute("Id")!) + 1;
-        var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "footnote", "block.box", "box.title", "box.source", "figure.caption", "figure.source", "ref.figure.number", "ref.heading.number", "reset" };
+        var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "footnote", "block.box", "box.title", "box.source", "figure.caption", "figure.source", "table.header", "table.content", "table.source", "table.caption", "ref.figure.number", "ref.heading.number", "reset" };
         var ids = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var role in roles)
         {
@@ -208,6 +208,54 @@ internal static partial class HancomPreviewWriter
         var nativeCaption = pictureShape.Element("CAPTION") ?? throw new InvalidDataException("Sample picture has no native caption.");
         nativeCaption.Element("PARALIST")!.ReplaceNodes(figureCaption,
             TextParagraph("figure.source", DefaultSourcePrefix + TaggedTemplateBinding.Tag("slot:figure.source")));
+        // The manuscript owns dimensions. These three one-cell rows provide
+        // independent header, body and optional source formatting samples.
+        var tableSample = new XElement(seed.Descendants("TABLE").Single());
+        foreach (var identity in tableSample.DescendantsAndSelf().Attributes().Where(a => a.Name.LocalName is "InstId" or "InstID").ToArray())
+            identity.Remove();
+        tableSample.SetAttributeValue("RowCount", 3);
+        tableSample.SetAttributeValue("ColCount", 1);
+        tableSample.SetAttributeValue("PageBreak", "Cell");
+        tableSample.SetAttributeValue("RepeatHeader", "true");
+        var tableShape = tableSample.Element("SHAPEOBJECT")!;
+        tableShape.SetAttributeValue("NumberingType", "Table");
+        tableShape.Element("POSITION")!.SetAttributeValue("TreatAsChar", "false");
+        tableShape.Element("SIZE")!.SetAttributeValue("Width", width);
+        var tableCaption = tableShape.Element("CAPTION") ?? throw new InvalidDataException("Default table has no native caption.");
+        tableCaption.SetAttributeValue("Side", "Top");
+        tableCaption.SetAttributeValue("LastWidth", width);
+        var tableNumber = new XElement("AUTONUM", new XAttribute("Number", 1), new XAttribute("NumberType", "Table"),
+            new XElement("AUTONUMFORMAT", new XAttribute("Superscript", "false"), new XAttribute("Type", "Digit")));
+        tableCaption.Element("PARALIST")!.ReplaceNodes(Paragraph("table.caption",
+            new XElement("CHAR", "[표 " + TemplateHeadingNumbers.Tag + "-"), tableNumber,
+            new XElement("CHAR", "] " + TaggedTemplateBinding.Tag("slot:table.caption"))));
+        var sampleCell = new XElement(tableSample.Elements("ROW").Single().Elements("CELL").Single());
+        var sourceBorder = new XElement(result.Descendants("BORDERFILL").Single(e =>
+            (string?)e.Attribute("Id") == (string?)sampleCell.Attribute("BorderFill")));
+        var borderList = result.Descendants("BORDERFILL").First().Parent!;
+        sourceBorder.SetAttributeValue("Id", borderList.Elements("BORDERFILL").Max(e => (int)e.Attribute("Id")!) + 1);
+        sourceBorder.Elements("FILLBRUSH").Remove();
+        foreach (var border in sourceBorder.Elements().Where(e => e.Name.LocalName.EndsWith("BORDER", StringComparison.Ordinal) || e.Name.LocalName == "DIAGONAL"))
+            border.SetAttributeValue("Type", "None");
+        foreach (var name in new[] { "Slash", "BackSlash", "CounterSlash", "CounterBackSlash", "CrookedSlash", "CrookedBackSlash", "CenterLine" })
+            if (sourceBorder.Attribute(name) is not null) sourceBorder.SetAttributeValue(name, 0);
+        sourceBorder.SetAttributeValue("Shadow", "false"); sourceBorder.SetAttributeValue("ThreeD", "false");
+        borderList.Add(sourceBorder); borderList.SetAttributeValue("Count", borderList.Elements().Count());
+        tableSample.Elements("ROW").Remove();
+        foreach (var (role, rowIndex) in new[] { ("table.header", 0), ("table.content", 1), ("table.source", 2) })
+        {
+            var sampleRowCell = new XElement(sampleCell);
+            sampleRowCell.SetAttributeValue("Width", width);
+            sampleRowCell.SetAttributeValue("RowAddr", rowIndex);
+            sampleRowCell.SetAttributeValue("ColAddr", 0);
+            sampleRowCell.SetAttributeValue("RowSpan", 1);
+            sampleRowCell.SetAttributeValue("ColSpan", 1);
+            sampleRowCell.SetAttributeValue("Header", rowIndex == 0 ? "true" : "false");
+            if (rowIndex == 2) sampleRowCell.SetAttributeValue("BorderFill", (string)sourceBorder.Attribute("Id")!);
+            sampleRowCell.Element("PARALIST")!.ReplaceNodes(TextParagraph(role,
+                (rowIndex == 2 ? DefaultSourcePrefix : "") + TaggedTemplateBinding.Tag("slot:" + role)));
+            tableSample.Add(new XElement("ROW", sampleRowCell));
+        }
         // Retain only the empty first paragraph's native section/page definition.
         var first = new XElement(blankRoot);
         first.SetAttributeValue("Style", ids["body"]);
@@ -229,6 +277,8 @@ internal static partial class HancomPreviewWriter
         roots.AddRange(new[] { Declaration("begin:block.box"), Paragraph("body", table), Declaration("end:block.box"),
             Declaration("figure.max-width-mm:" + figureWidth), Declaration("begin:figure.caption"),
             Paragraph("body", picture), Declaration("end:figure.caption"),
+            Declaration("table.width-mm:" + figureWidth), Declaration("begin:table"),
+            Paragraph("body", tableSample), Declaration("end:table"),
             Declaration("begin:ref.figure.number"),
             TextParagraph("ref.figure.number", "그림 " + TemplateHeadingNumbers.Tag + "-" + TemplateCrossReferences.FigureNumberSlot),
             Declaration("end:ref.figure.number"),

@@ -338,7 +338,7 @@ internal static partial class HancomPreviewWriter
         FigureSourcePrototype figureSource,
         int? activeListId)
     {
-        if (operation.Kind == "text")
+        if (operation.Kind is "text" or "table")
         {
             var style = styles.Resolve(operation.ParagraphStyle ??
                 throw new InvalidOperationException($"Missing paragraph style for {operation.Label}."));
@@ -927,6 +927,7 @@ internal static partial class HancomPreviewWriter
             switch (operation.Kind)
             {
                 case "text":
+                case "table":
                     rootIndex += styles.Profile.PreserveParagraphLineBreaks ? 1 : operation.Lines.Count;
                     break;
                 case "box":
@@ -991,6 +992,7 @@ internal static partial class HancomPreviewWriter
             switch (operation.Kind)
             {
                 case "text":
+                case "table":
                     rootIndex += styles.Profile.PreserveParagraphLineBreaks ? 1 : operation.Lines.Count;
                     break;
                 case "box":
@@ -1106,6 +1108,7 @@ internal static partial class HancomPreviewWriter
             switch (operation.Kind)
             {
                 case "text":
+                case "table":
                     var symbolicStyle = operation.ParagraphStyle ??
                         throw new InvalidOperationException(
                             $"Missing paragraph style for {operation.Label}.");
@@ -1141,6 +1144,7 @@ internal static partial class HancomPreviewWriter
             switch (operation.Kind)
             {
                 case "text":
+                case "table":
                     var symbolicStyle = operation.ParagraphStyle ??
                         throw new InvalidOperationException(
                             $"Missing paragraph style for {operation.Label}.");

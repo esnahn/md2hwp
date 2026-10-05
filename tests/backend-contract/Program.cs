@@ -498,6 +498,10 @@ Console.WriteLine("Native footnote structure, rich text, preserved controls and 
 FigureReferenceContractTests.Run();
 TemplateCrossReferenceTests.Run();
 NativeCrossReferenceTests.Run();
+NativeFootnoteTests.Run();
+TableContractTests.Run();
+TableWidthTests.Run();
+TableWidthLimitTests.Run();
 if (args.Length==2) {
     var expected=HancomPreviewWriter.NormalizeFigureMatrices(HwpMarkup.Parse(File.ReadAllText(args[0])));
     var actual=HancomPreviewWriter.NormalizeFigureMatrices(HwpMarkup.Parse(File.ReadAllText(args[1])));
