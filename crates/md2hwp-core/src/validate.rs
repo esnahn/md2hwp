@@ -246,6 +246,30 @@ impl State<'_> {
                 }
                 Ok(())
             }
+            Block::Table {
+                columns,
+                header,
+                rows,
+                caption,
+                source,
+            } => {
+                self.require(
+                    !columns.is_empty(),
+                    &format!("{path}/columns"),
+                    "table must contain at least one column",
+                )?;
+                self.table_row(header, columns.len(), &format!("{path}/header"))?;
+                for (index, row) in rows.iter().enumerate() {
+                    self.table_row(row, columns.len(), &format!("{path}/rows/{index}"))?;
+                }
+                if let Some(caption) = caption {
+                    self.inline_array(caption, &format!("{path}/caption"), false, false, false)?;
+                }
+                if let Some(source) = source {
+                    self.inline_array(source, &format!("{path}/source"), false, false, false)?;
+                }
+                Ok(())
+            }
             Block::List {
                 kind,
                 start,
@@ -277,6 +301,26 @@ impl State<'_> {
                 Ok(())
             }
         }
+    }
+
+    fn table_row(
+        &mut self,
+        row: &[Vec<Inline>],
+        columns: usize,
+        path: &str,
+    ) -> Result<(), SemanticError> {
+        self.add_limited("blocks", path, 1)?;
+        self.require(
+            row.len() == columns,
+            path,
+            "table row cell count must match columns",
+        )?;
+        for (index, cell) in row.iter().enumerate() {
+            let cell_path = format!("{path}/{index}");
+            self.add_limited("blocks", &cell_path, 1)?;
+            self.inline_array(cell, &cell_path, true, true, true)?;
+        }
+        Ok(())
     }
 
     fn list(
@@ -388,7 +432,7 @@ impl State<'_> {
         match inline {
             Inline::CrossReference { kind, target } => {
                 self.require(allow_reference, path,
-                    "cross references are allowed only in document paragraphs, headings, list paragraphs and footnote bodies; figure alt/caption and object sources are unsupported")?;
+                    "cross references are allowed only in document paragraphs, headings, list paragraphs, table cells and footnote bodies; figure alt/caption, table captions and object sources are unsupported")?;
                 self.target_id(target, &format!("{path}/target"))?;
                 self.references
                     .push((kind.clone(), target.clone(), path.to_owned()));
@@ -396,7 +440,7 @@ impl State<'_> {
             }
             Inline::Footnote { blocks } => {
                 self.require(allow_footnote, path,
-                    "footnotes are allowed only in document paragraphs, headings and list paragraphs; nested footnotes are not supported")?;
+                    "footnotes are allowed only in document paragraphs, headings, list paragraphs and table cells; nested footnotes are not supported")?;
                 self.require(
                     !blocks.is_empty(),
                     &format!("{path}/blocks"),

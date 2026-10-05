@@ -109,6 +109,9 @@
         },
         {
           "$ref": "#/$defs/figure"
+        },
+        {
+          "$ref": "#/$defs/table"
         }
       ]
     },
@@ -140,7 +143,9 @@
         "type": {
           "const": "heading"
         },
-        "id": {"$ref": "#/$defs/target_id"},
+        "id": {
+          "$ref": "#/$defs/target_id"
+        },
         "level": {
           "type": "integer",
           "minimum": 1,
@@ -341,7 +346,9 @@
         "type": {
           "const": "figure"
         },
-        "id": {"$ref": "#/$defs/target_id"},
+        "id": {
+          "$ref": "#/$defs/target_id"
+        },
         "image": {
           "$ref": "#/$defs/image_ref"
         },
@@ -411,7 +418,9 @@
     },
     "inline": {
       "oneOf": [
-        {"$ref": "#/$defs/cross_reference"},
+        {
+          "$ref": "#/$defs/cross_reference"
+        },
         {
           "$ref": "#/$defs/footnote"
         },
@@ -438,33 +447,55 @@
     "target_id": {
       "type": "string",
       "minLength": 1,
-      "not": {"pattern": "[\\s#\\u0000-\\u001f\\u007f-\\u009f]"},
+      "not": {
+        "pattern": "[\\s#\\u0000-\\u001f\\u007f-\\u009f]"
+      },
       "description": "Exact Unicode target identifier; no whitespace, controls or fragment separator. Target kind follows its heading or figure block."
     },
     "cross_reference": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "kind", "target"],
+      "required": [
+        "type",
+        "kind",
+        "target"
+      ],
       "properties": {
-        "type": {"const": "cross_reference"},
-        "kind": {"enum": ["heading_number", "figure_number"]},
-        "target": {"$ref": "#/$defs/target_id"}
+        "type": {
+          "const": "cross_reference"
+        },
+        "kind": {
+          "enum": [
+            "heading_number",
+            "figure_number"
+          ]
+        },
+        "target": {
+          "$ref": "#/$defs/target_id"
+        }
       },
-      "$comment": "References are allowed in document paragraphs, headings, list paragraphs and footnote bodies, including formatting/link labels. Figure alt/caption and object sources reject references. Semantic validation checks global ID uniqueness, target existence and matching kind."
+      "$comment": "References are allowed in document paragraphs, headings, list paragraphs, table cells and footnote bodies, including formatting/link labels. Figure alt/caption and object sources reject references. Semantic validation checks global ID uniqueness, target existence and matching kind."
     },
     "footnote": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "blocks"],
+      "required": [
+        "type",
+        "blocks"
+      ],
       "properties": {
-        "type": {"const": "footnote"},
+        "type": {
+          "const": "footnote"
+        },
         "blocks": {
           "type": "array",
           "minItems": 1,
-          "items": {"$ref": "#/$defs/paragraph"}
+          "items": {
+            "$ref": "#/$defs/paragraph"
+          }
         }
       },
-      "$comment": "Footnotes are permitted in document paragraphs, headings and list paragraphs. Nested footnotes and notes in figure alt/caption or object sources are rejected by semantic validation."
+      "$comment": "Footnotes are permitted in document paragraphs, headings list paragraphs and table cells. Nested footnotes and notes in figure alt/caption or object sources are rejected by semantic validation."
     },
     "text": {
       "type": "object",
@@ -580,6 +611,71 @@
         "inlines": {
           "$ref": "#/$defs/inline_array"
         }
+      }
+    },
+    "table": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "columns",
+        "header",
+        "rows",
+        "caption",
+        "source"
+      ],
+      "properties": {
+        "type": {
+          "const": "table"
+        },
+        "columns": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "default",
+              "left",
+              "center",
+              "right"
+            ]
+          }
+        },
+        "header": {
+          "$ref": "#/$defs/table_row"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/table_row"
+          }
+        },
+        "caption": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/inline_array"
+            }
+          ]
+        },
+        "source": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/inline_array"
+            }
+          ]
+        }
+      }
+    },
+    "table_row": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/inline_array_allow_empty"
       }
     }
   }

@@ -8,7 +8,7 @@ use serde_json::Value;
 use crate::ast2ir_rules::{Ast2IrRules, BlockRule, InlineRule, NumberDelimiter, NumberStyle};
 use crate::ir::{
     Block, CrossReferenceKind, Document, FootnoteBlock, IR_VERSION, ImageRef, Inline, ListItem,
-    ListItemBlock, ListKind, SCHEMA_NAME, is_target_id,
+    ListItemBlock, ListKind, SCHEMA_NAME, TableAlignment, is_target_id,
 };
 use crate::pandoc_input::PandocDocument;
 use crate::validate::{ValidatedDocument, ValidationLimits, validate, validate_pandoc_source};
@@ -44,25 +44,79 @@ pub fn normalize_pandoc(
     let metadata = crate::metadata::normalize(&document.metadata).map_err(|(path, message)| {
         normalizer.error("invalid_pandoc_metadata", &path, None, message)
     })?;
+    let mut attached_captions = BTreeMap::new();
+    let mut consumed = vec![false; document.blocks.len()];
+    // CommonMark leaves Pandoc-compatible table captions as ordinary Para nodes.
+    // Determine ownership before consuming any block, so a caption between two
+    // tables cannot accidentally bind to whichever table is visited first.
+    for (index, node) in document.blocks.iter().enumerate() {
+        let previous = index
+            .checked_sub(1)
+            .filter(|&i| is_table(&document.blocks[i]));
+        let next = document
+            .blocks
+            .get(index + 1)
+            .filter(|node| is_table(node))
+            .map(|_| index + 1);
+        if previous.is_none() && next.is_none() {
+            continue;
+        }
+        if let Some(caption) =
+            normalizer.table_caption_paragraph(node, &format!("/blocks/{index}"))?
+        {
+            let table_index = match (previous, next) {
+                (Some(_), Some(_)) => return Err(normalizer.invalid(&format!("/blocks/{index}"), "Para", "table caption is ambiguous between two adjacent tables; separate the tables with another block")),
+                (Some(i), None) | (None, Some(i)) => i,
+                (None, None) => unreachable!(),
+            };
+            if attached_captions.insert(table_index, caption).is_some() {
+                return Err(normalizer.invalid(
+                    &format!("/blocks/{index}"),
+                    "Para",
+                    "table has captions both before and after it",
+                ));
+            }
+            consumed[index] = true;
+        }
+    }
     let mut blocks = Vec::with_capacity(document.blocks.len());
-    let mut index = 0;
-    while index < document.blocks.len() {
+    for (index, node) in document.blocks.iter().enumerate() {
+        if consumed[index] {
+            continue;
+        }
         let path = format!("/blocks/{index}");
-        let node = &document.blocks[index];
         let mut block = match normalizer.standalone_figure(node, &path)? {
             Some(figure) => figure,
             None => normalizer.block(node, &path)?,
         };
-        if let Block::Figure { source, .. } | Block::VerbatimBlock { source, .. } = &mut block
-            && let Some(next) = document.blocks.get(index + 1)
+        if let Block::Table { caption, .. } = &mut block
+            && let Some(attached) = attached_captions.remove(&index)
+        {
+            if caption.is_some() {
+                return Err(normalizer.invalid(
+                    &path,
+                    "Table",
+                    "table has both a native caption and an adjacent caption paragraph",
+                ));
+            }
+            *caption = Some(attached);
+        }
+        let mut source_index = index + 1;
+        if matches!(block, Block::Table { .. }) && consumed.get(source_index) == Some(&true) {
+            source_index += 1;
+        }
+        if let Block::Figure { source, .. }
+        | Block::VerbatimBlock { source, .. }
+        | Block::Table { source, .. } = &mut block
+            && let Some(next) = document.blocks.get(source_index)
+            && !consumed[source_index]
             && let Some(attached) =
-                normalizer.object_source(next, &format!("/blocks/{}", index + 1))?
+                normalizer.object_source(next, &format!("/blocks/{source_index}"))?
         {
             *source = Some(attached);
-            index += 1;
+            consumed[source_index] = true;
         }
         blocks.push(block);
-        index += 1;
     }
     let mut ir = Document {
         schema: SCHEMA_NAME.to_owned(),
@@ -230,6 +284,228 @@ impl Normalizer<'_> {
         Ok(figure)
     }
 
+    fn table_caption_paragraph(
+        &mut self,
+        node: &Value,
+        path: &str,
+    ) -> Result<Option<Vec<Inline>>, NormalizeError> {
+        if node.get("t").and_then(Value::as_str) != Some("Para") {
+            return Ok(None);
+        }
+        let (_, content) = self.node(node, path)?;
+        let nodes = self.array(content, &format!("{path}/c"))?;
+        if !nodes.first().is_some_and(|node| {
+            node.get("t").and_then(Value::as_str) == Some("Str")
+                && matches!(
+                    node.get("c").and_then(Value::as_str),
+                    Some("Table:" | "table:" | ":")
+                )
+        }) {
+            return Ok(None);
+        }
+        self.inline(&nodes[0], &format!("{path}/c/0"))?;
+        if nodes.len() < 3
+            || !matches!(
+                nodes[1].get("t").and_then(Value::as_str),
+                Some("Space" | "SoftBreak")
+            )
+        {
+            return Err(self.invalid(path, "Para", "table caption requires 'Table: ', 'table: ' or ': ' followed by nonempty inline content"));
+        }
+        self.inline(&nodes[1], &format!("{path}/c/1"))?;
+        Ok(Some(
+            nodes
+                .iter()
+                .enumerate()
+                .skip(2)
+                .map(|(index, node)| self.inline(node, &format!("{path}/c/{index}")))
+                .collect::<Result<Vec<_>, _>>()?,
+        ))
+    }
+
+    fn table(&mut self, content: Option<&Value>, path: &str) -> Result<Block, NormalizeError> {
+        let values = self.fixed_array(content, 6, &format!("{path}/c"))?;
+        self.require_empty_attr(&values[0], &format!("{path}/c/0"), "Table")?;
+        let caption_values = self.fixed_array(Some(&values[1]), 2, &format!("{path}/c/1"))?;
+        if !caption_values[0].is_null() {
+            return Err(self.invalid(
+                &format!("{path}/c/1/0"),
+                "Table",
+                "table short captions are not supported",
+            ));
+        }
+        let caption_blocks = self.array(Some(&caption_values[1]), &format!("{path}/c/1/1"))?;
+        let caption = match caption_blocks {
+            [] => None,
+            [node] => Some(self.table_paragraph(node, &format!("{path}/c/1/1/0"), "caption")?),
+            _ => {
+                return Err(self.invalid(
+                    &format!("{path}/c/1/1"),
+                    "Table",
+                    "table caption supports only one paragraph",
+                ));
+            }
+        };
+        let specs = self.array(Some(&values[2]), &format!("{path}/c/2"))?;
+        if specs.is_empty() {
+            return Err(self.invalid(
+                &format!("{path}/c/2"),
+                "Table",
+                "table requires at least one column",
+            ));
+        }
+        let mut columns = Vec::with_capacity(specs.len());
+        for (index, spec) in specs.iter().enumerate() {
+            let column_path = format!("{path}/c/2/{index}");
+            let parts = self.fixed_array(Some(spec), 2, &column_path)?;
+            columns.push(self.table_alignment(&parts[0], &format!("{column_path}/0"))?);
+            if self.constructor_only(&parts[1], &format!("{column_path}/1"))? != "ColWidthDefault" {
+                return Err(self.invalid(&format!("{column_path}/1"), "Table", "explicit table column widths are unsupported; use template table.width-mm and automatic content widths"));
+            }
+        }
+        let head = self.fixed_array(Some(&values[3]), 2, &format!("{path}/c/3"))?;
+        self.require_empty_attr(&head[0], &format!("{path}/c/3/0"), "Table")?;
+        let heads = self.array(Some(&head[1]), &format!("{path}/c/3/1"))?;
+        if heads.len() != 1 {
+            return Err(self.invalid(
+                &format!("{path}/c/3/1"),
+                "Table",
+                "table requires exactly one header row",
+            ));
+        }
+        let header = self.table_row(&heads[0], columns.len(), &format!("{path}/c/3/1/0"))?;
+        let bodies = self.array(Some(&values[4]), &format!("{path}/c/4"))?;
+        if bodies.len() != 1 {
+            return Err(self.invalid(
+                &format!("{path}/c/4"),
+                "Table",
+                "table requires exactly one body",
+            ));
+        }
+        let body = self.fixed_array(Some(&bodies[0]), 4, &format!("{path}/c/4/0"))?;
+        self.require_empty_attr(&body[0], &format!("{path}/c/4/0/0"), "Table")?;
+        if body[1].as_u64() != Some(0) {
+            return Err(self.invalid(
+                &format!("{path}/c/4/0/1"),
+                "Table",
+                "table row header columns are not supported",
+            ));
+        }
+        if !self
+            .array(Some(&body[2]), &format!("{path}/c/4/0/2"))?
+            .is_empty()
+        {
+            return Err(self.invalid(
+                &format!("{path}/c/4/0/2"),
+                "Table",
+                "intermediate table header rows are not supported",
+            ));
+        }
+        let body_rows = self.array(Some(&body[3]), &format!("{path}/c/4/0/3"))?;
+        let mut rows = Vec::with_capacity(body_rows.len());
+        for (index, row) in body_rows.iter().enumerate() {
+            rows.push(self.table_row(row, columns.len(), &format!("{path}/c/4/0/3/{index}"))?);
+        }
+        let foot = self.fixed_array(Some(&values[5]), 2, &format!("{path}/c/5"))?;
+        self.require_empty_attr(&foot[0], &format!("{path}/c/5/0"), "Table")?;
+        if !self
+            .array(Some(&foot[1]), &format!("{path}/c/5/1"))?
+            .is_empty()
+        {
+            return Err(self.invalid(
+                &format!("{path}/c/5/1"),
+                "Table",
+                "table footer rows are not supported",
+            ));
+        }
+        Ok(Block::Table {
+            columns,
+            header,
+            rows,
+            caption,
+            source: None,
+        })
+    }
+
+    fn table_alignment(&self, node: &Value, path: &str) -> Result<TableAlignment, NormalizeError> {
+        match self.constructor_only(node, path)? {
+            "AlignDefault" => Ok(TableAlignment::Default),
+            "AlignLeft" => Ok(TableAlignment::Left),
+            "AlignCenter" => Ok(TableAlignment::Center),
+            "AlignRight" => Ok(TableAlignment::Right),
+            kind => Err(self.invalid(path, kind, "unsupported table column alignment")),
+        }
+    }
+
+    fn table_row(
+        &mut self,
+        value: &Value,
+        columns: usize,
+        path: &str,
+    ) -> Result<Vec<Vec<Inline>>, NormalizeError> {
+        let parts = self.fixed_array(Some(value), 2, path)?;
+        self.require_empty_attr(&parts[0], &format!("{path}/0"), "Table")?;
+        let cells = self.array(Some(&parts[1]), &format!("{path}/1"))?;
+        if cells.len() != columns {
+            return Err(self.invalid(path, "Table", "table row cell count must match columns"));
+        }
+        let mut row = Vec::with_capacity(columns);
+        for (index, cell) in cells.iter().enumerate() {
+            let cell_path = format!("{path}/1/{index}");
+            let parts = self.fixed_array(Some(cell), 5, &cell_path)?;
+            self.require_empty_attr(&parts[0], &format!("{cell_path}/0"), "Table")?;
+            if self.table_alignment(&parts[1], &format!("{cell_path}/1"))?
+                != TableAlignment::Default
+            {
+                return Err(self.invalid(
+                    &format!("{cell_path}/1"),
+                    "Table",
+                    "per-cell alignment is unsupported; set alignment in column specifications",
+                ));
+            }
+            if parts[2].as_u64() != Some(1) || parts[3].as_u64() != Some(1) {
+                return Err(self.invalid(
+                    &cell_path,
+                    "Table",
+                    "merged table cells are not supported; row and column spans must be 1",
+                ));
+            }
+            let blocks = self.array(Some(&parts[4]), &format!("{cell_path}/4"))?;
+            row.push(match blocks {
+                [] => vec![],
+                [node] => self.table_paragraph(node, &format!("{cell_path}/4/0"), "cell")?,
+                _ => {
+                    return Err(self.invalid(
+                        &format!("{cell_path}/4"),
+                        "Table",
+                        "table cells support only one Plain or Para paragraph",
+                    ));
+                }
+            });
+        }
+        Ok(row)
+    }
+
+    fn table_paragraph(
+        &mut self,
+        node: &Value,
+        path: &str,
+        context: &str,
+    ) -> Result<Vec<Inline>, NormalizeError> {
+        let (kind, content) = self.node(node, path)?;
+        if !matches!(kind, "Plain" | "Para") {
+            return Err(self.invalid(
+                path,
+                kind,
+                format!("table {context} supports only one Plain or Para paragraph"),
+            ));
+        }
+        self.inlines(
+            self.array(content, &format!("{path}/c"))?,
+            &format!("{path}/c"),
+        )
+    }
+
     fn object_source(
         &mut self,
         node: &Value,
@@ -283,6 +559,7 @@ impl Normalizer<'_> {
             .ok_or_else(|| self.unsupported(path, constructor))?;
         match (constructor, rule) {
             ("Figure", BlockRule::Figure { .. }) => self.native_figure(content, path),
+            ("Table", BlockRule::Table { .. }) => self.table(content, path),
             ("Para", BlockRule::Paragraph { .. }) => Ok(Block::Paragraph {
                 inlines: self.inlines(
                     self.array(content, &format!("{path}/c"))?,
@@ -806,6 +1083,36 @@ impl Normalizer<'_> {
                         self.resolve_inlines(source, &format!("{path}/source"), &targets)?;
                     }
                 }
+                Block::Table {
+                    header,
+                    rows,
+                    caption,
+                    source,
+                    ..
+                } => {
+                    for (cell_index, cell) in header.iter_mut().enumerate() {
+                        self.resolve_inlines(
+                            cell,
+                            &format!("{path}/header/{cell_index}"),
+                            &targets,
+                        )?;
+                    }
+                    for (row_index, row) in rows.iter_mut().enumerate() {
+                        for (cell_index, cell) in row.iter_mut().enumerate() {
+                            self.resolve_inlines(
+                                cell,
+                                &format!("{path}/rows/{row_index}/{cell_index}"),
+                                &targets,
+                            )?;
+                        }
+                    }
+                    if let Some(caption) = caption {
+                        self.resolve_inlines(caption, &format!("{path}/caption"), &targets)?;
+                    }
+                    if let Some(source) = source {
+                        self.resolve_inlines(source, &format!("{path}/source"), &targets)?;
+                    }
+                }
                 Block::List { items, .. } => self.resolve_list(items, &path, &targets)?,
             }
         }
@@ -969,6 +1276,10 @@ impl Normalizer<'_> {
             message: message.into(),
         }
     }
+}
+
+fn is_table(node: &Value) -> bool {
+    node.get("t").and_then(Value::as_str) == Some("Table")
 }
 
 fn contains_footnote(inlines: &[Inline]) -> bool {

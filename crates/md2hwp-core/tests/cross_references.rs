@@ -261,11 +261,9 @@ fn duplicate_ids_missing_targets_and_wrong_direct_ir_kinds_fail() {
     )
     .unwrap_err();
     assert_eq!(mismatch.path, "/blocks/0/inlines/0/kind");
-    assert!(
-        normalize(json!([{"t":"Table","c":[]}]))
-            .unwrap_err()
-            .message
-            .contains("Table is not supported")
+    assert_eq!(
+        normalize(json!([{"t":"Table","c":[]}])).unwrap_err().code,
+        "invalid_pandoc_structure"
     );
 }
 

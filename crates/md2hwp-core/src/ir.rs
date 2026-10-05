@@ -58,6 +58,13 @@ pub enum Block {
         tight: bool,
         items: Vec<ListItem>,
     },
+    Table {
+        columns: Vec<TableAlignment>,
+        header: Vec<Vec<Inline>>,
+        rows: Vec<Vec<Vec<Inline>>>,
+        caption: Option<Vec<Inline>>,
+        source: Option<Vec<Inline>>,
+    },
     Figure {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         id: Option<String>,
@@ -65,6 +72,15 @@ pub enum Block {
         caption: Vec<Inline>,
         source: Option<Vec<Inline>>,
     },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TableAlignment {
+    Default,
+    Left,
+    Center,
+    Right,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

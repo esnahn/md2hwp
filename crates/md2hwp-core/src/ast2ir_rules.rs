@@ -79,6 +79,9 @@ pub enum RequireEmpty {
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 #[serde(tag = "handler", rename_all = "snake_case", deny_unknown_fields)]
 pub enum BlockRule {
+    Table {
+        attributes: RequireEmpty,
+    },
     Figure {
         attributes: OptionalId,
         caption: String,
@@ -252,7 +255,7 @@ mod tests {
         assert_eq!(rules.target_ir.version, IR_VERSION);
         let envelope: Value = serde_json::from_str(RULES_JSON).unwrap();
         assert!(envelope.get("rules_version").is_none());
-        assert_eq!(rules.blocks.len(), 7);
+        assert_eq!(rules.blocks.len(), 8);
         assert_eq!(rules.inlines.len(), 8);
         assert!(matches!(
             rules.inlines.get("SoftBreak"),

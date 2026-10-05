@@ -12,7 +12,8 @@
       "prefix": "출처:",
       "owners": [
         "figure",
-        "verbatim_block"
+        "verbatim_block",
+        "table"
       ],
       "empty": "reject",
       "handler": "adjacent_paragraph"
@@ -63,6 +64,10 @@
         "Period",
         "OneParen"
       ]
+    },
+    "Table": {
+      "handler": "table",
+      "attributes": "require_empty"
     }
   },
   "inlines": {

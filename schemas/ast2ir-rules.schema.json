@@ -53,7 +53,8 @@
             "prefix": "출처:",
             "owners": [
               "figure",
-              "verbatim_block"
+              "verbatim_block",
+              "table"
             ],
             "empty": "reject",
             "handler": "adjacent_paragraph"
@@ -216,6 +217,22 @@
               }
             }
           }
+        },
+        "Table": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "handler",
+            "attributes"
+          ],
+          "properties": {
+            "handler": {
+              "const": "table"
+            },
+            "attributes": {
+              "const": "require_empty"
+            }
+          }
         }
       }
     },
@@ -278,8 +295,14 @@
     "footnote_handler": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["handler"],
-      "properties": {"handler": {"const": "footnote"}}
+      "required": [
+        "handler"
+      ],
+      "properties": {
+        "handler": {
+          "const": "footnote"
+        }
+      }
     },
     "text_handler": {
       "type": "object",
