@@ -49,12 +49,12 @@ internal sealed class FigureSourcePrototype
 
     public void Insert(dynamic hwp, AuriPreviewStyleBindings styles, IReadOnlyList<PreviewTextRun> runs)
     {
-        XDocument before = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        XDocument before = RenderProfile.ReadDocument((object)hwp);
         var roots = AuriMinimalBoxPrototype.RootParagraphs(before);
         Run(hwp, "MoveDocEnd");
         object result = hwp.SetTextFile(nativeBlock, "HWP", "insertfile");
         if (result is not int status || status != 1) throw new InvalidOperationException("Source clone insertion failed.");
-        XDocument after = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        XDocument after = RenderProfile.ReadDocument((object)hwp);
         var cloned = AuriMinimalBoxPrototype.RootParagraphs(after);
         var index = roots.Count - 1;
         if (cloned.Count != roots.Count + 1 || TaggedTemplateBinding.DirectText(cloned[index]) != source.PrototypeText)
@@ -63,13 +63,13 @@ internal sealed class FigureSourcePrototype
         Find(hwp, source.Slot);
         var sentinel = "MD2HWP_SOURCE_" + Guid.NewGuid().ToString("N");
         HancomPreviewWriter.InsertText(hwp, sentinel);
-        XDocument marked = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        XDocument marked = RenderProfile.ReadDocument((object)hwp);
         if (TaggedTemplateBinding.DirectText(AuriMinimalBoxPrototype.RootParagraphs(marked)[index]) != source.PrototypeText.Replace(source.Slot, sentinel, StringComparison.Ordinal))
             throw new InvalidOperationException("Source slot selection escaped its clone.");
         Move(hwp, index); Find(hwp, sentinel); Run(hwp, "Delete");
         HancomPreviewWriter.InsertFormattedLine(hwp, runs, styles.Resolve("figure.source"));
         HancomPreviewWriter.RemoveHyperlinksInRoots(hwp, index, index + 1);
-        XDocument saved = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        XDocument saved = RenderProfile.ReadDocument((object)hwp);
         source.Verify(AuriMinimalBoxPrototype.RootParagraphs(saved)[index], string.Concat(runs.Select(r => r.Text)));
         Run(hwp, "MoveDocEnd");
     }

@@ -263,7 +263,7 @@ internal static partial class HancomPreviewWriter
 
         var marker = profile.InsertionTarget.Marker ??
             throw new InvalidOperationException("The marker insertion target has no marker text.");
-        var beforeDocument = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var beforeDocument = RenderProfile.ReadDocument((object)hwp);
         var beforeRoots = beforeDocument.Descendants()
             .Where(element => element.Name.LocalName == "SECTION")
             .SelectMany(section => section.Elements()
@@ -293,7 +293,7 @@ internal static partial class HancomPreviewWriter
         Run(hwp, "MoveSelNextParaBegin");
         Run(hwp, "Delete");
 
-        var afterDocument = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var afterDocument = RenderProfile.ReadDocument((object)hwp);
         var afterRoots = afterDocument.Descendants()
             .Where(element => element.Name.LocalName == "SECTION")
             .SelectMany(section => section.Elements()
@@ -594,7 +594,7 @@ internal static partial class HancomPreviewWriter
         // Style/GetDefault's Apply value was not reliable after native box
         // insertion on the reference host; inspect the actual root instead.
         Run(hwp, "MoveDocEnd");
-        XDocument currentDocument = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        XDocument currentDocument = RenderProfile.ReadDocument((object)hwp);
         var current = int.Parse(AuriMinimalBoxPrototype.RootParagraphs(currentDocument)[^1].Attribute("Style")!.Value);
         if (current == target.Id)
         {
@@ -750,7 +750,7 @@ internal static partial class HancomPreviewWriter
     {
         // TEXT export can substitute Unicode characters (for example © with ⓒ).
         // Verify the saved document's Unicode content through HWPML instead.
-        var document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var document = RenderProfile.ReadDocument((object)hwp);
         var extracted = string.Join("\n", document.Descendants()
             .Where(element => element.Name.LocalName == "P").Select(element => element.Value));
         foreach (var expected in StyledTexts(plan, profile).Select(item => item.Text).Where(text => text.Length > 0))
@@ -1040,7 +1040,7 @@ internal static partial class HancomPreviewWriter
                 "Saved preview lost paragraphs before native-list verification.");
         }
 
-        var document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var document = RenderProfile.ReadDocument((object)hwp);
         int? activeListId = null;
         int? activeDefinitionId = null;
         var verified = 0;
@@ -1217,7 +1217,7 @@ internal static partial class HancomPreviewWriter
 
     private static int CountFigureAutoNumbers(dynamic hwp) =>
         AuriMinimalCaptionPrototype.CountFigureAutoNumbers(
-            HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", "")));
+            RenderProfile.ReadDocument((object)hwp));
 
     private static int CountNativeListParagraphs(dynamic hwp)
     {
@@ -1227,7 +1227,7 @@ internal static partial class HancomPreviewWriter
 
     private static IReadOnlyList<SavedParagraph> ReadParagraphs(dynamic hwp)
     {
-        var document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var document = RenderProfile.ReadDocument((object)hwp);
         var characterShapes = HwpmlCharacterShapes.Read(document);
         var paragraphShapes = document.Descendants()
             .Where(element => element.Name.LocalName == "PARASHAPE")
@@ -1450,7 +1450,7 @@ internal sealed class AuriPreviewStyleBindings
         dynamic hwp,
         InvestigationTemplateProfile profile)
     {
-        var document = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var document = RenderProfile.ReadDocument((object)hwp);
         return BindDocument(document, profile);
     }
 

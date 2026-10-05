@@ -124,7 +124,7 @@ internal sealed class NativeCrossReferences
     internal void Insert(dynamic hwp)
     {
         if (Count == 0) return;
-        var imported = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
+        var imported = RenderProfile.ReadDocument((object)hwp);
         foreach (var anchor in headingAnchors)
         {
             SelectMarker(hwp, anchor.Marker, anchor.ParagraphPath);
@@ -157,7 +157,7 @@ internal sealed class NativeCrossReferences
             if (!(bool)action.Execute(parameters))
                 throw new InvalidOperationException("Could not insert the native number reference field.");
         }
-        Verify(HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", "")));
+        Verify(RenderProfile.ReadDocument((object)hwp));
     }
 
     internal void RecordHeadingNumber(string target, string number)
