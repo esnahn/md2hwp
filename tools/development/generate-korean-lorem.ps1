@@ -4,7 +4,13 @@
 Print Korean lorem ipsum using the preceding word's last Unicode character.
 .DESCRIPTION
 Accepts only a positive word count and writes that many whitespace-separated
-words to stdout, then exits. Blank lines every 80 words form Markdown paragraphs.
+lexical words to stdout, then exits. Punctuation does not count as a word.
+Paragraphs break at the first sentence end at or beyond 80 words. Saved
+5th/95th percentiles of source sentence lengths control when punctuation becomes
+eligible/mandatory.
+These use nearest-rank percentiles, counting nonempty paragraph tails as sentences
+for body bullet prose without an explicit terminator. Between the limits, tokens
+are sampled by source occurrence weight.
 
 Candidate data: examples/korean-lorem/last-character-words.json.
 Derived from 402 main-body prose paragraphs from all four unique reports in
@@ -13,6 +19,8 @@ counted once. Covers, summaries, contents, headings, tables, captions, notes,
 references and appendices are excluded. Policy/current-issue body prose uses
 native bullet styles rather than the style named 본문.
 HWP controls, repeated whitespace and zero-width extraction artifacts are removed.
+Punctuation is stored as separate tokens. Decimal/date/URL and abbreviation dots
+do not mark sentence boundaries.
 
 Original HWP SHA-256 values:
 01 기본: 0BA84133775B182C76ACE779082ED77E4BCE0743C00733FB6C7AF7CD43B3BAF1
@@ -45,50 +53,115 @@ function Get-LastCharacter {
     $Word.Substring($characterIndex)
 }
 
-function Expand-WordCounts {
+function Expand-TokenCounts {
     param([object[]]$Counts)
     $pool = [Collections.Generic.List[string]]::new()
     foreach ($entry in $Counts) {
-        if ($entry.Count -ne 2) { throw 'A word candidate must contain a word and its count.' }
+        if ($entry.Count -ne 2) { throw 'A token candidate must contain a token and its count.' }
         $word = [string]$entry[0]
         $frequency = [int]$entry[1]
         if ([string]::IsNullOrWhiteSpace($word) -or [regex]::IsMatch($word, '\s') -or $frequency -lt 1) {
-            throw 'Word candidates require a nonempty word and a positive count.'
+            throw 'Token candidates require a nonempty token and a positive count.'
         }
         for ($repeat = 0; $repeat -lt $frequency; $repeat++) { $pool.Add($word) }
     }
-    if ($pool.Count -eq 0) { throw 'Word candidate lists must not be empty.' }
+    if ($pool.Count -eq 0) { throw 'Token candidate lists must not be empty.' }
     return ,$pool
 }
+
+$punctuation = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+$punctuation.UnionWith([string[]]@('.', ',', ';', ':', '!', '?', '。', '！', '？'))
+$sentenceEnds = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+$sentenceEnds.UnionWith([string[]]@('.', '!', '?', '。', '！', '？'))
 
 $modelPath = Join-Path $PSScriptRoot '../../examples/korean-lorem/last-character-words.json'
 $strictUtf8 = [Text.UTF8Encoding]::new($false, $true)
 $savedModel = ConvertFrom-Json -InputObject ([IO.File]::ReadAllText($modelPath, $strictUtf8)) -AsHashtable
-$starts = Expand-WordCounts $savedModel['starts']
+$minimumSentenceWords = [int]$savedModel['sentenceLengths']['minimum']
+$maximumSentenceWords = [int]$savedModel['sentenceLengths']['maximum']
+if ($minimumSentenceWords -lt 1 -or $maximumSentenceWords -lt $minimumSentenceWords) {
+    throw 'Sentence word limits must be positive and ordered.'
+}
+$starts = Expand-TokenCounts $savedModel['starts']
+$terminators = Expand-TokenCounts $savedModel['terminators']
 $transitions = [Collections.Generic.Dictionary[string, Collections.Generic.List[string]]]::new([StringComparer]::Ordinal)
+$wordTransitions = [Collections.Generic.Dictionary[string, Collections.Generic.List[string]]]::new([StringComparer]::Ordinal)
+$endingTransitions = [Collections.Generic.Dictionary[string, Collections.Generic.List[string]]]::new([StringComparer]::Ordinal)
 foreach ($key in $savedModel['transitions'].Keys) {
-    $transitions.Add([string]$key, (Expand-WordCounts $savedModel['transitions'][$key]))
+    $pool = Expand-TokenCounts $savedModel['transitions'][$key]
+    $words = [Collections.Generic.List[string]]::new()
+    $endings = [Collections.Generic.List[string]]::new()
+    foreach ($token in $pool) {
+        if (-not $punctuation.Contains($token)) { $words.Add($token) }
+        if ($sentenceEnds.Contains($token)) { $endings.Add($token) }
+    }
+    $transitions.Add([string]$key, $pool)
+    $wordTransitions.Add([string]$key, $words)
+    $endingTransitions.Add([string]$key, $endings)
+}
+foreach ($token in $starts) {
+    if ($punctuation.Contains($token)) { throw 'Starting candidates must be lexical words.' }
+}
+foreach ($token in $terminators) {
+    if (-not $sentenceEnds.Contains($token)) { throw 'Terminator candidates must be sentence-ending punctuation.' }
 }
 
 $random = [Random]::new()
-$previousWord = $null
+function Select-NextWord {
+    param([string]$LastCharacter)
+    if ($wordTransitions.ContainsKey($LastCharacter) -and $wordTransitions[$LastCharacter].Count -gt 0) {
+        $pool = $wordTransitions[$LastCharacter]
+        return $pool[$random.Next($pool.Count)]
+    }
+    return $starts[$random.Next($starts.Count)]
+}
+function Select-NextToken {
+    param([string]$LastCharacter, [int]$SentenceLength)
+    if ($SentenceLength -ge $maximumSentenceWords) {
+        if ($endingTransitions.ContainsKey($LastCharacter) -and $endingTransitions[$LastCharacter].Count -gt 0) {
+            $pool = $endingTransitions[$LastCharacter]
+        } else { $pool = $terminators }
+        return $pool[$random.Next($pool.Count)]
+    }
+    if ($SentenceLength -lt $minimumSentenceWords) {
+        return Select-NextWord $LastCharacter
+    }
+    if ($transitions.ContainsKey($LastCharacter)) {
+        $pool = $transitions[$LastCharacter]
+        return $pool[$random.Next($pool.Count)]
+    }
+    return Select-NextWord $LastCharacter
+}
+
+$previousToken = $null
+$pendingWord = $null
+$sentenceLength = 0
 $outputWords = [Collections.Generic.List[string]]::new()
 for ($index = 0; $index -lt $WordCount; $index++) {
-    $key = if ($null -ne $previousWord) { Get-LastCharacter $previousWord } else { $null }
-    if ($null -ne $key -and $transitions.ContainsKey($key)) {
-        $candidates = $transitions[$key]
-        $word = $candidates[$random.Next($candidates.Count)]
+    if ($null -ne $pendingWord) {
+        $word = $pendingWord
+        $pendingWord = $null
+    } elseif ($null -ne $previousToken) {
+        # After punctuation choose only words, avoiding repeated punctuation.
+        $word = Select-NextWord (Get-LastCharacter $previousToken)
     } else {
-        if ($outputWords.Count -gt 0 -and -not $outputWords[$outputWords.Count - 1].EndsWith('.')) {
-            $outputWords[$outputWords.Count - 1] += '.'
-        }
         $word = $starts[$random.Next($starts.Count)]
     }
-    $previousWord = $word
-    $displayWord = [regex]::Replace($word, '[\\`*_{}\[\]<>#!|]', '\$0')
-    if (($index + 1) % 16 -eq 0 -or $index -eq $WordCount - 1) { $displayWord += '.' }
-    $outputWords.Add($displayWord)
-    if ($outputWords.Count -eq 80 -or $index -eq $WordCount - 1) {
+    $sentenceLength++
+    $outputWords.Add([regex]::Replace($word, '[\\`*_{}\[\]<>#!|]', '\$0'))
+
+    # Resolve punctuation after the word before flushing its paragraph or stopping.
+    $nextToken = Select-NextToken (Get-LastCharacter $word) $sentenceLength
+    if ($punctuation.Contains($nextToken)) {
+        $outputWords[$outputWords.Count - 1] += $nextToken
+        $previousToken = $nextToken
+        if ($sentenceEnds.Contains($nextToken)) { $sentenceLength = 0 }
+    } else {
+        $pendingWord = $nextToken
+        $previousToken = $word
+    }
+
+    if (($outputWords.Count -ge 80 -and $sentenceEnds.Contains($nextToken)) -or $index -eq $WordCount - 1) {
         Write-Output ([string]::Join(' ', $outputWords))
         $outputWords.Clear()
         if ($index -lt $WordCount - 1) { Write-Output '' }
