@@ -235,6 +235,10 @@ IR 변환만 확인하려면 다음 명령을 사용합니다.
 .\target\release\md2hwp.exe md2ir .\examples\all-features-twice\all-features.md --force
 ```
 
+대규모 본문용 원고와 IR은 [`examples/korean-lorem/`](examples/korean-lorem/)에 있습니다.
+Ipsum 본문 11,155어절을 5장·20절로 나누었으며, 작성 당시 최대 검증 원고의
+텍스트 2,231어절을 기준으로 본문 분량을 5배로 맞췄습니다. 이 원고는 IR 변환까지 검증했습니다.
+
 ## 기본 서식 템플릿 만들기
 
 ```powershell
