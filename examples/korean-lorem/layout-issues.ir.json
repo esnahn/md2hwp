@@ -1,0 +1,1242 @@
+{
+  "schema": "md2hwp.ir",
+  "ir_version": "0.3",
+  "metadata": {},
+  "blocks": [
+    {
+      "type": "heading",
+      "level": 1,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "시각"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "문제"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "재현"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "id": "section-1-1",
+      "level": 2,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "참조"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "대상"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "문제:"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "**"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "section-1-1"
+        },
+        {
+          "type": "text",
+          "value": "**는"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "실제"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "개요"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "번호로"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표시됩니다."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "대조:"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "strong",
+          "inlines": [
+            {
+              "type": "cross_reference",
+              "kind": "heading_number",
+              "target": "section-1-1"
+            }
+          ]
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "는"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "실제"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "개요"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "번호로"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표시됩니다."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "Unicode"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "한글·English·0123456789·©·±·℃·도시🏙️를"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "확인합니다."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "01"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "02"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "03"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "04"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "05"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "06"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "07"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "08"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "09"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "10"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "11"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "12"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "13"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "14"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "15"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "16"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "17"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "18"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "나눔"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위치"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조정"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "19"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "columns": [
+        "center",
+        "right",
+        "left",
+        "default"
+      ],
+      "header": [
+        [
+          {
+            "type": "text",
+            "value": "구분"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "value": "수치"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "value": "조사"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "내용"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "value": "비고"
+          }
+        ]
+      ],
+      "rows": [
+        [
+          [
+            {
+              "type": "text",
+              "value": "1"
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "101"
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "첫"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "본문"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "행입니다."
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "머리행과"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "함께"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "배치되는지"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "확인합니다."
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "조사"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "내용은"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "자동"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "줄바꿈되어"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "두"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "줄"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "이상으로"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "표시됩니다."
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "검토"
+            }
+          ]
+        ],
+        [
+          [
+            {
+              "type": "text",
+              "value": "2"
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "102"
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "둘째"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "본문"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "행입니다."
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "다음"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "쪽에서도"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "머리행이"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "반복되는지"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "확인합니다."
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "검토"
+            }
+          ]
+        ],
+        [
+          [
+            {
+              "type": "text",
+              "value": "3"
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "103"
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "셋째"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "본문"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "행입니다."
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "표"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "끝의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "출처도"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "확인합니다."
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "검토"
+            }
+          ]
+        ]
+      ],
+      "caption": [
+        {
+          "type": "text",
+          "value": "머리행만"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "하단에"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "남는"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표"
+        }
+      ],
+      "source": [
+        {
+          "type": "text",
+          "value": "대규모"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "원고의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "시각"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "문제"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "재현용"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "축약"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "자료."
+        }
+      ]
+    }
+  ]
+}
