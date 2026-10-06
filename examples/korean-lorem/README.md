@@ -285,3 +285,19 @@ literal `#`·placeholder는 유지했습니다.
 
 Rust `cargo test --workspace` 87개와 `cargo clippy --workspace --all-targets -- -D warnings`,
 고정 .NET SDK의 백엔드 계약 테스트 및 Release 빌드를 통과했습니다.
+
+## 문단 스타일 조회 최적화 검증 (2026-10-06)
+
+같은 MD·IR·이미지·템플릿으로 문단 스타일 조회를 선택 블록 내보내기로 바꾼 뒤
+변환을 다시 측정했습니다. 전체 779.527 → 646.964초(이번 실행에서 17.0% 단축),
+스타일 확인용 내보내기는 473회 전체 읽기 263.281초 → 473회 블록 읽기 61.623초입니다.
+전체 구조와 저장·재열기 검증, 표 머리행 보정 7개를 유지했습니다.
+
+112쪽을 다시 PNG로 내보냈으며 이전 결과의 112개 PNG와 모두 바이트까지 같았습니다.
+문자·내장 이미지·이모지를 유지했고, 문단·목록 서식은 재번호를 풀어서 비교해 동등함을
+확인했습니다. 독립 집계에서도 위 기능 수와 Ipsum 118문단을 유지했습니다.
+사용자 `target/release/template.hwp`의 해시도 변경하지 않았습니다.
+
+비교 결과는 ignored `artifacts/paragraph-style-profile/large.output.hwp`와 `large-pages/`에
+보관합니다. 이 폴더의 기존 HWP는 그대로입니다. 구현·실패 복구·측정 범위는
+[대규모 문서 성능 측정](../../docs/render-performance.md)에 설명했습니다.
