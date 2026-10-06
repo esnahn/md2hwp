@@ -19,7 +19,7 @@ internal interface IParagraphStyleProbe
 
 internal static class CurrentParagraphStyle
 {
-    internal const string Marker = "x";
+    internal const string Marker = "\u200B"; // Zero-width space.
 
     internal static string Read(object automation) => Read(new HancomProbe(automation));
 

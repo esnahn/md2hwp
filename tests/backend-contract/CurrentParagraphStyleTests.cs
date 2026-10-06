@@ -24,7 +24,7 @@ internal static class CurrentParagraphStyleTests
         Broken(d => d.Descendants("STYLE").Remove());
         Broken(d => d.Descendants("STYLE").Single().AddAfterSelf(new XElement(d.Descendants("STYLE").Single())));
         Broken(d => d.Descendants("STYLE").Single().SetAttributeValue("Type", "Char"));
-        foreach (var text in new[] { "", "xx", " x", "original text" })
+        foreach (var text in new[] { "", "x", CurrentParagraphStyle.Marker + CurrentParagraphStyle.Marker, " " + CurrentParagraphStyle.Marker, "original text" })
             Broken(d => Root(d).Element("TEXT")!.Element("CHAR")!.Value = text);
         Broken(d => d.Descendants("SECTION").Single().RemoveNodes());
         Broken(d => Root(d).AddAfterSelf(Paragraph("", "3")));
@@ -84,7 +84,7 @@ internal static class CurrentParagraphStyleTests
         {
             var probe = new Fake("원문") { CleanupEnd = unsafeEnd };
             Reject<InvalidOperationException>(() => CurrentParagraphStyle.Read(probe));
-            Check(probe.Deletes == 0 && probe.Tail == "원문x", "Unsafe cleanup deleted original content or a paragraph boundary.");
+            Check(probe.Deletes == 0 && probe.Tail == "원문" + CurrentParagraphStyle.Marker, "Unsafe cleanup deleted original content or a paragraph boundary.");
         }
         var deletion = new IOException("delete failed");
         var deleteFailed = new Fake("원문") { DeleteFailure = deletion };
@@ -102,7 +102,7 @@ internal static class CurrentParagraphStyleTests
         Check(cancelFailed.Deletes == 0, "Cleanup backspaced with an active selection.");
         var stillSelected = new Fake("원문") { RetainSelection = true };
         Reject<InvalidOperationException>(() => CurrentParagraphStyle.Read(stillSelected));
-        Check(stillSelected.Deletes == 0 && stillSelected.Tail == "원문x", "Cleanup deleted content while selection remained active.");
+        Check(stillSelected.Deletes == 0 && stillSelected.Tail == "원문" + CurrentParagraphStyle.Marker, "Cleanup deleted content while selection remained active.");
         Console.WriteLine("Current paragraph style identity, tracked-edit fallback and guarded marker cleanup contracts passed.");
     }
 
