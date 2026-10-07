@@ -28,13 +28,14 @@ internal static partial class HancomPreviewWriter
                 var preparedMetadata = TemplateMetadata.Prepare(RenderProfile.ReadDocument((object)hwp), metadata);
                 XDocument document = TemplateHeadingNumbers.Prepare(TaggedTemplateBinding.PreserveBeginSectionSettings(preparedMetadata.Document));
                 var footnotes = NativeFootnotes.Bind(document);
+                document = footnotes.LowerSample(document);
                 var referenceTemplate = TemplateCrossReferences.Lower(document);
                 var tables = TemplateTables.Lower(referenceTemplate.Document);
                 var headings = TemplateHeadingBlocks.Lower(tables.Document);
                 var boxes = TemplateBoxParagraphs.Lower(headings.Document);
                 var nativeFigure = NativeFigureCaption.Lower(boxes.Document);
                 _ = TaggedTemplateBinding.ReadFlat(nativeFigure.Document, temporary);
-                ImportFigureDocument(hwp, nativeFigure.Document);
+                ImportFigureDocument(hwp, TemplateListPrototype.FreezeMarkerFormatting(nativeFigure.Document));
                 document = RenderProfile.ReadDocument((object)hwp);
                 var binding = TaggedTemplateBinding.ReadFlat(document, temporary);
                 var profile = binding.Profile;
@@ -54,18 +55,19 @@ internal static partial class HancomPreviewWriter
                 var insertTiming = RenderProfile.Measure("phase.insert");
 
                 int? list = null;
+                var continuations = new NativeListContinuations(document, plan);
                 foreach (var operation in plan.Operations)
                 {
                     if (verbose) Console.Error.WriteLine($"ir2hwp: {operation.Kind}/{operation.Label}");
                     using var operationTiming = RenderProfile.Measure("operation." + operation.Kind + "/" + operation.ParagraphStyle);
-                    list = RenderOperation(hwp, operation, styles, box, caption, figureSource, list);
+                    list = RenderOperation(hwp, operation, styles, box, caption, figureSource, list, continuations);
                 }
                 insertTiming.Dispose();
                 var validateTiming = RenderProfile.Measure("phase.validate-flat");
                 ClearNativeListAtCaret(hwp, styles.Resolve("body"));
                 ApplyResolvedParagraphStyle(hwp, styles, styles.Resolve("body"));
                 RemoveHyperlinksInRoots(hwp, start, ((XElement[])RangeRoots(hwp)).Length);
-                VerifyStyles(hwp, plan, styles, start);
+                VerifyStyles(hwp, plan, styles, start, continuations);
                 VerifyCharacterMarks(hwp, plan, styles, start);
                 VerifyBoxes(hwp, plan, styles, box, start);
                 VerifyCaptions(hwp, plan, styles, caption, start);
@@ -82,7 +84,7 @@ internal static partial class HancomPreviewWriter
                 saveFlatTiming.Dispose();
                 var verifyFlatTiming = RenderProfile.Measure("phase.verify-flat-reopened");
                 VerifyText(hwp, plan, profile);
-                VerifyStyles(hwp, plan, styles, start);
+                VerifyStyles(hwp, plan, styles, start, continuations);
                 VerifyCharacterMarks(hwp, plan, styles, start);
                 VerifyBoxes(hwp, plan, styles, box, start, verifyPrototype: false);
                 VerifyCaptions(hwp, plan, styles, caption, start, verifyPrototype: false);
@@ -132,6 +134,17 @@ internal static partial class HancomPreviewWriter
                 var tableStarts = NativeTablePagination.ResolveAnchors(attached, tables.Layout.GeneratedTableBodyInstances);
                 ImportFigureDocument(hwp, attached, headings.Layout, boxes.Layout, footnotes, tables.Layout);
                 references.Layout.Insert(hwp);
+                if (references.Layout.Count > 0)
+                {
+                    // Replacing long markers with short native fields can leave
+                    // Hancom's saved line layout stale. Import the completed
+                    // controls to recalculate layout before measuring tables.
+                    var completedReferences = RenderProfile.ReadDocument((object)hwp);
+                    RequireFigureDocument(attached, completedReferences, headings.Layout, boxes: boxes.Layout,
+                        footnotes: footnotes, references: references.Layout, tables: tables.Layout);
+                    ImportFigureDocument(hwp, completedReferences, headings.Layout, boxes.Layout, footnotes, tables.Layout);
+                    references.Layout.Verify(RenderProfile.ReadDocument((object)hwp));
+                }
                 // Measure the completed fields, whose displayed text can be much
                 // shorter than the temporary reference markers in table cells.
                 if (tableStarts.Count > 0)
@@ -204,7 +217,7 @@ internal static partial class HancomPreviewWriter
         var after = AuriMinimalBoxPrototype.RootParagraphs(actual);
         TemplateRangeStructure.RequireOriginalStyleDefinitions(expected, actual, before);
         if (!TemplateRangeStructure.Equivalent(before, after, expected, actual))
-            throw new InvalidOperationException("Native caption import changed document structure: " + TemplateRangeStructure.DescribeDifference(before, after));
+            throw new InvalidOperationException("Native caption import changed document structure: " + TemplateRangeStructure.DescribeDifference(before, after, expected, actual));
         foreach (var image in before.SelectMany(p => p.Descendants("IMAGE")))
         {
             var id = (string?)image.Attribute("BinItem") ?? throw new InvalidOperationException("Missing embedded image reference.");

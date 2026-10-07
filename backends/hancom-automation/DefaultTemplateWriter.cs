@@ -41,6 +41,11 @@ internal static partial class HancomPreviewWriter
                         throw new InvalidOperationException("Could not end the native list sample.");
                 }
 
+                Run(hwp, "InsertFootnote");
+                InsertText(hwp, TaggedTemplateBinding.Tag("footnote"));
+                Run(hwp, "Close");
+                Run(hwp, "BreakPara");
+
                 // Obtain native default table borders, cell margins and caption layout.
                 _ = hwp.HAction.GetDefault("TableCreate", hwp.HParameterSet.HTableCreation.HSet);
                 hwp.HParameterSet.HTableCreation.Rows = 1;
@@ -163,6 +168,7 @@ internal static partial class HancomPreviewWriter
         var styleList = styles[0].Parent!;
         var nextId = styles.Max(e => (int)e.Attribute("Id")!) + 1;
         var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "footnote", "block.box", "box.title", "box.source", "figure.caption", "figure.source", "table.header", "table.content", "table.source", "table.caption", "ref.figure.number", "ref.heading.number", "reset" };
+        roles = roles.Append("footnote.next").ToArray();
         var ids = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var role in roles)
         {
@@ -208,13 +214,13 @@ internal static partial class HancomPreviewWriter
         var nativeCaption = pictureShape.Element("CAPTION") ?? throw new InvalidDataException("Sample picture has no native caption.");
         nativeCaption.Element("PARALIST")!.ReplaceNodes(figureCaption,
             TextParagraph("figure.source", DefaultSourcePrefix + TaggedTemplateBinding.Tag("slot:figure.source")));
-        // The manuscript owns dimensions. These three one-cell rows provide
-        // independent header, body and optional source formatting samples.
+        // Two header/body cells own outer and internal vertical borders.
+        // Their left cells own all other formatting; the source spans both columns.
         var tableSample = new XElement(seed.Descendants("TABLE").Single());
         foreach (var identity in tableSample.DescendantsAndSelf().Attributes().Where(a => a.Name.LocalName is "InstId" or "InstID").ToArray())
             identity.Remove();
         tableSample.SetAttributeValue("RowCount", 3);
-        tableSample.SetAttributeValue("ColCount", 1);
+        tableSample.SetAttributeValue("ColCount", 2);
         tableSample.SetAttributeValue("PageBreak", "Cell");
         tableSample.SetAttributeValue("RepeatHeader", "true");
         var tableShape = tableSample.Element("SHAPEOBJECT")!;
@@ -237,6 +243,9 @@ internal static partial class HancomPreviewWriter
         sourceBorder.Elements("FILLBRUSH").Remove();
         foreach (var border in sourceBorder.Elements().Where(e => e.Name.LocalName.EndsWith("BORDER", StringComparison.Ordinal) || e.Name.LocalName == "DIAGONAL"))
             border.SetAttributeValue("Type", "None");
+        var contentBottom = result.Descendants("BORDERFILL").Single(e =>
+            (string?)e.Attribute("Id") == (string?)sampleCell.Attribute("BorderFill")).Element("BOTTOMBORDER")!;
+        sourceBorder.Element("TOPBORDER")!.ReplaceWith(new XElement("TOPBORDER", contentBottom.Attributes(), contentBottom.Nodes()));
         foreach (var name in new[] { "Slash", "BackSlash", "CounterSlash", "CounterBackSlash", "CrookedSlash", "CrookedBackSlash", "CenterLine" })
             if (sourceBorder.Attribute(name) is not null) sourceBorder.SetAttributeValue(name, 0);
         sourceBorder.SetAttributeValue("Shadow", "false"); sourceBorder.SetAttributeValue("ThreeD", "false");
@@ -244,25 +253,36 @@ internal static partial class HancomPreviewWriter
         tableSample.Elements("ROW").Remove();
         foreach (var (role, rowIndex) in new[] { ("table.header", 0), ("table.content", 1), ("table.source", 2) })
         {
-            var sampleRowCell = new XElement(sampleCell);
-            sampleRowCell.SetAttributeValue("Width", width);
-            sampleRowCell.SetAttributeValue("RowAddr", rowIndex);
-            sampleRowCell.SetAttributeValue("ColAddr", 0);
-            sampleRowCell.SetAttributeValue("RowSpan", 1);
-            sampleRowCell.SetAttributeValue("ColSpan", 1);
-            sampleRowCell.SetAttributeValue("Header", rowIndex == 0 ? "true" : "false");
-            if (rowIndex == 2) sampleRowCell.SetAttributeValue("BorderFill", (string)sourceBorder.Attribute("Id")!);
-            sampleRowCell.Element("PARALIST")!.ReplaceNodes(TextParagraph(role,
-                (rowIndex == 2 ? DefaultSourcePrefix : "") + TaggedTemplateBinding.Tag("slot:" + role)));
-            tableSample.Add(new XElement("ROW", sampleRowCell));
+            var row = new XElement("ROW");
+            for (var column = 0; column < (rowIndex == 2 ? 1 : 2); column++)
+            {
+                var sampleRowCell = new XElement(sampleCell);
+                sampleRowCell.SetAttributeValue("Width", rowIndex == 2 ? width : column == 0 ? width / 2 : width - width / 2);
+                sampleRowCell.SetAttributeValue("RowAddr", rowIndex);
+                sampleRowCell.SetAttributeValue("ColAddr", column);
+                sampleRowCell.SetAttributeValue("RowSpan", 1);
+                sampleRowCell.SetAttributeValue("ColSpan", rowIndex == 2 ? 2 : 1);
+                sampleRowCell.SetAttributeValue("Header", rowIndex == 0 ? "true" : "false");
+                if (rowIndex == 2) sampleRowCell.SetAttributeValue("BorderFill", (string)sourceBorder.Attribute("Id")!);
+                sampleRowCell.Element("PARALIST")!.ReplaceNodes(TextParagraph(role,
+                    (rowIndex == 2 ? DefaultSourcePrefix : "") + TaggedTemplateBinding.Tag("slot:" + role)));
+                row.Add(sampleRowCell);
+            }
+            tableSample.Add(row);
         }
         // Retain only the empty first paragraph's native section/page definition.
         var first = new XElement(blankRoot);
         first.SetAttributeValue("Style", ids["body"]);
         var roots = new List<XElement> { first, Declaration("begin:template"), Declaration("ir-version:" + IrContract.Version) };
         var figureWidth = Math.Min(142, width * 25.4 / 7200).ToString("0.###", CultureInfo.InvariantCulture);
-        foreach (var role in roles.Where(r => r == "body" || r == "footnote" || r.StartsWith("heading", StringComparison.Ordinal) || r == "reset"))
+        foreach (var role in roles.Where(r => r == "body" || r.StartsWith("heading", StringComparison.Ordinal) || r == "reset"))
             roots.Add(Declaration(role, role));
+        var footnote = new XElement(seed.Descendants("FOOTNOTE").Single());
+        var footnoteBody = TextParagraph("footnote", " " + TaggedTemplateBinding.Tag("footnote"));
+        footnoteBody.Element("TEXT")!.AddFirst(new XElement(footnote.Descendants("AUTONUM").Single()));
+        footnote.Element("PARALIST")!.ReplaceNodes(footnoteBody,
+            TextParagraph("footnote.next", TaggedTemplateBinding.Tag("footnote.next")));
+        roots.Add(Paragraph("body", new XElement("CHAR", "각주 서식 샘플"), footnote));
         roots.Add(TextParagraph("body", "헤딩을 여러 문단으로 구성하려면 해당 headingN 선언을 begin:headingN … slot:headingN … end:headingN 범위로 바꾸세요. 각 이름을 {{ 및 md2hwp: 및 }}로 감싸고, 경계와 제목 슬롯은 각각 독립 문단에 둡니다. N은 1~6이며 같은 수준에 두 방식을 함께 쓰지 않습니다. 블록에 표·글상자·묶음 도형·쪽 나눔과 머리말·감추기·새 번호 제어를 함께 둘 수 있습니다. 제목 슬롯은 표 셀·글상자·머리말·꼬리말 안의 독립 문단에도 놓을 수 있고, 여러 개 두면 같은 제목으로 채웁니다. 절 목록은 begin:each.child:heading2 … slot:heading2 … end:each.child:heading2 범위로 반복하고, 안에 heading3 반복을 중첩할 수 있습니다. 같은 문단 안의 begin:once … end:once 범위는 해당 수준의 첫 헤딩에서만 포함하며, 중첩하거나 제목 슬롯을 감싸지 않습니다."));
         roots.AddRange(new[] { Declaration("list.max-depth:6"),
             Declaration("list.indent-hwp:1000") });

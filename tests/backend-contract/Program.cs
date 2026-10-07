@@ -503,6 +503,10 @@ TableContractTests.Run();
 TableWidthTests.Run();
 TableWidthLimitTests.Run();
 CurrentParagraphStyleTests.Run();
+TemplateRangeStructureTests.Run();
+BoxPrototypeStructureTests.Run();
+ListMarkerFormattingTests.Run();
+ListContinuationTests.Run();
 if (args.Length==2) {
     var expected=HancomPreviewWriter.NormalizeFigureMatrices(HwpMarkup.Parse(File.ReadAllText(args[0])));
     var actual=HancomPreviewWriter.NormalizeFigureMatrices(HwpMarkup.Parse(File.ReadAllText(args[1])));

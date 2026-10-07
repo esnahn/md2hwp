@@ -195,14 +195,32 @@ internal sealed class AuriMinimalBoxPrototype
     public void VerifyOriginal(IReadOnlyList<XElement> roots)
     {
         if (originalRootParagraphIndex >= roots.Count ||
-            !string.Equals(
-                StableXml(roots[originalRootParagraphIndex]),
-                originalRootXml,
-                StringComparison.Ordinal))
+            !EquivalentOriginal(XElement.Parse(originalRootXml), roots[originalRootParagraphIndex]))
         {
             throw new InvalidOperationException(
-                "The source box prototype changed during preview rendering.");
+                "The source box prototype changed during preview rendering: " +
+                (originalRootParagraphIndex >= roots.Count ? "source root is missing" :
+                    TemplateRangeStructure.DescribeDifference(
+                        [NormalizeOriginalBoxLayout(XElement.Parse(originalRootXml))],
+                        [NormalizeOriginalBoxLayout(roots[originalRootParagraphIndex])])));
         }
+    }
+
+    // Native exports may coalesce identical-format text, omit empty CHAR or
+    // explicit default TextFlow, and reorder attributes. None changes the box.
+    // Hancom also recalculates the table's positive layout height lazily, even
+    // before cloning. Keep widths, cell heights, position and formatting exact.
+    internal static bool EquivalentOriginal(XElement expected, XElement actual) =>
+        TemplateRangeStructure.Equivalent([NormalizeOriginalBoxLayout(expected)], [NormalizeOriginalBoxLayout(actual)]);
+
+    private static XElement NormalizeOriginalBoxLayout(XElement root)
+    {
+        var copy = XElement.Parse(StableXml(root));
+        foreach (var size in copy.Descendants("TABLE").Elements("SHAPEOBJECT").Elements("SIZE"))
+            if (long.TryParse((string?)size.Attribute("Height"), System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture, out var height) && height > 0)
+                size.Attribute("Height")!.Remove();
+        return copy;
     }
 
     public void VerifyRenderedRoot(

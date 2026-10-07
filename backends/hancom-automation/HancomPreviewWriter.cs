@@ -64,7 +64,9 @@ internal sealed record SavedParagraph(
     bool ContainsTable,
     int FigureAutoNumbers,
     SavedNativeList? NativeList,
-    IReadOnlyList<SavedTextRun> Runs);
+    IReadOnlyList<SavedTextRun> Runs,
+    int LeftMargin = 0,
+    int Indentation = 0);
 
 internal sealed record SavedNativeList(
     string Kind,
@@ -84,7 +86,8 @@ internal sealed record ExpectedParagraph(
     bool ContainsTable,
     int FigureAutoNumbers,
     PreviewListMarker? ListMarker,
-    IReadOnlyList<PreviewTextRun>? FormattedRuns);
+    IReadOnlyList<PreviewTextRun>? FormattedRuns,
+    PreviewListMarker? ListContinuation = null);
 
 internal sealed record ExportedPage(
     string Path,
@@ -336,7 +339,8 @@ internal static partial class HancomPreviewWriter
         AuriMinimalBoxPrototype? boxPrototype,
         AuriMinimalCaptionPrototype? captionPrototype,
         FigureSourcePrototype figureSource,
-        int? activeListId)
+        int? activeListId,
+        NativeListContinuations continuations)
     {
         if (operation.Kind is "text" or "table")
         {
@@ -371,7 +375,11 @@ internal static partial class HancomPreviewWriter
                         ApplyResolvedParagraphStyle(hwp, styles, style);
                     }
                 }
+                if (operation.ListContinuation is { } continuation)
+                    continuations.Apply(hwp, continuation);
                 InsertFormattedLine(hwp, FormattedLine(operation, index), style);
+                if (marker is not null && index == operation.Lines.Count - 1)
+                    continuations.Record(hwp, marker, styles.Profile.Lists);
                 if (!styles.Profile.PreserveParagraphLineBreaks || index == operation.Lines.Count - 1)
                     Run(hwp, "BreakPara");
             }
@@ -761,7 +769,8 @@ internal static partial class HancomPreviewWriter
         dynamic hwp,
         IrPreviewPlan plan,
         AuriPreviewStyleBindings styles,
-        int paragraphsBefore)
+        int paragraphsBefore,
+        NativeListContinuations? continuations = null)
     {
         IReadOnlyList<SavedParagraph> savedParagraphs = ReadParagraphs(hwp);
         var appended = savedParagraphs.Skip(paragraphsBefore).ToArray();
@@ -777,6 +786,9 @@ internal static partial class HancomPreviewWriter
             var expected = expectedParagraphs[index];
             var actual = appended[index];
             var nativeStyle = styles.Resolve(expected.SymbolicStyle);
+            if (expected.ListContinuation is { } continuation && continuations is not null &&
+                (actual.NativeList is not null || actual.LeftMargin != continuations.Margin(continuation) || actual.Indentation != 0))
+                throw new InvalidOperationException($"Saved list continuation paragraph {index} lost its body alignment.");
             if (actual.Style != nativeStyle.Id ||
                 actual.ContainsPicture != expected.ContainsPicture ||
                 actual.ContainsTable != expected.ContainsTable ||
@@ -1091,7 +1103,7 @@ internal static partial class HancomPreviewWriter
                 $"Expected one native {definitionName} definition {actual.DefinitionId}, " +
                 $"found {definitions.Length}.");
         }
-        layout.Prototype(marker.Kind).Verify(definitions[0], marker);
+        layout.Prototype(marker.Kind).Verify(definitions[0], marker, document);
     }
 
     private static IEnumerable<(string Symbolic, string Text)> StyledTexts(
@@ -1149,7 +1161,7 @@ internal static partial class HancomPreviewWriter
                             string.Concat(operation.Lines), false, false, 0,
                             operation.ListMarker,
                             PreviewRunBuilder.Coalesce(Enumerable.Range(0, operation.Lines.Count)
-                                .SelectMany(index => FormattedLine(operation, index))));
+                                .SelectMany(index => FormattedLine(operation, index))), operation.ListContinuation);
                         break;
                     }
                     for (var index = 0; index < operation.Lines.Count; index++)
@@ -1161,7 +1173,7 @@ internal static partial class HancomPreviewWriter
                             false,
                             0,
                             index == 0 ? operation.ListMarker : null,
-                            FormattedLine(operation, index));
+                            FormattedLine(operation, index), operation.ListContinuation);
                     }
                     break;
                 case "box":
@@ -1271,7 +1283,9 @@ internal static partial class HancomPreviewWriter
                             "Figure",
                             StringComparison.Ordinal)),
                     nativeList,
-                    ReadSavedRuns(element, characterShapes));
+                    ReadSavedRuns(element, characterShapes),
+                    (int?)paragraphShape?.Element("PARAMARGIN")?.Attribute("Left") ?? 0,
+                    (int?)paragraphShape?.Element("PARAMARGIN")?.Attribute("Indent") ?? 0);
             })
             .ToArray();
     }

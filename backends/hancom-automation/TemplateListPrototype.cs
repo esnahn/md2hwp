@@ -10,6 +10,48 @@ internal sealed class TemplateListPrototype(string kind, int root, XElement defi
     public string Kind { get; } = kind;
     public XElement Definition { get; } = new(definition);
 
+    // An omitted marker CharShape follows the paragraph's editing state in
+    // Hancom. Resolve it from the sample, using private copies of the native
+    // definitions so unrelated paragraphs retain their original behavior.
+    internal static XDocument FreezeMarkerFormatting(XDocument source)
+    {
+        var document = new XDocument(source);
+        foreach (var kind in new[] { "bullet", "ordered" })
+        {
+            var paragraph = document.Descendants("SECTION").Elements("P").Single(p =>
+                TaggedTemplateBinding.DirectText(p) == TaggedTemplateBinding.Tag("list." + kind));
+            var shape = document.Descendants("PARASHAPE").Single(p =>
+                (string?)p.Attribute("Id") == (string?)paragraph.Attribute("ParaShape"));
+            var name = kind == "bullet" ? "BULLET" : "NUMBERING";
+            var definition = document.Descendants(name).Single(d =>
+                (string?)d.Attribute("Id") == (string?)shape.Attribute("Heading"));
+            if (definition.Elements("PARAHEAD").All(h => h.Attribute("CharShape") is not null)) continue;
+            var character = paragraph.Elements("TEXT").First(t => t.Elements("CHAR").Any()).Attribute("CharShape")?.Value
+                ?? throw new InvalidDataException($"list.{kind} sample has no character formatting.");
+            if (!document.Descendants("CHARSHAPE").Any(c => (string?)c.Attribute("Id") == character))
+                throw new InvalidDataException($"list.{kind} sample references missing character formatting.");
+            var fixedDefinition = new XElement(definition);
+            var definitionId = document.Descendants(name).Max(d => (int)d.Attribute("Id")!) + 1;
+            fixedDefinition.SetAttributeValue("Id", definitionId);
+            foreach (var head in fixedDefinition.Elements("PARAHEAD").Where(h => h.Attribute("CharShape") is null))
+            {
+                head.SetAttributeValue("CharShape", character);
+                head.ReplaceAttributes(head.Attributes().OrderBy(a => a.Name.LocalName, StringComparer.Ordinal)
+                    .Select(a => new XAttribute(a)).ToArray());
+            }
+            definition.Parent!.Add(fixedDefinition);
+            definition.Parent.SetAttributeValue("Count", definition.Parent.Elements(name).Count());
+            var fixedShape = new XElement(shape);
+            var shapeId = document.Descendants("PARASHAPE").Max(p => (int)p.Attribute("Id")!) + 1;
+            fixedShape.SetAttributeValue("Id", shapeId);
+            fixedShape.SetAttributeValue("Heading", definitionId);
+            shape.Parent!.Add(fixedShape);
+            shape.Parent.SetAttributeValue("Count", shape.Parent.Elements("PARASHAPE").Count());
+            paragraph.SetAttributeValue("ParaShape", shapeId);
+        }
+        return document;
+    }
+
     internal static TemplateListPrototype Read(XDocument document, XElement paragraph, int root, string kind, int maxDepth)
     {
         var shape = document.Descendants().SingleOrDefault(e => e.Name.LocalName == "PARASHAPE" &&
@@ -60,7 +102,7 @@ internal sealed class TemplateListPrototype(string kind, int root, XElement defi
 
     internal ushort NumberFormat(int depth) => Convert.ToUInt16(((dynamic)nativeShape!).Item($"NumFormatLevel{depth}"));
 
-    internal void Verify(XElement actual, PreviewListMarker marker)
+    internal void Verify(XElement actual, PreviewListMarker marker, XDocument document)
     {
         var expected = new XElement(Definition);
         var saved = new XElement(actual);
@@ -72,8 +114,20 @@ internal sealed class TemplateListPrototype(string kind, int root, XElement defi
             expected.Elements().Single(e => e.Name.LocalName == "PARAHEAD" &&
                 (int?)e.Attribute("Level") == marker.Depth + 1).SetAttributeValue("Start", marker.Number);
         }
-        if (!XNode.DeepEquals(expected, saved))
+        var comparison = new XDocument(document);
+        // BulletShape serializes an unset character background without the
+        // default WINDOWBRUSH that body CharShape exports. Preserve real fills.
+        foreach (var brush in comparison.Descendants("BORDERFILL").Elements("FILLBRUSH").ToArray())
+        {
+            var window = brush.Element("WINDOWBRUSH");
+            if (brush.Attributes().Any() || brush.Elements().Count() != 1 || window is null ||
+                window.HasElements || window.Attributes().Count() != 3) continue;
+            if ((string?)window.Attribute("Alpha") == "0" &&
+                (string?)window.Attribute("FaceColor") == "4294967295" &&
+                (string?)window.Attribute("HatchColor") == "4278190080") brush.Remove();
+        }
+        if (!TemplateRangeStructure.Equivalent([expected], [saved], comparison, comparison))
             throw new InvalidOperationException($"Native list.{Kind} definition differs from its template at depth {marker.Depth}: " +
-                TemplateRangeStructure.DescribeDifference([expected], [saved]));
+                TemplateRangeStructure.DescribeDifference([expected], [saved], comparison, comparison));
     }
 }

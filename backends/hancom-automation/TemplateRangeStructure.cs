@@ -28,6 +28,25 @@ internal static class TemplateRangeStructure
         copies.SelectMany(p => p.Descendants("CHAR"))
             .Where(c => c.Parent?.Name.LocalName == "TEXT" && !c.HasAttributes && !c.HasElements && c.Value.Length == 0)
             .Remove();
+        // HWPML import combines adjacent payloads with identical formatting.
+        // Keep every character, whitespace and ordered native control while
+        // treating equivalent TEXT/CHAR segmentation as serialization detail.
+        static bool SameAttributes(XElement left, XElement right) =>
+            left.Attributes().OrderBy(a => a.Name.ToString(), StringComparer.Ordinal).Select(a => (a.Name, a.Value))
+                .SequenceEqual(right.Attributes().OrderBy(a => a.Name.ToString(), StringComparer.Ordinal).Select(a => (a.Name, a.Value)));
+        foreach (var paragraph in copies.SelectMany(root => root.DescendantsAndSelf("P")))
+        {
+            foreach (var run in paragraph.Elements("TEXT").ToArray())
+                if (run.PreviousNode is XElement previous && previous.Name == run.Name && SameAttributes(previous, run))
+                { previous.Add(run.Nodes().ToArray()); run.Remove(); }
+            foreach (var character in paragraph.Elements("TEXT").Elements("CHAR").ToArray())
+                if (character.PreviousNode is XElement previous && previous.Name == character.Name && SameAttributes(previous, character))
+                { previous.Add(character.Nodes().ToArray()); character.Remove(); }
+        }
+        // HWPML specifies BothSides as the default TextFlow. Hancom may omit
+        // the explicit default; all nondefault flow/wrap/position values stay exact.
+        foreach (var shape in copies.SelectMany(root => root.Descendants("SHAPEOBJECT")))
+            if ((string?)shape.Attribute("TextFlow") == "BothSides") shape.Attribute("TextFlow")!.Remove();
         // Hancom assigns fresh identities to pasted drawing objects and their
         // grouped components. Their geometry, content and stacking are checked.
         foreach (var attribute in copies.SelectMany(p => p.DescendantsAndSelf())
@@ -70,6 +89,11 @@ internal static class TemplateRangeStructure
         }
         return string.Join("; ", differences);
     }
+
+    public static string DescribeDifference(IReadOnlyList<XElement> before, IReadOnlyList<XElement> after,
+        XDocument beforeDocument, XDocument afterDocument) => DescribeDifference(
+            before.Select(p => TemplateFormatting.Copy(p, beforeDocument)).ToArray(),
+            after.Select(p => TemplateFormatting.Copy(p, afterDocument)).ToArray());
 
     public static void RequireOriginalStyleDefinitions(XDocument before, XDocument after,
         IReadOnlyList<XElement>? preservedRoots = null)

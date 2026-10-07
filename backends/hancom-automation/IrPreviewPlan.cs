@@ -82,7 +82,8 @@ internal sealed record PreviewOperation(
     int? Heading1Number = null,
     string? FigureId = null,
     string? HeadingId = null,
-    PreviewTable? Table = null);
+    PreviewTable? Table = null,
+    PreviewListMarker? ListContinuation = null);
 
 internal sealed record PreviewTable(
     IReadOnlyList<string> Columns,
@@ -235,7 +236,8 @@ internal sealed class PlanBuilder(
         JsonElement block,
         string path,
         string? listLabel,
-        PreviewListMarker? listMarker)
+        PreviewListMarker? listMarker,
+        PreviewListMarker? listContinuation = null)
     {
         JsonContract.ExpectObject(block, path, ["type", "inlines"]);
         const string style = "body";
@@ -247,7 +249,7 @@ internal sealed class PlanBuilder(
                 path + "/inlines",
                 "the native-list investigation preview does not support line_break in a list marker paragraph");
         }
-        operations.Add(Text(label, style, content, listMarker));
+        operations.Add(Text(label, style, content, listMarker) with { ListContinuation = listContinuation });
     }
 
     private void AddVerbatimBlock(JsonElement block, string path)
@@ -328,6 +330,7 @@ internal sealed class PlanBuilder(
             var label = $"list.{kind}.depth-{depth}.item-{itemNumber}";
             listItems++;
             var markerPending = true;
+            var itemMarker = new PreviewListMarker(listId, kind, depth, listStart, itemNumber, itemIndex == 0);
 
             var itemBlocks = JsonContract.ExpectArray(item.GetProperty("blocks"), itemPath + "/blocks");
             var blockIndex = 0;
@@ -342,15 +345,8 @@ internal sealed class PlanBuilder(
                             itemBlock,
                             blockPath,
                             label,
-                            markerPending
-                                ? new PreviewListMarker(
-                                    listId,
-                                    kind,
-                                    depth,
-                                    listStart,
-                                    itemNumber,
-                                    itemIndex == 0)
-                                : null);
+                            markerPending ? itemMarker : null,
+                            markerPending ? null : itemMarker);
                         markerPending = false;
                         break;
                     case "list":
