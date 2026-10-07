@@ -1,8 +1,8 @@
-# md2hwp v0.3.0
+# md2hwp v0.4.0 (개발 중)
 
 Markdown 원고를 한글(HWP) 템플릿의 서식에 맞춰 변환합니다. Windows x64·한글이 필요하며, 현재 IR 버전은 0.3입니다. HWPX·RST 직접 입력은 지원하지 않습니다.
 
-배포 파일과 변경 사항은 [v0.3.0 릴리스](https://github.com/esnahn/md2hwp/releases/tag/v0.3.0)에서 확인할 수 있습니다.
+최신 정식 배포 파일과 변경 사항은 [v0.3.0 릴리스](https://github.com/esnahn/md2hwp/releases/tag/v0.3.0)에서 확인할 수 있습니다.
 
 ## 시작하기
 
