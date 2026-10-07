@@ -5,7 +5,7 @@ using System.Xml.XPath;
 
 namespace Md2Hwp.HancomIrPreview;
 
-// A three-row, one-column native table is a formatting prototype. Its dimensions
+// A three-row, two-column native table is a formatting prototype. Its dimensions
 // and sample content do not determine the generated table's rows or columns.
 internal sealed class TemplateTables(XDocument source, XElement prototype, double widthMillimeters)
 {
@@ -62,16 +62,22 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
             throw new InvalidDataException("table sample requires one native table anchored alone in its root paragraph.");
         var table = tables[0];
         var rows = table.Elements("ROW").ToArray();
-        if (rows.Length != 3 || rows.Any(row => row.Elements("CELL").Count() != 1) ||
-            (int?)table.Attribute("RowCount") != 3 || (int?)table.Attribute("ColCount") != 1)
-            throw new InvalidDataException("table sample requires exactly three rows and one column: header, content and source.");
+        if (rows.Length != 3 || rows.Take(2).Any(row => row.Elements("CELL").Count() != 2) ||
+            rows[2].Elements("CELL").Count() != 1 ||
+            (int?)table.Attribute("RowCount") != 3 || (int?)table.Attribute("ColCount") != 2)
+            throw new InvalidDataException("table sample requires three rows and two columns: two header cells, two content cells and one merged source cell. Regenerate with init-template or explicitly adopt the two-column prototype.");
         var accepted = new HashSet<XElement> { roots[begin], roots[end], widths[0].paragraph };
         var slots = new[] { HeaderSlot, ContentSlot, SourceSlot };
         for (var index = 0; index < rows.Length; index++)
+        foreach (var (cell, column) in rows[index].Elements("CELL").Select((cell, column) => (cell, column)))
         {
-            var cell = rows[index].Elements("CELL").Single();
-            if ((int?)cell.Attribute("ColSpan") is not (null or 1) || (int?)cell.Attribute("RowSpan") is not (null or 1))
-                throw new InvalidDataException("table sample cells must not be merged.");
+            if ((int?)cell.Attribute("ColSpan") != (index == 2 ? 2 : 1) ||
+                (int?)cell.Attribute("RowSpan") is not (null or 1) ||
+                (int?)cell.Attribute("ColAddr") != column || (int?)cell.Attribute("RowAddr") != index)
+                throw new InvalidDataException("Only the source sample may span both columns; table sample cell addresses and spans must match the three-row, two-column grid.");
+            var border = ReadBorder(table, cell, document);
+            if (index < 2 && (border.Element("LEFTBORDER") is null || border.Element("RIGHTBORDER") is null))
+                throw new InvalidDataException("Table header/content samples require native left and right border definitions.");
             if (cell.Elements("PARALIST").Count() != 1 ||
                 cell.Elements().Any(element => element.Name.LocalName is not ("CELLMARGIN" or "PARALIST")))
                 throw new InvalidDataException("Table sample cells require one native paragraph list and optional cell margins, without other controls.");
@@ -169,7 +175,9 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
                     var row = new XElement(sample.Name, sample.Attributes());
                     for (var column = 0; column < values.Count; column++)
                     {
-                        var cell = TemplateHeadingBlocks.ImportParagraph(sample.Elements("CELL").Single(), result, result);
+                        var sampleCells = sample.Elements("CELL").ToArray();
+                        var cell = TemplateHeadingBlocks.ImportParagraph(sampleCells[0], result, result);
+                        ApplyVerticalBorders(cell, table, sampleCells, column, values.Count, result);
                         cell.SetAttributeValue("ColAddr", column); cell.SetAttributeValue("RowAddr", rows.Count);
                         cell.SetAttributeValue("ColSpan", 1); cell.SetAttributeValue("RowSpan", 1);
                         cell.SetAttributeValue("Width", widths[column]); cell.SetAttributeValue("Height", 1);
@@ -192,6 +200,17 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
                     cell.SetAttributeValue("ColSpan", widths.Length); cell.SetAttributeValue("RowSpan", 1);
                     cell.SetAttributeValue("Width", WidthHwpUnits); cell.SetAttributeValue("Height", 1);
                     cell.SetAttributeValue("Header", "false");
+                    if (content.Rows.Count == 0)
+                    {
+                        var border = new XElement(ReadBorder(table, cell, result));
+                        if ((string?)border.Element("TOPBORDER")?.Attribute("Type") is not (null or "None"))
+                        {
+                            var bottom = ReadBorder(table, samples[0].Elements("CELL").First(), result).Element("BOTTOMBORDER")
+                                ?? throw new InvalidDataException("Header sample has no native bottom border for the source boundary.");
+                            border.Element("TOPBORDER")!.ReplaceWith(new XElement("TOPBORDER", bottom.Attributes(), bottom.Nodes()));
+                            cell.SetAttributeValue("BorderFill", InternBorder(border, ReadBorder(table, cell, result).Parent!));
+                        }
+                    }
                     FillSlot(cell.Descendants("P").Single(), SourceSlot, sourceContent, result);
                     rows.Add(row);
                 }
@@ -360,10 +379,15 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
 
     private static void RequireTransparentSource(XElement table, XElement cell, XDocument document)
     {
-        var id = (string?)cell.Attribute("BorderFill") ?? (string?)table.Attribute("BorderFill");
-        var border = document.Descendants("BORDERFILL").SingleOrDefault(value => (string?)value.Attribute("Id") == id)
-            ?? throw new InvalidDataException("Table source cell has no border/fill definition.");
-        var edges = new[] { "LEFTBORDER", "RIGHTBORDER", "TOPBORDER", "BOTTOMBORDER" };
+        var border = ReadBorder(table, cell, document);
+        var top = border.Element("TOPBORDER");
+        if ((string?)top?.Attribute("Type") is not (null or "None"))
+        {
+            var bottom = ReadBorder(table, table.Elements("ROW").ElementAt(1).Elements("CELL").First(), document).Element("BOTTOMBORDER");
+            if (bottom is null || !XNode.DeepEquals(top, new XElement("TOPBORDER", bottom.Attributes(), bottom.Nodes())))
+                throw new InvalidDataException("The source row's visible top border must match the content sample's bottom border exactly.");
+        }
+        var edges = new[] { "LEFTBORDER", "RIGHTBORDER", "BOTTOMBORDER" };
         if (edges.Any(name => (string?)border.Element(name)?.Attribute("Type") is not (null or "None")) ||
             (string?)border.Attribute("Slash") is not (null or "0") || (string?)border.Attribute("BackSlash") is not (null or "0") ||
             (string?)border.Attribute("CenterLine") is not (null or "0") ||
@@ -373,7 +397,51 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
                 (fill.Elements().Any(element => element.Name.LocalName != "WINDOWBRUSH") ||
                     fill.Elements("WINDOWBRUSH").Any(brush => (string?)brush.Attribute("FaceColor") != "4294967295" ||
                         (string?)brush.Attribute("HatchStyle") is not (null or "None"))))
-            throw new InvalidDataException("The last table sample row must be transparent: no visible borders, diagonal lines, background or hatch fill.");
+            throw new InvalidDataException("The source sample must have no side/bottom borders, diagonal lines, background or hatch fill; its top border may match the content sample's bottom border.");
+    }
+
+    private static XElement ReadBorder(XElement table, XElement cell, XDocument document)
+    {
+        var id = (string?)cell.Attribute("BorderFill") ?? (string?)table.Attribute("BorderFill");
+        return document.Descendants("BORDERFILL").SingleOrDefault(value => (string?)value.Attribute("Id") == id)
+            ?? throw new InvalidDataException("Table sample cell has no border/fill definition.");
+    }
+
+    private static void ApplyVerticalBorders(XElement cell, XElement table, XElement[] samples,
+        int column, int columns, XDocument document)
+    {
+        var left = ReadBorder(table, samples[0], document);
+        var right = ReadBorder(table, samples[1], document);
+        var border = new XElement(left);
+        border.Attribute("Id")!.Remove();
+        foreach (var (name, owner) in new[]
+        {
+            ("LEFTBORDER", column == 0 ? left : right),
+            ("RIGHTBORDER", column == columns - 1 ? right : left)
+        })
+        {
+            var edge = owner.Element(name) ?? throw new InvalidDataException($"Table sample requires {name}.");
+            var existing = border.Element(name) ?? throw new InvalidDataException($"Table sample requires {name}.");
+            existing.ReplaceWith(new XElement(edge));
+        }
+        cell.SetAttributeValue("BorderFill", InternBorder(border, left.Parent!));
+    }
+
+    private static string InternBorder(XElement border, XElement definitions)
+    {
+        border.Attribute("Id")?.Remove();
+        var match = definitions.Elements("BORDERFILL").FirstOrDefault(candidate =>
+        {
+            var key = new XElement(candidate); key.Attribute("Id")!.Remove();
+            return XNode.DeepEquals(key, border);
+        });
+        if (match is null)
+        {
+            border.SetAttributeValue("Id", definitions.Elements("BORDERFILL").Max(value => (int)value.Attribute("Id")!) + 1);
+            definitions.Add(border); definitions.SetAttributeValue("Count", definitions.Elements().Count());
+            match = border;
+        }
+        return (string)match.Attribute("Id")!;
     }
 
     private static int Count(string value, string token) => Regex.Matches(value, Regex.Escape(token), RegexOptions.CultureInvariant).Count;

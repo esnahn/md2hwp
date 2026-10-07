@@ -96,10 +96,10 @@ internal static class TableWidthTests
 
     private static XElement Prototype() => new("TABLE",
         new XElement("INSIDEMARGIN", new XAttribute("Left", 0), new XAttribute("Right", 0)),
-        Enumerable.Range(0, 3).Select(_ => new XElement("ROW", new XElement("CELL", new XAttribute("HasMargin", "true"),
+        Enumerable.Range(0, 3).Select(row => new XElement("ROW", Enumerable.Range(0, row == 2 ? 1 : 2).Select(_ => new XElement("CELL", new XAttribute("HasMargin", "true"),
             new XElement("CELLMARGIN", new XAttribute("Left", 100), new XAttribute("Right", 100)),
             new XElement("PARALIST", new XElement("P", new XAttribute("ParaShape", "0"),
-                new XElement("TEXT", new XAttribute("CharShape", "0"), new XElement("CHAR", "slot"))))))));
+                new XElement("TEXT", new XAttribute("CharShape", "0"), new XElement("CHAR", "slot")))))))));
 
     private static void Check(bool condition, string message)
     {

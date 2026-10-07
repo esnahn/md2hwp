@@ -111,7 +111,7 @@ internal static class TableContractTests
         Check(reflow.Descendants("CELL").All(cell => (string?)cell.Attribute("Height") == "1") && widthAttribute.Value == "9999",
             "Table reflow normalization altered widths or failed to normalize generated heights.");
 
-        foreach (var invalid in new[] { "missing", "duplicate", "rows", "columns", "merged", "source-border", "caption", "native", "outside", "width", "orphan", "list-control", "caption-list-control", "shadow", "threed", "malformed" })
+        foreach (var invalid in new[] { "missing", "duplicate", "rows", "columns", "merged", "source-span", "old-prototype", "right-slot", "right-border", "address", "source-border", "caption", "native", "outside", "width", "orphan", "list-control", "caption-list-control", "shadow", "threed", "malformed" })
         {
             var fixture = Fixture();
             var section = fixture.Descendants("SECTION").Single();
@@ -121,15 +121,22 @@ internal static class TableContractTests
                 case "missing": section.Elements("P").First(p => TaggedTemplateBinding.DirectText(p) == Tag("begin:table")).Remove(); break;
                 case "duplicate": section.Add(Paragraph(Tag("begin:table"))); break;
                 case "rows": sample.Elements("ROW").Last().Remove(); break;
-                case "columns": sample.SetAttributeValue("ColCount", 2); break;
+                case "columns": sample.SetAttributeValue("ColCount", 1); break;
                 case "merged": sample.Descendants("CELL").First().SetAttributeValue("ColSpan", 2); break;
+                case "source-span": sample.Descendants("CELL").Last().SetAttributeValue("ColSpan", 1); break;
+                case "old-prototype":
+                    foreach (var row in sample.Elements("ROW").Take(2)) row.Elements("CELL").Last().Remove();
+                    sample.SetAttributeValue("ColCount", 1); sample.Descendants("CELL").Last().SetAttributeValue("ColSpan", 1); break;
+                case "right-slot": sample.Elements("ROW").First().Elements("CELL").Last().Descendants("CHAR").Single().Value = "wrong"; break;
+                case "right-border": sample.Elements("ROW").First().Elements("CELL").Last().SetAttributeValue("BorderFill", 999); break;
+                case "address": sample.Elements("ROW").First().Elements("CELL").Last().SetAttributeValue("ColAddr", 0); break;
                 case "source-border": sample.Descendants("CELL").Last().SetAttributeValue("BorderFill", 1); break;
                 case "caption": sample.Descendants("CAPTION").Single().Remove(); break;
-                case "native": sample.Elements("ROW").First().Descendants("TEXT").Single().Add(new XElement("FOOTNOTE")); break;
+                case "native": sample.Elements("ROW").First().Descendants("TEXT").First().Add(new XElement("FOOTNOTE")); break;
                 case "outside": section.Elements("P").First(p => TaggedTemplateBinding.DirectText(p) == Tag("end:template")).Remove(); break;
                 case "width": section.Elements("P").First(p => TaggedTemplateBinding.DirectText(p).Contains("table.width-mm", StringComparison.Ordinal)).Element("TEXT")!.Element("CHAR")!.Value = Tag("table.width-mm:0"); break;
                 case "orphan": section.Add(Paragraph(TemplateTables.CaptionSlot)); break;
-                case "list-control": sample.Elements("ROW").First().Descendants("PARALIST").Single().Add(new XElement("SECDEF")); break;
+                case "list-control": sample.Elements("ROW").First().Descendants("PARALIST").First().Add(new XElement("SECDEF")); break;
                 case "caption-list-control": sample.Descendants("CAPTION").Single().Element("PARALIST")!.Add(new XElement("COLDEF")); break;
                 case "shadow": fixture.Descendants("BORDERFILL").Single(border => (string?)border.Attribute("Id") == "2").SetAttributeValue("Shadow", "true"); break;
                 case "threed": fixture.Descendants("BORDERFILL").Single(border => (string?)border.Attribute("Id") == "2").SetAttributeValue("ThreeD", "true"); break;
@@ -155,7 +162,94 @@ internal static class TableContractTests
         Check(sectionCounter.Descendants("AUTONUM").Select(number => (int)number.Attribute("Number")!).SequenceEqual(new[] { 5, 2 }),
             "Zero section start should continue the table counter.");
         TestHeaderPagination(tableOperation);
+        TestVerticalBorders();
+        TestSharedSourceBorder();
         Console.WriteLine("Table IR, sample rows, source omission, rich cells, native captions, geometry and local header pagination contracts passed.");
+    }
+
+    private static void TestSharedSourceBorder()
+    {
+        var fixture = Fixture();
+        var bodyBorder = fixture.Descendants("BORDERFILL").Single(b => (string?)b.Attribute("Id") == "1");
+        bodyBorder.Add(new XElement("BOTTOMBORDER", new XAttribute("Type", "Solid"), new XAttribute("Width", "0.12mm"), new XAttribute("Color", "255")));
+        var sourceBorder = fixture.Descendants("BORDERFILL").Single(b => (string?)b.Attribute("Id") == "2");
+        sourceBorder.Add(new XElement("TOPBORDER", bodyBorder.Element("BOTTOMBORDER")!.Attributes()));
+        var original = fixture.ToString();
+        var layout = TemplateTables.Lower(fixture).Layout;
+        var cells = new[] { Inline("[]"), Inline("[]") };
+        var content = new PreviewTable(["default", "default"], cells, [cells], Source: Inline("[{\"type\":\"text\",\"value\":\"자료\"}]"));
+        var operation = new PreviewOperation("table", "table", ["MARKER"], ParagraphStyle: "body", Table: content);
+        var plan = new IrPreviewPlan("fixture", "fixture", new(1, 0, 0, 0, 0, 1), [operation], []);
+        var attached = layout.Attach(Destination(Paragraph("MARKER")), plan, 0, (_, _, _) => [7200, 7200]);
+        XElement Border(XDocument doc, XElement cell) => doc.Descendants("BORDERFILL").Single(b =>
+            (string?)b.Attribute("Id") == (string?)cell.Attribute("BorderFill"));
+        var table = attached.Descendants("TABLE").Single();
+        Check(XNode.DeepEquals(Border(attached, table.Elements("ROW").Last().Elements("CELL").Single()).Element("TOPBORDER"), sourceBorder.Element("TOPBORDER")),
+            "The shared source boundary was removed or changed.");
+        Check(fixture.ToString() == original, "Shared source border attachment changed its source template.");
+        foreach (var attribute in new[] { "Width", "Color", "Type" })
+        {
+            var mismatch = new XDocument(fixture);
+            mismatch.Descendants("BORDERFILL").Single(b => (string?)b.Attribute("Id") == "2").Element("TOPBORDER")!
+                .SetAttributeValue(attribute, attribute == "Type" ? "DoubleSlim" : "999");
+            Reject(() => TemplateTables.Lower(mismatch));
+        }
+        var headerBorder = new XElement(bodyBorder); headerBorder.SetAttributeValue("Id", 3);
+        headerBorder.Element("BOTTOMBORDER")!.SetAttributeValue("Width", "0.4mm");
+        bodyBorder.Parent!.Add(headerBorder); bodyBorder.Parent.SetAttributeValue("Count", 3);
+        foreach (var cell in fixture.Descendants("TABLE").Single().Elements("ROW").First().Elements("CELL"))
+            cell.SetAttributeValue("BorderFill", 3);
+        var headerLayout = TemplateTables.Lower(fixture).Layout;
+        var headerOnly = operation with { Table = content with { Rows = [] } };
+        var headerOutput = headerLayout.Attach(Destination(Paragraph("MARKER")), plan with { Operations = [headerOnly] }, 0, (_, _, _) => [7200, 7200]);
+        var sourceCell = headerOutput.Descendants("TABLE").Single().Elements("ROW").Last().Elements("CELL").Single();
+        Check((string?)Border(headerOutput, sourceCell).Element("TOPBORDER")?.Attribute("Width") == "0.4mm",
+            "A header-only table kept the body's border instead of the actual preceding header boundary.");
+        var absent = operation with { Table = content with { Source = null } };
+        var absentOutput = layout.Attach(Destination(Paragraph("MARKER")), plan with { Operations = [absent] }, 0, (_, _, _) => [7200, 7200]);
+        var lastBody = absentOutput.Descendants("TABLE").Single().Elements("ROW").Last().Elements("CELL").First();
+        Check((string?)Border(absentOutput, lastBody).Element("BOTTOMBORDER")?.Attribute("Width") == "0.12mm",
+            "Omitting the source also removed the body bottom border.");
+    }
+
+    private static void TestVerticalBorders()
+    {
+        var fixture = Fixture();
+        var left = fixture.Descendants("BORDERFILL").Single(border => (string?)border.Attribute("Id") == "1");
+        left.Element("LEFTBORDER")!.SetAttributeValue("Width", "0.7mm");
+        left.Element("RIGHTBORDER")!.SetAttributeValue("Width", "0.1mm");
+        left.Add(new XElement("TOPBORDER", new XAttribute("Type", "Solid"), new XAttribute("Width", "0.4mm")),
+            new XElement("BOTTOMBORDER", new XAttribute("Type", "Solid"), new XAttribute("Width", "0.5mm")));
+        var right = new XElement(left); right.SetAttributeValue("Id", 3);
+        right.Element("LEFTBORDER")!.SetAttributeValue("Width", "0.2mm");
+        right.Element("RIGHTBORDER")!.SetAttributeValue("Width", "0.8mm");
+        left.Parent!.Add(right); left.Parent.SetAttributeValue("Count", 3);
+        foreach (var row in fixture.Descendants("TABLE").Single().Elements("ROW").Take(2))
+            row.Elements("CELL").Last().SetAttributeValue("BorderFill", 3);
+        var original = fixture.ToString();
+        var layout = TemplateTables.Lower(fixture).Layout;
+        foreach (var columns in new[] { 1, 2, 4 })
+        {
+            var cells = Enumerable.Repeat(Inline("[{\"type\":\"text\",\"value\":\"cell\"}]"), columns).ToArray();
+            var content = new PreviewTable(Enumerable.Repeat("default", columns).ToArray(), cells, [cells]);
+            var operation = new PreviewOperation("table", "table", ["MARKER"], ParagraphStyle: "body", Table: content);
+            var plan = new IrPreviewPlan("fixture", "fixture", new(1, 0, 0, 0, 0, 1), [operation], []);
+            var attached = layout.Attach(Destination(Paragraph("MARKER")), plan, 0,
+                (_, _, _) => Enumerable.Repeat(14400 / columns, columns).ToArray());
+            foreach (var row in attached.Descendants("TABLE").Single().Elements("ROW"))
+            foreach (var (cell, column) in row.Elements("CELL").Select((cell, column) => (cell, column)))
+            {
+                var border = attached.Descendants("BORDERFILL").Single(value =>
+                    (string?)value.Attribute("Id") == (string?)cell.Attribute("BorderFill"));
+                Check((string?)border.Element("LEFTBORDER")?.Attribute("Width") == (column == 0 ? "0.7mm" : "0.2mm") &&
+                    (string?)border.Element("RIGHTBORDER")?.Attribute("Width") == (column == columns - 1 ? "0.8mm" : "0.1mm"),
+                    "Outer/internal vertical borders were lost in a one-, two- or many-column table.");
+                Check((string?)border.Element("TOPBORDER")?.Attribute("Width") == "0.4mm" &&
+                    (string?)border.Element("BOTTOMBORDER")?.Attribute("Width") == "0.5mm",
+                    "Composing vertical borders changed horizontal borders.");
+            }
+        }
+        Check(fixture.ToString() == original, "Vertical border composition mutated the source template.");
     }
 
     private static void TestHeaderPagination(PreviewOperation operation)
@@ -261,22 +355,22 @@ internal static class TableContractTests
             new XElement("PARASHAPELIST", new XAttribute("Count", 1), new XElement("PARASHAPE", new XAttribute("Id", 0), new XAttribute("Align", "Center"))),
             new XElement("CHARSHAPELIST", new XAttribute("Count", 1), new XElement("CHARSHAPE", new XAttribute("Id", 0), new XAttribute("Height", 1000))),
             new XElement("BORDERFILLLIST", new XAttribute("Count", 2),
-                new XElement("BORDERFILL", new XAttribute("Id", 1), new XElement("LEFTBORDER", new XAttribute("Type", "Solid"))),
+                new XElement("BORDERFILL", new XAttribute("Id", 1), new XElement("LEFTBORDER", new XAttribute("Type", "Solid")), new XElement("RIGHTBORDER", new XAttribute("Type", "Solid"))),
                 new XElement("BORDERFILL", new XAttribute("Id", 2), new XElement("LEFTBORDER", new XAttribute("Type", "None"))))),
         new XElement("BODY", new XElement("SECTION", roots))));
 
     private static XDocument Fixture()
     {
-        XElement Row(string slot, int index) => new("ROW", new XElement("CELL",
-            new XAttribute("ColAddr", 0), new XAttribute("RowAddr", index), new XAttribute("ColSpan", 1), new XAttribute("RowSpan", 1),
+        XElement Row(string slot, int index) => new("ROW", Enumerable.Range(0, index == 2 ? 1 : 2).Select(column => new XElement("CELL",
+            new XAttribute("ColAddr", column), new XAttribute("RowAddr", index), new XAttribute("ColSpan", index == 2 ? 2 : 1), new XAttribute("RowSpan", 1),
             new XAttribute("Width", 3000), new XAttribute("Height", 9000), new XAttribute("BorderFill", index == 2 ? 2 : 1),
             new XElement("CELLMARGIN", new XAttribute("Left", 100), new XAttribute("Right", 100)),
-            new XElement("PARALIST", Paragraph(index == 2 ? "출처: " + slot : slot))));
+            new XElement("PARALIST", Paragraph(index == 2 ? "출처: " + slot : slot)))));
         var caption = Paragraph("[표 -] " + TemplateTables.CaptionSlot);
         caption.Element("TEXT")!.AddFirst(new XElement("AUTONUM", new XAttribute("Number", 1), new XAttribute("NumberType", "Table"),
             new XElement("AUTONUMFORMAT", new XAttribute("Type", "Digit"))));
         var root = Paragraph("");
-        root.Element("TEXT")!.AddFirst(new XElement("TABLE", new XAttribute("RowCount", 3), new XAttribute("ColCount", 1), new XAttribute("RepeatHeader", "true"),
+        root.Element("TEXT")!.AddFirst(new XElement("TABLE", new XAttribute("RowCount", 3), new XAttribute("ColCount", 2), new XAttribute("RepeatHeader", "true"),
             new XElement("SHAPEOBJECT", new XAttribute("InstId", 100), new XAttribute("NumberingType", "Table"),
                 new XElement("SIZE", new XAttribute("Width", 3000), new XAttribute("Height", 27000)),
                 new XElement("CAPTION", new XAttribute("Side", "Top"), new XAttribute("Gap", 300), new XElement("PARALIST", caption))),

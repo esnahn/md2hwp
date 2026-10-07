@@ -19,8 +19,8 @@ internal static class TableAutoWidths
             throw new InvalidDataException("Table width and column count must be positive.");
         var prototype = tablePrototype.DescendantsAndSelf("TABLE").Single();
         var rows = prototype.Elements("ROW").ToArray();
-        if (rows.Length != 3 || rows.Any(row => row.Elements("CELL").Count() != 1))
-            throw new InvalidDataException("Table width calculation requires three one-cell prototype rows.");
+        if (rows.Length != 3 || rows.Take(2).Any(row => row.Elements("CELL").Count() != 2) || rows[2].Elements("CELL").Count() != 1)
+            throw new InvalidDataException("Table width calculation requires two header/content cells and one merged source sample.");
         var header = CellFormat.Read(rows[0].Element("CELL")!, prototype, document);
         var body = CellFormat.Read(rows[1].Element("CELL")!, prototype, document);
         using var measurement = new NativeFontMeasurement(new XDocument(document), references);
