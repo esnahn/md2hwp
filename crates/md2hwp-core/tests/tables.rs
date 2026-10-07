@@ -132,8 +132,8 @@ fn actual_commonmark_tables_have_caption_source_alignment_empty_cells_and_refere
 }
 
 #[test]
-fn pandoc_compatible_caption_prefixes_attach_above_or_below_without_losing_format() {
-    for prefix in ["Table:", "table:", ":"] {
+fn supported_caption_prefixes_attach_above_or_below_without_losing_format() {
+    for prefix in ["Table:", "table:", ":", "표:"] {
         for above in [true, false] {
             let table = simple_table();
             let blocks = if above {
@@ -165,7 +165,7 @@ fn pandoc_compatible_caption_prefixes_attach_above_or_below_without_losing_forma
             );
         }
     }
-    let ir = normalize(json!([caption("Table:")])).unwrap();
+    let ir = normalize(json!([caption("표:")])).unwrap();
     assert!(matches!(
         ir.as_document().blocks[0],
         Block::Paragraph { .. }
@@ -176,8 +176,8 @@ fn pandoc_compatible_caption_prefixes_attach_above_or_below_without_losing_forma
 fn caption_ownership_rejects_both_sides_ambiguity_and_native_duplicates() {
     let table = simple_table();
     for blocks in [
-        json!([caption("Table:"), table.clone(), caption(":")]),
-        json!([table.clone(), caption(":"), table.clone()]),
+        json!([caption("표:"), table.clone(), caption(":")]),
+        json!([table.clone(), caption("표:"), table.clone()]),
     ] {
         let error = normalize(blocks).unwrap_err();
         assert!(error.message.contains("captions both") || error.message.contains("ambiguous"));
@@ -193,7 +193,7 @@ fn caption_ownership_rejects_both_sides_ambiguity_and_native_duplicates() {
         }
     ));
     assert!(
-        normalize(json!([caption("Table:"), native]))
+        normalize(json!([caption("표:"), native]))
             .unwrap_err()
             .message
             .contains("native caption")
@@ -202,7 +202,7 @@ fn caption_ownership_rejects_both_sides_ambiguity_and_native_duplicates() {
 
 #[test]
 fn empty_or_unsupported_caption_and_source_content_is_not_silently_consumed() {
-    for prefix in ["Table:", "table:", ":", "출처:"] {
+    for prefix in ["Table:", "table:", ":", "표:", "출처:"] {
         let empty = json!({"t":"Para","c":[{"t":"Str","c":prefix}]});
         assert!(normalize(json!([simple_table(), empty])).is_err());
         let code = json!({"t":"Para","c":[{"t":"Str","c":prefix},{"t":"Space"},{"t":"Code","c":[["",[],[]],"x"]}]});
@@ -274,7 +274,7 @@ fn table_cells_accept_rich_text_breaks_and_notes_but_caption_and_source_reject_n
     let mut table = simple_table();
     table["c"][3][1][0][1][0][4] = json!([{"t":"Para","c":inlines}]);
     normalize(json!([table.clone()])).unwrap();
-    for prefix in ["Table:", "출처:"] {
+    for prefix in ["Table:", "표:", "출처:"] {
         let paragraph = json!({"t":"Para","c":[{"t":"Str","c":prefix},{"t":"Space"},note]});
         assert!(
             normalize(json!([table.clone(), paragraph]))
@@ -304,7 +304,7 @@ fn references_inside_table_headers_cells_and_notes_resolve_forward_to_actual_tar
             target: "figure".into()
         }]
     );
-    for field in ["Table:", "출처:"] {
+    for field in ["Table:", "표:", "출처:"] {
         let paragraph = json!({"t":"Para","c":[{"t":"Str","c":field},{"t":"Space"},link.clone()]});
         let error = normalize(json!([table.clone(), paragraph, image.clone()])).unwrap_err();
         assert!(error.message.contains("cross references are allowed only"));

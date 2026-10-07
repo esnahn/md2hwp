@@ -298,7 +298,7 @@ impl Normalizer<'_> {
             node.get("t").and_then(Value::as_str) == Some("Str")
                 && matches!(
                     node.get("c").and_then(Value::as_str),
-                    Some("Table:" | "table:" | ":")
+                    Some("Table:" | "table:" | ":" | "표:")
                 )
         }) {
             return Ok(None);
@@ -310,7 +310,7 @@ impl Normalizer<'_> {
                 Some("Space" | "SoftBreak")
             )
         {
-            return Err(self.invalid(path, "Para", "table caption requires 'Table: ', 'table: ' or ': ' followed by nonempty inline content"));
+            return Err(self.invalid(path, "Para", "table caption requires 'Table: ', 'table: ', ': ' or '표: ' followed by nonempty inline content"));
         }
         self.inline(&nodes[1], &format!("{path}/c/1"))?;
         Ok(Some(
