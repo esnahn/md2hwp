@@ -2,6 +2,8 @@
 
 Markdown 원고를 한글(HWP) 템플릿의 서식에 맞춰 변환합니다. Windows x64·한글이 필요하며, 현재 IR 버전은 0.3입니다. HWPX·RST 직접 입력은 지원하지 않습니다.
 
+배포 파일과 변경 사항은 [v0.3.0 릴리스](https://github.com/esnahn/md2hwp/releases/tag/v0.3.0)에서 확인할 수 있습니다.
+
 ## 시작하기
 
 한글, .NET 10 x64 런타임, 한글 보안 모듈을 준비하고 실행 중인 한글을 닫습니다. [설치 안내](docs/usage.md)를 참고하십시오. `md2hwp.exe`, `md2hwp-backend.exe`, `template.hwp`는 같은 폴더에 둡니다.

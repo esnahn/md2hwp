@@ -1,7 +1,7 @@
 # md2hwp v0.3.0 릴리스 노트
 
 프로그램·백엔드 버전은 **0.3.0**, IR 버전은 **0.3**입니다.
-Windows x64용 배포 파일과 게시용 내용을 로컬에서 준비했습니다. 태그·원격 게시·공식 릴리스 게시 전 상태입니다.
+Windows x64용 릴리스입니다. 배포 파일은 [GitHub Release](https://github.com/esnahn/md2hwp/releases/tag/v0.3.0)에서 제공합니다.
 
 ## 주요 변경 사항
 
@@ -73,15 +73,14 @@ HWPX·RST 직접 입력, 인라인 코드·인용 블록·HTML, 중첩 각주와
 이번 확인은 긴 표나 모든 원고의 배치 안전성을 보장하지 않습니다.
 이전 대규모 문서의 112쪽·성능 비교 기록은 해당 측정 당시 조건에 한정됩니다.
 
-## 로컬 배포 파일
+## 배포 파일
 
-`target/dist/`에 다음 파일을 준비했습니다.
+GitHub Release에 다음 파일을 제공합니다. 저장소에서 만든 배포 파일은 `target/dist/`에도 보관합니다.
 
 - `md2hwp-v0.3.0-windows-x64.zip`: 실행 파일 두 개와 추적 기본 `template.hwp`.
-- `md2hwp-v0.3.0-source.zip`: 최종 준비 커밋의 추적 소스·문서·예제.
-- `md2hwp-v0.3.0-release-notes.md`: 게시용 릴리스 본문.
+- `md2hwp-v0.3.0-source.zip`: v0.3.0 태그의 추적 소스·문서·예제.
+- `md2hwp-v0.3.0-release-notes.md`: 릴리스 본문.
 - `md2hwp-v0.3.0-SHA256SUMS.txt`: 배포 파일의 SHA-256.
 - `v0.3.0-build-manifest.json`: 소스 커밋, 빌드·검증 결과와 파일 해시.
 
 실행용 ZIP에는 SDK, Pandoc, 한글 보안 모듈, 개발용 lock 파일과 사용자 바로 가기를 포함하지 않습니다.
-원격 게시와 v0.3.0 태그 생성은 이번 준비에 포함하지 않습니다.
