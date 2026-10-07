@@ -18,7 +18,7 @@ IR 버전은 **0.3**입니다.
 
 ## 실행
 
-`md2hwp-v0.3.0-windows-x64.zip`을 풀고 `md2hwp.exe`, `md2hwp-backend.exe`, `template.hwp`를 같은 폴더에 두십시오.
+`md2hwp-v0.3.0-windows-x64.zip`을 풀고 `md2hwp.exe`, `md2hwp-backend.exe`, `template.hwp`를 같은 폴더에 두십시오. 동봉된 `README.md`에서 원고 문법과 상세 안내를 확인할 수 있습니다.
 
 ```powershell
 .\md2hwp.exe setup-pandoc

@@ -18,6 +18,12 @@ Use target/debug and target/release as the primary paths for current development
 builds and execution. target/dist is for versioned deployment archives; do not
 redirect ordinary builds there merely to preserve an older release.
 The JSON fixtures still tracked are included directly by Rust test compilation.
+Builds include a deployment README.md with usable versioned documentation links.
+Create release ZIPs with tools/development/build.ps1 -Configuration Release -Package;
+include both executables, the tracked default template and README.md. Preserve user
+Debug/Release templates. Attach only the executable ZIP to GitHub Releases; put its
+SHA-256 in the release body. Use GitHub's automatic source downloads and do not attach
+separate source ZIPs, release-note copies, checksum files or build manifests.
 
 ## Contracts
 

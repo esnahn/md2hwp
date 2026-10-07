@@ -10,17 +10,28 @@ pwsh -NoProfile -File tools/development/build.ps1
 cargo test --workspace
 ```
 
-Release 빌드 결과는 `target/release/`의 다음 세 파일입니다.
+Release 빌드 결과는 `target/release/`의 다음 네 파일입니다.
 `-Configuration Debug`를 주면 `target/debug/`에 모입니다.
 개발·실행에는 이 두 폴더를 기본으로 사용합니다. `target/dist/`는 버전별 배포 파일과 ZIP의 보관용입니다.
 
 - `md2hwp.exe`
 - `md2hwp-backend.exe`
 - `template.hwp`
+- `README.md`
 
 C# 단독 프로젝트는 `backends/hancom-automation/Md2Hwp.Backend.csproj`입니다.
 `templates/template.hwp`를 게시 폴더에 복사합니다. Rust 빌드 폴더의 `template.hwp`는 파일이 없을 때만 복사하며, 기존 사용자 템플릿은 덮어쓰지 않습니다.
-빌드 결과는 Git에서 제외합니다. 배포할 때 위 세 파일만 같은 폴더에 복사합니다.
+빌드 결과는 Git에서 제외합니다. 배포할 때 위 네 파일을 같은 폴더에 복사합니다. 동봉 README의 문서·예제 링크는 GitHub의 해당 버전으로 연결합니다.
+
+배포 ZIP을 만들려면 다음 명령을 사용합니다.
+
+```powershell
+pwsh -NoProfile -File tools/development/build.ps1 -Configuration Release -Package
+```
+
+`target/dist/md2hwp-v<버전>-windows-x64.zip`에 실행 파일 두 개, 추적 기본 템플릿과 README를 넣고 SHA-256을 출력합니다.
+패키지는 사용자 편집본 대신 `templates/template.hwp`를 사용합니다. 기존 배포 ZIP은 새 ZIP 생성에 성공한 뒤 교체합니다.
+GitHub Release에는 실행용 ZIP만 첨부하고, 체크섬은 본문 끝에 표시합니다. 소스는 GitHub 자동 다운로드를 사용하며 릴리스 노트·빌드 매니페스트는 별도 첨부하지 않습니다.
 
 추가 계약 검사:
 
