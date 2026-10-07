@@ -1,8 +1,8 @@
 # YAML 메타데이터와 템플릿 태그
 
-상태: IR 0.3 개발 구현. 공개 배포된 IR 0.2에서는 지원하지 않습니다.
+v0.3.0 / IR 0.3에서 지원합니다. 이전 IR 0.2는 원고에서 다시 생성해야 합니다.
 변수 입력 위치는 Markdown 원고 맨 앞의 YAML 블록으로 정했습니다.
-지원 키는 title·subtitle·author·date·publisher와 md2hwp로 시작하는 임의 키로 정했습니다.
+지원 키는 title·subtitle·author·date·publisher와 비어 있지 않은 최상위 `md2hwp-<이름>` 키입니다.
 템플릿 태그는 `{{md2hwp:meta:<키>}}`로 정했습니다. 아래 치환 규칙을 사용합니다.
 추가 후보와 자료형은 [Pandoc 메타데이터 변수 조사](pandoc-metadata-variables.md)에 정리했습니다.
 
@@ -89,7 +89,7 @@ Pandoc의 날짜 입력 형식 전체와 한국어·점·슬래시 구분자 형
 - 값은 태그 자리의 글자 서식과 문단·개체 구조를 따릅니다. 변수는 템플릿의 서식 설정을 덮어쓰지 않습니다.
 - 한 태그가 여러 글자 서식 구간에 나뉘어 있어도 같은 문단 안에서 읽습니다. 치환값은 태그 첫 글자의 서식을 따릅니다.
 - 변수 값은 일반 텍스트로 삽입합니다. 태그처럼 보이는 값도 다시 해석하지 않으며 자동 하이퍼링크를 만들지 않습니다.
-- 첫 범위에서는 한 문단 안의 텍스트와 저자 목록만 다룹니다. 값에 여러 문단이나 개체가 있으면 위치를 명시해 오류를 냅니다.
+- 한 줄 문자열과 저자 문자열 목록을 지원합니다. 값에 여러 문단이나 개체가 있으면 위치를 명시해 오류를 냅니다.
 - `author`의 반복 배치는 목록 연결과 별도의 확장입니다. 기존 `each.child`의 의미를 바꾸지 않습니다.
 - 템플릿이 참조한 문서 변수가 없거나 비어 있으면 변수 이름과 위치를 포함한 오류를 냅니다. 문단 전체를 자동 삭제하지 않습니다.
 - 템플릿이 참조하지 않은 문서 정보는 생략할 수 있습니다. 변수 태그 자체는 템플릿의 필수 스타일 선언으로 요구하지 않습니다.
@@ -113,7 +113,7 @@ IR에는 고정 문서 정보와 지원하는 임의 키의 값, 인식한 날�
 
 [원고 YAML 블록](https://pandoc.org/MANUAL.html#extension-yaml_metadata_block)은
 `commonmark+yaml_metadata_block`으로 읽을 수 있음을 로컬 Pandoc 3.10.1에서 확인했습니다.
-0.3 앱은 `commonmark+yaml_metadata_block+footnotes`를 사용합니다. 이전 IR 0.2는 메타데이터를 지원하지 않습니다.
+0.3 앱은 `commonmark+yaml_metadata_block+footnotes+attributes+implicit_figures+pipe_tables`를 사용합니다. 이전 IR 0.2는 메타데이터를 지원하지 않습니다.
 
 ## 버전 전환
 
@@ -134,7 +134,7 @@ md2hwp-heading1-start: 3
 Pandoc JSON에서 전달된 값을 Rust가 검증하여 IR metadata에 문자열로 보존합니다.
 `meta:md2hwp-heading1-start`는 시작 값 자체이며 현재 장 번호를 추적하지 않습니다.
 
-현재 장 번호는 헤딩 블록이나 그림 캡션 안의 인라인 태그
+현재 장 번호는 헤딩 블록이나 그림·표 캡션 안의 인라인 태그
 `{{md2hwp:num:heading1}}`로 표시합니다. 첫 태그 글자의 서식을 유지합니다.
 
 ```text

@@ -61,8 +61,27 @@ against the existing cumulative resource limits. Preserve native FOOTNOTE and
 AUTONUM controls, then verify them after save/reopen. Recapture generated
 note paths from their first-body-paragraph native identities after cross-reference
 run replacement; only generated OnPage counters may be normalized.
-Require a plain root paragraph {{md2hwp:footnote}} inside template definitions;
-its full paragraph/character formatting owns generated note body paragraphs.
+Require one {{md2hwp:footnote}} sample inside template definitions: either the
+existing plain root paragraph or one native footnote on a plain root anchor.
+The native sample has one body paragraph containing its Footnote AUTONUM before
+the tag, with only whitespace/native tabs around the tag; the tag cannot cross
+a tab or other control. Preserve native TAB controls and their attributes along
+with its control/list options,
+number format and number character formatting; the tag's first character and full
+paragraph formatting own the first generated body paragraph. An optional plain
+{{md2hwp:footnote.next}} sample, either a root paragraph inside definitions
+or the second paragraph of the same sample note, owns all subsequent paragraphs.
+Its single tag may have literal text, native TAB and AUTONUM affixes, preserving their
+formatting, positions and values on every continuation paragraph. Other controls and
+page breaks remain unsupported; slots cannot cross controls. Track and normalize only
+the first paragraph's Footnote AUTONUM, leaving continuation AUTONUMs intact.
+Without it retain the first paragraph formatting
+for compatibility. New default templates include this separately editable paragraph.
+Apply the number and sample
+whitespace/tabs only to the first generated paragraph. Reject duplicate/mixed samples,
+additional sample paragraphs and samples in cells, headers, footers, master pages,
+endnotes or nested notes. Flatten only the disposable native sample anchor in the
+working document; keep the source unchanged. init-template creates a native sample.
 The source document SECDEF owns native note numbering, separator and placement
 options. Preserve those options and document/section start numbers. Notes cannot be copied
 into headers, footers or master pages; fail explicitly for such heading slots.
@@ -84,7 +103,9 @@ raw [@...] strings or enable citations/citeproc/pandoc-crossref for this feature
 Validate source link labels and resource limits before replacing them with symbolic
 IR cross_reference {kind: heading_number|figure_number, target: id}.
 Require single-paragraph ref.figure.number and ref.heading.number prototypes even
-when unused. Import their inline formatting. In figure references num:heading1 is
+when unused. Their wording and slots define reference labels; ignore prototype character
+formatting and inherit the first source reference character's complete inline formatting,
+including body/note/cell context and emphasis. In figure references num:heading1 is
 the target figure's fixed chapter; the figure-number slot is a native Crossref.
 Heading references use a native outline Crossref and GetHeadingString, never a
 computed heading number. Missing or ambiguous outline targets are errors; repeated
@@ -114,18 +135,29 @@ Cells allow rich text, footnotes and current heading/figure references; caption 
 source reject footnotes/references. Include rows/cells and every inline/text in
 cumulative validation limits.
 
-CommonMark does not support table_captions. Attach standalone Table:/table:/: plus
+CommonMark does not support table_captions. Attach standalone Table:/table:/:/표: plus
 whitespace and nonempty content before or after an adjacent table, preserving rich
 inlines and stripping the prefix. Reject ambiguous ownership, captions on both sides
 and native-plus-adjacent duplicates. Attach the following 출처: paragraph, allowing
 an intervening below-table caption. Place captions above tables in sample manuscripts.
 Keep README.md and docs/tables.md accurate; these caption conventions are compatible
 with Pandoc Markdown table_captions, not an enabled CommonMark extension.
+The Korean 표: prefix is an md2hwp-specific extension of those conventions.
 
 Require table.width-mm before begin:table/end:table, containing one native table
-anchor with exactly three one-cell rows: slot:table.header, slot:table.content and
-slot:table.source. Header/content slots occupy their whole single paragraphs. The
-last cell must be transparent and is cloned as a merged source row only when source
+anchor with three rows and two columns: two slot:table.header cells, two
+slot:table.content cells and one slot:table.source cell spanning both columns.
+Header/content slots occupy their whole single paragraphs. Left samples own common
+formatting and horizontal borders; use both samples for outer and internal vertical
+borders. The left sample's left edge and right sample's right edge own the exterior;
+repeat their facing edges at interior boundaries. A one-column output combines both
+outer edges. Reject old one-column prototypes with explicit adoption/regeneration
+guidance without changing IR 0.3. The
+last cell has no side/bottom borders or background; its visible top border may
+exactly match the content sample's bottom border. Preserve that shared boundary;
+for header-only outputs align it to the header sample's bottom border. An absent
+source top border never removes the preceding row's bottom border. The cell is
+cloned as a merged source row only when source
 exists. Require a one-paragraph native CAPTION with slot:table.caption and one Table
 AUTONUM; num:heading1 is optional there. Omit the native caption when manuscript
 caption is absent. Preserve caption options and native Table numbering/restart controls;
