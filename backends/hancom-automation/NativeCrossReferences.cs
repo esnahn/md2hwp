@@ -62,7 +62,10 @@ internal sealed class NativeCrossReferences
                     throw new InvalidOperationException($"Missing generated native heading identity for {reference.Target}.");
                 var candidates = result.Descendants("P").Where(p => instances.Contains(Identity(p) ?? "") && IsOutline(p, result)).ToArray();
                 if (candidates.Length != 1)
-                    throw new InvalidOperationException($"Heading target {reference.Target} requires exactly one native outline paragraph; found {candidates.Length}. Configure the template heading with native outline numbering.");
+                {
+                    var role = plan.Operations.Single(o => o.HeadingId == reference.Target).ParagraphStyle;
+                    throw new InvalidOperationException($"Heading target {reference.Target} ({role}) requires exactly one native outline paragraph; found {candidates.Length}. All heading1 through heading6 support references, but their target template paragraphs must use native Outline numbering with a nonempty display format; Bullet and Number paragraphs are not outline targets.");
+                }
                 target = candidates[0];
                 if (target.Ancestors().Any(a => a.Name.LocalName is "HEADER" or "FOOTER" or "MASTERPAGE"))
                     throw new InvalidOperationException($"Heading target {reference.Target} is outside the document body.");
@@ -92,9 +95,10 @@ internal sealed class NativeCrossReferences
                     throw new InvalidOperationException("Cross references cannot be copied into headers, footers or master pages.");
                 var target = targets[reference.Target];
                 var marker = "MD2HWP_NATIVE_NUMBER_REFERENCE_" + Guid.NewGuid().ToString("N");
+                var context = atoms[match.Index].Element.Parent!;
                 var fragments = reference.Kind == "figure_number"
-                    ? template.CreateFigureNumberFragments(result, figures[reference.Target].Heading1Number, marker)
-                    : template.CreateHeadingNumberFragments(result, marker);
+                    ? template.CreateFigureNumberFragments(result, figures[reference.Target].Heading1Number, marker, context)
+                    : template.CreateHeadingNumberFragments(result, marker, context);
                 Replace(paragraph, atoms.Skip(match.Index).Take(match.Length).ToArray(), fragments);
                 Coalesce(paragraph);
                 var location = FindMarker(paragraph, marker);
@@ -243,7 +247,7 @@ internal sealed class NativeCrossReferences
                 throw new InvalidOperationException("Native reference display does not match its target number.");
             foreach (var fragment in field.Fragments)
                 if (!XNode.DeepEquals(reference.Format, Format(fragment, document)))
-                    throw new InvalidOperationException("Native reference number lost its template character formatting.");
+                    throw new InvalidOperationException("Native reference number lost its source inline character formatting.");
         }
         if (document.Descendants("P").Any(p => sourceMarkers.Any(m => TaggedTemplateBinding.DirectText(p).Contains(m, StringComparison.Ordinal)) || references.Any(r => TaggedTemplateBinding.DirectText(p).Contains(r.Marker, StringComparison.Ordinal)) ||
             headingAnchors.Any(a => TaggedTemplateBinding.DirectText(p).Contains(a.Marker, StringComparison.Ordinal))))

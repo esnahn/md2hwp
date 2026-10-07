@@ -26,6 +26,11 @@ internal static class NativeCrossReferenceTests
         var prepared = NativeCrossReferences.Prepare(fixture, Plan(), template, Figures(), Headings());
         Check(fixture.ToString() == original, "Reference preparation mutated source HWPML.");
         Check(prepared.Layout.Count == 5, "Duplicate references or nested note references disappeared.");
+        var referenceRuns = Roots(prepared.Document)[1].Elements("TEXT").Where(t => Number.Matches(t.Value).Cast<Match>().Any(m => m.Value != LiteralNumber)).ToArray();
+        Check(referenceRuns.Any(t => (string?)t.Attribute("CharShape") == "0") && referenceRuns.Any(t => (string?)t.Attribute("CharShape") == "2") &&
+            referenceRuns.All(t => (string?)t.Attribute("CharShape") != "1"), "References did not inherit their first source inline format, including emphasis.");
+        Check(prepared.Document.Descendants("FOOTNOTE").Descendants("TEXT").Where(t => Number.IsMatch(t.Value)).All(t => (string?)t.Attribute("CharShape") == "0"),
+            "Footnote references inherited the reference prototype instead of the note body format.");
         Check(XNode.DeepEquals(staticRoot, Roots(prepared.Document)[0]), "Unrelated mixed static control payload changed.");
         Check(XNode.DeepEquals(verbatimRoot, Roots(prepared.Document)[2]), "Marker-like literal in generated verbatim content changed.");
         Check(Roots(prepared.Document)[3].Elements("TEXT").Count() == 1, "Temporary heading target anchor left an adjacent identical formatting run.");
@@ -60,7 +65,7 @@ internal static class NativeCrossReferenceTests
         Tamper(d => FirstField(d).SetAttributeValue("Command", ((string)FirstField(d).Attribute("Command")!).Replace(";1;1;0;0;", ";1;0;0;0;", StringComparison.Ordinal)));
         Tamper(d => FirstField(d).SetAttributeValue("Command", (string)FirstField(d).Attribute("Command")! + ";"));
         Tamper(d => FirstField(d).ElementsAfterSelf("CHAR").First().Value = "99");
-        Tamper(d => FirstField(d).Parent!.SetAttributeValue("CharShape", "0"));
+        Tamper(d => FirstField(d).Parent!.SetAttributeValue("CharShape", "1"));
         Tamper(d => d.Descendants("PICTURE").Single(p => (string?)p.Element("SHAPEOBJECT")?.Attribute("InstId") == "501").Element("SHAPEOBJECT")!.SetAttributeValue("NumberingType", "None"));
         Tamper(d => d.Descendants("AUTONUM").Single(e => (string?)e.Attribute("NumberType") == "Figure").SetAttributeValue("Number", "3"));
         Tamper(d => FirstField(d).ElementsAfterSelf("FIELDEND").First().Remove());
@@ -89,6 +94,20 @@ internal static class NativeCrossReferenceTests
         var acceptedCopy = NativeCrossReferences.Prepare(validCopy, Plan(), template, Figures(), new Dictionary<string, IReadOnlyList<string>> { ["fig:heading"] = new[] { "110", "112" } });
         Check(acceptedCopy.Layout.Count == 5, "An ordinary decorative title copy was mistaken for an outline target.");
         SelectionContracts(Check, Reject);
+        for (var level = 1; level <= 6; level++)
+        {
+            var levelFixture = Fixture();
+            levelFixture.Descendants("PARASHAPE").Single(p => (string?)p.Attribute("Id") == "1").SetAttributeValue("Level", level - 1);
+            var levelPlan = Plan();
+            levelPlan = levelPlan with { Operations = levelPlan.Operations.Select(o => o.HeadingId is null ? o : o with { ParagraphStyle = $"heading{level}" }).ToArray() };
+            var levelTemplate = new TemplateCrossReferences(levelFixture, sample, headingSample);
+            var levelPrepared = NativeCrossReferences.Prepare(levelFixture, levelPlan, levelTemplate, Figures(), Headings());
+            levelPrepared.Layout.RecordHeadingNumber("fig:heading", "IV.(가)");
+            var levelNative = NativeFields(levelPrepared.Document);
+            levelPrepared.Layout.Verify(levelNative);
+            Check(levelNative.Descendants("FIELDBEGIN").Any(e => (string?)e.Attribute("Command") == NativeCrossReferences.Command("510", "heading_number") + ";"),
+                $"heading{level} did not retain its native outline reference target.");
+        }
         Console.WriteLine("Native figure/outline target graph, mixed controls, nested notes and exact selection contracts passed.");
     }
 
@@ -182,7 +201,7 @@ internal static class NativeCrossReferenceTests
                 foreach (Match match in matches)
                 {
                     if (match.Index > offset) nodes.Add(new("CHAR", text[offset..match.Index]));
-                    var heading = (string?)character.Parent!.Attribute("CharShape") == "1";
+                    var heading = match.Index > 0 && text[match.Index - 1] == '(';
                     nodes.Add(new("FIELDBEGIN", new XAttribute("Type", "Crossref"), new XAttribute("InstId", ++fieldId), new XAttribute("FieldId", "628650598"), new XAttribute("Editable", "false"), new XAttribute("Dirty", "false"), new XAttribute("Property", "0"), new XAttribute("Command", NativeCrossReferences.Command(heading ? "510" : "501", heading ? "heading_number" : "figure_number") + ";")));
                     nodes.Add(new("CHAR", heading ? "IV.(가)" : "2"));
                     nodes.Add(new("FIELDEND", new XAttribute("Type", "Crossref"), new XAttribute("FieldId", "628650598"), new XAttribute("Editable", "false"), new XAttribute("Property", "0")));

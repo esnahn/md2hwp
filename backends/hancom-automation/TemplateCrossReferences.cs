@@ -4,7 +4,7 @@ using System.Xml.Linq;
 
 namespace Md2Hwp.HancomIrPreview;
 
-// Paragraph prototypes own only the inline display of native number references.
+// Paragraph prototypes own the wording and slots of native number references.
 // Native fields are inserted later by the adapter at the number slots.
 internal sealed class TemplateCrossReferences(XDocument source, XElement figureNumber, XElement? headingNumber = null)
 {
@@ -78,15 +78,15 @@ internal sealed class TemplateCrossReferences(XDocument source, XElement figureN
         return (new TemplateCrossReferences(new XDocument(source), prototypes[FigureNumberRole], prototypes[HeadingNumberRole]), document);
     }
 
-    internal XElement[] CreateFigureNumberFragments(XDocument destination, int? targetHeading1Number, string nativeControlMarker) =>
-        CreateFragments(destination, figureNumber, FigureNumberSlot, nativeControlMarker, targetHeading1Number, true);
+    internal XElement[] CreateFigureNumberFragments(XDocument destination, int? targetHeading1Number, string nativeControlMarker, XElement? context = null) =>
+        CreateFragments(destination, figureNumber, FigureNumberSlot, nativeControlMarker, targetHeading1Number, true, context);
 
-    internal XElement[] CreateHeadingNumberFragments(XDocument destination, string nativeControlMarker) =>
+    internal XElement[] CreateHeadingNumberFragments(XDocument destination, string nativeControlMarker, XElement? context = null) =>
         CreateFragments(destination, headingNumber ?? throw new InvalidDataException("Missing required ref.heading.number prototype. Regenerate the template with init-template."),
-            HeadingNumberSlot, nativeControlMarker, null, false);
+            HeadingNumberSlot, nativeControlMarker, null, false, context);
 
     private XElement[] CreateFragments(XDocument destination, XElement sample, string slot, string nativeControlMarker,
-        int? targetHeading1Number, bool allowChapterNumber)
+        int? targetHeading1Number, bool allowChapterNumber, XElement? context)
     {
         if (string.IsNullOrWhiteSpace(nativeControlMarker) || nativeControlMarker.Any(char.IsControl) ||
             nativeControlMarker.Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal))
@@ -96,7 +96,11 @@ internal sealed class TemplateCrossReferences(XDocument source, XElement figureN
             throw new InvalidDataException("The native reference control marker must be unique.");
         if (!allowChapterNumber && TemplateHeadingNumbers.ContainsNumberSlot(sample))
             throw new InvalidDataException("ref.heading.number uses a native outline-number field; num:heading1 is not supported in its sample.");
-        var imported = TemplateHeadingBlocks.ImportParagraph(sample, source, destination);
+        // The sample owns wording and slots; the source inline owns formatting.
+        // Do not import sample style definitions when rendering a contextual reference.
+        var imported = context is null ? TemplateHeadingBlocks.ImportParagraph(sample, source, destination) : new XElement(sample);
+        if (context is not null)
+            foreach (var text in imported.Elements("TEXT")) text.ReplaceAttributes(context.Attributes());
         XElement[] filled = allowChapterNumber ? TemplateHeadingNumbers.Fill([imported], targetHeading1Number) : [imported];
         var instance = new XDocument(new XElement("ROOT", filled));
         if (allowChapterNumber)

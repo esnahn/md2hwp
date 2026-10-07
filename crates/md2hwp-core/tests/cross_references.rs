@@ -38,6 +38,31 @@ fn heading(id: &str) -> Value {
 fn link(target: &str) -> Value {
     json!({"t":"Link","c":[["",[],[]],[{"t":"Str","c":"label"}],[target,""]]})
 }
+
+#[test]
+fn heading_number_references_resolve_all_six_levels_and_roundtrip() {
+    let targets: Vec<_> = (1..=6).map(|level| format!("수준-{level}")).collect();
+    let links: Vec<_> = targets.iter().map(|id| link(&format!("#{id}"))).collect();
+    let mut blocks = vec![json!({"t":"Para","c":links})];
+    for (level, id) in (1..=6).zip(&targets) {
+        blocks.push(json!({"t":"Header","c":[level,[id,[],[]],[{"t":"Str","c":"heading"}]]}));
+    }
+    let actual = normalize(Value::Array(blocks)).unwrap();
+    let Block::Paragraph { inlines } = &actual.as_document().blocks[0] else {
+        panic!("expected reference paragraph")
+    };
+    assert_eq!(
+        inlines,
+        &targets
+            .iter()
+            .map(|id| reference(CrossReferenceKind::HeadingNumber, id))
+            .collect::<Vec<_>>()
+    );
+    assert_eq!(
+        read_ir(&write_ir(&actual).unwrap(), &ValidationLimits::default()).unwrap(),
+        actual
+    );
+}
 fn reference(kind: CrossReferenceKind, target: &str) -> Inline {
     Inline::CrossReference {
         kind,

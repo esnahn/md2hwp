@@ -15,6 +15,7 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
     public static TaggedTemplateBinding Read(XDocument document, string templatePath)
     {
         var prepared = TemplateHeadingNumbers.Prepare(PreserveBeginSectionSettings(document));
+        prepared = NativeFootnotes.Bind(prepared).LowerSample(prepared);
         var references = TemplateCrossReferences.Lower(prepared);
         var tables = TemplateTables.Lower(references.Document);
         var headings = TemplateHeadingBlocks.Lower(tables.Document);

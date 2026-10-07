@@ -6,7 +6,7 @@ namespace Md2Hwp.HancomIrPreview;
 
 // Insert native controls only after the ordinary content and heading clones have
 // passed their checks. Each rendered reference receives its own native note.
-internal sealed class NativeFootnotes(XDocument source, XElement sample)
+internal sealed class NativeFootnotes(XDocument source, XElement sample, XElement? nativeSample = null, XElement? continuationSample = null)
 {
     private static readonly Regex ReferenceMarker = new("MD2HWP_FOOTNOTE_[0-9a-f]{32}", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
     private readonly HashSet<string> generatedNumbers = [];
@@ -15,19 +15,156 @@ internal sealed class NativeFootnotes(XDocument source, XElement sample)
     internal static NativeFootnotes Bind(XDocument document)
     {
         var roots = AuriMinimalBoxPrototype.RootParagraphs(document).ToArray();
-        var matches = roots.Where(p => TaggedTemplateBinding.DirectText(p) == TaggedTemplateBinding.Tag("footnote")).ToArray();
+        var tag = TaggedTemplateBinding.Tag("footnote");
+        var matches = document.Descendants("P").Where(p => TaggedTemplateBinding.DirectText(p).Trim() == tag).ToArray();
         if (matches.Length != 1)
-            throw new InvalidDataException("Expected one root declaration footnote. Add {{md2hwp:footnote}} inside the template definitions or regenerate with init-template.");
+            throw new InvalidDataException("Expected one footnote sample. Put {{md2hwp:footnote}} in a native footnote inside template definitions, or use a plain root sample paragraph. Regenerate with init-template if needed.");
         var paragraph = matches[0];
         var begin = Array.FindIndex(roots, p => TaggedTemplateBinding.DirectText(p) == TaggedTemplateBinding.Tag("begin:template"));
         var end = Array.FindIndex(roots, p => TaggedTemplateBinding.DirectText(p) == TaggedTemplateBinding.Tag("end:template"));
-        var index = Array.IndexOf(roots, paragraph);
-        if (index <= begin || index >= end || paragraph.Elements().Any(t => t.Name.LocalName != "TEXT") ||
+        var native = paragraph.Parent?.Parent;
+        if (native?.Name.LocalName != "FOOTNOTE") native = null;
+        var anchor = native is null ? paragraph : paragraph.Ancestors("P").Last();
+        var index = Array.IndexOf(roots, anchor);
+        if (begin < 0 || end <= begin || index <= begin || index >= end || paragraph.Elements().Any(t => t.Name.LocalName != "TEXT") ||
             !paragraph.Elements().Any() || paragraph.Elements().Any(t => !t.HasElements ||
-                t.Elements().Any(c => c.Name.LocalName != "CHAR" || c.HasElements)) ||
+                t.Elements().Any(c => c.Name.LocalName != "CHAR" && !(native is not null && c.Name.LocalName == "AUTONUM") ||
+                    c.Name.LocalName == "CHAR" && c.HasElements &&
+                        (native is null || c.Elements().Any(e => e.Name.LocalName != "TAB" || e.HasElements)))) ||
             (string?)paragraph.Attribute("PageBreak") == "true" || (string?)paragraph.Attribute("ColumnBreak") == "true")
-            throw new InvalidDataException("footnote must be one plain root sample paragraph inside the template definitions, without controls or page breaks.");
-        return new(new XDocument(document), new XElement(paragraph));
+            throw new InvalidDataException("footnote must be a plain root paragraph or one native footnote body paragraph inside template definitions, without other controls or page breaks.");
+        if (native is not null)
+        {
+            var bodyText = string.Concat(paragraph.Elements("TEXT").Elements("CHAR").SelectMany(c => c.Nodes())
+                .Select(node => node is XText text ? text.Value : "\t"));
+            if (bodyText.Trim() != tag)
+                throw new InvalidDataException("Native footnote body slot must not cross a tab control; only whitespace and native tabs may surround the tag.");
+            if (paragraph.Ancestors().Any(e => e.Name.LocalName is "CELL" or "HEADER" or "FOOTER" or "MASTERPAGE" or "ENDNOTE") ||
+                paragraph.Ancestors("FOOTNOTE").Count() != 1 ||
+                native.Elements().Count() != 1 || native.Elements("PARALIST").Count() != 1 ||
+                native.Element("PARALIST")!.Elements().Any(e => e.Name.LocalName != "P") ||
+                native.Element("PARALIST")!.Elements("P").First() != paragraph ||
+                anchor.Elements().Any(e => e.Name.LocalName != "TEXT") ||
+                anchor.Elements("TEXT").SelectMany(t => t.Elements()).Any(e =>
+                    e != native && !(e.Name.LocalName == "CHAR" && !e.HasElements)) ||
+                TaggedTemplateBinding.DirectText(anchor).Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal) ||
+                (string?)anchor.Attribute("PageBreak") == "true" || (string?)anchor.Attribute("ColumnBreak") == "true")
+                throw new InvalidDataException("Native footnote sample requires one plain root anchor, a first body paragraph and at most one footnote.next sample; tables, headers and nested notes are unsupported.");
+            var numbers = paragraph.Descendants("AUTONUM").ToArray();
+            if (numbers.Length != 1 || (string?)numbers[0].Attribute("NumberType") != "Footnote" ||
+                numbers[0].Elements().Count() != 1 || numbers[0].Element("AUTONUMFORMAT") is not { HasElements: false } ||
+                numbers[0].ElementsBeforeSelf().Any(e => e.Name.LocalName == "CHAR" && e.Value.Trim().Length > 0) ||
+                numbers[0].Parent!.ElementsBeforeSelf().Any(t => TaggedTemplateBinding.DirectText(new XElement("P", t)).Trim().Length > 0))
+                throw new InvalidDataException("Native footnote sample requires one native Footnote AUTONUM before the body slot.");
+        }
+        else if (TaggedTemplateBinding.DirectText(paragraph) != tag)
+            throw new InvalidDataException("Plain root footnote sample must contain only {{md2hwp:footnote}}.");
+        var continuationTag = TaggedTemplateBinding.Tag("footnote.next");
+        var continuations = document.Descendants("P").Where(p => TaggedTemplateBinding.DirectText(p).Contains(continuationTag, StringComparison.Ordinal)).ToArray();
+        if (continuations.Length > 1) throw new InvalidDataException("Expected at most one footnote.next sample.");
+        var continuation = continuations.SingleOrDefault();
+        if (continuation is not null)
+        {
+            var rootIndex = Array.IndexOf(roots, continuation);
+            var insideNative = native is not null && continuation.Parent == paragraph.Parent &&
+                paragraph.ElementsAfterSelf("P").SequenceEqual(new[] { continuation });
+            if (!(rootIndex > begin && rootIndex < end || insideNative) ||
+                continuation.Elements().Any(e => e.Name.LocalName != "TEXT") ||
+                continuation.Elements("TEXT").Any(t => !t.HasElements || t.Elements().Any(e =>
+                    e.Name.LocalName is not ("CHAR" or "AUTONUM") ||
+                    e.Name.LocalName == "CHAR" && e.Elements().Any(c => c.Name.LocalName != "TAB" || c.HasElements) ||
+                    e.Name.LocalName == "AUTONUM" && (e.Elements().Count() != 1 || e.Element("AUTONUMFORMAT") is not { HasElements: false }))) ||
+                (string?)continuation.Attribute("PageBreak") == "true" || (string?)continuation.Attribute("ColumnBreak") == "true")
+                throw new InvalidDataException("footnote.next must be a root sample inside template definitions or the second paragraph of the same native footnote. Text, tabs and AUTONUM may surround the slot; other controls and page breaks are unsupported.");
+            var slot = new Regex(Regex.Escape(continuationTag), RegexOptions.CultureInvariant);
+            if (slot.Matches(TaggedTemplateBinding.DirectText(continuation)).Count != 1 ||
+                slot.Replace(TaggedTemplateBinding.DirectText(continuation), "").Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal))
+                throw new InvalidDataException("footnote.next requires exactly one slot and no other template tags.");
+            _ = SampleAffixes(continuation, "footnote.next");
+        }
+        if (native is not null && native.Element("PARALIST")!.Elements("P").Any(p => p != paragraph && p != continuation))
+            throw new InvalidDataException("Additional native footnote sample paragraphs must consist of one {{md2hwp:footnote.next}} paragraph.");
+        return new(new XDocument(document), new XElement(paragraph), native is null ? null : new XElement(native),
+            continuation is null ? null : new XElement(continuation));
+    }
+
+    // Flatten only the disposable sample anchor for the ordinary style binder.
+    // The complete native note stays captured above for final insertion.
+    internal XDocument LowerSample(XDocument document)
+    {
+        var result = new XDocument(document);
+        result.Descendants("P").Where(p => TaggedTemplateBinding.DirectText(p).Contains(TaggedTemplateBinding.Tag("footnote.next"), StringComparison.Ordinal)).Remove();
+        if (nativeSample is null) return result;
+        var paragraph = result.Descendants("P").Single(p =>
+            TaggedTemplateBinding.DirectText(p).Trim() == TaggedTemplateBinding.Tag("footnote"));
+        var declaration = new XElement(paragraph);
+        var shape = BodyRun(declaration).Attribute("CharShape")!.Value;
+        declaration.ReplaceNodes(new XElement("TEXT", new XAttribute("CharShape", shape),
+            new XElement("CHAR", TaggedTemplateBinding.Tag("footnote"))));
+        paragraph.Ancestors("P").Last().ReplaceWith(declaration);
+        return result;
+    }
+
+    private static XElement BodyRun(XElement paragraph, string role = "footnote")
+    {
+        var offset = TaggedTemplateBinding.DirectText(paragraph).IndexOf(TaggedTemplateBinding.Tag(role), StringComparison.Ordinal);
+        if (offset < 0) throw new InvalidDataException("Footnote sample has no body slot.");
+        foreach (var run in paragraph.Elements("TEXT"))
+        foreach (var character in run.Elements("CHAR"))
+        {
+            if (offset < character.Value.Length) return run;
+            offset -= character.Value.Length;
+        }
+        throw new InvalidDataException("Footnote sample has no body slot character formatting.");
+    }
+
+    private static (XElement[] Prefix, XElement[] Suffix) SampleAffixes(XElement paragraph, string role = "footnote")
+    {
+        var tag = TaggedTemplateBinding.Tag(role);
+        var start = TaggedTemplateBinding.DirectText(paragraph).IndexOf(tag, StringComparison.Ordinal);
+        var end = start + tag.Length;
+        var position = 0;
+        var prefix = new List<XElement>();
+        var suffix = new List<XElement>();
+        foreach (var run in paragraph.Elements("TEXT"))
+        {
+            var before = new XElement(run.Name, run.Attributes());
+            var after = new XElement(run.Name, run.Attributes());
+            foreach (var element in run.Elements())
+            {
+                if (element.Name.LocalName == "AUTONUM")
+                {
+                    if (position <= start) before.Add(new XElement(element));
+                    else if (position >= end) after.Add(new XElement(element));
+                    else throw new InvalidDataException("Footnote slot cannot cross an automatic-number control.");
+                    continue;
+                }
+                var beforeChar = new XElement(element.Name, element.Attributes());
+                var afterChar = new XElement(element.Name, element.Attributes());
+                foreach (var node in element.Nodes())
+                {
+                    if (node is XText text)
+                    {
+                        var beforeLength = Math.Clamp(start - position, 0, text.Value.Length);
+                        var afterOffset = Math.Clamp(end - position, 0, text.Value.Length);
+                        if (beforeLength > 0) beforeChar.Add(new XText(text.Value[..beforeLength]));
+                        if (afterOffset < text.Value.Length) afterChar.Add(new XText(text.Value[afterOffset..]));
+                        position += text.Value.Length;
+                    }
+                    else if (node is XElement tab)
+                    {
+                        if (position <= start) beforeChar.Add(new XElement(tab));
+                        else if (position >= end) afterChar.Add(new XElement(tab));
+                        else throw new InvalidDataException("Native footnote body slot cannot cross a tab control.");
+                    }
+                }
+                if (beforeChar.Nodes().Any()) before.Add(beforeChar);
+                if (afterChar.Nodes().Any()) after.Add(afterChar);
+            }
+            if (before.HasElements) prefix.Add(before);
+            if (after.HasElements) suffix.Add(after);
+        }
+        return (prefix.ToArray(), suffix.ToArray());
     }
 
     internal XDocument Attach(XDocument rendered, IrPreviewPlan plan)
@@ -126,6 +263,8 @@ internal sealed class NativeFootnotes(XDocument source, XElement sample)
                 next = (int)element.Attribute("Number")!;
             else if (element.Name.LocalName == "AUTONUM" && (string?)element.Attribute("NumberType") == "Footnote")
             {
+                var note = element.Ancestors("FOOTNOTE").FirstOrDefault();
+                if (note is not null && element.Ancestors("P").First() != note.Element("PARALIST")!.Elements("P").First()) continue;
                 if (element.Ancestors("FOOTNOTE").Any(generated.Contains)) element.SetAttributeValue("Number", next);
                 next++;
             }
@@ -145,7 +284,7 @@ internal sealed class NativeFootnotes(XDocument source, XElement sample)
             if (identity is null || !generatedNoteParagraphIds.Contains(identity)) continue;
             if (!found.Add(identity))
                 throw new InvalidOperationException("A generated footnote paragraph has an ambiguous native identity.");
-            var numbers = control.Descendants("AUTONUM").Where(number =>
+            var numbers = firstParagraph!.Descendants("AUTONUM").Where(number =>
                 (string?)number.Attribute("NumberType") == "Footnote").ToArray();
             if (numbers.Length != 1)
                 throw new InvalidOperationException("A generated footnote lost its unique native automatic-number control.");
@@ -174,17 +313,43 @@ internal sealed class NativeFootnotes(XDocument source, XElement sample)
     {
         var format = destination.Descendants("FOOTNOTESHAPE").Elements("AUTONUMFORMAT").SingleOrDefault()
             ?? throw new InvalidDataException("The template section has no native footnote numbering format.");
-        var paragraphs = note.Paragraphs.Select((content, index) => Fill(content, destination, index == 0 ? format : null)).ToArray();
+        if (nativeSample is not null)
+        {
+            var control = TemplateHeadingBlocks.ImportParagraph(nativeSample, source, destination);
+            var list = control.Element("PARALIST")!;
+            var affixes = SampleAffixes(list.Element("P")!);
+            list.ReplaceNodes(note.Paragraphs.Select((content, index) =>
+            {
+                var paragraph = Fill(content, destination, null, index > 0);
+                if (index == 0)
+                {
+                    paragraph.AddFirst(affixes.Prefix);
+                    paragraph.Add(affixes.Suffix);
+                }
+                foreach (var run in paragraph.Elements("TEXT").ToArray())
+                    if (run.PreviousNode is XElement previous && previous.Name == run.Name &&
+                        previous.Attributes().Select(a => (a.Name, a.Value)).SequenceEqual(run.Attributes().Select(a => (a.Name, a.Value))))
+                    { previous.Add(run.Nodes().ToArray()); run.Remove(); }
+                foreach (var character in paragraph.Elements("TEXT").Elements("CHAR").ToArray())
+                    if (character.PreviousNode is XElement previous && previous.Name == character.Name && !previous.HasAttributes && !character.HasAttributes)
+                    { previous.Add(character.Nodes().ToArray()); character.Remove(); }
+                return paragraph;
+            }).ToArray());
+            return control;
+        }
+        var paragraphs = note.Paragraphs.Select((content, index) => Fill(content, destination, index == 0 ? format : null, index > 0)).ToArray();
         return new XElement("FOOTNOTE", new XElement("PARALIST",
             new XAttribute("LineWrap", "Break"), new XAttribute("LinkListID", "0"), new XAttribute("LinkListIDNext", "0"),
             new XAttribute("TextDirection", "0"), new XAttribute("VertAlign", "Top"), paragraphs));
     }
 
-    private XElement Fill(PreviewInlineContent content, XDocument destination, XElement? numberFormat)
+    private XElement Fill(PreviewInlineContent content, XDocument destination, XElement? numberFormat, bool continuation)
     {
-        var paragraph = TemplateHeadingBlocks.ImportParagraph(sample, source, destination);
+        var useContinuation = continuation && continuationSample is not null;
+        var paragraph = TemplateHeadingBlocks.ImportParagraph(useContinuation ? continuationSample! : sample, source, destination);
+        var affixes = useContinuation ? SampleAffixes(paragraph, "footnote.next") : (Prefix: Array.Empty<XElement>(), Suffix: Array.Empty<XElement>());
         paragraph.Attribute("PageBreak")?.Remove(); paragraph.Attribute("ColumnBreak")?.Remove();
-        var id = (string)paragraph.Elements("TEXT").First(t => t.Elements("CHAR").Any(c => c.Value.Length > 0)).Attribute("CharShape")!;
+        var id = (string)BodyRun(paragraph, useContinuation ? "footnote.next" : "footnote").Attribute("CharShape")!;
         var baseline = destination.Descendants("CHARSHAPE").Single(c => (string?)c.Attribute("Id") == id);
         var texts = new List<XElement>();
         if (numberFormat is not null)
@@ -219,7 +384,7 @@ internal sealed class NativeFootnotes(XDocument source, XElement sample)
             }
         }
         if (texts.Count == 0) Add("", false, false);
-        paragraph.ReplaceNodes(texts);
+        paragraph.ReplaceNodes(affixes.Prefix, texts, affixes.Suffix);
         return paragraph;
     }
 

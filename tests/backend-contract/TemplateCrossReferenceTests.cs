@@ -43,6 +43,16 @@ internal static class TemplateCrossReferenceTests
         Check(Text(lowered.Layout.CreateFigureNumberFragments(destination, 8, "NATIVE_FIGURE_8")) == "[그림 8-NATIVE_FIGURE_8]",
             "A reference instance retained its previous target chapter.");
         Check(original.ToString() == originalText, "Reference instantiation mutated a source prototype.");
+        var contextualDestination = Destination();
+        var contextualBefore = contextualDestination.ToString();
+        var context = new XElement("TEXT", new XAttribute("CharShape", "9"), new XAttribute("RunProperty", "note-emphasis"));
+        var contextualFigure = lowered.Layout.CreateFigureNumberFragments(contextualDestination, 12, "CONTEXT_FIGURE", context);
+        var contextualHeading = lowered.Layout.CreateHeadingNumberFragments(contextualDestination, "CONTEXT_HEADING", context);
+        Check(Text(contextualFigure) == "[그림 12-CONTEXT_FIGURE]" && Text(contextualHeading) == "제CONTEXT_HEADING절",
+            "Contextual references lost prototype wording or target chapter.");
+        Check(contextualFigure.Concat(contextualHeading).All(t => XNode.DeepEquals(new XElement("TEXT", t.Attributes()), context)),
+            "Reference prefix, chapter, number or suffix did not inherit the complete source inline format.");
+        Check(contextualDestination.ToString() == contextualBefore, "Contextual reference imported unused prototype formatting definitions.");
 
         var prepared = TemplateCrossReferences.Lower(TemplateHeadingNumbers.Prepare(original));
         Check(Text(prepared.Layout.CreateFigureNumberFragments(Destination(), 11, "NATIVE_FIGURE_PREPARED")) == "[그림 11-NATIVE_FIGURE_PREPARED]",
