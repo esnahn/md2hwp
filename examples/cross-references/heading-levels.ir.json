@@ -1,0 +1,403 @@
+{
+  "schema": "md2hwp.ir",
+  "ir_version": "0.3",
+  "metadata": {
+    "title": "1~6단계 개요 참조 검증"
+  },
+  "blocks": [
+    {
+      "type": "heading",
+      "id": "level-1",
+      "level": 1,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "1단계"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "제목"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "1~6단계"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "참조:"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "level-1"
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "level-2"
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "level-3"
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "level-4"
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "level-5"
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "level-6"
+        },
+        {
+          "type": "text",
+          "value": "."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "id": "level-2",
+      "level": 2,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "2단계"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "제목"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "id": "level-3",
+      "level": 3,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "3단계"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "제목"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "id": "level-4",
+      "level": 4,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "4단계"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "제목"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "id": "level-5",
+      "level": 5,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "5단계"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "제목"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "id": "level-6",
+      "level": 6,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "6단계"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "제목"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "뒤에서"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다시"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "참조:"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "strong",
+          "inlines": [
+            {
+              "type": "cross_reference",
+              "kind": "heading_number",
+              "target": "level-1"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "emph",
+          "inlines": [
+            {
+              "type": "cross_reference",
+              "kind": "heading_number",
+              "target": "level-2"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "level-3"
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "level-4"
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "level-5"
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "level-6"
+        },
+        {
+          "type": "text",
+          "value": "."
+        },
+        {
+          "type": "footnote",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "각주에서도"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "heading_number",
+                  "target": "level-1"
+                },
+                {
+                  "type": "text",
+                  "value": ","
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "heading_number",
+                  "target": "level-2"
+                },
+                {
+                  "type": "text",
+                  "value": ","
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "heading_number",
+                  "target": "level-3"
+                },
+                {
+                  "type": "text",
+                  "value": ","
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "heading_number",
+                  "target": "level-4"
+                },
+                {
+                  "type": "text",
+                  "value": ","
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "heading_number",
+                  "target": "level-5"
+                },
+                {
+                  "type": "text",
+                  "value": ","
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "heading_number",
+                  "target": "level-6"
+                },
+                {
+                  "type": "text",
+                  "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "참조합니다."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

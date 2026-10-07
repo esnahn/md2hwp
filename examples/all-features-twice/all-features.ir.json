@@ -2,7 +2,17 @@
   "schema": "md2hwp.ir",
   "ir_version": "0.3",
   "metadata": {
+    "author": [
+      "홍길동",
+      "김연구"
+    ],
+    "date": "2026년 10월 6일",
+    "date-meta": "2026-10-06",
     "md2hwp-heading1-start": "3",
+    "md2hwp-literal": "{{md2hwp:meta:title}}",
+    "md2hwp-report-number": "검증 2026-01",
+    "publisher": "md2hwp 예제",
+    "subtitle": "각주·상호참조·메타데이터·박스·표 통합 검증",
     "title": "모든 기능 두 번 검증"
   },
   "blocks": [
@@ -46,6 +56,7 @@
     },
     {
       "type": "heading",
+      "id": "첫째-절",
       "level": 2,
       "inlines": [
         {
@@ -109,6 +120,162 @@
         {
           "type": "text",
           "value": "본문입니다."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "같은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "장의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "첫째-절"
+        },
+        {
+          "type": "text",
+          "value": "와"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "figure_number",
+          "target": "first-figure"
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다음"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "장의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "둘째-절"
+        },
+        {
+          "type": "text",
+          "value": "와"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "figure_number",
+          "target": "second-figure"
+        },
+        {
+          "type": "text",
+          "value": "를"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "확인합니다."
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "빈"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표시문"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "figure_number",
+          "target": "first-figure"
+        },
+        {
+          "type": "text",
+          "value": "와"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "첫째-절"
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "URI"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "이스케이프"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "첫째-절"
+        },
+        {
+          "type": "text",
+          "value": "도"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "확인합니다."
         }
       ]
     },
@@ -267,6 +434,118 @@
                 {
                   "type": "text",
                   "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "확인합니다."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "둘째"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "문단은"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "emph",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "기울임"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "과"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "다른"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "장의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "figure_number",
+                  "target": "second-figure"
+                },
+                {
+                  "type": "text",
+                  "value": ","
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "heading_number",
+                  "target": "둘째-절"
+                },
+                {
+                  "type": "text",
+                  "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "포함합니다."
+                },
+                {
+                  "type": "line_break"
+                },
+                {
+                  "type": "text",
+                  "value": "각주"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "안의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "강제"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "줄바꿈도"
                 },
                 {
                   "type": "space"
@@ -938,6 +1217,55 @@
         {
           "type": "text",
           "value": "제목"
+        },
+        {
+          "type": "footnote",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "첫"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "번째"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "장의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "제목에"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "붙은"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "각주입니다."
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -974,7 +1302,7 @@
     {
       "type": "list",
       "kind": "bullet",
-      "tight": true,
+      "tight": false,
       "items": [
         {
           "blocks": [
@@ -1022,6 +1350,55 @@
                     {
                       "type": "text",
                       "value": "굵게"
+                    }
+                  ]
+                },
+                {
+                  "type": "footnote",
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "inlines": [
+                        {
+                          "type": "text",
+                          "value": "첫"
+                        },
+                        {
+                          "type": "space"
+                        },
+                        {
+                          "type": "text",
+                          "value": "번째"
+                        },
+                        {
+                          "type": "space"
+                        },
+                        {
+                          "type": "text",
+                          "value": "장의"
+                        },
+                        {
+                          "type": "space"
+                        },
+                        {
+                          "type": "text",
+                          "value": "목록에"
+                        },
+                        {
+                          "type": "space"
+                        },
+                        {
+                          "type": "text",
+                          "value": "붙은"
+                        },
+                        {
+                          "type": "space"
+                        },
+                        {
+                          "type": "text",
+                          "value": "각주입니다."
+                        }
+                      ]
                     }
                   ]
                 }
@@ -1077,6 +1454,284 @@
                       "value": "기울임"
                     }
                   ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "목록"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "안의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "strong",
+                  "inlines": [
+                    {
+                      "type": "cross_reference",
+                      "kind": "figure_number",
+                      "target": "first-figure"
+                    }
+                  ]
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "와"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "emph",
+                  "inlines": [
+                    {
+                      "type": "cross_reference",
+                      "kind": "heading_number",
+                      "target": "첫째-절"
+                    }
+                  ]
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "확인합니다."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "strong",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "각주를"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "포함한"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "강조"
+                    },
+                    {
+                      "type": "footnote",
+                      "blocks": [
+                        {
+                          "type": "paragraph",
+                          "inlines": [
+                            {
+                              "type": "text",
+                              "value": "첫"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "번째"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "장의"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "강조"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "범위"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "안에"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "붙은"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "각주입니다."
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "와"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "link",
+                  "target": "https://example.com/note-label",
+                  "title": null,
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "각주를"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "포함한"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "링크"
+                    },
+                    {
+                      "type": "footnote",
+                      "blocks": [
+                        {
+                          "type": "paragraph",
+                          "inlines": [
+                            {
+                              "type": "text",
+                              "value": "첫"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "번째"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "장의"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "외부"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "링크"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "표시문"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "안에"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "붙은"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "각주입니다."
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "확인합니다."
                 }
               ]
             }
@@ -2483,6 +3138,35 @@
       "inlines": [
         {
           "type": "text",
+          "value": "제목만"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "있는"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "박스입니다."
+        }
+      ]
+    },
+    {
+      "type": "verbatim_block",
+      "lines": [
+        "제목: 1차 검증 — 제목만 있는 박스"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
           "value": "박스"
         },
         {
@@ -2524,6 +3208,7 @@
     },
     {
       "type": "figure",
+      "id": "first-figure",
       "image": {
         "path": "image.png",
         "alt": [
@@ -2693,6 +3378,7 @@
     },
     {
       "type": "figure",
+      "id": "first-figure-no-source",
       "image": {
         "path": "image.png",
         "alt": [
@@ -2752,6 +3438,278 @@
         }
       ],
       "source": null
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "그림"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "뒤에서"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "figure_number",
+          "target": "first-figure"
+        },
+        {
+          "type": "text",
+          "value": "를"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다시"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "확인합니다."
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "같은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "각주도"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다시"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "사용합니다."
+        },
+        {
+          "type": "footnote",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "첫"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "번째"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "장의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "참조형"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "각주입니다."
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "strong",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "굵게"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "와"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "link",
+                  "target": "https://example.com/first-note",
+                  "title": null,
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "자료"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "안내"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "확인합니다."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "둘째"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "문단은"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "emph",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "기울임"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "과"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "다른"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "장의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "figure_number",
+                  "target": "second-figure"
+                },
+                {
+                  "type": "text",
+                  "value": ","
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "heading_number",
+                  "target": "둘째-절"
+                },
+                {
+                  "type": "text",
+                  "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "포함합니다."
+                },
+                {
+                  "type": "line_break"
+                },
+                {
+                  "type": "text",
+                  "value": "각주"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "안의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "강제"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "줄바꿈도"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "확인합니다."
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "type": "paragraph",
@@ -2977,6 +3935,166 @@
               "value": "확인합니다."
             }
           ]
+        ],
+        [
+          [
+            {
+              "type": "text",
+              "value": "3"
+            }
+          ],
+          [],
+          [
+            {
+              "type": "text",
+              "value": "셀"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "안의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "각주"
+            },
+            {
+              "type": "footnote",
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "첫"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "번째"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "장의"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "표"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "셀에"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "붙은"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "각주입니다."
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "strong",
+                      "inlines": [
+                        {
+                          "type": "text",
+                          "value": "굵게"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": "와"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "cross_reference",
+                      "kind": "figure_number",
+                      "target": "first-figure"
+                    },
+                    {
+                      "type": "text",
+                      "value": "를"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "확인합니다."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": "와"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "strong",
+              "inlines": [
+                {
+                  "type": "cross_reference",
+                  "kind": "figure_number",
+                  "target": "first-figure"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": ","
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "cross_reference",
+              "kind": "heading_number",
+              "target": "첫째-절"
+            },
+            {
+              "type": "text",
+              "value": "를"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "확인합니다."
+            }
+          ]
         ]
       ],
       "caption": [
@@ -3179,6 +4297,223 @@
         }
       ],
       "source": null
+    },
+    {
+      "type": "table",
+      "columns": [
+        "default",
+        "right"
+      ],
+      "header": [
+        [
+          {
+            "type": "text",
+            "value": "항목"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "value": "결과"
+          }
+        ]
+      ],
+      "rows": [
+        [
+          [
+            {
+              "type": "text",
+              "value": "캡션"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "없는"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "표"
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "1"
+            }
+          ]
+        ]
+      ],
+      "caption": null,
+      "source": [
+        {
+          "type": "text",
+          "value": "캡션"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "없이"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "출처만"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "있는"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표입니다."
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "columns": [
+        "default",
+        "default"
+      ],
+      "header": [
+        [
+          {
+            "type": "text",
+            "value": "항목"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "value": "결과"
+          }
+        ]
+      ],
+      "rows": [
+        [
+          [
+            {
+              "type": "text",
+              "value": "아래"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "캡션"
+            }
+          ],
+          [
+            {
+              "type": "emph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "본문"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "서식"
+                }
+              ]
+            }
+          ]
+        ]
+      ],
+      "caption": [
+        {
+          "type": "text",
+          "value": "1차"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "검증"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "—"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "아래"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "캡션"
+        }
+      ],
+      "source": [
+        {
+          "type": "text",
+          "value": "아래"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "캡션"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다음에"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "연결하는"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "출처입니다."
+        }
+      ]
     },
     {
       "type": "paragraph",
@@ -3760,6 +5095,7 @@
     },
     {
       "type": "heading",
+      "id": "둘째-절",
       "level": 2,
       "inlines": [
         {
@@ -3823,6 +5159,162 @@
         {
           "type": "text",
           "value": "본문입니다."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "같은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "장의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "둘째-절"
+        },
+        {
+          "type": "text",
+          "value": "와"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "figure_number",
+          "target": "second-figure"
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "앞"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "장의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "첫째-절"
+        },
+        {
+          "type": "text",
+          "value": "와"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "figure_number",
+          "target": "first-figure"
+        },
+        {
+          "type": "text",
+          "value": "를"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "확인합니다."
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "빈"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표시문"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "figure_number",
+          "target": "second-figure"
+        },
+        {
+          "type": "text",
+          "value": "와"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "둘째-절"
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "URI"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "이스케이프"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "heading_number",
+          "target": "둘째-절"
+        },
+        {
+          "type": "text",
+          "value": "도"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "확인합니다."
         }
       ]
     },
@@ -3981,6 +5473,118 @@
                 {
                   "type": "text",
                   "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "확인합니다."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "둘째"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "문단은"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "strong",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "굵게"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "와"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "앞"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "장의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "figure_number",
+                  "target": "first-figure"
+                },
+                {
+                  "type": "text",
+                  "value": ","
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "heading_number",
+                  "target": "첫째-절"
+                },
+                {
+                  "type": "text",
+                  "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "포함합니다."
+                },
+                {
+                  "type": "line_break"
+                },
+                {
+                  "type": "text",
+                  "value": "각주"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "안의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "강제"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "줄바꿈도"
                 },
                 {
                   "type": "space"
@@ -4652,6 +6256,55 @@
         {
           "type": "text",
           "value": "제목"
+        },
+        {
+          "type": "footnote",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "두"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "번째"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "장의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "제목에"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "붙은"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "각주입니다."
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -4688,7 +6341,7 @@
     {
       "type": "list",
       "kind": "bullet",
-      "tight": true,
+      "tight": false,
       "items": [
         {
           "blocks": [
@@ -4736,6 +6389,55 @@
                     {
                       "type": "text",
                       "value": "굵게"
+                    }
+                  ]
+                },
+                {
+                  "type": "footnote",
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "inlines": [
+                        {
+                          "type": "text",
+                          "value": "두"
+                        },
+                        {
+                          "type": "space"
+                        },
+                        {
+                          "type": "text",
+                          "value": "번째"
+                        },
+                        {
+                          "type": "space"
+                        },
+                        {
+                          "type": "text",
+                          "value": "장의"
+                        },
+                        {
+                          "type": "space"
+                        },
+                        {
+                          "type": "text",
+                          "value": "목록에"
+                        },
+                        {
+                          "type": "space"
+                        },
+                        {
+                          "type": "text",
+                          "value": "붙은"
+                        },
+                        {
+                          "type": "space"
+                        },
+                        {
+                          "type": "text",
+                          "value": "각주입니다."
+                        }
+                      ]
                     }
                   ]
                 }
@@ -4791,6 +6493,284 @@
                       "value": "기울임"
                     }
                   ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "목록"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "안의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "strong",
+                  "inlines": [
+                    {
+                      "type": "cross_reference",
+                      "kind": "figure_number",
+                      "target": "second-figure"
+                    }
+                  ]
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "와"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "emph",
+                  "inlines": [
+                    {
+                      "type": "cross_reference",
+                      "kind": "heading_number",
+                      "target": "둘째-절"
+                    }
+                  ]
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "확인합니다."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "strong",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "각주를"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "포함한"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "강조"
+                    },
+                    {
+                      "type": "footnote",
+                      "blocks": [
+                        {
+                          "type": "paragraph",
+                          "inlines": [
+                            {
+                              "type": "text",
+                              "value": "두"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "번째"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "장의"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "강조"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "범위"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "안에"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "붙은"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "각주입니다."
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "와"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "link",
+                  "target": "https://example.com/note-label",
+                  "title": null,
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "각주를"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "포함한"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "링크"
+                    },
+                    {
+                      "type": "footnote",
+                      "blocks": [
+                        {
+                          "type": "paragraph",
+                          "inlines": [
+                            {
+                              "type": "text",
+                              "value": "두"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "번째"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "장의"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "외부"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "링크"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "표시문"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "안에"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "붙은"
+                            },
+                            {
+                              "type": "space"
+                            },
+                            {
+                              "type": "text",
+                              "value": "각주입니다."
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "확인합니다."
                 }
               ]
             }
@@ -6197,6 +8177,35 @@
       "inlines": [
         {
           "type": "text",
+          "value": "제목만"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "있는"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "박스입니다."
+        }
+      ]
+    },
+    {
+      "type": "verbatim_block",
+      "lines": [
+        "제목: 2차 검증 — 제목만 있는 박스"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
           "value": "박스"
         },
         {
@@ -6238,6 +8247,7 @@
     },
     {
       "type": "figure",
+      "id": "second-figure",
       "image": {
         "path": "image.png",
         "alt": [
@@ -6407,6 +8417,7 @@
     },
     {
       "type": "figure",
+      "id": "second-figure-no-source",
       "image": {
         "path": "image.png",
         "alt": [
@@ -6466,6 +8477,278 @@
         }
       ],
       "source": null
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "그림"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "뒤에서"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "figure_number",
+          "target": "second-figure"
+        },
+        {
+          "type": "text",
+          "value": "를"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다시"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "확인합니다."
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "같은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "각주도"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다시"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "사용합니다."
+        },
+        {
+          "type": "footnote",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "두"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "번째"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "장의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "참조형"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "각주입니다."
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "emph",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "기울임"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "과"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "link",
+                  "target": "https://example.com/second-note",
+                  "title": null,
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "자료"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "안내"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "확인합니다."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "둘째"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "문단은"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "strong",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "굵게"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "와"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "앞"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "장의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "figure_number",
+                  "target": "first-figure"
+                },
+                {
+                  "type": "text",
+                  "value": ","
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "heading_number",
+                  "target": "첫째-절"
+                },
+                {
+                  "type": "text",
+                  "value": "를"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "포함합니다."
+                },
+                {
+                  "type": "line_break"
+                },
+                {
+                  "type": "text",
+                  "value": "각주"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "안의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "강제"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "줄바꿈도"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "확인합니다."
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "type": "paragraph",
@@ -6691,6 +8974,166 @@
               "value": "확인합니다."
             }
           ]
+        ],
+        [
+          [
+            {
+              "type": "text",
+              "value": "3"
+            }
+          ],
+          [],
+          [
+            {
+              "type": "text",
+              "value": "셀"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "안의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "각주"
+            },
+            {
+              "type": "footnote",
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "두"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "번째"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "장의"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "표"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "셀에"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "붙은"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "각주입니다."
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "emph",
+                      "inlines": [
+                        {
+                          "type": "text",
+                          "value": "기울임"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": "과"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "cross_reference",
+                      "kind": "figure_number",
+                      "target": "second-figure"
+                    },
+                    {
+                      "type": "text",
+                      "value": "를"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "확인합니다."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": "와"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "strong",
+              "inlines": [
+                {
+                  "type": "cross_reference",
+                  "kind": "figure_number",
+                  "target": "second-figure"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": ","
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "cross_reference",
+              "kind": "heading_number",
+              "target": "둘째-절"
+            },
+            {
+              "type": "text",
+              "value": "를"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "확인합니다."
+            }
+          ]
         ]
       ],
       "caption": [
@@ -6893,6 +9336,223 @@
         }
       ],
       "source": null
+    },
+    {
+      "type": "table",
+      "columns": [
+        "default",
+        "right"
+      ],
+      "header": [
+        [
+          {
+            "type": "text",
+            "value": "항목"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "value": "결과"
+          }
+        ]
+      ],
+      "rows": [
+        [
+          [
+            {
+              "type": "text",
+              "value": "캡션"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "없는"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "표"
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "1"
+            }
+          ]
+        ]
+      ],
+      "caption": null,
+      "source": [
+        {
+          "type": "text",
+          "value": "캡션"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "없이"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "출처만"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "있는"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표입니다."
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "columns": [
+        "default",
+        "default"
+      ],
+      "header": [
+        [
+          {
+            "type": "text",
+            "value": "항목"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "value": "결과"
+          }
+        ]
+      ],
+      "rows": [
+        [
+          [
+            {
+              "type": "text",
+              "value": "아래"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "캡션"
+            }
+          ],
+          [
+            {
+              "type": "emph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "본문"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "서식"
+                }
+              ]
+            }
+          ]
+        ]
+      ],
+      "caption": [
+        {
+          "type": "text",
+          "value": "2차"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "검증"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "—"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "아래"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "캡션"
+        }
+      ],
+      "source": [
+        {
+          "type": "text",
+          "value": "아래"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "캡션"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다음에"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "연결하는"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "출처입니다."
+        }
+      ]
     },
     {
       "type": "paragraph",
