@@ -77,6 +77,7 @@ IR 0.3은 거부하므로 Markdown에서 다시 생성하십시오.
 맞춰 자동 재계산하지 않습니다.
 
 `ir-version`도 0.4로 바꾸어야 합니다. `init-template`은 이 구조의 새 템플릿을 만듭니다.
-기존 사용자 Debug/Release 템플릿은 빌드가 자동 변경하지 않습니다.
+빌드는 Debug/Release 템플릿을 `templates/template.hwp`로 매번 강제 교체합니다.
+기본 템플릿은 추적 파일에서 편집하고, 별도 사용자 템플릿은 `target/` 밖에 두십시오.
 
 검증 예제: [여러 하단 문단 원고](../examples/all-features-twice/object-sources.md).

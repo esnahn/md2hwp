@@ -298,3 +298,7 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 입력 범위와 예시는 [YAML 변수 문서](yaml-variables.md#장-시작-번호)를 참고하십시오.
 
 [README로 돌아가기](../README.md)
+
+개발 중 기본 템플릿은 `templates/template.hwp`에서 직접 편집합니다. 빌드할 때
+`target/debug/template.hwp`와 `target/release/template.hwp`는 해당 구성의 빌드마다
+강제 교체됩니다. 보관할 사용자 템플릿은 `target/` 밖에 두고 `--template`으로 지정하십시오.

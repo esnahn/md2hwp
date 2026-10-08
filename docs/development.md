@@ -20,7 +20,7 @@ Release 빌드 결과는 `target/release/`의 다음 네 파일입니다.
 - `README.md`
 
 C# 단독 프로젝트는 `backends/hancom-automation/Md2Hwp.Backend.csproj`입니다.
-`templates/template.hwp`를 게시 폴더에 복사합니다. Rust 빌드 폴더의 `template.hwp`는 파일이 없을 때만 복사하며, 기존 사용자 템플릿은 덮어쓰지 않습니다.
+`templates/template.hwp`를 게시 폴더와 `target/debug` 또는 `target/release`에 복사합니다. 빌드 폴더의 템플릿은 매번 강제 교체합니다. 기본 템플릿은 `templates/template.hwp`에서 편집하고, 별도 사용자 템플릿은 `target/` 밖에 두어 `--template`으로 지정하십시오.
 빌드 결과는 Git에서 제외합니다. 배포할 때 위 네 파일을 같은 폴더에 복사합니다. 동봉 README의 문서·예제 링크는 GitHub의 해당 버전으로 연결합니다.
 
 배포 ZIP을 만들려면 다음 명령을 사용합니다.

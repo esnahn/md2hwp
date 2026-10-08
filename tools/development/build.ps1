@@ -22,9 +22,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Backend publish failed.' }
     Copy-Item -LiteralPath (Join-Path $published 'md2hwp-backend.exe') -Destination (Join-Path $destination 'md2hwp-backend.exe') -Force
     $templateDestination = Join-Path $destination 'template.hwp'
-    if (-not (Test-Path -LiteralPath $templateDestination)) {
-        Copy-Item -LiteralPath (Join-Path $published 'template.hwp') -Destination $templateDestination
-    }
+    Copy-Item -LiteralPath (Join-Path $root 'templates/template.hwp') -Destination $templateDestination -Force
     $manifest = [IO.File]::ReadAllText((Join-Path $root 'Cargo.toml'))
     $versionMatch = [regex]::Match($manifest, '(?m)^version\s*=\s*"([0-9]+\.[0-9]+\.[0-9]+)"\s*$')
     if (-not $versionMatch.Success) { throw 'Cannot determine package version from Cargo.toml.' }

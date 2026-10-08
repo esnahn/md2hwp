@@ -20,8 +20,8 @@ redirect ordinary builds there merely to preserve an older release.
 The JSON fixtures still tracked are included directly by Rust test compilation.
 Builds include a deployment README.md with usable versioned documentation links.
 Create release ZIPs with tools/development/build.ps1 -Configuration Release -Package;
-include both executables, the tracked default template and README.md. Preserve user
-Debug/Release templates. Attach only the executable ZIP to GitHub Releases; put its
+include both executables, the tracked default template and README.md. Always replace
+Debug/Release deployment templates from templates/template.hwp during builds. Attach only the executable ZIP to GitHub Releases; put its
 SHA-256 in the release body. Use GitHub's automatic source downloads and do not attach
 separate source ZIPs, release-note copies, checksum files or build manifests.
 
@@ -221,13 +221,13 @@ These contract tests do not establish live Hancom or visual layout correctness.
 
 ## Template editing and release continuity
 
-Users may edit target/release/template.hwp directly. It can differ from the tracked
-templates/template.hwp; never assume the tracked copy contains their latest work.
-Never overwrite or modify the user-owned target/release/template.hwp for builds
-or verification. build.ps1 copies a deployment template only when it is missing;
-existing Debug and Release templates remain unchanged. Use a separate template
-copy and explicit --template for experiments and live verification.
-Update the tracked default only when the user authorizes adopting the edited copy.
+Use templates/template.hwp as the authoritative editable default template. Build
+outputs under target/ are disposable: build.ps1 always copies the tracked template
+to target/debug/template.hwp or target/release/template.hwp with overwrite enabled.
+Do not preserve edits to deployment templates during builds. This supersedes the
+previous protection of target/release/template.hwp. Use a separate template copy
+and explicit --template for experiments and live verification; never mutate the
+source template while rendering. Custom templates to retain belong outside target/.
 
 Align release major/minor versions with the IR version (IR 0.4 corresponds to
 v0.4.0). A Git tag alone does not update application/package version metadata or
