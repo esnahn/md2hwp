@@ -24,7 +24,7 @@ internal static class TableContractTests
         const string text = """{"type":"text","value":"내용"}""";
         const string note = """{"type":"footnote","blocks":[{"type":"paragraph","inlines":[{"type":"text","value":"각주"}]}]}""";
         const string reference = """{"type":"cross_reference","kind":"heading_number","target":"대상"}""";
-        var json = $$"""{"type":"table","columns":["left","right"],"header":[[{{text}}],[]],"rows":[[[{{note}},{{reference}}],[{"type":"strong","inlines":[{{text}}]}]]],"caption":[{{text}}],"source":[{{text}}]}""";
+        var json = $$"""{"type":"table","columns":["left","right"],"header":[[{{text}}],[]],"rows":[[[{{note}},{{reference}}],[{"type":"strong","inlines":[{{text}}]}]]],"caption":[{{text}}],"source":[{"prefix":"출처","inlines":[{{text}}]}]}""";
         var plan = Read(json, new PreviewOperation("text", "target", [], HeadingId: "대상"));
         var operation = plan.Operations.Last();
         Check(plan.Summary.TableOperations == 1 && operation.Kind == "table" && operation.Table!.Rows.Count == 1,
@@ -48,7 +48,7 @@ internal static class TableContractTests
             """{"type":"table","columns":["default"],"header":[[]],"rows":[],"source":[]}""",
             """{"type":"table","columns":["default"],"header":[[]],"rows":[],"width":10}""",
             $$"""{"type":"table","columns":["default"],"header":[[]],"rows":[],"caption":[{{note}}]}""",
-            $$"""{"type":"table","columns":["default"],"header":[[]],"rows":[],"source":[{{reference}}]}""",
+            $$"""{"type":"table","columns":["default"],"header":[[]],"rows":[],"source":[{"prefix":"출처","inlines":[{{reference}}]}]}""",
             $$"""{"type":"table","columns":["default"],"header":[[{{reference}}]],"rows":[]}""",
         }) Reject(() => Read(invalid));
 
@@ -195,7 +195,7 @@ internal static class TableContractTests
             Reject(() => TemplateTables.Lower(mismatch));
         }
         var headerBorder = new XElement(bodyBorder); headerBorder.SetAttributeValue("Id", 3);
-        headerBorder.Element("BOTTOMBORDER")!.SetAttributeValue("Width", "0.4mm");
+        headerBorder.Element("BOTTOMBORDER")!.SetAttributeValue("Width", "0.3mm");
         bodyBorder.Parent!.Add(headerBorder); bodyBorder.Parent.SetAttributeValue("Count", 3);
         foreach (var cell in fixture.Descendants("TABLE").Single().Elements("ROW").First().Elements("CELL"))
             cell.SetAttributeValue("BorderFill", 3);
@@ -203,7 +203,7 @@ internal static class TableContractTests
         var headerOnly = operation with { Table = content with { Rows = [] } };
         var headerOutput = headerLayout.Attach(Destination(Paragraph("MARKER")), plan with { Operations = [headerOnly] }, 0, (_, _, _) => [7200, 7200]);
         var sourceCell = headerOutput.Descendants("TABLE").Single().Elements("ROW").Last().Elements("CELL").Single();
-        Check((string?)Border(headerOutput, sourceCell).Element("TOPBORDER")?.Attribute("Width") == "0.4mm",
+        Check((string?)Border(headerOutput, sourceCell).Element("TOPBORDER")?.Attribute("Width") == "0.3mm",
             "A header-only table kept the body's border instead of the actual preceding header boundary.");
         var absent = operation with { Table = content with { Source = null } };
         var absentOutput = layout.Attach(Destination(Paragraph("MARKER")), plan with { Operations = [absent] }, 0, (_, _, _) => [7200, 7200]);
@@ -218,7 +218,7 @@ internal static class TableContractTests
         var left = fixture.Descendants("BORDERFILL").Single(border => (string?)border.Attribute("Id") == "1");
         left.Element("LEFTBORDER")!.SetAttributeValue("Width", "0.7mm");
         left.Element("RIGHTBORDER")!.SetAttributeValue("Width", "0.1mm");
-        left.Add(new XElement("TOPBORDER", new XAttribute("Type", "Solid"), new XAttribute("Width", "0.4mm")),
+        left.Add(new XElement("TOPBORDER", new XAttribute("Type", "Solid"), new XAttribute("Width", "0.3mm")),
             new XElement("BOTTOMBORDER", new XAttribute("Type", "Solid"), new XAttribute("Width", "0.5mm")));
         var right = new XElement(left); right.SetAttributeValue("Id", 3);
         right.Element("LEFTBORDER")!.SetAttributeValue("Width", "0.2mm");
@@ -244,7 +244,7 @@ internal static class TableContractTests
                 Check((string?)border.Element("LEFTBORDER")?.Attribute("Width") == (column == 0 ? "0.7mm" : "0.2mm") &&
                     (string?)border.Element("RIGHTBORDER")?.Attribute("Width") == (column == columns - 1 ? "0.8mm" : "0.1mm"),
                     "Outer/internal vertical borders were lost in a one-, two- or many-column table.");
-                Check((string?)border.Element("TOPBORDER")?.Attribute("Width") == "0.4mm" &&
+                Check((string?)border.Element("TOPBORDER")?.Attribute("Width") == "0.3mm" &&
                     (string?)border.Element("BOTTOMBORDER")?.Attribute("Width") == "0.5mm",
                     "Composing vertical borders changed horizontal borders.");
             }

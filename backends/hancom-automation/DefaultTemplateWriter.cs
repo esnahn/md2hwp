@@ -7,8 +7,6 @@ internal sealed record TemplateCreationResult(string Output, string IrVersion, b
 
 internal static partial class HancomPreviewWriter
 {
-    private const string DefaultSourcePrefix = "출처: ";
-
     public static TemplateCreationResult CreateDefaultTemplate(string outputPath)
     {
         var output = ValidateNewHwpPath(outputPath, "Template");
@@ -66,7 +64,7 @@ internal static partial class HancomPreviewWriter
                 XDocument seed = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
                 var authored = BuildDefaultDeclarations(blank, seed);
                 _ = hwp.Clear(1);
-                var xml = "<?xml version=\"1.0\" encoding=\"UTF-16\" standalone=\"no\"?>" + authored.ToString(SaveOptions.DisableFormatting);
+                var xml = "<?xml version=\"1.0\" encoding=\"UTF-16\" standalone=\"no\"?>" + TemplateObjectSources.Lower(authored).Document.ToString(SaveOptions.DisableFormatting);
                 // Unlike SaveAs, SetTextFile returns an integer status (1 = success).
                 object imported = hwp.SetTextFile(xml, "HWPML2X", "");
                 if (imported is not int { } status || status != 1)
@@ -202,7 +200,7 @@ internal static partial class HancomPreviewWriter
         cell.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(Declaration("slot:box.title", "box.title"), Declaration("slot:box.content", "block.box"));
         var caption = shape.Elements().Single(e => e.Name.LocalName == "CAPTION");
         caption.SetAttributeValue("LastWidth", width);
-        caption.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(TextParagraph("box.source", DefaultSourcePrefix + TaggedTemplateBinding.Tag("slot:box.source")));
+        caption.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(TextParagraph("box.source", TemplateObjectSources.PrefixSlot("box") + ": " + TaggedTemplateBinding.Tag("slot:box.source")));
 
         var figureNumber = new XElement("AUTONUM", new XAttribute("Number", 1), new XAttribute("NumberType", "Figure"),
             new XElement("AUTONUMFORMAT", new XAttribute("Superscript", "false"), new XAttribute("Type", "Digit")));
@@ -213,7 +211,7 @@ internal static partial class HancomPreviewWriter
         pictureShape.Element("POSITION")!.SetAttributeValue("TreatAsChar", "true");
         var nativeCaption = pictureShape.Element("CAPTION") ?? throw new InvalidDataException("Sample picture has no native caption.");
         nativeCaption.Element("PARALIST")!.ReplaceNodes(figureCaption,
-            TextParagraph("figure.source", DefaultSourcePrefix + TaggedTemplateBinding.Tag("slot:figure.source")));
+            TextParagraph("figure.source", TemplateObjectSources.PrefixSlot("figure") + ": " + TaggedTemplateBinding.Tag("slot:figure.source")));
         // Two header/body cells own outer and internal vertical borders.
         // Their left cells own all other formatting; the source spans both columns.
         var tableSample = new XElement(seed.Descendants("TABLE").Single());
@@ -265,7 +263,7 @@ internal static partial class HancomPreviewWriter
                 sampleRowCell.SetAttributeValue("Header", rowIndex == 0 ? "true" : "false");
                 if (rowIndex == 2) sampleRowCell.SetAttributeValue("BorderFill", (string)sourceBorder.Attribute("Id")!);
                 sampleRowCell.Element("PARALIST")!.ReplaceNodes(TextParagraph(role,
-                    (rowIndex == 2 ? DefaultSourcePrefix : "") + TaggedTemplateBinding.Tag("slot:" + role)));
+                    (rowIndex == 2 ? TemplateObjectSources.PrefixSlot("table") + ": " : "") + TaggedTemplateBinding.Tag("slot:" + role)));
                 row.Add(sampleRowCell);
             }
             tableSample.Add(row);

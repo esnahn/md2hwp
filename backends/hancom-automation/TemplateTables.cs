@@ -279,7 +279,7 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
         }
     }
 
-    private static void FillSlot(XElement paragraph, string slot, PreviewInlineContent content, XDocument destination)
+    internal static void FillSlot(XElement paragraph, string slot, PreviewInlineContent content, XDocument destination)
     {
         var marker = "MD2HWP_TABLE_SLOT_" + Guid.NewGuid().ToString("N");
         var transformed = TemplateMetadata.Transform(new XDocument(new XElement("ROOT", new XElement(paragraph))),

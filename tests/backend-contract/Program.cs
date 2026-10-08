@@ -7,7 +7,7 @@ static void Reject(Action operation) {
     try { operation(); } catch (InvalidDataException) { return; }
     throw new Exception("Expected rejection.");
 }
-var sectionFixture = XDocument.Parse("<HWPML><BODY><SECTION><P Style='0' PageBreak='false' ColumnBreak='false'><TEXT CharShape='1'><COLDEF/><SECDEF><MASTERPAGE Type='Even'><PARALIST><P><TEXT><LINE/><CHAR/></TEXT></P></PARALIST></MASTERPAGE></SECDEF><CHAR>{{md2hwp:begin:template}}</CHAR></TEXT></P><P><TEXT><CHAR>{{md2hwp:ir-version:0.3}}</CHAR></TEXT></P></SECTION></BODY></HWPML>");
+var sectionFixture = XDocument.Parse("<HWPML><BODY><SECTION><P Style='0' PageBreak='false' ColumnBreak='false'><TEXT CharShape='1'><COLDEF/><SECDEF><MASTERPAGE Type='Even'><PARALIST><P><TEXT><LINE/><CHAR/></TEXT></P></PARALIST></MASTERPAGE></SECDEF><CHAR>{{md2hwp:begin:template}}</CHAR></TEXT></P><P><TEXT><CHAR>{{md2hwp:ir-version:0.4}}</CHAR></TEXT></P></SECTION></BODY></HWPML>");
 var originalSectionFixture = sectionFixture.ToString();
 var retainedSection = new XElement(sectionFixture.Descendants("SECDEF").Single());
 var separatedSection = TaggedTemplateBinding.PreserveBeginSectionSettings(sectionFixture);
@@ -518,3 +518,5 @@ if (args.Length==2) {
     Check(expected.Descendants("BINDATA").Select(e=>e.Value).SequenceEqual(actual.Descendants("BINDATA").Select(e=>e.Value)),"Embedded template image data changed.");
     Console.WriteLine("Native template save/reopen structure, styles, embedded images and new heading tags preserved.");
 }
+
+ObjectSourceTests.Run();

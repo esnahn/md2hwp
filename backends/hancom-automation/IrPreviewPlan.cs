@@ -83,7 +83,8 @@ internal sealed record PreviewOperation(
     string? FigureId = null,
     string? HeadingId = null,
     PreviewTable? Table = null,
-    PreviewListMarker? ListContinuation = null);
+    PreviewListMarker? ListContinuation = null,
+    IReadOnlyList<PreviewSourceParagraph>? Sources = null);
 
 internal sealed record PreviewTable(
     IReadOnlyList<string> Columns,
@@ -205,7 +206,7 @@ internal sealed class PlanBuilder(
                 "AURI paragraph styles are bound by unique native names during render.",
                 "Strong/emphasis marks are retained as character-shape runs; link targets remain flattened.",
                 "verbatim_block maps to one prototype-backed block.box operation; render accepts only the uniquely matched minimal-fixture box structure.",
-                "IR 0.3 box sources replace the template source slot; absent sources remove the native caption.",
+                "IR 0.4 box sources replace the template source slot; absent sources remove the native caption.",
                 "Figure captions remain one prototype-backed native AUTONUM operation; render accepts only the uniquely matched minimal-fixture root-caption structure.",
                 profile.PreserveParagraphLineBreaks
                     ? "IR line_break nodes remain native line breaks in the same paragraph."
@@ -275,20 +276,15 @@ internal sealed class PlanBuilder(
             index++;
         }
         var content = PreviewInlineContent.Plain(lines);
-        IReadOnlyList<PreviewTextRun>? sourceRuns = null;
-        if (block.TryGetProperty("source", out var source) && source.ValueKind != JsonValueKind.Null)
-        {
-            if (JsonContract.ExpectArray(source, path + "/source").GetArrayLength() == 0)
-                throw JsonContract.Error(path + "/source", "source must not be empty");
-            sourceRuns = InlineText.Read(source, path + "/source", allowFootnotes: false, allowCrossReferences: false).Flatten(" / ").Runs;
-        }
+        var sources = PreviewSourceParagraph.ReadOptional(block, path);
+        IReadOnlyList<PreviewTextRun>? sourceRuns = sources?.First().Content.Flatten(" / ").Runs;
         operations.Add(new PreviewOperation(
             "box",
             "verbatim_block",
             content.Lines.Select(line => line.Text).ToArray(),
             ParagraphStyle: "block.box",
             FormattedLines: content.Lines.Select(line => line.Runs).ToArray(),
-            SourceRuns: sourceRuns));
+            SourceRuns: sourceRuns, Sources: sources));
     }
 
     private void AddList(JsonElement block, string path, int depth)
@@ -397,10 +393,8 @@ internal sealed class PlanBuilder(
         var height = width * pixelHeight / pixelWidth;
         var alt = InlineText.Read(image.GetProperty("alt"), path + "/image/alt", allowFootnotes: false, allowCrossReferences: false);
         var caption = InlineText.Read(block.GetProperty("caption"), path + "/caption", allowFootnotes: false, allowCrossReferences: false);
-        var sourceElement = block.GetProperty("source");
-        var source = sourceElement.ValueKind is JsonValueKind.Null
-            ? PreviewInlineContent.Plain([string.Empty])
-            : InlineText.Read(sourceElement, path + "/source", allowFootnotes: false, allowCrossReferences: false);
+        var sources = PreviewSourceParagraph.ReadOptional(block, path);
+        var source = sources?.First().Content ?? PreviewInlineContent.Plain([string.Empty]);
         var figureLines = new[]
         {
             alt.Flatten(" / "),
@@ -415,7 +409,7 @@ internal sealed class PlanBuilder(
             width,
             height,
             "body",
-            figureLines.Select(line => line.Runs).ToArray(), FigureId: figureId));
+            figureLines.Select(line => line.Runs).ToArray(), FigureId: figureId, Sources: sources));
     }
 
     private void AddTable(JsonElement block, string path)
@@ -450,10 +444,11 @@ internal sealed class PlanBuilder(
         var rowsElement = JsonContract.ExpectArray(block.GetProperty("rows"), path + "/rows");
         var rows = rowsElement.EnumerateArray().Select((row, index) =>
             ReadRow(row, $"{path}/rows/{index}")).ToArray();
-        var table = new PreviewTable(columns, header, rows, ReadOptional("caption"), ReadOptional("source"));
+        var sources = PreviewSourceParagraph.ReadOptional(block, path);
+        var table = new PreviewTable(columns, header, rows, ReadOptional("caption"), sources?.First().Content);
         var marker = "MD2HWP_GENERATED_TABLE_" + Guid.NewGuid().ToString("N");
         operations.Add(new PreviewOperation("table", "table", [marker], ParagraphStyle: "body",
-            FormattedLines: PreviewInlineContent.Plain([marker]).Lines.Select(line => line.Runs).ToArray(), Table: table));
+            FormattedLines: PreviewInlineContent.Plain([marker]).Lines.Select(line => line.Runs).ToArray(), Table: table, Sources: sources));
     }
 
     private static PreviewOperation Text(

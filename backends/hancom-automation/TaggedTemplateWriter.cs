@@ -29,7 +29,8 @@ internal static partial class HancomPreviewWriter
                 XDocument document = TemplateHeadingNumbers.Prepare(TaggedTemplateBinding.PreserveBeginSectionSettings(preparedMetadata.Document));
                 var footnotes = NativeFootnotes.Bind(document);
                 document = footnotes.LowerSample(document);
-                var referenceTemplate = TemplateCrossReferences.Lower(document);
+                var objectSources = TemplateObjectSources.Lower(document);
+                var referenceTemplate = TemplateCrossReferences.Lower(objectSources.Document);
                 var tables = TemplateTables.Lower(referenceTemplate.Document);
                 var headings = TemplateHeadingBlocks.Lower(tables.Document);
                 var boxes = TemplateBoxParagraphs.Lower(headings.Document);
@@ -117,6 +118,7 @@ internal static partial class HancomPreviewWriter
                 attached = nativeFigure.Layout.Attach(attached, plan, start);
                 attached = tables.Layout.Attach(attached, plan, start, (table, target, prototype) =>
                     TableAutoWidths.Calculate(table, target, prototype, checked((int)Math.Round(tables.Layout.WidthMillimeters * 7200 / 25.4)), referenceTemplate.Layout));
+                attached = objectSources.Layout.Attach(attached, plan, start);
                 attached = preparedMetadata.Restore(headings.Layout.Attach(attached, plan, start));
                 attached = footnotes.Attach(attached, plan);
                 TemplateHeadingNumbers.RequireResolved(attached);

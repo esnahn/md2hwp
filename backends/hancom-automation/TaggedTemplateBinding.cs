@@ -16,7 +16,8 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
     {
         var prepared = TemplateHeadingNumbers.Prepare(PreserveBeginSectionSettings(document));
         prepared = NativeFootnotes.Bind(prepared).LowerSample(prepared);
-        var references = TemplateCrossReferences.Lower(prepared);
+        var sources = TemplateObjectSources.Lower(prepared);
+        var references = TemplateCrossReferences.Lower(sources.Document);
         var tables = TemplateTables.Lower(references.Document);
         var headings = TemplateHeadingBlocks.Lower(tables.Document);
         var boxes = TemplateBoxParagraphs.Lower(headings.Document);
