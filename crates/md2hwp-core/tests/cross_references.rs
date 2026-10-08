@@ -620,3 +620,20 @@ fn empty_reference_labels_still_count_source_targets_ids_inlines_and_blocks() {
             .contains("text bytes limit exceeded")
     );
 }
+
+#[test]
+fn jpeg_paths_and_figure_ids_survive_ir_roundtrip() {
+    for path in ["image.jpg", "image.jpeg", "image.JPG", "image.JPEG"] {
+        let jpeg = json!({"t":"Image","c":[["jpeg",[],[]],[{"t":"Str","c":"JPEG"}],[path,""]]});
+        let ir = normalize(json!([{"t":"Para","c":[jpeg]}])).unwrap();
+        let Block::Figure { image, id, .. } = &ir.as_document().blocks[0] else {
+            panic!("figure")
+        };
+        assert_eq!(image.path, path);
+        assert_eq!(id.as_deref(), Some("jpeg"));
+        assert_eq!(
+            read_ir(&write_ir(&ir).unwrap(), &ValidationLimits::default()).unwrap(),
+            ir
+        );
+    }
+}

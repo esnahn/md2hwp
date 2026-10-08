@@ -1,0 +1,212 @@
+{
+  "schema": "md2hwp.ir",
+  "ir_version": "0.4",
+  "metadata": {
+    "title": "JPEG 그림 검증"
+  },
+  "blocks": [
+    {
+      "type": "heading",
+      "level": 1,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "JPG·JPEG"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "그림"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "일반"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "figure_number",
+          "target": "jpg"
+        },
+        {
+          "type": "text",
+          "value": "과"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "figure_number",
+          "target": "jpeg"
+        },
+        {
+          "type": "text",
+          "value": "을"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "참조합니다."
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "id": "jpg",
+      "image": {
+        "path": "image.jpg",
+        "alt": [
+          {
+            "type": "text",
+            "value": "일반"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "JPEG"
+          }
+        ],
+        "title": null
+      },
+      "caption": [
+        {
+          "type": "text",
+          "value": "일반"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "JPEG"
+        }
+      ],
+      "source": [
+        {
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "기존"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "검증"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "이미지의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "JPEG"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "변환본."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "id": "jpeg",
+      "image": {
+        "path": "image.jpeg",
+        "alt": [
+          {
+            "type": "text",
+            "value": "Progressive"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "JPEG"
+          }
+        ],
+        "title": null
+      },
+      "caption": [
+        {
+          "type": "text",
+          "value": "Progressive"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "JPEG"
+        }
+      ],
+      "source": [
+        {
+          "prefix": "주",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "progressive"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "방식으로"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "저장한"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "동일"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "이미지입니다."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
