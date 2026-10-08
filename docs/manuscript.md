@@ -48,14 +48,14 @@
 ```
 
 Pandoc `xrefs_number`와 같은 내부 링크 문법을 사용합니다. 대상의 실제 종류로
-헤딩·그림을 판별하며 `fig:`·`sec:` 접두사는 필수가 아닙니다. 링크 표시문은
+헤딩·그림·표를 판별하며 `fig:`·`sec:` 접두사는 필수가 아닙니다. 링크 표시문은
 템플릿의 번호 참조 표기로 대체합니다. 그림 참조의 장 번호는 대상 그림이 속한 장에서
 계산하고, 그림 번호는 한글의 실제 상호참조 필드로 넣습니다. 개요 참조는 대상
 헤딩에 설정된 한글의 실제 개요 번호를 참조합니다. heading1~heading6 모두 참조할 수 있습니다.
 제목 스타일만 있는 문단은
-개요 참조 대상이 될 수 없습니다. 표 번호 참조는 현재 지원하지 않습니다.
+개요 참조 대상이 될 수 없습니다. 표 ID는 표 바로 앞의 독립된 `{#ID}` 줄로 지정하며, 참조 대상 표에는 캡션이 필요합니다.
 
-템플릿에는 `begin:ref.figure.number`와 `begin:ref.heading.number` 범위가
+템플릿에는 `begin:ref.figure.number`, `begin:ref.table.number`, `begin:ref.heading.number` 범위가
 필요합니다. 기존 템플릿에 추가하거나 `init-template`으로 별도 템플릿을 생성하십시오.
 문법·서식·지원 범위는 [번호 상호참조 설명](cross-references.md), 검증 원고와
 IR은 [`examples/cross-references/`](../examples/cross-references/)를 참고하십시오.

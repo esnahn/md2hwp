@@ -109,8 +109,8 @@ Pandoc Figure inputs. Reject unsupported caption/body structures explicitly.
 Use xrefs_number-compatible internal Links for number references; do not parse
 raw [@...] strings or enable citations/citeproc/pandoc-crossref for this feature.
 Validate source link labels and resource limits before replacing them with symbolic
-IR cross_reference {kind: heading_number|figure_number, target: id}.
-Require single-paragraph ref.figure.number and ref.heading.number prototypes even
+IR cross_reference {kind: heading_number|figure_number|table_number, target: id}.
+Require single-paragraph ref.figure.number, ref.table.number and ref.heading.number prototypes even
 when unused. Their wording and slots define reference labels; ignore prototype character
 formatting and inherit the first source reference character's complete inline formatting,
 including body/note/cell context and emphasis. In figure references num:heading1 is
@@ -128,7 +128,7 @@ Hancom reuses Crossref FieldId values across distinct fields. Require matching l
 begin/end FieldId and unique field InstId; do not require global FieldId uniqueness.
 Coalesce adjacent identical-format target-marker runs before HWPML import. Reject
 empty native outline display formats without calculating a replacement number.
-Table/page and other reference roles remain reserved and unsupported.
+Page and other reference roles remain reserved and unsupported.
 HWPX and RST input are deferred.
 
 ## Tables
@@ -136,11 +136,11 @@ HWPX and RST input are deferred.
 Normalize simple Pandoc Table inputs to IR table {columns, header, rows, caption, source}.
 Columns carry default/left/center/right alignment; header and row cells contain inline
 arrays, including empty cells. Require one header row, one body, rectangular cells
-and ColWidthDefault column widths only. Reject table IDs/attributes, merged cells, row-header
+and ColWidthDefault column widths only. Allow optional table IDs; reject other table attributes, merged cells, row-header
 columns, multiple/intermediate headers or bodies, footer rows and nonparagraph or
-multiple-paragraph cell blocks explicitly. Table number references remain unsupported.
-Cells allow rich text, footnotes and current heading/figure references; caption and
-source reject footnotes but allow heading/figure number references. Include rows/cells and every inline/text in
+multiple-paragraph cell blocks explicitly. Table number references require a native numbered table caption.
+Cells allow rich text, footnotes and current heading/figure/table references; caption and
+source reject footnotes but allow heading/figure/table number references. Include rows/cells and every inline/text in
 cumulative validation limits.
 
 CommonMark does not support table_captions. Attach standalone Table:/table:/:/표: plus
@@ -296,7 +296,7 @@ ASCII digit suffix; digits are supported only for 주/주석/note. Require an im
 colon followed by space and nonempty content. No space before colon. Attach consecutive
 recognized paragraphs after figures/boxes/tables, allowing an intervening below-table
 caption. Stop at the first nonmatching block; never absorb earlier unlabeled prose.
-No ※ or footnotes in these notes; heading/figure number references are supported. Count every source paragraph and
+No ※ or footnotes in these notes; heading/figure/table number references are supported. Count every source paragraph and
 prefix against cumulative limits. See docs/object-sources.md.
 Require slot:<role>.source.prefix followed by ': ' and slot:<role>.source in each
 box/figure/table source sample. Clone the complete template paragraph per IR paragraph
@@ -321,8 +321,19 @@ native insertion restriction on that version, not proof about every Hancom versi
 or forced HWPML structures. Keep caption footnotes forbidden, including heading
 slots copied into CAPTION. Table sources live in merged cells: their footnotes
 remain unsupported by the current object-note contract, not this caption test.
-Allow heading/figure number references in figure captions/alt, table captions and
+Allow heading/figure/table number references in figure captions/alt, table captions and
 all object-note paragraphs, preserving surrounding formats and native AUTONUMs.
 Figure alt remains descriptive metadata: validate its targets but do not expect
 its reference markers in rendered paragraphs. Enumerate all object-note runs,
 not only the first note; avoid double-enumerating intermediate source copies.
+
+Table-number references follow xrefs_number semantics with existing CommonMark
+attributes before pipe tables: a standalone {#id} immediately before the table,
+not appended to the caption. Preserve Pandoc Table IDs in optional IR table.id;
+IDs share the document-wide heading/figure namespace. Require ref.table.number
+single-paragraph prototypes even when unused. Native table command kind is 0
+(number display 1, hyperlink 0). Use target table Heading1Number for num:heading1,
+never the reader chapter; keep native Table AUTONUM and existing restarts. Reject
+referenced tables without a numbered native caption. Resolve generated table
+shape identities before final import and verify field target, cache and formatting
+after save/reopen, including captions, all notes, rich cells and footnote bodies.

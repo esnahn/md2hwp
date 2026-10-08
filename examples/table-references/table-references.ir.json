@@ -1,0 +1,671 @@
+{
+  "schema": "md2hwp.ir",
+  "ir_version": "0.4",
+  "metadata": {
+    "author": "md2hwp",
+    "date": "2026-10-08",
+    "date-meta": "2026-10-08",
+    "md2hwp-heading1-start": "3",
+    "md2hwp-literal": "표 번호 참조",
+    "md2hwp-report-number": "검증 2026-03",
+    "publisher": "md2hwp 예제",
+    "subtitle": "앞뒤 참조와 대상 표의 장 번호",
+    "title": "표 번호 상호참조 검증"
+  },
+  "blocks": [
+    {
+      "type": "heading",
+      "level": 1,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "첫"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "장"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "첫"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "절"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "앞쪽"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "참조"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "strong",
+          "inlines": [
+            {
+              "type": "cross_reference",
+              "kind": "table_number",
+              "target": "둘째-표"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "빈"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표시문"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "table_number",
+          "target": "첫째-표"
+        },
+        {
+          "type": "text",
+          "value": ","
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "참조형"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "table_number",
+          "target": "둘째-표"
+        },
+        {
+          "type": "text",
+          "value": "를"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "확인합니다."
+        },
+        {
+          "type": "footnote",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "본문"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "각주의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "table_number",
+                  "target": "둘째-표"
+                },
+                {
+                  "type": "text",
+                  "value": "."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "id": "첫째-표",
+      "columns": [
+        "default",
+        "default"
+      ],
+      "header": [
+        [
+          {
+            "type": "text",
+            "value": "항목"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "value": "값"
+          }
+        ]
+      ],
+      "rows": [
+        [
+          [
+            {
+              "type": "text",
+              "value": "셀"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "안의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "cross_reference",
+              "kind": "table_number",
+              "target": "둘째-표"
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "각주"
+            },
+            {
+              "type": "footnote",
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "표"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "셀"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "text",
+                      "value": "각주의"
+                    },
+                    {
+                      "type": "space"
+                    },
+                    {
+                      "type": "cross_reference",
+                      "kind": "table_number",
+                      "target": "첫째-표"
+                    },
+                    {
+                      "type": "text",
+                      "value": "."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        ]
+      ],
+      "caption": [
+        {
+          "type": "text",
+          "value": "첫"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "—"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다른"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "emph",
+          "inlines": [
+            {
+              "type": "cross_reference",
+              "kind": "table_number",
+              "target": "둘째-표"
+            }
+          ]
+        }
+      ],
+      "source": [
+        {
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "첫"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "표의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "cross_reference",
+              "kind": "table_number",
+              "target": "둘째-표"
+            },
+            {
+              "type": "text",
+              "value": "."
+            }
+          ]
+        },
+        {
+          "prefix": "참고",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "두"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "번째"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "출처의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "strong",
+              "inlines": [
+                {
+                  "type": "cross_reference",
+                  "kind": "table_number",
+                  "target": "첫째-표"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": "."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "verbatim_block",
+      "lines": [
+        "제목: 코드 박스",
+        "이 줄의 [표](#첫째-표)는 원문으로 남습니다."
+      ],
+      "source": [
+        {
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "박스"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "출처의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "cross_reference",
+              "kind": "table_number",
+              "target": "둘째-표"
+            },
+            {
+              "type": "text",
+              "value": "."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 1,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "둘째"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "장"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "둘째"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "절"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "이전"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "장의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "table_number",
+          "target": "첫째-표"
+        },
+        {
+          "type": "text",
+          "value": "와"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "현재"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "장의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "table_number",
+          "target": "둘째-표"
+        },
+        {
+          "type": "text",
+          "value": "를"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "확인합니다."
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "id": "둘째-표",
+      "columns": [
+        "default",
+        "default"
+      ],
+      "header": [
+        [
+          {
+            "type": "text",
+            "value": "참조"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "value": "설명"
+          }
+        ]
+      ],
+      "rows": [
+        [
+          [
+            {
+              "type": "cross_reference",
+              "kind": "table_number",
+              "target": "첫째-표"
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "표"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "번호는"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "템플릿의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "새"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "번호"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "설정을"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "따릅니다."
+            }
+          ]
+        ]
+      ],
+      "caption": [
+        {
+          "type": "text",
+          "value": "두"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "번째"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "—"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "이전"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "장의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "table_number",
+          "target": "첫째-표"
+        }
+      ],
+      "source": [
+        {
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "이전"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "장의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "cross_reference",
+              "kind": "table_number",
+              "target": "첫째-표"
+            },
+            {
+              "type": "text",
+              "value": "."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

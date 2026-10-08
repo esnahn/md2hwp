@@ -69,11 +69,13 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 | `slot:table.source` | 필수 | 마지막 투명 셀의 출처 슬롯. 출처가 없으면 생성 행 전체 생략 |
 | `slot:table.caption` | 필수 | 표의 실제 한글 캡션 안의 한 문단. 표 자동번호와 선택적 장 번호를 함께 배치 |
 | `begin:headingN` / `end:headingN` | 선택 | 해당 수준의 단일 제목 선언 대신 사용하는 블록 경계 |
-| `num:heading1` | 선택 | 헤딩 블록·그림 및 표 캡션에서는 현재 장 번호, 그림 참조 샘플에서는 대상 장 번호 |
+| `num:heading1` | 선택 | 헤딩 블록·그림 및 표 캡션에서는 현재 장 번호, 그림·표 참조 샘플에서는 대상 장 번호 |
 | `begin:ref.figure.number` / `end:ref.figure.number` | 필수 | 그림 번호 참조의 한 문단 문구·번호 슬롯 샘플 범위. 글자 서식은 참조 위치에서 가져옴 |
 | `slot:ref.figure.number` | 필수 | 그림 참조 샘플에 정확히 한 개. 실제 그림 번호 상호참조 필드 위치 |
 | `begin:ref.heading.number` / `end:ref.heading.number` | 필수 | 개요 번호 참조의 한 문단 문구·번호 슬롯 샘플 범위. 글자 서식은 참조 위치에서 가져옴 |
 | `slot:ref.heading.number` | 필수 | 개요 참조 샘플에 정확히 한 개. 실제 개요 번호 상호참조 필드 위치 |
+| `begin:ref.table.number` / `end:ref.table.number` | 필수 | 표 번호 참조의 한 문단 문구·번호 슬롯 샘플 범위. 글자 서식은 참조 위치에서 가져옴 |
+| `slot:ref.table.number` | 필수 | 표 참조 샘플에 정확히 한 개. 실제 표 번호 상호참조 필드 위치 |
 | `slot:headingN` | 헤딩 블록·반복 범위에서 필수 | 해당 범위의 제목을 넣는 독립 문단. 여러 개 사용 가능 |
 | `begin:each.child:headingN` / `end:each.child:headingN` | 선택 | 헤딩 블록 안에서 바로 아래 수준의 제목마다 반복. 중첩 가능 |
 | `begin:once` / `end:once` | 선택 | 헤딩 블록 안의 같은 문단에서 첫 사용에만 남길 인라인 범위 |
