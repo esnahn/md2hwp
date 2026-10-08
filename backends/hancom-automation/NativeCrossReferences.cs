@@ -24,7 +24,8 @@ internal sealed class NativeCrossReferences
 
     internal static (NativeCrossReferences Layout, XDocument Document) Prepare(XDocument document, IrPreviewPlan plan,
         TemplateCrossReferences template, IReadOnlyDictionary<string, string> figureInstances,
-        IReadOnlyDictionary<string, IReadOnlyList<string>>? headingInstances = null)
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? headingInstances = null,
+        IReadOnlyDictionary<string, string>? tableInstances = null)
     {
         FigureReferenceContract.Validate(plan.Operations);
         var result = new XDocument(document);
@@ -42,19 +43,21 @@ internal sealed class NativeCrossReferences
         }
         // Static mixed CHAR/control payloads must remain byte-for-byte untouched.
         if (sources.Count == 0) return (layout, result);
-        var figures = plan.Operations.Where(o => o.FigureId is not null).ToDictionary(o => o.FigureId!, StringComparer.Ordinal);
+        var objects = plan.Operations.Where(o => o.FigureId is not null || o.TableId is not null)
+            .ToDictionary(o => o.FigureId ?? o.TableId!, StringComparer.Ordinal);
         var targets = new Dictionary<string, XElement>(StringComparer.Ordinal);
         foreach (var reference in sources.Values.Distinct())
         {
             XElement target;
-            if (reference.Kind == "figure_number")
+            if (reference.Kind is "figure_number" or "table_number")
             {
-                if (!figureInstances.TryGetValue(reference.Target, out var instance))
-                    throw new InvalidOperationException($"Missing generated native picture identity for {reference.Target}.");
-                var pictures = result.Descendants("PICTURE").Where(p => Identity(p.Element("SHAPEOBJECT")) == instance).ToArray();
-                if (pictures.Length != 1) throw new InvalidOperationException($"Ambiguous native picture target {reference.Target}.");
+                var instances = reference.Kind == "figure_number" ? figureInstances : tableInstances;
+                if (instances is null || !instances.TryGetValue(reference.Target, out var instance))
+                    throw new InvalidOperationException($"Missing generated native object identity for {reference.Target}.");
+                var pictures = result.Descendants(reference.Kind == "figure_number" ? "PICTURE" : "TABLE").Where(p => Identity(p.Element("SHAPEOBJECT")) == instance).ToArray();
+                if (pictures.Length != 1) throw new InvalidOperationException($"Ambiguous native object target {reference.Target}.");
                 target = pictures[0];
-                RequireFigure(target);
+                RequireObject(target, reference.Kind);
             }
             else
             {
@@ -96,14 +99,17 @@ internal sealed class NativeCrossReferences
                 var target = targets[reference.Target];
                 var marker = "MD2HWP_NATIVE_NUMBER_REFERENCE_" + Guid.NewGuid().ToString("N");
                 var context = atoms[match.Index].Element.Parent!;
-                var fragments = reference.Kind == "figure_number"
-                    ? template.CreateFigureNumberFragments(result, figures[reference.Target].Heading1Number, marker, context)
-                    : template.CreateHeadingNumberFragments(result, marker, context);
+                var fragments = reference.Kind switch
+                {
+                    "figure_number" => template.CreateFigureNumberFragments(result, objects[reference.Target].Heading1Number, marker, context),
+                    "table_number" => template.CreateTableNumberFragments(result, objects[reference.Target].Heading1Number, marker, context),
+                    _ => template.CreateHeadingNumberFragments(result, marker, context)
+                };
                 Replace(paragraph, atoms.Skip(match.Index).Take(match.Length).ToArray(), fragments);
                 Coalesce(paragraph);
                 var location = FindMarker(paragraph, marker);
                 layout.references.Add(new(marker, reference.Kind, reference.Target, Path(target),
-                    reference.Kind == "figure_number" ? FigureNumber(target) : null,
+                    reference.Kind != "heading_number" ? ObjectNumber(target, reference.Kind) : null,
                     Format(location.Atoms[0].Element.Parent!, result), Path(paragraph)));
                 found.Add(match.Value);
             }
@@ -242,8 +248,8 @@ internal sealed class NativeCrossReferences
             if (!uint.TryParse(id, NumberStyles.None, CultureInfo.InvariantCulture, out _) || !fieldIds.Add(id!) ||
                 document.Descendants("FIELDBEGIN").Count(e => Identity(e) == id) != 1)
                 throw new InvalidOperationException("Native reference field identity is missing or duplicated.");
-            var number = reference.Kind == "figure_number" ? reference.Number : headingNumbers.GetValueOrDefault(reference.Target);
-            if (number is null || field.Text != number || reference.Kind == "figure_number" && FigureNumber(target) != number)
+            var number = reference.Kind != "heading_number" ? reference.Number : headingNumbers.GetValueOrDefault(reference.Target);
+            if (number is null || field.Text != number || reference.Kind != "heading_number" && ObjectNumber(target, reference.Kind) != number)
                 throw new InvalidOperationException("Native reference display does not match its target number.");
             foreach (var fragment in field.Fragments)
                 if (!XNode.DeepEquals(reference.Format, Format(fragment, document)))
@@ -277,12 +283,12 @@ internal sealed class NativeCrossReferences
         }
     }
 
-    internal static string Command(string instance, string kind) => $"?#{instance};{(kind == "figure_number" ? 1 : 5)};1;0;0";
+    internal static string Command(string instance, string kind) => $"?#{instance};{(kind switch { "table_number" => 0, "figure_number" => 1, "heading_number" => 5, _ => throw new InvalidOperationException("Unsupported native reference kind.") })};1;0;0";
 
     private static string Instance(XElement target, string kind, XDocument document)
     {
         XElement owner;
-        if (kind == "figure_number") { RequireFigure(target); owner = target.Element("SHAPEOBJECT")!; }
+        if (kind != "heading_number") { RequireObject(target, kind); owner = target.Element("SHAPEOBJECT")!; }
         else
         {
             if (target.Name.LocalName != "P" || !IsOutline(target, document)) throw new InvalidOperationException("Native heading target is no longer an outline paragraph.");
@@ -300,17 +306,18 @@ internal sealed class NativeCrossReferences
     private static bool IsOutline(XElement paragraph, XDocument document) =>
         document.Descendants("PARASHAPE").SingleOrDefault(e => (string?)e.Attribute("Id") == (string?)paragraph.Attribute("ParaShape"))?.Attribute("HeadingType")?.Value == "Outline";
 
-    private static void RequireFigure(XElement picture)
+    private static void RequireObject(XElement picture, string kind)
     {
-        if (picture.Name.LocalName != "PICTURE" || (string?)picture.Element("SHAPEOBJECT")?.Attribute("NumberingType") != "Figure")
-            throw new InvalidOperationException("Native reference target is not a numbered picture.");
+        if (picture.Name.LocalName != (kind == "table_number" ? "TABLE" : "PICTURE") ||
+            (string?)picture.Element("SHAPEOBJECT")?.Attribute("NumberingType") != (kind == "table_number" ? "Table" : "Figure"))
+            throw new InvalidOperationException("Native reference target is not a numbered object with a caption.");
     }
 
-    private static string FigureNumber(XElement picture)
+    private static string ObjectNumber(XElement picture, string kind)
     {
-        var counters = picture.Element("SHAPEOBJECT")?.Element("CAPTION")?.Descendants("AUTONUM").Where(e => (string?)e.Attribute("NumberType") == "Figure").ToArray() ?? [];
+        var counters = picture.Element("SHAPEOBJECT")?.Element("CAPTION")?.Descendants("AUTONUM").Where(e => (string?)e.Attribute("NumberType") == (kind == "table_number" ? "Table" : "Figure")).ToArray() ?? [];
         if (counters.Length != 1 || !int.TryParse((string?)counters[0].Attribute("Number"), NumberStyles.None, CultureInfo.InvariantCulture, out var number) || number < 1)
-            throw new InvalidOperationException("Referenced picture needs one positive native figure AUTONUM.");
+            throw new InvalidOperationException("Referenced object needs one positive native AUTONUM in its caption.");
         return number.ToString(CultureInfo.InvariantCulture);
     }
 

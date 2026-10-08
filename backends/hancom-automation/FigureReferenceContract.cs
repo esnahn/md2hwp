@@ -39,6 +39,7 @@ internal static class FigureReferenceContract
                 if (!targets.TryAdd(id, kind)) throw JsonContract.Error("/blocks/id", $"duplicate target identifier {id}");
             }
             Add(operation.FigureId, "figure_number");
+            Add(operation.TableId, "table_number");
             Add(operation.HeadingId, "heading_number");
         }
         foreach (var run in ReadRuns(operations).Concat(operations.Where(o => o.Kind == "figure")
@@ -46,8 +47,8 @@ internal static class FigureReferenceContract
         {
             if (run.CrossReference is not { } reference) continue;
             RequireId(reference.Target, "/inlines/target");
-            if (reference.Kind is not ("figure_number" or "heading_number"))
-                throw JsonContract.Error("/inlines/kind", "supported reference kinds are figure_number and heading_number");
+            if (reference.Kind is not ("figure_number" or "heading_number" or "table_number"))
+                throw JsonContract.Error("/inlines/kind", "supported reference kinds are figure_number, table_number and heading_number");
             if (!targets.TryGetValue(reference.Target, out var actualKind))
                 throw JsonContract.Error("/inlines/target", $"unknown reference target {reference.Target}");
             if (actualKind != reference.Kind)

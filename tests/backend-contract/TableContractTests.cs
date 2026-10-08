@@ -27,6 +27,8 @@ internal static class TableContractTests
         var json = $$"""{"type":"table","columns":["left","right"],"header":[[{{text}}],[]],"rows":[[[{{note}},{{reference}}],[{"type":"strong","inlines":[{{text}}]}]]],"caption":[{{text}}],"source":[{"prefix":"출처","inlines":[{{text}}]}]}""";
         var plan = Read(json, new PreviewOperation("text", "target", [], HeadingId: "대상"));
         var operation = plan.Operations.Last();
+        Check(Read(json.Replace("\"type\":\"table\"", "\"type\":\"table\",\"id\":\"표-ID\""), new PreviewOperation("text", "target", [], HeadingId: "대상"))
+            .Operations.Last().TableId == "표-ID", "Table ID was lost when planning its native object.");
         Check(plan.Summary.TableOperations == 1 && operation.Kind == "table" && operation.Table!.Rows.Count == 1,
             "Table operations or their row model were lost.");
         Check(operation.FormattedLines is not null && operation.FormattedLines.Count == 1 &&
@@ -66,11 +68,12 @@ internal static class TableContractTests
         var content = new PreviewTable(["default", "right"], [cellHeader, Inline("[]")],
             [[cellBody, Inline("[" + note + "," + reference + "]")]],
             Inline("[" + text + "]"), Inline("[" + text + "]"));
-        var tableOperation = new PreviewOperation("table", "table", ["MARKER"], ParagraphStyle: "body", Heading1Number: 3, Table: content);
+        var tableOperation = new PreviewOperation("table", "table", ["MARKER"], ParagraphStyle: "body", Heading1Number: 3, Table: content, TableId: "표-ID");
         var tablePlan = new IrPreviewPlan("fixture", "fixture", new(1, 0, 0, 0, 0, 1), [tableOperation], []);
         var destination = Destination(Paragraph("MARKER"));
         var attached = lower.Layout.Attach(destination, tablePlan, 0, (_, _, _) => [4000, 10400]);
         var table = attached.Descendants("TABLE").Single();
+        Check(lower.Layout.ReferencedTableInstances["표-ID"] == (string?)table.Element("SHAPEOBJECT")!.Attribute("InstId"), "Table ID does not track its generated native shape identity.");
         Check((int?)table.Attribute("RowCount") == 3 && (int?)table.Attribute("ColCount") == 2 &&
             table.Elements("ROW").Take(2).All(row => row.Elements("CELL").Count() == 2), "Generated table has the wrong row/column geometry.");
         Check(table.Elements("ROW").Last().Elements("CELL").Single().Attribute("ColSpan")!.Value == "2" &&
@@ -161,7 +164,7 @@ internal static class TableContractTests
         TemplateTables.RecalculateTableNumbers(sectionCounter);
         Check(sectionCounter.Descendants("AUTONUM").Select(number => (int)number.Attribute("Number")!).SequenceEqual(new[] { 5, 2 }),
             "Zero section start should continue the table counter.");
-        TestHeaderPagination(tableOperation);
+        TestHeaderPagination(tableOperation with { TableId = null });
         TestVerticalBorders();
         TestSharedSourceBorder();
         Console.WriteLine("Table IR, sample rows, source omission, rich cells, native captions, geometry and local header pagination contracts passed.");

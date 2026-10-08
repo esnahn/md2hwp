@@ -21,8 +21,9 @@ internal static class NativeCrossReferenceTests
         var staticRoot = new XElement(Roots(fixture)[0]);
         var verbatimRoot = new XElement(Roots(fixture)[2]);
         var sample = Paragraph("그림 {{md2hwp:num:heading1}}-{{md2hwp:slot:ref.figure.number}}", "2");
+        var tableSample = Paragraph("표 {{md2hwp:num:heading1}}-{{md2hwp:slot:ref.table.number}}", "2");
         var headingSample = Paragraph("({{md2hwp:slot:ref.heading.number}})", "1");
-        var template = new TemplateCrossReferences(fixture, sample, headingSample);
+        var template = new TemplateCrossReferences(fixture, sample, headingSample, tableSample);
         var prepared = NativeCrossReferences.Prepare(fixture, Plan(), template, Figures(), Headings());
         Check(fixture.ToString() == original, "Reference preparation mutated source HWPML.");
         Check(prepared.Layout.Count == 5, "Duplicate references or nested note references disappeared.");
@@ -51,6 +52,36 @@ internal static class NativeCrossReferenceTests
         Check(native.Descendants("FIELDBEGIN").Where(e => (string?)e.Attribute("Type") == "Crossref").Count(e => ((string)e.Attribute("Command")!).Contains(";5;1;0;0", StringComparison.Ordinal)) == 1,
             "Outline reference did not target the native outline object number.");
         Check(NativeCrossReferences.Command("501", "figure_number") == "?#501;1;1;0;0" && NativeCrossReferences.Command("510", "heading_number") == "?#510;5;1;0;0", "Documented native commands changed.");
+        var tableFixture = Fixture();
+        var nativeTable = tableFixture.Descendants("PICTURE").Single(p => (string?)p.Element("SHAPEOBJECT")?.Attribute("InstId") == "101");
+        nativeTable.Name = "TABLE";
+        nativeTable.Element("SHAPEOBJECT")!.SetAttributeValue("NumberingType", "Table");
+        nativeTable.Descendants("AUTONUM").Single().SetAttributeValue("NumberType", "Table");
+        PreviewTextRun TableReference(PreviewTextRun run) => run.CrossReference?.Kind == "figure_number"
+            ? run with { CrossReference = run.CrossReference with { Kind = "table_number" } }
+            : run.Footnote is null ? run : run with { Footnote = run.Footnote with {
+                Paragraphs = run.Footnote.Paragraphs.Select(p => p with {
+                    Lines = p.Lines.Select(l => l with { Runs = l.Runs.Select(TableReference).ToArray() }).ToArray()
+                }).ToArray()
+            } };
+        var plan = Plan();
+        var tablePlan = plan with { Operations = plan.Operations.Select(o => o.Kind == "figure"
+            ? o with { Kind = "table", FigureId = null, TableId = o.FigureId }
+            : o with { FormattedLines = o.FormattedLines?.Select(line => (IReadOnlyList<PreviewTextRun>)line.Select(TableReference).ToArray()).ToArray() }).ToArray() };
+        var tablePrepared = NativeCrossReferences.Prepare(tableFixture, tablePlan, template,
+            new Dictionary<string,string>(), new Dictionary<string,IReadOnlyList<string>> { ["fig:heading"] = ["110"] },
+            new Dictionary<string,string> { ["한글-대상"] = "101" });
+        var tableFields = NativeFields(tablePrepared.Document);
+        foreach (var f in tableFields.Descendants("FIELDBEGIN").Where(f => (string?)f.Attribute("Type") == "Crossref"))
+            if (((string)f.Attribute("Command")!).Contains(";1;1;0;0", StringComparison.Ordinal))
+                f.SetAttributeValue("Command", NativeCrossReferences.Command("501", "table_number") + ";");
+        tablePrepared.Layout.RecordHeadingNumber("fig:heading", "IV.(가)");
+        tablePrepared.Layout.Verify(tableFields);
+        Check(tablePrepared.Layout.Count == prepared.Layout.Count && NativeCrossReferences.Command("501", "table_number") == "?#501;0;1;0;0", "Table field graph lost repeated or nested references.");
+        var uncaptioned = new XDocument(tableFixture);
+        uncaptioned.Descendants("TABLE").Single(t => t.Element("SHAPEOBJECT") is not null).Element("SHAPEOBJECT")!.Element("CAPTION")!.Remove();
+        Reject(() => NativeCrossReferences.Prepare(uncaptioned, tablePlan, template, new Dictionary<string,string>(),
+            new Dictionary<string,IReadOnlyList<string>> { ["fig:heading"] = ["110"] }, new Dictionary<string,string> { ["한글-대상"] = "101" }));
         XElement FirstField(XDocument d) => d.Descendants("FIELDBEGIN").First(e => (string?)e.Attribute("Type") == "Crossref");
         void Tamper(Action<XDocument> change)
         {

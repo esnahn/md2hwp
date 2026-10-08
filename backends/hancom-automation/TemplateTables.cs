@@ -16,6 +16,7 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
     private static readonly Regex WidthTag = new(@"^\{\{md2hwp:table\.width-mm:([^{}]+)\}\}$", RegexOptions.CultureInvariant);
     private static readonly Regex Tags = new(@"\{\{md2hwp:([^{}]+)\}\}", RegexOptions.CultureInvariant);
     private readonly HashSet<string> generatedShapeIds = [];
+    private readonly Dictionary<string, string> generatedTableInstances = new(StringComparer.Ordinal);
     private readonly HashSet<string> generatedBodyShapeIds = [];
     private readonly HashSet<string> heightPaths = [];
 
@@ -23,6 +24,7 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
     internal int WidthHwpUnits => checked((int)Math.Round(widthMillimeters * 7200 / 25.4));
     internal XElement Prototype => new(prototype.Descendants("TABLE").Single());
     internal IReadOnlyCollection<string> GeneratedTableInstances => generatedShapeIds;
+    internal IReadOnlyDictionary<string, string> ReferencedTableInstances => generatedTableInstances;
     internal IReadOnlyCollection<string> GeneratedTableBodyInstances => generatedBodyShapeIds;
     internal void RecalculateNumbers(XDocument document) => RecalculateTableNumbers(document);
 
@@ -147,7 +149,7 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
     internal XDocument Attach(XDocument rendered, IrPreviewPlan plan, int start,
         Func<PreviewTable, XDocument, XElement, int[]> columnWidths)
     {
-        generatedShapeIds.Clear(); generatedBodyShapeIds.Clear(); heightPaths.Clear();
+        generatedShapeIds.Clear(); generatedBodyShapeIds.Clear(); heightPaths.Clear(); generatedTableInstances.Clear();
         var result = new XDocument(rendered);
         var roots = AuriMinimalBoxPrototype.RootParagraphs(result);
         var index = start;
@@ -164,6 +166,7 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
                 var instanceId = (string?)shape.Attribute("InstId") ?? (string?)shape.Attribute("InstID")
                     ?? throw new InvalidDataException("Table prototype requires a native shape instance ID.");
                 generatedShapeIds.Add(instanceId);
+                if (operation.TableId is { } tableId) generatedTableInstances.Add(tableId, instanceId);
                 if (content.Rows.Count > 0) generatedBodyShapeIds.Add(instanceId);
                 var widths = columnWidths(content, result, table);
                 if (widths.Length != content.Columns.Count || widths.Any(value => value <= 0) || widths.Sum(value => (long)value) != WidthHwpUnits)

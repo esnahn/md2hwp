@@ -200,12 +200,15 @@ internal static class TableAutoWidths
             }
             var reference = run.CrossReference!;
             if (references is null)
-                return MeasurePlain(reference.Kind == "figure_number" ? "그림 999-999" : "999.999.999.",
+                return MeasurePlain(reference.Kind switch { "figure_number" => "그림 999-999", "table_number" => "표 999-999", _ => "999.999.999." },
                     format.CharacterShape, run.Strong, run.Emphasis);
             var marker = "MD2HWP_WIDTH_" + Guid.NewGuid().ToString("N");
-            var fragments = reference.Kind == "figure_number"
-                ? references.CreateFigureNumberFragments(document, 999, marker)
-                : references.CreateHeadingNumberFragments(document, marker);
+            var fragments = reference.Kind switch
+            {
+                "figure_number" => references.CreateFigureNumberFragments(document, 999, marker),
+                "table_number" => references.CreateTableNumberFragments(document, 999, marker),
+                _ => references.CreateHeadingNumberFragments(document, marker)
+            };
             var width = 0.0;
             var previousGap = 0.0;
             foreach (var fragment in fragments)
@@ -213,7 +216,7 @@ internal static class TableAutoWidths
                 var shape = document.Descendants("CHARSHAPE").Single(e =>
                     (string?)e.Attribute("Id") == (string?)fragment.Attribute("CharShape"));
                 var text = string.Concat(fragment.Elements("CHAR").Select(e => e.Value))
-                    .Replace(marker, reference.Kind == "figure_number" ? "999" : "999.999.999.", StringComparison.Ordinal);
+                    .Replace(marker, reference.Kind != "heading_number" ? "999" : "999.999.999.", StringComparison.Ordinal);
                 var measured = MeasurePlain(text, shape, run.Strong, run.Emphasis);
                 if (text.Length != 0)
                 {

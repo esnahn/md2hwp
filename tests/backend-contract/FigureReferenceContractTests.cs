@@ -29,6 +29,12 @@ internal static class FigureReferenceContractTests
         Reject(() => FigureReferenceContract.Validate(operations[..2]));
         Reject(() => FigureReferenceContract.Validate(operations.Concat(new[] { new PreviewOperation("figure", "duplicate", [], FigureId: "fig:heading") }).ToArray()));
         Reject(() => FigureReferenceContract.Validate(new[] { operations[0], operations[1] with { HeadingId = "plain" }, operations[2] with { FigureId = "fig:heading" } }));
+        var tableRuns = Read("[{\"type\":\"cross_reference\",\"kind\":\"table_number\",\"target\":\"표\"}]").Lines.Single().Runs;
+        var tableTarget = new PreviewOperation("table", "table", [], TableId: "표");
+        var tableReader = new PreviewOperation("text", "reader", [], FormattedLines: [tableRuns]);
+        FigureReferenceContract.Validate([tableReader, tableTarget]);
+        Reject(() => FigureReferenceContract.Validate([tableReader]));
+        Reject(() => FigureReferenceContract.Validate([tableReader, tableTarget, operations[2] with { FigureId = "표" }]));
         var note = Read("[{\"type\":\"footnote\",\"blocks\":[{\"type\":\"paragraph\",\"inlines\":[{\"type\":\"cross_reference\",\"kind\":\"heading_number\",\"target\":\"fig:heading\"}]}]}]");
         FigureReferenceContract.Validate(new[] { operations[1], new PreviewOperation("text", "note", [], FormattedLines: note.Lines.Select(l => l.Runs).ToArray()) });
         Reject(() => FigureReferenceContract.Validate(new[] { new PreviewOperation("text", "note", [], FormattedLines: note.Lines.Select(l => l.Runs).ToArray()) }));
@@ -44,7 +50,7 @@ internal static class FigureReferenceContractTests
         Reject(() => Read(input, false));
         Reject(() => Read("[{\"type\":\"link\",\"target\":\"https://example.org\",\"title\":null,\"inlines\":[{\"type\":\"cross_reference\",\"kind\":\"figure_number\",\"target\":\"plain\"}]}]", false));
         foreach (var json in new[] {
-            "[{\"type\":\"cross_reference\",\"kind\":\"table_number\",\"target\":\"plain\"}]",
+
             "[{\"type\":\"cross_reference\",\"kind\":\"figure_page\",\"target\":\"plain\"}]",
             "[{\"type\":\"cross_reference\",\"kind\":\"figure_number\",\"target\":\"\"}]",
             "[{\"type\":\"cross_reference\",\"kind\":\"figure_number\",\"target\":\"plain\",\"label\":\"bad\"}]" }) Reject(() => Read(json));

@@ -3,7 +3,7 @@ using Md2Hwp.HancomIrPreview;
 
 internal static class TemplateCrossReferenceTests
 {
-    private static readonly string[] Roles = [TemplateCrossReferences.FigureNumberRole, TemplateCrossReferences.HeadingNumberRole];
+    private static readonly string[] Roles = [TemplateCrossReferences.FigureNumberRole, TemplateCrossReferences.HeadingNumberRole, TemplateCrossReferences.TableNumberRole];
 
     internal static void Run()
     {
@@ -13,7 +13,7 @@ internal static class TemplateCrossReferenceTests
         Check(original.ToString() == originalText, "Reference lowering mutated its source.");
         Check(AuriMinimalBoxPrototype.RootParagraphs(lowered.Document).Select(TaggedTemplateBinding.DirectText)
             .SequenceEqual(new[] { "before", Tag("begin:template"), "other declaration", Tag("end:template"), "after" }),
-            "Reference lowering did not remove exactly the six prototype roots.");
+            "Reference lowering did not remove exactly the nine prototype roots.");
 
         var destination = Destination();
         var figure = lowered.Layout.CreateFigureNumberFragments(destination, 7, "NATIVE_FIGURE_7");
@@ -34,6 +34,7 @@ internal static class TemplateCrossReferenceTests
             destination.Descendants("CHARSHAPE").Any(shape => shape.Element("BOLD") is not null),
             "Reference formatting import lost or duplicated a character shape.");
 
+        Check(Text(lowered.Layout.CreateTableNumberFragments(destination, 9, "NATIVE_TABLE_9")) == "표 9-NATIVE_TABLE_9", "Table reference used the wrong wording or target chapter.");
         var heading = lowered.Layout.CreateHeadingNumberFragments(destination, "NATIVE_OUTLINE");
         Check(Text(heading) == "제NATIVE_OUTLINE절", "Heading reference altered its native outline slot or literal wrapper.");
         var headingRun = heading.Single(fragment => fragment.Value.Contains("NATIVE_OUTLINE", StringComparison.Ordinal));
@@ -60,7 +61,7 @@ internal static class TemplateCrossReferenceTests
         Check(Text(prepared.Layout.CreateHeadingNumberFragments(Destination(), "NATIVE_OUTLINE_PREPARED")) == "제NATIVE_OUTLINE_PREPARED절",
             "Heading reference required or calculated a chapter number.");
         Reject(() => prepared.Layout.CreateFigureNumberFragments(Destination(), null, "NATIVE_NO_CHAPTER"), "heading1");
-        Reject(() => lowered.Layout.CreateFigureNumberFragments(Destination(), null, "NATIVE_NO_CHAPTER"), "target figure");
+        Reject(() => lowered.Layout.CreateFigureNumberFragments(Destination(), null, "NATIVE_NO_CHAPTER"), "target object");
         var withoutChapter = TemplateCrossReferences.Lower(Fixture(Paragraph("See " + TemplateCrossReferences.FigureNumberSlot)));
         Check(Text(withoutChapter.Layout.CreateFigureNumberFragments(Destination(), null, "NATIVE_NO_CHAPTER")) == "See NATIVE_NO_CHAPTER",
             "A figure prototype without a chapter slot required a chapter.");
@@ -133,7 +134,7 @@ internal static class TemplateCrossReferenceTests
         Reject(() => TemplateCrossReferences.Lower(TemplateHeadingNumbers.Prepare(headingWithChapter)), "native outline");
         foreach (var reserved in new[]
         {
-            "ref.table.number", "ref.equation.number", "ref.footnote.number", "ref.endnote.number",
+            "ref.equation.number", "ref.footnote.number", "ref.endnote.number",
             "ref.bookmark.text", "ref.figure.page", "ref.table.page", "ref.heading.page", "ref.unknown.number",
         })
         foreach (var kind in new[] { "begin:", "end:", "slot:", "" })
@@ -254,8 +255,8 @@ internal static class TemplateCrossReferenceTests
     private static XElement HeadingSample() => new("P", new XAttribute("ParaShape", "0"), new XAttribute("Style", "0"),
         Run("2", "제{{md2hwp:slot:ref.head", "heading-number"), Run("1", "ing.number}}절", "number-continuation"));
     private static XDocument WithSample(string role, XElement sample) =>
-        role == TemplateCrossReferences.FigureNumberRole ? Fixture(sample) : Fixture(heading: sample);
-    private static XDocument Fixture(XElement? figure = null, XElement? heading = null) => new(new XElement("HWPML",
+        role switch { TemplateCrossReferences.FigureNumberRole => Fixture(sample), TemplateCrossReferences.TableNumberRole => Fixture(table: sample), _ => Fixture(heading: sample) };
+    private static XDocument Fixture(XElement? figure = null, XElement? heading = null, XElement? table = null) => new(new XElement("HWPML",
         new XElement("HEAD",
             new XElement("PARASHAPELIST", new XAttribute("Count", "1"), new XElement("PARASHAPE", new XAttribute("Id", "0"), new XAttribute("Align", "Center"))),
             new XElement("CHARSHAPELIST", new XAttribute("Count", "3"),
@@ -266,7 +267,9 @@ internal static class TemplateCrossReferenceTests
             Paragraph("other declaration"), Paragraph(Tag("begin:" + TemplateCrossReferences.FigureNumberRole)), figure ?? FigureSample(),
             Paragraph(Tag("end:" + TemplateCrossReferences.FigureNumberRole)),
             Paragraph(Tag("begin:" + TemplateCrossReferences.HeadingNumberRole)), heading ?? HeadingSample(),
-            Paragraph(Tag("end:" + TemplateCrossReferences.HeadingNumberRole)), Paragraph(Tag("end:template")), Paragraph("after")))));
+            Paragraph(Tag("end:" + TemplateCrossReferences.HeadingNumberRole)),
+            Paragraph(Tag("begin:" + TemplateCrossReferences.TableNumberRole)), table ?? Paragraph("표 " + TemplateHeadingNumbers.Tag + "-" + TemplateCrossReferences.TableNumberSlot),
+            Paragraph(Tag("end:" + TemplateCrossReferences.TableNumberRole)), Paragraph(Tag("end:template")), Paragraph("after")))));
     private static XDocument Destination() => new(new XElement("HWPML",
         new XElement("HEAD",
             new XElement("PARASHAPELIST", new XAttribute("Count", "1"), new XElement("PARASHAPE", new XAttribute("Id", "0"), new XAttribute("Align", "Left"))),

@@ -126,7 +126,7 @@ internal static partial class HancomPreviewWriter
                 tables.Layout.RecalculateNumbers(attached);
                 TableWidthLimits.RequireFits(attached, tables.Layout.GeneratedTableInstances);
                 var references = NativeCrossReferences.Prepare(attached, plan, referenceTemplate.Layout,
-                    nativeFigure.Layout.GeneratedFigureInstances, headings.Layout.GeneratedHeadingInstances);
+                    nativeFigure.Layout.GeneratedFigureInstances, headings.Layout.GeneratedHeadingInstances, tables.Layout.ReferencedTableInstances);
                 attached = references.Document;
                 footnotes.RecordLayout(attached);
                 boxes.Layout.RecordLayout(attached);

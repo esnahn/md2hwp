@@ -6,9 +6,11 @@ namespace Md2Hwp.HancomIrPreview;
 
 // Paragraph prototypes own the wording and slots of native number references.
 // Native fields are inserted later by the adapter at the number slots.
-internal sealed class TemplateCrossReferences(XDocument source, XElement figureNumber, XElement? headingNumber = null)
+internal sealed class TemplateCrossReferences(XDocument source, XElement figureNumber, XElement? headingNumber = null, XElement? tableNumber = null)
 {
     internal const string FigureNumberRole = "ref.figure.number";
+    internal const string TableNumberRole = "ref.table.number";
+    internal static readonly string TableNumberSlot = TaggedTemplateBinding.Tag("slot:" + TableNumberRole);
     internal const string HeadingNumberRole = "ref.heading.number";
     internal static readonly string FigureNumberSlot = TaggedTemplateBinding.Tag("slot:" + FigureNumberRole);
     internal static readonly string HeadingNumberSlot = TaggedTemplateBinding.Tag("slot:" + HeadingNumberRole);
@@ -19,7 +21,7 @@ internal sealed class TemplateCrossReferences(XDocument source, XElement figureN
     {
         var document = new XDocument(source);
         var roots = AuriMinimalBoxPrototype.RootParagraphs(document).ToArray();
-        var roles = new[] { FigureNumberRole, HeadingNumberRole };
+        var roles = new[] { FigureNumberRole, HeadingNumberRole, TableNumberRole };
         var permitted = roles.SelectMany(role => new[] { "begin:" + role, "end:" + role, "slot:" + role })
             .ToHashSet(StringComparer.Ordinal);
         foreach (var paragraph in document.Descendants("P"))
@@ -27,7 +29,7 @@ internal sealed class TemplateCrossReferences(XDocument source, XElement figureN
         {
             var name = token.Groups[1].Value;
             if (name.Split(':').Any(part => part.StartsWith("ref.", StringComparison.Ordinal)) && !permitted.Contains(name))
-                throw new InvalidDataException($"Unsupported template cross-reference declaration '{name}'. Only ref.figure.number and ref.heading.number are supported; table references, other reference types and page references are reserved.");
+                throw new InvalidDataException($"Unsupported template cross-reference declaration '{name}'. Only ref.figure.number, ref.table.number and ref.heading.number are supported; other reference types and page references are reserved.");
         }
 
         int Find(string token)
@@ -63,7 +65,7 @@ internal sealed class TemplateCrossReferences(XDocument source, XElement figureN
             if (role == HeadingNumberRole && TemplateHeadingNumbers.ContainsNumberSlot(sample))
                 throw new InvalidDataException("ref.heading.number uses a native outline-number field; num:heading1 is not supported in its sample.");
             foreach (Match token in Tags.Matches(sampleText))
-                if (token.Value != slot && !(role == FigureNumberRole && token.Value == TemplateHeadingNumbers.Tag))
+                if (token.Value != slot && !(role != HeadingNumberRole && token.Value == TemplateHeadingNumbers.Tag))
                     throw new InvalidDataException($"Unsupported tag '{token.Value}' in {role} sample.");
             var remaining = numberSlot.Replace(ChapterSlot.Replace(sampleText, ""), "");
             if (remaining.Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal))
@@ -75,11 +77,15 @@ internal sealed class TemplateCrossReferences(XDocument source, XElement figureN
             if (permitted.Contains(token.Groups[1].Value))
                 throw new InvalidDataException("Reference declarations and number slots are allowed only in their single root prototypes inside template definitions.");
         foreach (var paragraph in accepted) paragraph.Remove();
-        return (new TemplateCrossReferences(new XDocument(source), prototypes[FigureNumberRole], prototypes[HeadingNumberRole]), document);
+        return (new TemplateCrossReferences(new XDocument(source), prototypes[FigureNumberRole], prototypes[HeadingNumberRole], prototypes[TableNumberRole]), document);
     }
 
     internal XElement[] CreateFigureNumberFragments(XDocument destination, int? targetHeading1Number, string nativeControlMarker, XElement? context = null) =>
         CreateFragments(destination, figureNumber, FigureNumberSlot, nativeControlMarker, targetHeading1Number, true, context);
+
+    internal XElement[] CreateTableNumberFragments(XDocument destination, int? targetHeading1Number, string nativeControlMarker, XElement? context = null) =>
+        CreateFragments(destination, tableNumber ?? throw new InvalidDataException("Missing required ref.table.number prototype. Regenerate the template with init-template."),
+            TableNumberSlot, nativeControlMarker, targetHeading1Number, true, context);
 
     internal XElement[] CreateHeadingNumberFragments(XDocument destination, string nativeControlMarker, XElement? context = null) =>
         CreateFragments(destination, headingNumber ?? throw new InvalidDataException("Missing required ref.heading.number prototype. Regenerate the template with init-template."),
@@ -106,7 +112,7 @@ internal sealed class TemplateCrossReferences(XDocument source, XElement figureN
         if (allowChapterNumber)
             instance = TemplateMetadata.Transform(instance, TemplateHeadingNumbers.Tag, ChapterSlot, _ =>
                 targetHeading1Number?.ToString(CultureInfo.InvariantCulture)
-                    ?? throw new InvalidDataException("num:heading1 in ref.figure.number requires the target figure to follow a heading1."));
+                    ?? throw new InvalidDataException("num:heading1 in an object reference requires the target object to follow a heading1."));
         instance = TemplateMetadata.Transform(instance, slot, new Regex(Regex.Escape(slot), RegexOptions.CultureInvariant), _ => nativeControlMarker);
         return instance.Root!.Element("P")!.Elements("TEXT").Select(text => new XElement(text)).ToArray();
     }

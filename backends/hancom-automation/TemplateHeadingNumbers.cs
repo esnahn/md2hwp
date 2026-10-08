@@ -47,6 +47,6 @@ internal static class TemplateHeadingNumbers
     internal static void RequireResolved(XDocument document)
     {
         if (document.Descendants("P").Any(p=>TaggedTemplateBinding.DirectText(p).Contains(Marker,StringComparison.Ordinal)))
-            throw new InvalidDataException("num:heading1 is allowed only inside heading blocks, figure captions and ref.figure.number samples.");
+            throw new InvalidDataException("num:heading1 is allowed only inside heading blocks, figure/table captions and object-reference samples.");
     }
 }

@@ -84,7 +84,8 @@ internal sealed record PreviewOperation(
     string? HeadingId = null,
     PreviewTable? Table = null,
     PreviewListMarker? ListContinuation = null,
-    IReadOnlyList<PreviewSourceParagraph>? Sources = null);
+    IReadOnlyList<PreviewSourceParagraph>? Sources = null,
+    string? TableId = null);
 
 internal sealed record PreviewTable(
     IReadOnlyList<string> Columns,
@@ -411,7 +412,7 @@ internal sealed class PlanBuilder(
 
     private void AddTable(JsonElement block, string path)
     {
-        JsonContract.ExpectObject(block, path, ["type", "columns", "header", "rows"], ["caption", "source"]);
+        JsonContract.ExpectObject(block, path, ["type", "columns", "header", "rows"], ["caption", "source", "id"]);
         var columnsElement = JsonContract.ExpectArray(block.GetProperty("columns"), path + "/columns");
         var columns = columnsElement.EnumerateArray().Select((value, index) =>
             JsonContract.ReadString(value, $"{path}/columns/{index}")).ToArray();
@@ -445,7 +446,7 @@ internal sealed class PlanBuilder(
         var table = new PreviewTable(columns, header, rows, ReadOptional("caption"), sources?.First().Content);
         var marker = "MD2HWP_GENERATED_TABLE_" + Guid.NewGuid().ToString("N");
         operations.Add(new PreviewOperation("table", "table", [marker], ParagraphStyle: "body",
-            FormattedLines: PreviewInlineContent.Plain([marker]).Lines.Select(line => line.Runs).ToArray(), Table: table, Sources: sources));
+            FormattedLines: PreviewInlineContent.Plain([marker]).Lines.Select(line => line.Runs).ToArray(), Table: table, Sources: sources, TableId: FigureReferenceContract.ReadOptionalId(block, path)));
     }
 
     private static PreviewOperation Text(
@@ -548,8 +549,8 @@ internal static class InlineText
                     throw JsonContract.Error(path + "/type", "cross references are not supported in this inline context");
                 JsonContract.ExpectObject(inline, path, ["type", "kind", "target"]);
                 var kind = JsonContract.RequiredString(inline, "kind", path);
-                if (kind is not ("figure_number" or "heading_number"))
-                    throw JsonContract.Error(path + "/kind", "supported reference kinds are figure_number and heading_number");
+                if (kind is not ("figure_number" or "heading_number" or "table_number"))
+                    throw JsonContract.Error(path + "/kind", "supported reference kinds are figure_number, table_number and heading_number");
                 var target = JsonContract.RequiredString(inline, "target", path);
                 FigureReferenceContract.RequireId(target, path + "/target");
                 builder.AppendCrossReference(new PreviewCrossReference(kind, target), strong, emphasis);
