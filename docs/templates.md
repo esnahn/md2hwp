@@ -12,7 +12,7 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 기존 템플릿 파일 없이 한글의 새 빈 문서 기본 서식에서 시작합니다. 현재 IR의
 필수 선언, 제목 1~6단계·본문·각주 스타일, 글머리표·번호 목록 원형, 단일 셀 박스와 선택적 제목·출처, 샘플 그림과 실제 자동번호 캡션·출처를
 구성합니다. 표는 3행·2열의 원형(출처행은 병합)과 실제 자동번호 캡션·출처 행을 포함하며,
-그림·개요 번호 참조의 문구·번호 슬롯 원형도 포함합니다. 저장·재열기 및
+그림·표 네이티브 참조와 여섯 수준의 헤딩 고정 번호 참조 양식도 포함합니다. 저장·재열기 및
 프로토타입 검증이 성공한 파일만 내보냅니다.
 제목을 포함한 역할별 `md2hwp.*` 스타일은 처음에는 같은 기본 서식이며,
 생성한 템플릿에서 각 스타일을 편집해 문서 디자인을 정할 수 있습니다.
@@ -72,8 +72,8 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 | `num:heading1` | 선택 | 헤딩 블록·그림 및 표 캡션에서는 현재 장 번호, 그림·표 참조 샘플에서는 대상 장 번호 |
 | `begin:ref.figure.number` / `end:ref.figure.number` | 필수 | 그림 번호 참조의 한 문단 문구·번호 슬롯 샘플 범위. 글자 서식은 참조 위치에서 가져옴 |
 | `slot:ref.figure.number` | 필수 | 그림 참조 샘플에 정확히 한 개. 실제 그림 번호 상호참조 필드 위치 |
-| `begin:ref.heading.number` / `end:ref.heading.number` | 필수 | 개요 번호 참조의 한 문단 문구·번호 슬롯 샘플 범위. 글자 서식은 참조 위치에서 가져옴 |
-| `slot:ref.heading.number` | 필수 | 개요 참조 샘플에 정확히 한 개. 실제 개요 번호 상호참조 필드 위치 |
+| `begin:ref.headingN.number` / `end:ref.headingN.number` | 필수 | N=1~6 각각의 한 문단 참조 양식. 원고에서 계산한 고정 번호와 문구를 문장 안에 삽입 |
+| `num:headingN` | 참조 양식 안 | 자신의 수준과 상위 수준 번호. 자신의 번호는 적어도 하나 필요하며 반복 가능 |
 | `begin:ref.table.number` / `end:ref.table.number` | 필수 | 표 번호 참조의 한 문단 문구·번호 슬롯 샘플 범위. 글자 서식은 참조 위치에서 가져옴 |
 | `slot:ref.table.number` | 필수 | 표 참조 샘플에 정확히 한 개. 실제 표 번호 상호참조 필드 위치 |
 | `slot:headingN` | 헤딩 블록·반복 범위에서 필수 | 해당 범위의 제목을 넣는 독립 문단. 여러 개 사용 가능 |
@@ -310,3 +310,5 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 개발 중 기본 템플릿은 `templates/template.hwp`에서 직접 편집합니다. 빌드할 때
 `target/debug/template.hwp`와 `target/release/template.hwp`는 해당 구성의 빌드마다
 강제 교체됩니다. 보관할 사용자 템플릿은 `target/` 밖에 두고 `--template`으로 지정하십시오.
+
+헤딩 참조의 옛 `ref.heading.number`·`slot:ref.heading.number`는 제거했습니다. 여섯 수준의 참조 블록으로 바꾸십시오. 번호 계산과 작성 예시는 [번호 참조](cross-references.md)를 참고하십시오. `num:heading2`~`num:heading6`은 현재 헤딩 참조 블록 내부에서만 지원하며, 제목 블록이나 each.child 번호 기능과는 별개입니다.

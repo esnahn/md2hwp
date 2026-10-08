@@ -110,15 +110,21 @@ Use xrefs_number-compatible internal Links for number references; do not parse
 raw [@...] strings or enable citations/citeproc/pandoc-crossref for this feature.
 Validate source link labels and resource limits before replacing them with symbolic
 IR cross_reference {kind: heading_number|figure_number|table_number, target: id}.
-Require single-paragraph ref.figure.number, ref.table.number and ref.heading.number prototypes even
-when unused. Their wording and slots define reference labels; ignore prototype character
-formatting and inherit the first source reference character's complete inline formatting,
-including body/note/cell context and emphasis. In figure references num:heading1 is
-the target figure's fixed chapter; the figure-number slot is a native Crossref.
-Heading references use a native outline Crossref and GetHeadingString, never a
-computed heading number. Missing or ambiguous outline targets are errors; repeated
-title copies count only when they carry real Outline paragraph formatting.
-Default headings remain plain; users configure native outline numbering when needed.
+Require single-paragraph ref.figure.number and ref.table.number prototypes and six
+begin/end:ref.heading1.number through ref.heading6.number one-paragraph blocks,
+even when unused. Object number slots remain native Crossrefs. Heading references
+are fixed inline text counted from manuscript heading order, independent of native
+outline formatting, target paragraph identities and repeated heading block copies.
+Remove the old ref.heading.number/slot:ref.heading.number declarations; do not retain
+a native outline fallback. IR 0.4 is unchanged. Count headings without IDs too.
+Heading1 follows md2hwp-heading1-start; deeper levels increment from 1 and reset on
+any shallower heading. Missing parent levels retain 0. Resolve forward references
+by target ID before rendering/width measurement, including alt/captions, all notes,
+cells and footnotes, preserving source emphasis and verbatim body literals.
+Heading reference blocks require their own num:headingN and may repeat own/ancestor
+number tags; no deeper tags, controls, paragraph/page breaks or multiple paragraphs.
+Prototype character formatting is ignored; source reference formatting is retained.
+Generated heading references do not update when users edit headings in HWP.
 Do not infer native number settings from ID prefixes or manuscript link labels.
 No generated reference hyperlinks. Verify native field target/cache/format and
 surrounding structures after save/reopen. Keep unreferenced template fields intact.
@@ -126,8 +132,8 @@ Use Action.Execute for sets returned by Action.CreateSet; passing those sets to
 HAction.Execute fails COM interface conversion on this Hancom 2020 workstation.
 Hancom reuses Crossref FieldId values across distinct fields. Require matching local
 begin/end FieldId and unique field InstId; do not require global FieldId uniqueness.
-Coalesce adjacent identical-format target-marker runs before HWPML import. Reject
-empty native outline display formats without calculating a replacement number.
+Coalesce adjacent identical-format runs before HWPML import. Heading references
+require no native outline settings; do not call GetHeadingString for references.
 Page and other reference roles remain reserved and unsupported.
 HWPX and RST input are deferred.
 

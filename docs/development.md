@@ -57,9 +57,7 @@ pwsh -NoProfile -File tools/development/dotnet.ps1 run --project tests/backend-c
 YAML에는 제목·부제·저자 목록·날짜·발행처·사용자 문자열과 장 시작 번호 3을 지정합니다.
 메타데이터 출력은 해당 `meta` 태그를 둔 템플릿에서 확인하며, `date-meta`의 날짜 포맷과
 태그 문구를 담은 사용자 값의 비재귀 치환도 해당 태그를 넣어 확인할 수 있습니다.
-개요 참조 대상인 heading2에는 실제 한글 개요 번호가 필요합니다. 동봉 템플릿의
-heading2~heading4에는 개요 번호가 설정되어 있습니다. `init-template`으로 만든 일반
-제목 문단은 별도 사본에 개요 번호를 설정하고 `--template`으로 지정하십시오.
+헤딩 참조는 원고 순서로 계산하므로 제목의 한글 개요 설정은 필요하지 않습니다. 기본 템플릿과 `init-template`은 여섯 수준의 한 문단 참조 블록을 제공합니다. 옛 공통 `ref.heading.number` 양식은 여섯 블록으로 바꾸십시오.
 각주가 있는 heading6 슬롯은 머리말·꼬리말·바탕쪽에 복제할 수 없습니다.
 박스 제목을 분리하려면 `slot:code.title`이 필요합니다. 실제 각주 번호와 표·박스의
 잘림·겹침은 생성된 HWP의 렌더링으로 확인해야 합니다.
