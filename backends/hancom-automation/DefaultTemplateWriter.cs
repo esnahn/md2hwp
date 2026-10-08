@@ -165,7 +165,7 @@ internal static partial class HancomPreviewWriter
         var styles = result.Descendants().Where(e => e.Name.LocalName == "STYLE").ToArray();
         var styleList = styles[0].Parent!;
         var nextId = styles.Max(e => (int)e.Attribute("Id")!) + 1;
-        var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "footnote", "code", "code.title", "code.source", "figure.caption", "figure.source", "table.header", "table.content", "table.source", "table.caption", "ref.figure.number", "ref.heading.number", "reset" };
+        var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "footnote", "code", "code.title", "code.source", "figure.caption", "figure.source", "table.header", "table.content", "table.source", "table.caption", "ref.figure.number", "ref.heading.number", "ref.table.number", "reset" };
         roles = roles.Append("footnote.next").ToArray();
         var ids = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var role in roles)
@@ -303,6 +303,9 @@ internal static partial class HancomPreviewWriter
             Declaration("begin:ref.heading.number"),
             TextParagraph("ref.heading.number", TemplateCrossReferences.HeadingNumberSlot),
             Declaration("end:ref.heading.number"),
+            Declaration("begin:ref.table.number"),
+            TextParagraph("ref.table.number", "표 " + TemplateHeadingNumbers.Tag + "-" + TemplateCrossReferences.TableNumberSlot),
+            Declaration("end:ref.table.number"),
             Declaration("end:template"), Declaration("content"), TextParagraph("body", "") });
         section.ReplaceNodes(roots);
         return result;
