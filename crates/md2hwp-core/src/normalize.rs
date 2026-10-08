@@ -1283,7 +1283,11 @@ impl Normalizer<'_> {
             "unsupported_pandoc_node",
             path,
             Some(constructor),
-            format!("{constructor} is not supported by IR {IR_VERSION}"),
+            if constructor == "Image" {
+                "Inline images are unsupported; use one image alone in a top-level paragraph, separated from surrounding text by blank lines. Attach image attributes without a space: ![caption](image.png){#id}, not ![caption](image.png) {#id}.".to_owned()
+            } else {
+                format!("{constructor} is not supported by IR {IR_VERSION}")
+            },
         )
     }
 
@@ -1476,6 +1480,27 @@ mod tests {
             normalize_blocks(json!([{"t":"Para","c":[{"t":"Str","c":"앞"},image()]}])).unwrap_err();
         assert_eq!(mixed.constructor.as_deref(), Some("Image"));
         assert_eq!(mixed.path, "/blocks/0/c/1");
+        let spaced_attribute = normalize_blocks(json!([{"t":"Para","c":[image(),
+            {"t":"Span","c":[["fig:example",[],[["wrapper","1"]]],[{"t":"Space"}]]}
+        ]}]))
+        .unwrap_err();
+        assert_eq!(spaced_attribute.code, "unsupported_pandoc_node");
+        assert_eq!(spaced_attribute.path, "/blocks/0/c/0");
+        assert!(
+            spaced_attribute
+                .message
+                .contains("Attach image attributes without a space")
+        );
+        assert!(
+            spaced_attribute
+                .message
+                .contains("![caption](image.png){#id}")
+        );
+        assert!(
+            !spaced_attribute
+                .message
+                .contains("Image is not supported by IR")
+        );
         assert!(normalize_blocks(json!([{"t":"Para","c":[image(),image()]}])).is_err());
         assert!(
             normalize_blocks(json!([{"t":"BulletList","c":[[{"t":"Plain","c":[image()]}]]}]))
