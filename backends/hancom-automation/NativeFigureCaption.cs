@@ -23,16 +23,16 @@ internal sealed class NativeFigureCaption(XElement settings)
                 throw new InvalidDataException($"{token} must be a plain, single-line paragraph.");
             return matches[0].i;
         }
-        var begin = Find("begin:figure.caption");
-        var end = Find("end:figure.caption");
-        if (end != begin + 2) throw new InvalidDataException("figure.caption must contain exactly one sample picture paragraph.");
+        var begin = Find("begin:figure");
+        var end = Find("end:figure");
+        if (end != begin + 2) throw new InvalidDataException("figure range must contain exactly one sample picture paragraph.");
         var root = roots[begin + 1];
         var pictures = root.Descendants("PICTURE").ToArray();
         if (pictures.Length != 1 || root.Elements().Any(e => e.Name.LocalName != "TEXT") ||
             root.Elements().SelectMany(e => e.Elements()).Any(e => e.Name.LocalName != "PICTURE" &&
                 !(e.Name.LocalName == "CHAR" && !e.HasElements && e.Value.Length == 0)) ||
             root.Descendants("TABLE").Any() || TaggedTemplateBinding.DirectText(root).Length != 0)
-            throw new InvalidDataException("figure.caption requires one sample picture without other content.");
+            throw new InvalidDataException("figure range requires one sample picture without other content.");
         var shape = pictures[0].Element("SHAPEOBJECT") ?? throw new InvalidDataException("Sample picture has no shape settings.");
         var caption = shape.Element("CAPTION") ?? throw new InvalidDataException("Sample picture requires a native Hancom caption.");
         var paragraphs = caption.Element("PARALIST")?.Elements("P").ToArray() ?? [];

@@ -140,7 +140,7 @@ internal static class NativeCrossReferenceTests
             new PreviewTextRun("note", false, false, new PreviewFootnote(new[] { noteContent })) };
         return new("fixture", "fixture", new PreviewSummary(3, 2, 0, 1, 0), new[] {
             new PreviewOperation("text", "reader", [], FormattedLines: new[] { runs }, Heading1Number: 3),
-            new PreviewOperation("box", "verbatim", new[] { LiteralSource, LiteralNumber }),
+            new PreviewOperation("code", "verbatim", new[] { LiteralSource, LiteralNumber }),
             new PreviewOperation("text", "target heading", [], ParagraphStyle: "heading2", Heading1Number: 8, HeadingId: "fig:heading"),
             new PreviewOperation("figure", "target picture", [], Heading1Number: 8, FigureId: "한글-대상") }, []);
     }

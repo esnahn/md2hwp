@@ -461,7 +461,7 @@ mod tests {
                 .as_slice(),
             br#"{"schema":"md2hwp.ir","ir_version":"0.4","metadata":{},"blocks":[{"type":"paragraph","style":"body","inlines":[{"type":"text","value":"legacy"}]}]}"#
                 .as_slice(),
-            br#"{"schema":"md2hwp.ir","ir_version":"0.4","metadata":{},"blocks":[{"type":"styled_block","role":"block.box","lines":["legacy"]}]}"#
+            br#"{"schema":"md2hwp.ir","ir_version":"0.4","metadata":{},"blocks":[{"type":"styled_block","role":"code","lines":["legacy"]}]}"#
                 .as_slice(),
         ] {
             assert_eq!(

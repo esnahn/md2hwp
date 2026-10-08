@@ -141,21 +141,21 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
         if (reset == styles.Single(s => s.Symbolic == "body").NativeName)
             throw new InvalidDataException("Reset and body styles must differ.");
 
-        var boxBegin = Single("begin:block.box");
-        var boxEnd = Single("end:block.box");
+        var boxBegin = Single("begin:code");
+        var boxEnd = Single("end:code");
         Inside(boxBegin); Inside(boxEnd);
         if (boxEnd != boxBegin + 2) throw new InvalidDataException("Box range must contain exactly one root paragraph.");
         var box = roots[boxBegin + 1];
         var tables = box.Descendants().Where(e => e.Name.LocalName == "TABLE").ToArray();
         if (tables.Length != 1)
             throw new InvalidDataException("Box must contain exactly one table.");
-        styles.Add(new("box.anchor", StyleName(box)));
-        var boxSlots = tables[0].Descendants().Where(e => e.Name.LocalName == "P" && DirectText(e) == Tag("slot:box.content")).ToArray();
+        styles.Add(new("code.anchor", StyleName(box)));
+        var boxSlots = tables[0].Descendants().Where(e => e.Name.LocalName == "P" && DirectText(e) == Tag("slot:code.content")).ToArray();
         if (boxSlots.Length != 1 || !boxSlots[0].Ancestors().Any(e => e.Name.LocalName == "CELL"))
             throw new InvalidDataException("Box requires one content slot inside its cell.");
         accepted.Add(boxSlots[0]);
-        styles.Add(new("block.box", StyleName(boxSlots[0])));
-        var boxSourceSlot = Tag("slot:box.source");
+        styles.Add(new("code", StyleName(boxSlots[0])));
+        var boxSourceSlot = Tag("slot:code.source");
         var boxSources = tables[0].Descendants().Where(e => e.Name.LocalName == "P" &&
             DirectText(e).Contains(boxSourceSlot, StringComparison.Ordinal)).ToArray();
         if (boxSources.Length != 1) throw new InvalidDataException("Box requires exactly one source slot in its native caption.");
@@ -163,7 +163,7 @@ internal sealed record TaggedTemplateBinding(InvestigationTemplateProfile Profil
         if (!boxSources[0].Ancestors().Any(e => e.Name.LocalName == "CAPTION"))
             throw new InvalidDataException("Box source must be in its native table caption.");
         accepted.Add(boxSources[0]);
-        styles.Add(new("box.source", StyleName(boxSources[0])));
+        styles.Add(new("code.source", StyleName(boxSources[0])));
 
         var figureBegin = Single("begin:figure");
         var figureEnd = Single("end:figure");

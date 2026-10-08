@@ -188,7 +188,7 @@ internal sealed class PlanBuilder(
         var numberedOperations = TemplateHeadingNumbers.Track(operations, heading1Start);
         FigureReferenceContract.Validate(numberedOperations);
         var textOperations = operations.Count(operation => operation.Kind == "text");
-        var boxOperations = operations.Count(operation => operation.Kind == "box");
+        var boxOperations = operations.Count(operation => operation.Kind == "code");
         var figureOperations = operations.Count(operation => operation.Kind == "figure");
         return new IrPreviewPlan(
             irPath,
@@ -205,7 +205,7 @@ internal sealed class PlanBuilder(
                 "This is an investigation preview, not backend lowering.",
                 "AURI paragraph styles are bound by unique native names during render.",
                 "Strong/emphasis marks are retained as character-shape runs; link targets remain flattened.",
-                "verbatim_block maps to one prototype-backed block.box operation; render accepts only the uniquely matched minimal-fixture box structure.",
+                "verbatim_block maps to one prototype-backed code operation; render accepts only the uniquely matched minimal-fixture box structure.",
                 "IR 0.4 box sources replace the template source slot; absent sources remove the native caption.",
                 "Figure captions remain one prototype-backed native AUTONUM operation; render accepts only the uniquely matched minimal-fixture root-caption structure.",
                 profile.PreserveParagraphLineBreaks
@@ -279,10 +279,10 @@ internal sealed class PlanBuilder(
         var sources = PreviewSourceParagraph.ReadOptional(block, path);
         IReadOnlyList<PreviewTextRun>? sourceRuns = sources?.First().Content.Flatten(" / ").Runs;
         operations.Add(new PreviewOperation(
-            "box",
+            "code",
             "verbatim_block",
             content.Lines.Select(line => line.Text).ToArray(),
-            ParagraphStyle: "block.box",
+            ParagraphStyle: "code",
             FormattedLines: content.Lines.Select(line => line.Runs).ToArray(),
             SourceRuns: sourceRuns, Sources: sources));
     }

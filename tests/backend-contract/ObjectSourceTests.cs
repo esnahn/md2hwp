@@ -26,7 +26,7 @@ internal static class ObjectSourceTests
             new XElement("HEAD", new XElement("PARASHAPELIST", new XElement("PARASHAPE", new XAttribute("Id",0), new XElement("PARAMARGIN", new XAttribute("Indent", -1200)))),
                 new XElement("CHARSHAPELIST", new XElement("CHARSHAPE", new XAttribute("Id",0), new XAttribute("Height", 1000)))),
             new XElement("BODY", new XElement("SECTION", roots))));
-        var sample = Doc(new[] { "box", "figure", "table" }.Select(role => P(TemplateObjectSources.PrefixSlot(role) + ": " + TaggedTemplateBinding.Tag("slot:" + role + ".source"))).ToArray());
+        var sample = Doc(new[] { "code", "figure", "table" }.Select(role => P(TemplateObjectSources.PrefixSlot(role) + ": " + TaggedTemplateBinding.Tag("slot:" + role + ".source"))).ToArray());
         sample.Descendants("CHARSHAPELIST").Single().Add(new XElement("CHARSHAPE", new XAttribute("Id",1), new XAttribute("Height",800), new XElement("ITALIC")));
         var boxSample = sample.Descendants("P").First();
         var originalText = boxSample.Element("TEXT")!.Value;
@@ -37,7 +37,7 @@ internal static class ObjectSourceTests
         Check(sample.ToString() == before, "Source lowering mutated the template.");
         Check(lower.Document.Descendants("P").All(p => TaggedTemplateBinding.DirectText(p).StartsWith("출처: ")), "Intermediate source labels were not lowered.");
         var missing = new XDocument(sample);
-        missing.Descendants("CHAR").First().Value = "출처: " + TaggedTemplateBinding.Tag("slot:box.source");
+        missing.Descendants("CHAR").First().Value = "출처: " + TaggedTemplateBinding.Tag("slot:code.source");
         Reject(() => TemplateObjectSources.Lower(missing));
         var notes = Read("""{"source":[{"prefix":"주.3","inlines":[{"type":"strong","inlines":[{"type":"text","value":"설명"}]}]},{"prefix":"Source.","inlines":[{"type":"text","value":"기관"}]}]}""")!;
         XElement Caption(bool title) => new("CAPTION", new XElement("PARALIST", title ? new[] { P("[그림 1] 제목"), P("old source") } : new[] { P("old source") }));
@@ -46,7 +46,7 @@ internal static class ObjectSourceTests
         var rendered = Doc(Root("PICTURE",true), Root("TABLE",false), tableRoot, P("unchanged"));
         rendered.Descendants("CHARSHAPELIST").Single().Add(new XElement(sample.Descendants("CHARSHAPE").Single(s => (string?)s.Attribute("Id") == "1")));
         var renderedBefore = rendered.ToString();
-        var operations = new[] { "figure", "box", "table" }.Select(kind => new PreviewOperation(kind, kind, [], Sources: notes)).ToArray();
+        var operations = new[] { "figure", "code", "table" }.Select(kind => new PreviewOperation(kind, kind, [], Sources: notes)).ToArray();
         var plan = new IrPreviewPlan("fixture", "fixture",new(3,0,1,1,0,1),operations,[]);
         var attached = lower.Layout.Attach(rendered,plan,0);
         Check(rendered.ToString() == renderedBefore, "Source attachment mutated its input.");

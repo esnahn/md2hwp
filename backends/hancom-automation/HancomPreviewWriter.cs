@@ -385,14 +385,14 @@ internal static partial class HancomPreviewWriter
             }
             return marker?.ListId;
         }
-        if (operation.Kind == "box")
+        if (operation.Kind == "code")
         {
             if (activeListId is not null)
             {
                 ClearNativeListAtCaret(hwp, styles.Resolve("body"));
             }
             if (boxPrototype is null ||
-                !string.Equals(operation.ParagraphStyle, "block.box", StringComparison.Ordinal))
+                !string.Equals(operation.ParagraphStyle, "code", StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
                     $"No minimal-fixture box prototype is bound for {operation.Label}.");
@@ -937,7 +937,7 @@ internal static partial class HancomPreviewWriter
                 case "table":
                     rootIndex += styles.Profile.PreserveParagraphLineBreaks ? 1 : operation.Lines.Count;
                     break;
-                case "box":
+                case "code":
                     if (rootIndex >= appended.Length)
                     {
                         throw new InvalidOperationException("Saved preview lost an expected box root.");
@@ -1002,7 +1002,7 @@ internal static partial class HancomPreviewWriter
                 case "table":
                     rootIndex += styles.Profile.PreserveParagraphLineBreaks ? 1 : operation.Lines.Count;
                     break;
-                case "box":
+                case "code":
                     rootIndex++;
                     break;
                 case "figure":
@@ -1124,10 +1124,10 @@ internal static partial class HancomPreviewWriter
                         yield return (symbolicStyle, line);
                     }
                     break;
-                case "box":
+                case "code":
                     foreach (var line in operation.Lines)
                     {
-                        yield return ("block.box", line);
+                        yield return ("code", line);
                     }
                     break;
                 case "figure":
@@ -1176,7 +1176,7 @@ internal static partial class HancomPreviewWriter
                             FormattedLine(operation, index), operation.ListContinuation);
                     }
                     break;
-                case "box":
+                case "code":
                     yield return new ExpectedParagraph(
                         profile.BoxSelector.RootStyle,
                         string.Concat(operation.Lines),

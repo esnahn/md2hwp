@@ -18,7 +18,7 @@ Check(XNode.DeepEquals(retainedSection,sectionRoots[0].Descendants("SECDEF").Sin
 Check(!sectionRoots[1].Descendants("SECDEF").Any() && !sectionRoots[1].Descendants("P").Any(),"Section settings retained in disposable declaration.");
 Check(sectionRoots[1].Attribute("PageBreak") is null && sectionRoots[1].Attribute("ColumnBreak") is null,"False break flags retained in noninitial declaration.");
 Check(XNode.DeepEquals(separatedSection,TaggedTemplateBinding.PreserveBeginSectionSettings(separatedSection)),"Section normalization is not idempotent.");
-foreach (var tag in new[]{"end:template", "body", "begin:heading1", "begin:figure.caption"}) {
+foreach (var tag in new[]{"end:template", "body", "begin:heading1", "begin:figure"}) {
     var other=new XDocument(sectionFixture);
     other.Descendants("CHAR").Last().Value="unchanged";
     var otherFirst=AuriMinimalBoxPrototype.RootParagraphs(other)[0];
@@ -127,7 +127,7 @@ static XDocument BoxTemplate(bool withTitle, bool splitSlots = false, bool sameS
 {
     XElement Slot(string name, bool title)
     {
-        var p = BoxParagraph(TaggedTemplateBinding.Tag("slot:box." + name), title && !sameStyle ? "1" : "0", title ? "1" : "0", title ? "2" : "0");
+        var p = BoxParagraph(TaggedTemplateBinding.Tag("slot:code." + name), title && !sameStyle ? "1" : "0", title ? "1" : "0", title ? "2" : "0");
         if (splitSlots)
         {
             var text = TaggedTemplateBinding.DirectText(p);
@@ -150,7 +150,7 @@ static XDocument BoxTemplate(bool withTitle, bool splitSlots = false, bool sameS
                 new XElement("STYLE", new XAttribute("Id", i), new XAttribute("Type", "Para"), new XAttribute("Name", "box-fixture-" + i),
                     new XAttribute("ParaShape", i), new XAttribute("CharShape", i == 0 ? 0 : 2), new XAttribute("NextStyle", "0"))))),
         new XElement("BODY", new XElement("SECTION",
-            BoxParagraph(TaggedTemplateBinding.Tag("begin:block.box")),
+            BoxParagraph(TaggedTemplateBinding.Tag("begin:code")),
             new XElement("P", new XAttribute("Style", "0"), new XAttribute("ParaShape", "0"),
                 new XElement("TEXT", new XAttribute("CharShape", "0"), new XElement("TABLE",
                     new XElement("SHAPEOBJECT", new XAttribute("InstId", "box-contract"), new XElement("SIZE", new XAttribute("Width", "10000"), new XAttribute("Height", "1000")),
@@ -158,7 +158,7 @@ static XDocument BoxTemplate(bool withTitle, bool splitSlots = false, bool sameS
                         new XElement("CAPTION", new XAttribute("Side", "Bottom"), new XElement("PARALIST", BoxParagraph("출처: fixture source")))),
                     new XElement("ROW", new XElement("CELL", new XAttribute("Width", "10000"), new XAttribute("Height", "1000"),
                         new XElement("PARALIST", paragraphs)))))),
-            BoxParagraph(TaggedTemplateBinding.Tag("end:block.box"))))));
+            BoxParagraph(TaggedTemplateBinding.Tag("end:code"))))));
 }
 static XElement[] BoxCellParagraphs(XElement root) => root.Descendants("CELL").Single().Element("PARALIST")!.Elements("P").ToArray();
 static XElement BoxRenderedRoot(XDocument lowered, IReadOnlyList<string> lines)
@@ -177,7 +177,7 @@ static XElement BoxRenderedRoot(XDocument lowered, IReadOnlyList<string> lines)
 static XDocument BoxRenderedDocument(XDocument lowered, params XElement[] roots) =>
     new(new XElement("HWPML", new XElement(lowered.Root!.Element("HEAD")!), new XElement("BODY", new XElement("SECTION", roots))));
 static IrPreviewPlan BoxPlan(IReadOnlyList<string> lines) =>
-    new("fixture", "fixture", new PreviewSummary(1, 0, 1, 0, 0), new[] { new PreviewOperation("box", "verbatim_block", lines, ParagraphStyle: "block.box") }, []);
+    new("fixture", "fixture", new PreviewSummary(1, 0, 1, 0, 0), new[] { new PreviewOperation("code", "verbatim_block", lines, ParagraphStyle: "code") }, []);
 static XElement[] AttachBoxLines(TemplateBoxParagraphs layout, XDocument lowered, IReadOnlyList<string> lines)
 {
     var rendered = BoxRenderedDocument(lowered, BoxRenderedRoot(lowered, lines));
@@ -195,7 +195,7 @@ var originalBoxFixture = boxFixture.ToString();
 var loweredBox = TemplateBoxParagraphs.Lower(boxFixture);
 Check(boxFixture.ToString() == originalBoxFixture, "Box lowering mutated the source template.");
 Check(BoxCellParagraphs(AuriMinimalBoxPrototype.RootParagraphs(loweredBox.Document)[1]).Length == 1, "Box lowering retained the optional title sample.");
-Check(TaggedTemplateBinding.DirectText(BoxCellParagraphs(AuriMinimalBoxPrototype.RootParagraphs(loweredBox.Document)[1]).Single()) == TaggedTemplateBinding.Tag("slot:box.content"), "Box lowering changed the content slot.");
+Check(TaggedTemplateBinding.DirectText(BoxCellParagraphs(AuriMinimalBoxPrototype.RootParagraphs(loweredBox.Document)[1]).Single()) == TaggedTemplateBinding.Tag("slot:code.content"), "Box lowering changed the content slot.");
 var boxLines = new[] { "제목: 건축물의 사용승인", "", " \t", "제22조 ① 원문", "  ② 둘째\t열  ", "", "제목: 본문 리터럴", "{{md2hwp:meta:title}}", "" };
 var boxParagraphs = AttachBoxLines(loweredBox.Layout, loweredBox.Document, boxLines);
 Check(boxParagraphs.Select(TaggedTemplateBinding.DirectText).SequenceEqual(new[] { "건축물의 사용승인", "제22조 ① 원문", "  ② 둘째\t열  ", "", "제목: 본문 리터럴", "{{md2hwp:meta:title}}", "" }), "Box title extraction or verbatim paragraphs lost text, indentation, tabs, internal blank lines or literal tags.");
@@ -245,9 +245,9 @@ var mixedLinesB = new[] { "second body", "", "last body" };
 var mixedOperations = new[] {
     new PreviewOperation("text", "before", new[] { "before" }, ParagraphStyle: "body"),
     new PreviewOperation("figure", "without source", new[] { "image", "caption A", "" }),
-    new PreviewOperation("box", "first box", mixedLinesA, ParagraphStyle: "block.box"),
+    new PreviewOperation("code", "first box", mixedLinesA, ParagraphStyle: "code"),
     new PreviewOperation("figure", "with source", new[] { "image", "caption B", "source" }),
-    new PreviewOperation("box", "second box", mixedLinesB, ParagraphStyle: "block.box"),
+    new PreviewOperation("code", "second box", mixedLinesB, ParagraphStyle: "code"),
     new PreviewOperation("text", "after", new[] { "after" }, ParagraphStyle: "body")
 };
 var mixedPlan = new IrPreviewPlan("fixture", "fixture", new PreviewSummary(6, 2, 2, 2, 0), mixedOperations, []);

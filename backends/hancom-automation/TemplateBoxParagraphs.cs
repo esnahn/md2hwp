@@ -10,7 +10,7 @@ internal sealed class TemplateBoxParagraphs(XDocument source, XElement contentSa
     private readonly HashSet<string> generatedShapeIds = [];
     private readonly HashSet<string> heightPaths = [];
 
-    internal const string TitleTag = "{{md2hwp:slot:box.title}}";
+    internal const string TitleTag = "{{md2hwp:slot:code.title}}";
     private const string TitlePrefix = "제목:";
 
     internal static (TemplateBoxParagraphs Layout, XDocument Document) Lower(XDocument source)
@@ -24,8 +24,8 @@ internal sealed class TemplateBoxParagraphs(XDocument source, XElement contentSa
             if (matches.Length != 1) throw new InvalidDataException($"Expected one {token} declaration.");
             return matches[0].i;
         }
-        var begin = Find("begin:block.box");
-        var end = Find("end:block.box");
+        var begin = Find("begin:code");
+        var end = Find("end:code");
         if (end != begin + 2)
             throw new InvalidDataException("Box range must contain exactly one root paragraph.");
         var tables = roots[begin + 1].Descendants("TABLE").ToArray();
@@ -36,14 +36,14 @@ internal sealed class TemplateBoxParagraphs(XDocument source, XElement contentSa
         var lists = cell.Elements("PARALIST").ToArray();
         if (lists.Length != 1) throw new InvalidDataException("Box cell requires one paragraph list.");
         var paragraphs = lists[0].Elements().ToArray();
-        var content = paragraphs.Where(p => TaggedTemplateBinding.DirectText(p) == TaggedTemplateBinding.Tag("slot:box.content")).ToArray();
+        var content = paragraphs.Where(p => TaggedTemplateBinding.DirectText(p) == TaggedTemplateBinding.Tag("slot:code.content")).ToArray();
         var titles = document.Descendants("P").Where(p =>
             TaggedTemplateBinding.DirectText(p).Contains(TitleTag, StringComparison.Ordinal)).ToArray();
         if (content.Length != 1 || !PlainSlot(content[0]))
             throw new InvalidDataException("Box requires one plain content slot paragraph inside its cell.");
         if (titles.Length > 1 || titles.Length == 1 &&
             (titles[0].Parent != lists[0] || TaggedTemplateBinding.DirectText(titles[0]) != TitleTag || !PlainSlot(titles[0])))
-            throw new InvalidDataException("slot:box.title must be one plain standalone paragraph in the box cell.");
+            throw new InvalidDataException("slot:code.title must be one plain standalone paragraph in the box cell.");
         var title = titles.SingleOrDefault();
         if (paragraphs.Length != (title is null ? 1 : 2) ||
             paragraphs[^1] != content[0] || title is not null && paragraphs[0] != title)
@@ -68,7 +68,7 @@ internal sealed class TemplateBoxParagraphs(XDocument source, XElement contentSa
         var index = start;
         foreach (var operation in plan.Operations)
         {
-            if (operation.Kind == "box")
+            if (operation.Kind == "code")
             {
                 if (index >= roots.Count) throw new InvalidDataException("Missing generated box paragraph.");
                 var table = roots[index].Descendants("TABLE").Single();

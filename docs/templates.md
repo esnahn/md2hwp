@@ -56,12 +56,12 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 | `list.max-depth:값` | 필수 설정 | 허용할 중첩 깊이. 정수 1~6 |
 | `list.indent-hwp:값` | 필수 설정 | 깊이별 추가 왼쪽 들여쓰기. 정수 1~10000 HWPUNIT |
 | `list.bullet` / `list.ordered` | 둘 다 필수 | 실제 한글 글머리표·문단 번호를 적용한 독립 샘플 문단 |
-| `begin:block.box` / `end:block.box` | 필수 | 박스 표가 붙은 문단 하나를 감싸는 독립 경계 문단 |
-| `slot:box.title` | 선택 | 박스 셀의 첫 문단에 두는 제목 슬롯. 첫 줄의 `제목:`을 분리할 때 사용 |
-| `slot:box.content` | 필수 | 박스 셀 안의 내용 슬롯. 원고의 각 줄에 이 문단의 서식을 적용 |
-| `slot:box.source` | 필수 | 박스 표의 실제 캡션에 두는 출처 슬롯 |
+| `begin:code` / `end:code` | 필수 | 박스 표가 붙은 문단 하나를 감싸는 독립 경계 문단 |
+| `slot:code.title` | 선택 | 박스 셀의 첫 문단에 두는 제목 슬롯. 첫 줄의 `제목:`을 분리할 때 사용 |
+| `slot:code.content` | 필수 | 박스 셀 안의 내용 슬롯. 원고의 각 줄에 이 문단의 서식을 적용 |
+| `slot:code.source` | 필수 | 박스 표의 실제 캡션에 두는 출처 슬롯 |
 | `figure.max-width-mm:값` | 필수 설정 | 그림 최대 폭. 0 초과~142mm, 소수점은 `.` 사용 |
-| `begin:figure.caption` / `end:figure.caption` | 필수 | 실제 캡션이 붙은 샘플 그림 문단 하나를 감싸는 독립 경계 문단 |
+| `begin:figure` / `end:figure` | 필수 | 실제 캡션이 붙은 샘플 그림 문단 하나를 감싸는 독립 경계 문단 |
 | `slot:figure.caption` / `slot:figure.source` | 둘 다 필수 | 그림의 실제 캡션 안에 설명·출처 순서로 각각 한 문단 |
 | `table.width-mm:값` | 필수 설정 | 표 전체 폭(mm). 양의 십진수이며 실제 본문·단 폭 안에 맞아야 함. 기본 142mm |
 | `begin:table` / `end:table` | 필수 | 실제 캡션이 붙은 3행·2열 샘플 표 문단 하나를 감싸는 독립 경계 문단. 마지막 행은 병합 |
@@ -137,15 +137,19 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 목록이 없는 원고에도 두 선언은 필수입니다. 이전 템플릿에는 두 샘플 문단을 추가하거나
 `init-template`으로 새 파일을 생성해야 합니다. 현재 IR 버전은 0.4입니다.
 
+코드 블록의 범위와 슬롯은 모두 `code` 이름을 사용합니다. 기존 사용자 템플릿도
+범위·제목·본문·출처 슬롯을 함께 변경해야 합니다. IR의 `verbatim_block` 타입과
+원고 문법은 그대로입니다.
+
 박스 원형은 다음처럼 구성합니다. 대괄호 안은 배치 설명이며 입력할 문구가 아닙니다.
 
 ```text
-{{md2hwp:begin:block.box}}
+{{md2hwp:begin:code}}
 [한 문단에 붙은 실제 단일 셀 표 하나]
-  [표 셀 안의 첫 문단, 선택] {{md2hwp:slot:box.title}}
-  [표 셀 안의 독립 문단] {{md2hwp:slot:box.content}}
-  [표에 붙은 실제 캡션 문단] {{md2hwp:slot:box.source.prefix}}: {{md2hwp:slot:box.source}}
-{{md2hwp:end:block.box}}
+  [표 셀 안의 첫 문단, 선택] {{md2hwp:slot:code.title}}
+  [표 셀 안의 독립 문단] {{md2hwp:slot:code.content}}
+  [표에 붙은 실제 캡션 문단] {{md2hwp:slot:code.source.prefix}}: {{md2hwp:slot:code.source}}
+{{md2hwp:end:code}}
 ```
 
 두 경계 사이의 최상위 문단은 표가 붙은 문단 하나여야 합니다. 내용 슬롯은 셀 안에
@@ -159,7 +163,7 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 번호·Markdown 문법을 해석하지 않습니다. 긴 한 줄이 박스 너비 때문에 여러 줄로
 보여도 문단은 하나입니다.
 
-템플릿에 `slot:box.title`이 있고 코드 블록의 첫 줄이 `제목:`으로 시작할 때만
+템플릿에 `slot:code.title`이 있고 코드 블록의 첫 줄이 `제목:`으로 시작할 때만
 제목으로 분리합니다. 접두어와 그 뒤의 공백 한 칸은 출력에서 제외하며, 제목 직후의
 빈 줄(공백·탭만 있는 줄 포함)은 모두 제거합니다. 본문이 시작된 뒤의 빈 줄은
 유지합니다. 제목이 비어 있으면 오류가 나며, 제목만 있는 박스도 허용합니다.
@@ -183,11 +187,11 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 
 ```text
 {{md2hwp:figure.max-width-mm:142}}
-{{md2hwp:begin:figure.caption}}
+{{md2hwp:begin:figure}}
 [실제 샘플 그림 하나 — 아래 두 문단은 그림에 붙은 한글 캡션 안에 작성]
   [그림 <자동번호>] {{md2hwp:slot:figure.caption}}
   {{md2hwp:slot:figure.source.prefix}}: {{md2hwp:slot:figure.source}}
-{{md2hwp:end:figure.caption}}
+{{md2hwp:end:figure}}
 ```
 
 샘플 이미지 내용과 크기는 출력에 사용하지 않습니다. 원고 이미지를 비율에 맞춰 삽입하고,
@@ -206,7 +210,7 @@ Rust 명령은 `--worker`, `--dotnet`도 지원합니다.
 들어 있으며, 슬롯 앞뒤의 문구와 각 문단의 스타일을 별도로 편집할 수 있습니다.
 
 ```text
-{{md2hwp:slot:box.source.prefix}}: {{md2hwp:slot:box.source}}
+{{md2hwp:slot:code.source.prefix}}: {{md2hwp:slot:code.source}}
 {{md2hwp:slot:figure.source.prefix}}: {{md2hwp:slot:figure.source}}
 ```
 

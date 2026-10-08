@@ -45,7 +45,7 @@ internal sealed class TemplateObjectSources(XDocument source, IReadOnlyDictionar
     {
         var document = new XDocument(source);
         var samples = new Dictionary<string, XElement>(StringComparer.Ordinal);
-        foreach (var role in new[] { "box", "figure", "table" })
+        foreach (var role in new[] { "code", "figure", "table" })
         {
             var contentSlot = TaggedTemplateBinding.Tag("slot:" + role + ".source");
             var prefixSlot = PrefixSlot(role);
@@ -81,13 +81,13 @@ internal sealed class TemplateObjectSources(XDocument source, IReadOnlyDictionar
         {
             if (operation.Sources is { } paragraphs)
             {
-                var role = operation.Kind == "box" ? "box" : operation.Kind;
+                var role = operation.Kind == "code" ? "code" : operation.Kind;
                 var root = roots[index];
                 XElement list;
                 if (role == "table")
                     list = root.Descendants("TABLE").Single().Elements("ROW").Last().Element("CELL")!.Element("PARALIST")!;
                 else
-                    list = root.Descendants(role == "box" ? "TABLE" : "PICTURE").Single()
+                    list = root.Descendants(role == "code" ? "TABLE" : "PICTURE").Single()
                         .Element("SHAPEOBJECT")!.Element("CAPTION")!.Element("PARALIST")!;
                 var generated = paragraphs.Select(p => {
                     var sample = TemplateHeadingBlocks.ImportParagraph(samples[role], source, result);

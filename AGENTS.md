@@ -42,13 +42,15 @@ settings outside disposable definitions in the working document, without changin
 the source template. Do not extend this exception to other declarations.
 Generated links render as formatted labels/plain text; strip automatic hyperlinks
 only in generated content. Figures embed PNGs; caption and source belong to the picture's native caption.
-The begin:figure.caption/end:figure.caption sample contains one picture with a
+The begin:figure/end:figure sample contains one picture with a
 two-paragraph native caption. Ignore sample image content/size; inherit caption options.
 Native list.bullet/list.ordered sample paragraphs own bullet and per-level numbering
 formats; manuscript start numbers and existing depth indentation remain authoritative.
+Box template boundaries are begin:code/end:code, and the content formatting role is code.
+Keep code.content/code.title/code.source slot names.
 Verbatim blocks may carry sources. Expand each raw IR line into a separate box
 paragraph using the content sample's full formatting. Preserve spaces, tabs and
-body blank lines. Optional slot:box.title precedes the content sample in the same
+body blank lines. Optional slot:code.title precedes the content sample in the same
 cell; only when this slot exists, interpret an exact first-line 제목: prefix as
 the title, removing the prefix and one following space, then skipping immediately
 following blank/whitespace-only lines. With no title slot, preserve all raw lines.

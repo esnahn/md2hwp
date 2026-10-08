@@ -64,7 +64,7 @@ IR 0.3은 거부하므로 Markdown에서 다시 생성하십시오.
 각 개체의 기존 출처 샘플 문단을 다음처럼 고칩니다.
 
 ```text
-{{md2hwp:slot:box.source.prefix}}: {{md2hwp:slot:box.source}}
+{{md2hwp:slot:code.source.prefix}}: {{md2hwp:slot:code.source}}
 {{md2hwp:slot:figure.source.prefix}}: {{md2hwp:slot:figure.source}}
 {{md2hwp:slot:table.source.prefix}}: {{md2hwp:slot:table.source}}
 ```

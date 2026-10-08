@@ -72,7 +72,7 @@ internal static partial class HancomPreviewWriter
                 // Locate each native caption's slot. Hancom MoveLeft leaves the
                 // selection one character before its start; MoveRight returns to
                 // the tag boundary without depending on the prefix length.
-                foreach (var role in new[] { "box.source", "figure.source", "table.source" })
+                foreach (var role in new[] { "code.source", "figure.source", "table.source" })
                 {
                     Run(hwp, "MoveDocBegin");
                     FindTaggedText(hwp, TaggedTemplateBinding.Tag("slot:" + role));
@@ -81,7 +81,7 @@ internal static partial class HancomPreviewWriter
                     Run(hwp, "ParagraphShapeIndentAtCaret");
                 }
                 XDocument adjusted = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
-                foreach (var role in new[] { "box.source", "figure.source", "table.source" })
+                foreach (var role in new[] { "code.source", "figure.source", "table.source" })
                 {
                     var slot = TaggedTemplateBinding.Tag("slot:" + role);
                     var measuredParagraph = adjusted.Descendants("P").Single(p =>
@@ -133,7 +133,7 @@ internal static partial class HancomPreviewWriter
                 XDocument reopened = HwpMarkup.Parse((string)hwp.GetTextFile("HWPML2X", ""));
                 var binding = TaggedTemplateBinding.Read(reopened, temporary);
                 _ = binding.Profile; // Read validates the native sample and all lowered roles.
-                foreach (var name in new[] { "md2hwp.box.source", "md2hwp.figure.source", "md2hwp.table.source" })
+                foreach (var name in new[] { "md2hwp.code.source", "md2hwp.figure.source", "md2hwp.table.source" })
                 {
                     int SourceIndent(XDocument doc)
                     {
@@ -165,7 +165,7 @@ internal static partial class HancomPreviewWriter
         var styles = result.Descendants().Where(e => e.Name.LocalName == "STYLE").ToArray();
         var styleList = styles[0].Parent!;
         var nextId = styles.Max(e => (int)e.Attribute("Id")!) + 1;
-        var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "footnote", "block.box", "box.title", "box.source", "figure.caption", "figure.source", "table.header", "table.content", "table.source", "table.caption", "ref.figure.number", "ref.heading.number", "reset" };
+        var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "footnote", "code", "code.title", "code.source", "figure.caption", "figure.source", "table.header", "table.content", "table.source", "table.caption", "ref.figure.number", "ref.heading.number", "reset" };
         roles = roles.Append("footnote.next").ToArray();
         var ids = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var role in roles)
@@ -197,10 +197,10 @@ internal static partial class HancomPreviewWriter
         shape.Elements().Single(e => e.Name.LocalName == "SIZE").SetAttributeValue("Width", width);
         var cell = table.Descendants().Single(e => e.Name.LocalName == "CELL");
         cell.SetAttributeValue("Width", width);
-        cell.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(Declaration("slot:box.title", "box.title"), Declaration("slot:box.content", "block.box"));
+        cell.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(Declaration("slot:code.title", "code.title"), Declaration("slot:code.content", "code"));
         var caption = shape.Elements().Single(e => e.Name.LocalName == "CAPTION");
         caption.SetAttributeValue("LastWidth", width);
-        caption.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(TextParagraph("box.source", TemplateObjectSources.PrefixSlot("box") + ": " + TaggedTemplateBinding.Tag("slot:box.source")));
+        caption.Elements().Single(e => e.Name.LocalName == "PARALIST").ReplaceNodes(TextParagraph("code.source", TemplateObjectSources.PrefixSlot("code") + ": " + TaggedTemplateBinding.Tag("slot:code.source")));
 
         var figureNumber = new XElement("AUTONUM", new XAttribute("Number", 1), new XAttribute("NumberType", "Figure"),
             new XElement("AUTONUMFORMAT", new XAttribute("Superscript", "false"), new XAttribute("Type", "Digit")));
@@ -292,9 +292,9 @@ internal static partial class HancomPreviewWriter
             sample.SetAttributeValue("ParaShape", (string)native.Attribute("ParaShape")!);
             roots.Add(sample);
         }
-        roots.AddRange(new[] { Declaration("begin:block.box"), Paragraph("body", table), Declaration("end:block.box"),
-            Declaration("figure.max-width-mm:" + figureWidth), Declaration("begin:figure.caption"),
-            Paragraph("body", picture), Declaration("end:figure.caption"),
+        roots.AddRange(new[] { Declaration("begin:code"), Paragraph("body", table), Declaration("end:code"),
+            Declaration("figure.max-width-mm:" + figureWidth), Declaration("begin:figure"),
+            Paragraph("body", picture), Declaration("end:figure"),
             Declaration("table.width-mm:" + figureWidth), Declaration("begin:table"),
             Paragraph("body", tableSample), Declaration("end:table"),
             Declaration("begin:ref.figure.number"),

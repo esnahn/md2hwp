@@ -74,7 +74,7 @@ internal sealed class InvestigationTemplateProfile
         "heading4",
         "heading5",
         "heading6",
-        "block.box",
+        "code",
         "figure",
         "figure.caption",
         "figure.source",
@@ -144,8 +144,8 @@ internal sealed class InvestigationTemplateProfile
             new FileInfo(templatePath).Length, styles, reset,
             new(width), new(maxDepth, indent) { Bullet = bullet, Ordered = ordered },
             new("unique_text_marker", "{{md2hwp:content}}"),
-            new("box.anchor", "block.box", 1, "box.source", 1,
-                "{{md2hwp:slot:box.content}}", boxSource.PrototypeText),
+            new("code.anchor", "code", 1, "code.source", 1,
+                "{{md2hwp:slot:code.content}}", boxSource.PrototypeText),
             caption)
         { PreserveParagraphLineBreaks = true, BoxSource = boxSource, FigureSource = figureSource };
 
