@@ -1,0 +1,4617 @@
+{
+  "Environment": {
+    "Commit": "c7cfb17bf984ac8f1ee6732f81a9e4c1b9d0a5ee",
+    "Files": [
+      {
+        "Path": "examples/korean-lorem/large-5x.md",
+        "Bytes": 237775,
+        "SHA256": "e1f5735152995d0891c8af96af2da9468263131f975c25b10cc46a1c433799cd"
+      },
+      {
+        "Path": "templates/template.hwp",
+        "Bytes": 26624,
+        "SHA256": "e7c678d3014a82c34b565e860e42526ba6d75c688b5d3b33491bafe64430fde9"
+      },
+      {
+        "Path": "target/release/md2hwp.exe",
+        "Bytes": 5839872,
+        "SHA256": "51479db2c70667b9b9ba720db14d1c9e3c351c49aed8dd8450b12a9573d00252"
+      },
+      {
+        "Path": "target/release/md2hwp-backend.exe",
+        "Bytes": 772214,
+        "SHA256": "afb8a4ca5d038a0de99d1fc4f196ab4b53145a3acdcb64563759ba51f348915d"
+      }
+    ],
+    "Instrumentation": "Separate source snapshot; method invocation timings, nested stage/export timings and per-call timeline. COM property gets/sets are not individually instrumented. Rendering and validation unchanged."
+  },
+  "Workstation": {
+    "DotnetRuntime": {
+      "Framework": "Microsoft.NETCore.App",
+      "Version": "10.0.11",
+      "Architecture": "X64"
+    },
+    "Identity": "DESKTOP-BRTN48S\\MOLIT",
+    "Architecture": "X64",
+    "SessionId": 1,
+    "HancomVersion": "11.0.0.9136",
+    "OS": "Microsoft Windows NT 10.0.26300.0",
+    "Sdk": "10.0.400"
+  },
+  "Baseline": {
+    "Run": {
+      "ExitCode": 1,
+      "TemplateSha256": "E7C678D3014A82C34B565E860E42526BA6D75C688B5D3B33491BAFE64430FDE9",
+      "WallMilliseconds": 444644.4418,
+      "Commit": "c7cfb17bf984ac8f1ee6732f81a9e4c1b9d0a5ee"
+    },
+    "Profile": {
+      "Completed": false,
+      "TotalMilliseconds": 441282.735,
+      "Metrics": [
+        {
+          "Name": "phase.insert",
+          "Calls": 1,
+          "Milliseconds": 348656.962,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "operation.figure/body",
+          "Calls": 29,
+          "Milliseconds": 195832.719,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "hwpml.export/AuriMinimalCaptionPrototype.ReadDocument",
+          "Calls": 148,
+          "Milliseconds": 90507.045,
+          "ExportedUtf16CodeUnits": 790318872
+        },
+        {
+          "Name": "operation.code/code",
+          "Calls": 14,
+          "Milliseconds": 76214.473,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "hwpml.export/TemplateSource.Insert",
+          "Calls": 108,
+          "Milliseconds": 66722.817,
+          "ExportedUtf16CodeUnits": 579436012
+        },
+        {
+          "Name": "hwpml.block.export/CurrentParagraphStyle.ReadBlock",
+          "Calls": 473,
+          "Milliseconds": 63978.553,
+          "ExportedUtf16CodeUnits": 44980620
+        },
+        {
+          "Name": "hwpml.export/AuriMinimalBoxPrototype.ReadDocument",
+          "Calls": 99,
+          "Milliseconds": 60946.097,
+          "ExportedUtf16CodeUnits": 529796192
+        },
+        {
+          "Name": "operation.text/body",
+          "Calls": 565,
+          "Milliseconds": 60019.054,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.attach-native",
+          "Calls": 1,
+          "Milliseconds": 31984.914,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.save-flat-reopen",
+          "Calls": 1,
+          "Milliseconds": 13863.606,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.verify-flat-reopened",
+          "Calls": 1,
+          "Milliseconds": 8904.848,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.validate-flat",
+          "Calls": 1,
+          "Milliseconds": 8399.544,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "operation.table/body",
+          "Calls": 39,
+          "Milliseconds": 5896.164,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "hwpml.parse/AuriMinimalCaptionPrototype.ReadDocument",
+          "Calls": 148,
+          "Milliseconds": 5132.429,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "hwpml.export/HancomPreviewWriter.ReadParagraphs",
+          "Calls": 7,
+          "Milliseconds": 5011.373,
+          "ExportedUtf16CodeUnits": 43429654
+        },
+        {
+          "Name": "hwpml.export/TaggedTemplateWriter.RangeRoots",
+          "Calls": 7,
+          "Milliseconds": 4331.926,
+          "ExportedUtf16CodeUnits": 39778728
+        },
+        {
+          "Name": "hwpml.parse/TemplateSource.Insert",
+          "Calls": 108,
+          "Milliseconds": 4023.474,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "hwpml.parse/AuriMinimalBoxPrototype.ReadDocument",
+          "Calls": 99,
+          "Milliseconds": 3514.734,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "operation.text/heading2",
+          "Calls": 20,
+          "Milliseconds": 3477.946,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "operation.text/heading3",
+          "Calls": 20,
+          "Milliseconds": 3231.872,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.prepare",
+          "Calls": 1,
+          "Milliseconds": 2312.141,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "operation.text/heading1",
+          "Calls": 5,
+          "Milliseconds": 1689.28,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "operation.text/heading4",
+          "Calls": 10,
+          "Milliseconds": 1609.021,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "hwpml.export/HancomPreviewWriter.VerifyLists",
+          "Calls": 2,
+          "Milliseconds": 1287.285,
+          "ExportedUtf16CodeUnits": 12235025
+        },
+        {
+          "Name": "hwpml.export/TaggedTemplateWriter.ImportFigureDocument",
+          "Calls": 2,
+          "Milliseconds": 1026.148,
+          "ExportedUtf16CodeUnits": 7560022
+        },
+        {
+          "Name": "hwpml.export/TaggedTemplateWriter.RenderTaggedTemplate",
+          "Calls": 3,
+          "Milliseconds": 948.11,
+          "ExportedUtf16CodeUnits": 6959818
+        },
+        {
+          "Name": "hwpml.export/HancomPreviewWriter.VerifyText",
+          "Calls": 1,
+          "Milliseconds": 867.799,
+          "ExportedUtf16CodeUnits": 6724579
+        },
+        {
+          "Name": "hwpml.block.parse/CurrentParagraphStyle.ReadBlock",
+          "Calls": 473,
+          "Milliseconds": 596.112,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "operation.text/heading5",
+          "Calls": 2,
+          "Milliseconds": 349.571,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "operation.text/heading6",
+          "Calls": 2,
+          "Milliseconds": 330.85,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "hwpml.parse/HancomPreviewWriter.ReadParagraphs",
+          "Calls": 7,
+          "Milliseconds": 281.52,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "hwpml.parse/TaggedTemplateWriter.RangeRoots",
+          "Calls": 7,
+          "Milliseconds": 242.178,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "hwpml.parse/HancomPreviewWriter.VerifyLists",
+          "Calls": 2,
+          "Milliseconds": 113.732,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "hwpml.export/HancomPreviewWriter.PrepareInsertionTarget",
+          "Calls": 2,
+          "Milliseconds": 108.222,
+          "ExportedUtf16CodeUnits": 195696
+        },
+        {
+          "Name": "hwpml.parse/TaggedTemplateWriter.ImportFigureDocument",
+          "Calls": 2,
+          "Milliseconds": 85.207,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "hwpml.parse/HancomPreviewWriter.VerifyText",
+          "Calls": 1,
+          "Milliseconds": 78.11,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "hwpml.parse/TaggedTemplateWriter.RenderTaggedTemplate",
+          "Calls": 3,
+          "Milliseconds": 60.424,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "hwpml.parse/HancomPreviewWriter.PrepareInsertionTarget",
+          "Calls": 2,
+          "Milliseconds": 7.419,
+          "ExportedUtf16CodeUnits": 0
+        }
+      ]
+    }
+  },
+  "Cases": {
+    "small": {
+      "Run": {
+        "WallMilliseconds": 103254.5026,
+        "Case": "small",
+        "ExitCode": 0
+      },
+      "MeasuredComMethodCalls": 5261,
+      "MeasuredComExclusiveMs": 83172.6533,
+      "Actions": [
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Calls": 103,
+          "TotalMs": 48676.435,
+          "ExclusiveMs": 48676.435,
+          "MeanMs": 472.587,
+          "P50Ms": 560.619,
+          "P95Ms": 712.658,
+          "MaxMs": 986.258
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:saveblock",
+          "Calls": 129,
+          "TotalMs": 17766.361,
+          "ExclusiveMs": 17766.361,
+          "MeanMs": 137.724,
+          "P50Ms": 130.848,
+          "P95Ms": 175.876,
+          "MaxMs": 254.706
+        },
+        {
+          "Name": "hwp.SaveAs",
+          "Calls": 2,
+          "TotalMs": 3746.988,
+          "ExclusiveMs": 3746.988,
+          "MeanMs": 1873.494,
+          "P50Ms": 785.123,
+          "P95Ms": 2961.865,
+          "MaxMs": 2961.865
+        },
+        {
+          "Name": "hwp.SetTextFile:HWPML2X",
+          "Calls": 3,
+          "TotalMs": 2626.642,
+          "ExclusiveMs": 2626.642,
+          "MeanMs": 875.547,
+          "P50Ms": 1161.9,
+          "P95Ms": 1383.792,
+          "MaxMs": 1383.792
+        },
+        {
+          "Name": "Activator.CreateInstance:HWPFrame.HwpObject",
+          "Calls": 1,
+          "TotalMs": 2008.728,
+          "ExclusiveMs": 2008.728,
+          "MeanMs": 2008.728,
+          "P50Ms": 2008.728,
+          "P95Ms": 2008.728,
+          "MaxMs": 2008.728
+        },
+        {
+          "Name": "hwp.GetTextFile:UNICODE:saveblock",
+          "Calls": 18,
+          "TotalMs": 1644.94,
+          "ExclusiveMs": 1644.94,
+          "MeanMs": 91.386,
+          "P50Ms": 86.866,
+          "P95Ms": 131.491,
+          "MaxMs": 131.491
+        },
+        {
+          "Name": "hwp.HAction.Run:Cancel",
+          "Calls": 251,
+          "TotalMs": 679.024,
+          "ExclusiveMs": 679.024,
+          "MeanMs": 2.705,
+          "P50Ms": 0.958,
+          "P95Ms": 11.614,
+          "MaxMs": 51.83
+        },
+        {
+          "Name": "hwp.InsertPicture",
+          "Calls": 4,
+          "TotalMs": 657.94,
+          "ExclusiveMs": 657.94,
+          "MeanMs": 164.485,
+          "P50Ms": 95.246,
+          "P95Ms": 371.868,
+          "MaxMs": 371.868
+        },
+        {
+          "Name": "hwp.SetTextFile:HWP:insertfile",
+          "Calls": 12,
+          "TotalMs": 645.521,
+          "ExclusiveMs": 645.521,
+          "MeanMs": 53.793,
+          "P50Ms": 50.703,
+          "P95Ms": 63.409,
+          "MaxMs": 63.409
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:InsertText",
+          "Calls": 391,
+          "TotalMs": 550.461,
+          "ExclusiveMs": 550.461,
+          "MeanMs": 1.408,
+          "P50Ms": 0.981,
+          "P95Ms": 1.747,
+          "MaxMs": 116.493
+        },
+        {
+          "Name": "hwp.GetTextFile:HWP:saveblock",
+          "Calls": 3,
+          "TotalMs": 544.196,
+          "ExclusiveMs": 544.196,
+          "MeanMs": 181.399,
+          "P50Ms": 173.434,
+          "P95Ms": 203.302,
+          "MaxMs": 203.302
+        },
+        {
+          "Name": "hwp.HAction.Execute:InsertText",
+          "Calls": 391,
+          "TotalMs": 416.625,
+          "ExclusiveMs": 416.625,
+          "MeanMs": 1.066,
+          "P50Ms": 0.92,
+          "P95Ms": 1.795,
+          "MaxMs": 4.67
+        },
+        {
+          "Name": "candidate.Item",
+          "Calls": 704,
+          "TotalMs": 246.132,
+          "ExclusiveMs": 246.132,
+          "MeanMs": 0.35,
+          "P50Ms": 0.397,
+          "P95Ms": 0.689,
+          "MaxMs": 3.654
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveDocEnd",
+          "Calls": 245,
+          "TotalMs": 239.045,
+          "ExclusiveMs": 239.045,
+          "MeanMs": 0.976,
+          "P50Ms": 0.413,
+          "P95Ms": 2.024,
+          "MaxMs": 70.699
+        },
+        {
+          "Name": "hwp.HAction.Run:BreakPara",
+          "Calls": 146,
+          "TotalMs": 215.034,
+          "ExclusiveMs": 215.034,
+          "MeanMs": 1.473,
+          "P50Ms": 1.417,
+          "P95Ms": 2.04,
+          "MaxMs": 3.802
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:StyleEx",
+          "Calls": 177,
+          "TotalMs": 205.753,
+          "ExclusiveMs": 205.753,
+          "MeanMs": 1.162,
+          "P50Ms": 1.145,
+          "P95Ms": 1.701,
+          "MaxMs": 7.794
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveDocBegin",
+          "Calls": 18,
+          "TotalMs": 169.197,
+          "ExclusiveMs": 169.197,
+          "MeanMs": 9.4,
+          "P50Ms": 0.534,
+          "P95Ms": 137.915,
+          "MaxMs": 137.915
+        },
+        {
+          "Name": "hwp.Open",
+          "Calls": 3,
+          "TotalMs": 153.962,
+          "ExclusiveMs": 153.962,
+          "MeanMs": 51.321,
+          "P50Ms": 53.609,
+          "P95Ms": 58.934,
+          "MaxMs": 58.934
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:ParagraphShape",
+          "Calls": 91,
+          "TotalMs": 153.674,
+          "ExclusiveMs": 153.674,
+          "MeanMs": 1.689,
+          "P50Ms": 1.301,
+          "P95Ms": 3.166,
+          "MaxMs": 24.84
+        },
+        {
+          "Name": "hwp.HAction.Execute:StyleEx",
+          "Calls": 177,
+          "TotalMs": 152.846,
+          "ExclusiveMs": 152.846,
+          "MeanMs": 0.864,
+          "P50Ms": 0.802,
+          "P95Ms": 1.243,
+          "MaxMs": 2.136
+        },
+        {
+          "Name": "hwp.CreateAction:CharShape",
+          "Calls": 18,
+          "TotalMs": 143.857,
+          "ExclusiveMs": 143.857,
+          "MeanMs": 7.992,
+          "P50Ms": 1.364,
+          "P95Ms": 66.98,
+          "MaxMs": 66.98
+        },
+        {
+          "Name": "hwp.RegisterModule",
+          "Calls": 1,
+          "TotalMs": 113.787,
+          "ExclusiveMs": 113.787,
+          "MeanMs": 113.787,
+          "P50Ms": 113.787,
+          "P95Ms": 113.787,
+          "MaxMs": 113.787
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Calls": 55,
+          "TotalMs": 113.299,
+          "ExclusiveMs": 113.299,
+          "MeanMs": 2.06,
+          "P50Ms": 0.359,
+          "P95Ms": 9.517,
+          "MaxMs": 28.566
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:RepeatFind",
+          "Calls": 46,
+          "TotalMs": 105.263,
+          "ExclusiveMs": 105.263,
+          "MeanMs": 2.288,
+          "P50Ms": 1.578,
+          "P95Ms": 11.742,
+          "MaxMs": 26.904
+        },
+        {
+          "Name": "hwp.HAction.Execute:ParagraphShape",
+          "Calls": 91,
+          "TotalMs": 98.231,
+          "ExclusiveMs": 98.231,
+          "MeanMs": 1.079,
+          "P50Ms": 0.844,
+          "P95Ms": 1.861,
+          "MaxMs": 5.775
+        },
+        {
+          "Name": "control.GetAnchorPos",
+          "Calls": 384,
+          "TotalMs": 86.054,
+          "ExclusiveMs": 86.054,
+          "MeanMs": 0.224,
+          "P50Ms": 0.209,
+          "P95Ms": 0.333,
+          "MaxMs": 2.707
+        },
+        {
+          "Name": "hwp.Clear",
+          "Calls": 6,
+          "TotalMs": 70.713,
+          "ExclusiveMs": 70.713,
+          "MeanMs": 11.785,
+          "P50Ms": 11.244,
+          "P95Ms": 17.533,
+          "MaxMs": 17.533
+        },
+        {
+          "Name": "hwp.HAction.Execute:RepeatFind",
+          "Calls": 46,
+          "TotalMs": 66.867,
+          "ExclusiveMs": 66.867,
+          "MeanMs": 1.454,
+          "P50Ms": 1.073,
+          "P95Ms": 4.243,
+          "MaxMs": 7.818
+        },
+        {
+          "Name": "hwp.HAction.Run:DeleteBack",
+          "Calls": 109,
+          "TotalMs": 64.992,
+          "ExclusiveMs": 64.992,
+          "MeanMs": 0.596,
+          "P50Ms": 0.564,
+          "P95Ms": 0.847,
+          "MaxMs": 2.413
+        },
+        {
+          "Name": "hwp.HAction.Run:TableRightCell",
+          "Calls": 40,
+          "TotalMs": 64.752,
+          "ExclusiveMs": 64.752,
+          "MeanMs": 1.619,
+          "P50Ms": 1.127,
+          "P95Ms": 1.608,
+          "MaxMs": 19.756
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveParaBegin",
+          "Calls": 43,
+          "TotalMs": 58.411,
+          "ExclusiveMs": 58.411,
+          "MeanMs": 1.358,
+          "P50Ms": 0.892,
+          "P95Ms": 5.083,
+          "MaxMs": 10.794
+        },
+        {
+          "Name": "hwp.SelectText",
+          "Calls": 109,
+          "TotalMs": 51.357,
+          "ExclusiveMs": 51.357,
+          "MeanMs": 0.471,
+          "P50Ms": 0.408,
+          "P95Ms": 0.672,
+          "MaxMs": 4.536
+        },
+        {
+          "Name": "action.CreateSet",
+          "Calls": 76,
+          "TotalMs": 50.489,
+          "ExclusiveMs": 50.489,
+          "MeanMs": 0.664,
+          "P50Ms": 0.519,
+          "P95Ms": 0.824,
+          "MaxMs": 6.622
+        },
+        {
+          "Name": "parameters.CreateItemSet",
+          "Calls": 48,
+          "TotalMs": 47.322,
+          "ExclusiveMs": 47.322,
+          "MeanMs": 0.986,
+          "P50Ms": 0.521,
+          "P95Ms": 1.217,
+          "MaxMs": 16.946
+        },
+        {
+          "Name": "parentAnchor.Item",
+          "Calls": 144,
+          "TotalMs": 47.115,
+          "ExclusiveMs": 47.115,
+          "MeanMs": 0.327,
+          "P50Ms": 0.322,
+          "P95Ms": 0.687,
+          "MaxMs": 1.088
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Calls": 178,
+          "TotalMs": 44.327,
+          "ExclusiveMs": 44.327,
+          "MeanMs": 0.249,
+          "P50Ms": 0.123,
+          "P95Ms": 0.553,
+          "MaxMs": 5.15
+        },
+        {
+          "Name": "set.SetItem",
+          "Calls": 198,
+          "TotalMs": 46.083,
+          "ExclusiveMs": 42.11,
+          "MeanMs": 0.233,
+          "P50Ms": 0.112,
+          "P95Ms": 0.484,
+          "MaxMs": 4.634
+        },
+        {
+          "Name": "action.Execute",
+          "Calls": 70,
+          "TotalMs": 33.699,
+          "ExclusiveMs": 33.699,
+          "MeanMs": 0.481,
+          "P50Ms": 0.373,
+          "P95Ms": 0.747,
+          "MaxMs": 3.103
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveListBegin",
+          "Calls": 72,
+          "TotalMs": 33.073,
+          "ExclusiveMs": 33.073,
+          "MeanMs": 0.459,
+          "P50Ms": 0.446,
+          "P95Ms": 0.69,
+          "MaxMs": 0.723
+        },
+        {
+          "Name": "hwp.HAction.Run:Delete",
+          "Calls": 28,
+          "TotalMs": 32.774,
+          "ExclusiveMs": 32.774,
+          "MeanMs": 1.171,
+          "P50Ms": 0.988,
+          "P95Ms": 1.955,
+          "MaxMs": 2.36
+        },
+        {
+          "Name": "subset.Merge",
+          "Calls": 48,
+          "TotalMs": 31.288,
+          "ExclusiveMs": 31.288,
+          "MeanMs": 0.652,
+          "P50Ms": 0.518,
+          "P95Ms": 1.053,
+          "MaxMs": 3.767
+        },
+        {
+          "Name": "action.GetDefault",
+          "Calls": 76,
+          "TotalMs": 24.315,
+          "ExclusiveMs": 24.315,
+          "MeanMs": 0.32,
+          "P50Ms": 0.168,
+          "P95Ms": 0.425,
+          "MaxMs": 5.88
+        },
+        {
+          "Name": "hwp.CreateAction:ParagraphShape",
+          "Calls": 58,
+          "TotalMs": 23.41,
+          "ExclusiveMs": 23.41,
+          "MeanMs": 0.404,
+          "P50Ms": 0.184,
+          "P95Ms": 2.64,
+          "MaxMs": 3.706
+        },
+        {
+          "Name": "hwp.HAction.Run:BreakLine",
+          "Calls": 16,
+          "TotalMs": 22.236,
+          "ExclusiveMs": 22.236,
+          "MeanMs": 1.39,
+          "P50Ms": 1.376,
+          "P95Ms": 1.7,
+          "MaxMs": 1.7
+        },
+        {
+          "Name": "parent.GetAnchorPos",
+          "Calls": 72,
+          "TotalMs": 16.935,
+          "ExclusiveMs": 16.935,
+          "MeanMs": 0.235,
+          "P50Ms": 0.203,
+          "P95Ms": 0.445,
+          "MaxMs": 0.928
+        },
+        {
+          "Name": "hwp.HAction.Run:TableLowerCell",
+          "Calls": 16,
+          "TotalMs": 16.841,
+          "ExclusiveMs": 16.841,
+          "MeanMs": 1.053,
+          "P50Ms": 1.044,
+          "P95Ms": 1.312,
+          "MaxMs": 1.312
+        },
+        {
+          "Name": "hwp.HAction.Run:CharShapeBold",
+          "Calls": 36,
+          "TotalMs": 15.805,
+          "ExclusiveMs": 15.805,
+          "MeanMs": 0.439,
+          "P50Ms": 0.391,
+          "P95Ms": 0.638,
+          "MaxMs": 0.751
+        },
+        {
+          "Name": "parameters.Item",
+          "Calls": 10,
+          "TotalMs": 15.521,
+          "ExclusiveMs": 15.521,
+          "MeanMs": 1.552,
+          "P50Ms": 0.456,
+          "P95Ms": 7.952,
+          "MaxMs": 7.952
+        },
+        {
+          "Name": "hwp.HAction.Run:ShapeObjTableSelCell",
+          "Calls": 16,
+          "TotalMs": 14.865,
+          "ExclusiveMs": 14.865,
+          "MeanMs": 0.929,
+          "P50Ms": 0.596,
+          "P95Ms": 5.044,
+          "MaxMs": 5.044
+        },
+        {
+          "Name": "hwp.FindDir",
+          "Calls": 46,
+          "TotalMs": 14.314,
+          "ExclusiveMs": 14.314,
+          "MeanMs": 0.311,
+          "P50Ms": 0.125,
+          "P95Ms": 2.173,
+          "MaxMs": 2.688
+        },
+        {
+          "Name": "hwp.HAction.Run:CharShapeItalic",
+          "Calls": 32,
+          "TotalMs": 13.129,
+          "ExclusiveMs": 13.129,
+          "MeanMs": 0.41,
+          "P50Ms": 0.383,
+          "P95Ms": 0.639,
+          "MaxMs": 0.693
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveSelNextParaBegin",
+          "Calls": 29,
+          "TotalMs": 12.864,
+          "ExclusiveMs": 12.864,
+          "MeanMs": 0.444,
+          "P50Ms": 0.331,
+          "P95Ms": 0.825,
+          "MaxMs": 0.843
+        },
+        {
+          "Name": "characters.CreateSet",
+          "Calls": 18,
+          "TotalMs": 12.78,
+          "ExclusiveMs": 12.78,
+          "MeanMs": 0.71,
+          "P50Ms": 0.546,
+          "P95Ms": 2.626,
+          "MaxMs": 2.626
+        },
+        {
+          "Name": "hwp.SetPosBySet",
+          "Calls": 16,
+          "TotalMs": 9.456,
+          "ExclusiveMs": 9.456,
+          "MeanMs": 0.591,
+          "P50Ms": 0.396,
+          "P95Ms": 3.389,
+          "MaxMs": 3.389
+        },
+        {
+          "Name": "hwp.FindCtrl",
+          "Calls": 16,
+          "TotalMs": 8.476,
+          "ExclusiveMs": 8.476,
+          "MeanMs": 0.53,
+          "P50Ms": 0.403,
+          "P95Ms": 2.472,
+          "MaxMs": 2.472
+        },
+        {
+          "Name": "((dynamic)nativeShape!).Item",
+          "Calls": 48,
+          "TotalMs": 8.239,
+          "ExclusiveMs": 8.239,
+          "MeanMs": 0.172,
+          "P50Ms": 0.134,
+          "P95Ms": 0.428,
+          "MaxMs": 0.764
+        },
+        {
+          "Name": "characters.Execute",
+          "Calls": 18,
+          "TotalMs": 7.775,
+          "ExclusiveMs": 7.775,
+          "MeanMs": 0.432,
+          "P50Ms": 0.257,
+          "P95Ms": 3.356,
+          "MaxMs": 3.356
+        },
+        {
+          "Name": "characters.GetDefault",
+          "Calls": 18,
+          "TotalMs": 6.904,
+          "ExclusiveMs": 6.904,
+          "MeanMs": 0.384,
+          "P50Ms": 0.196,
+          "P95Ms": 3.201,
+          "MaxMs": 3.201
+        },
+        {
+          "Name": "hwp.Quit",
+          "Calls": 1,
+          "TotalMs": 5.836,
+          "ExclusiveMs": 5.836,
+          "MeanMs": 5.836,
+          "P50Ms": 5.836,
+          "P95Ms": 5.836,
+          "MaxMs": 5.836
+        },
+        {
+          "Name": "hwp.CreateAction:InsertCrossReference",
+          "Calls": 18,
+          "TotalMs": 4.104,
+          "ExclusiveMs": 4.104,
+          "MeanMs": 0.228,
+          "P50Ms": 0.202,
+          "P95Ms": 0.501,
+          "MaxMs": 0.501
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveSelParaEnd",
+          "Calls": 6,
+          "TotalMs": 4.036,
+          "ExclusiveMs": 4.036,
+          "MeanMs": 0.673,
+          "P50Ms": 0.564,
+          "P95Ms": 0.999,
+          "MaxMs": 0.999
+        },
+        {
+          "Name": "hwp.HAction.Run:SelectCtrlFront",
+          "Calls": 4,
+          "TotalMs": 3.941,
+          "ExclusiveMs": 3.941,
+          "MeanMs": 0.985,
+          "P50Ms": 0.927,
+          "P95Ms": 1.156,
+          "MaxMs": 1.156
+        },
+        {
+          "Name": "subset.Clone",
+          "Calls": 2,
+          "TotalMs": 3.825,
+          "ExclusiveMs": 3.825,
+          "MeanMs": 1.912,
+          "P50Ms": 0.695,
+          "P95Ms": 3.13,
+          "MaxMs": 3.13
+        },
+        {
+          "Name": "hwp.GetHeadingString",
+          "Calls": 2,
+          "TotalMs": 3.262,
+          "ExclusiveMs": 3.262,
+          "MeanMs": 1.631,
+          "P50Ms": 0.153,
+          "P95Ms": 3.109,
+          "MaxMs": 3.109
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveParaEnd",
+          "Calls": 4,
+          "TotalMs": 2.416,
+          "ExclusiveMs": 2.416,
+          "MeanMs": 0.604,
+          "P50Ms": 0.611,
+          "P95Ms": 0.667,
+          "MaxMs": 0.667
+        },
+        {
+          "Name": "hwp.HAction.Run:ShapeObjDetachCaption",
+          "Calls": 4,
+          "TotalMs": 2.081,
+          "ExclusiveMs": 2.081,
+          "MeanMs": 0.52,
+          "P50Ms": 0.507,
+          "P95Ms": 0.589,
+          "MaxMs": 0.589
+        }
+      ],
+      "Callsites": [
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:saveblock",
+          "Site": "CurrentParagraphStyle.ReadBlock",
+          "Calls": 109,
+          "TotalMs": 15001.132,
+          "ExclusiveMs": 15001.132,
+          "MeanMs": 137.625,
+          "P50Ms": 130.314,
+          "P95Ms": 175.876,
+          "MaxMs": 254.706
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "AuriMinimalBoxPrototype.ReadDocument",
+          "Calls": 41,
+          "TotalMs": 13306.329,
+          "ExclusiveMs": 13306.329,
+          "MeanMs": 324.545,
+          "P50Ms": 551.259,
+          "P95Ms": 657.257,
+          "MaxMs": 688.417
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "AuriMinimalCaptionPrototype.ReadDocument",
+          "Calls": 23,
+          "TotalMs": 12498.458,
+          "ExclusiveMs": 12498.458,
+          "MeanMs": 543.411,
+          "P50Ms": 557.366,
+          "P95Ms": 604.224,
+          "MaxMs": 669.563
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "TemplateSource.Insert",
+          "Calls": 8,
+          "TotalMs": 4669.13,
+          "ExclusiveMs": 4669.13,
+          "MeanMs": 583.641,
+          "P50Ms": 566.95,
+          "P95Ms": 672.121,
+          "MaxMs": 672.121
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "HancomPreviewWriter.ReadParagraphs",
+          "Calls": 7,
+          "TotalMs": 4541.816,
+          "ExclusiveMs": 4541.816,
+          "MeanMs": 648.831,
+          "P50Ms": 665.534,
+          "P95Ms": 732.481,
+          "MaxMs": 732.481
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "TaggedTemplateWriter.RangeRoots",
+          "Calls": 7,
+          "TotalMs": 4201.179,
+          "ExclusiveMs": 4201.179,
+          "MeanMs": 600.168,
+          "P50Ms": 572.479,
+          "P95Ms": 679.61,
+          "MaxMs": 679.61
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "TaggedTemplateWriter.RenderTaggedTemplate",
+          "Calls": 7,
+          "TotalMs": 4100.263,
+          "ExclusiveMs": 4100.263,
+          "MeanMs": 585.752,
+          "P50Ms": 703.705,
+          "P95Ms": 986.258,
+          "MaxMs": 986.258
+        },
+        {
+          "Name": "hwp.SaveAs",
+          "Site": "TaggedTemplateWriter.cs:82:RenderTaggedTemplate",
+          "Calls": 1,
+          "TotalMs": 2961.865,
+          "ExclusiveMs": 2961.865,
+          "MeanMs": 2961.865,
+          "P50Ms": 2961.865,
+          "P95Ms": 2961.865,
+          "MaxMs": 2961.865
+        },
+        {
+          "Name": "hwp.SetTextFile:HWPML2X",
+          "Site": "TaggedTemplateWriter.cs:205:ImportFigureDocument",
+          "Calls": 3,
+          "TotalMs": 2626.642,
+          "ExclusiveMs": 2626.642,
+          "MeanMs": 875.547,
+          "P50Ms": 1161.9,
+          "P95Ms": 1383.792,
+          "MaxMs": 1383.792
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:saveblock",
+          "Site": "NativeCrossReferences.cs:156:SelectMarker",
+          "Calls": 18,
+          "TotalMs": 2490.782,
+          "ExclusiveMs": 2490.782,
+          "MeanMs": 138.377,
+          "P50Ms": 133.327,
+          "P95Ms": 182.979,
+          "MaxMs": 182.979
+        },
+        {
+          "Name": "Activator.CreateInstance:HWPFrame.HwpObject",
+          "Site": "HancomPreviewWriter.cs:WithHwp.activate",
+          "Calls": 1,
+          "TotalMs": 2008.728,
+          "ExclusiveMs": 2008.728,
+          "MeanMs": 2008.728,
+          "P50Ms": 2008.728,
+          "P95Ms": 2008.728,
+          "MaxMs": 2008.728
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "TaggedTemplateWriter.ImportFigureDocument",
+          "Calls": 3,
+          "TotalMs": 1917.272,
+          "ExclusiveMs": 1917.272,
+          "MeanMs": 639.091,
+          "P50Ms": 924.966,
+          "P95Ms": 941.069,
+          "MaxMs": 941.069
+        },
+        {
+          "Name": "hwp.GetTextFile:UNICODE:saveblock",
+          "Site": "NativeCrossReferences.cs:150:SelectMarker",
+          "Calls": 18,
+          "TotalMs": 1644.94,
+          "ExclusiveMs": 1644.94,
+          "MeanMs": 91.386,
+          "P50Ms": 86.866,
+          "P95Ms": 131.491,
+          "MaxMs": 131.491
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "NativeCrossReferences.Insert",
+          "Calls": 2,
+          "TotalMs": 1398.198,
+          "ExclusiveMs": 1398.198,
+          "MeanMs": 699.099,
+          "P50Ms": 691.452,
+          "P95Ms": 706.745,
+          "MaxMs": 706.745
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "HancomPreviewWriter.VerifyLists",
+          "Calls": 2,
+          "TotalMs": 1247.235,
+          "ExclusiveMs": 1247.235,
+          "MeanMs": 623.618,
+          "P50Ms": 568.382,
+          "P95Ms": 678.853,
+          "MaxMs": 678.853
+        },
+        {
+          "Name": "hwp.SaveAs",
+          "Site": "TaggedTemplateWriter.cs:184:RenderTaggedTemplate",
+          "Calls": 1,
+          "TotalMs": 785.123,
+          "ExclusiveMs": 785.123,
+          "MeanMs": 785.123,
+          "P50Ms": 785.123,
+          "P95Ms": 785.123,
+          "MaxMs": 785.123
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "HancomPreviewWriter.VerifyText",
+          "Calls": 1,
+          "TotalMs": 700.57,
+          "ExclusiveMs": 700.57,
+          "MeanMs": 700.57,
+          "P50Ms": 700.57,
+          "P95Ms": 700.57,
+          "MaxMs": 700.57
+        },
+        {
+          "Name": "hwp.InsertPicture",
+          "Site": "HancomPreviewWriter.cs:418:RenderOperation",
+          "Calls": 4,
+          "TotalMs": 657.94,
+          "ExclusiveMs": 657.94,
+          "MeanMs": 164.485,
+          "P50Ms": 95.246,
+          "P95Ms": 371.868,
+          "MaxMs": 371.868
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:InsertText",
+          "Site": "HancomPreviewWriter.cs:613:InsertText",
+          "Calls": 391,
+          "TotalMs": 550.461,
+          "ExclusiveMs": 550.461,
+          "MeanMs": 1.408,
+          "P50Ms": 0.981,
+          "P95Ms": 1.747,
+          "MaxMs": 116.493
+        },
+        {
+          "Name": "hwp.HAction.Run:Cancel",
+          "Site": "CurrentParagraphStyle.cs:118:Run",
+          "Calls": 218,
+          "TotalMs": 533.062,
+          "ExclusiveMs": 533.062,
+          "MeanMs": 2.445,
+          "P50Ms": 0.989,
+          "P95Ms": 10.9,
+          "MaxMs": 51.83
+        },
+        {
+          "Name": "hwp.HAction.Execute:InsertText",
+          "Site": "HancomPreviewWriter.cs:615:InsertText",
+          "Calls": 391,
+          "TotalMs": 416.625,
+          "ExclusiveMs": 416.625,
+          "MeanMs": 1.066,
+          "P50Ms": 0.92,
+          "P95Ms": 1.795,
+          "MaxMs": 4.67
+        },
+        {
+          "Name": "hwp.SetTextFile:HWP:insertfile",
+          "Site": "AuriMinimalBoxPrototype.cs:107:Insert",
+          "Calls": 6,
+          "TotalMs": 320.743,
+          "ExclusiveMs": 320.743,
+          "MeanMs": 53.457,
+          "P50Ms": 49.746,
+          "P95Ms": 60.596,
+          "MaxMs": 60.596
+        },
+        {
+          "Name": "candidate.Item",
+          "Site": "NativeTablePagination.cs:100:ReadStartPages",
+          "Calls": 704,
+          "TotalMs": 246.132,
+          "ExclusiveMs": 246.132,
+          "MeanMs": 0.35,
+          "P50Ms": 0.397,
+          "P95Ms": 0.689,
+          "MaxMs": 3.654
+        },
+        {
+          "Name": "hwp.HAction.Run:BreakPara",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 146,
+          "TotalMs": 215.034,
+          "ExclusiveMs": 215.034,
+          "MeanMs": 1.473,
+          "P50Ms": 1.417,
+          "P95Ms": 2.04,
+          "MaxMs": 3.802
+        },
+        {
+          "Name": "hwp.SetTextFile:HWP:insertfile",
+          "Site": "AuriMinimalCaptionPrototype.cs:93:Insert",
+          "Calls": 4,
+          "TotalMs": 210.666,
+          "ExclusiveMs": 210.666,
+          "MeanMs": 52.667,
+          "P50Ms": 48.584,
+          "P95Ms": 60.707,
+          "MaxMs": 60.707
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:StyleEx",
+          "Site": "HancomPreviewWriter.cs:586:ApplyParagraphStyle",
+          "Calls": 177,
+          "TotalMs": 205.753,
+          "ExclusiveMs": 205.753,
+          "MeanMs": 1.162,
+          "P50Ms": 1.145,
+          "P95Ms": 1.701,
+          "MaxMs": 7.794
+        },
+        {
+          "Name": "hwp.GetTextFile:HWP:saveblock",
+          "Site": "AuriMinimalBoxPrototype.cs:48:Bind",
+          "Calls": 1,
+          "TotalMs": 203.302,
+          "ExclusiveMs": 203.302,
+          "MeanMs": 203.302,
+          "P50Ms": 203.302,
+          "P95Ms": 203.302,
+          "MaxMs": 203.302
+        },
+        {
+          "Name": "hwp.GetTextFile:HWP:saveblock",
+          "Site": "AuriMinimalCaptionPrototype.cs:48:Bind",
+          "Calls": 1,
+          "TotalMs": 173.434,
+          "ExclusiveMs": 173.434,
+          "MeanMs": 173.434,
+          "P50Ms": 173.434,
+          "P95Ms": 173.434,
+          "MaxMs": 173.434
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveDocBegin",
+          "Site": "NativeCrossReferences.cs:139:SelectMarker",
+          "Calls": 18,
+          "TotalMs": 169.197,
+          "ExclusiveMs": 169.197,
+          "MeanMs": 9.4,
+          "P50Ms": 0.534,
+          "P95Ms": 137.915,
+          "MaxMs": 137.915
+        },
+        {
+          "Name": "hwp.GetTextFile:HWP:saveblock",
+          "Site": "TemplateSource.cs:44:Bind",
+          "Calls": 1,
+          "TotalMs": 167.46,
+          "ExclusiveMs": 167.46,
+          "MeanMs": 167.46,
+          "P50Ms": 167.46,
+          "P95Ms": 167.46,
+          "MaxMs": 167.46
+        },
+        {
+          "Name": "hwp.Open",
+          "Site": "HancomPreviewWriter.cs:203:Open",
+          "Calls": 3,
+          "TotalMs": 153.962,
+          "ExclusiveMs": 153.962,
+          "MeanMs": 51.321,
+          "P50Ms": 53.609,
+          "P95Ms": 58.934,
+          "MaxMs": 58.934
+        },
+        {
+          "Name": "hwp.HAction.Execute:StyleEx",
+          "Site": "HancomPreviewWriter.cs:588:ApplyParagraphStyle",
+          "Calls": 177,
+          "TotalMs": 152.846,
+          "ExclusiveMs": 152.846,
+          "MeanMs": 0.864,
+          "P50Ms": 0.802,
+          "P95Ms": 1.243,
+          "MaxMs": 2.136
+        },
+        {
+          "Name": "hwp.CreateAction:CharShape",
+          "Site": "NativeCrossReferences.cs:121:Insert",
+          "Calls": 18,
+          "TotalMs": 143.857,
+          "ExclusiveMs": 143.857,
+          "MeanMs": 7.992,
+          "P50Ms": 1.364,
+          "P95Ms": 66.98,
+          "MaxMs": 66.98
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:saveblock",
+          "Site": "AuriMinimalBoxPrototype.cs:47:Bind",
+          "Calls": 1,
+          "TotalMs": 142.421,
+          "ExclusiveMs": 142.421,
+          "MeanMs": 142.421,
+          "P50Ms": 142.421,
+          "P95Ms": 142.421,
+          "MaxMs": 142.421
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:saveblock",
+          "Site": "AuriMinimalCaptionPrototype.cs:47:Bind",
+          "Calls": 1,
+          "TotalMs": 132.026,
+          "ExclusiveMs": 132.026,
+          "MeanMs": 132.026,
+          "P50Ms": 132.026,
+          "P95Ms": 132.026,
+          "MaxMs": 132.026
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:ParagraphShape",
+          "Site": "HancomPreviewWriter.cs:451:ClearNativeListAtCaret",
+          "Calls": 67,
+          "TotalMs": 126.881,
+          "ExclusiveMs": 126.881,
+          "MeanMs": 1.894,
+          "P50Ms": 1.349,
+          "P95Ms": 3.268,
+          "MaxMs": 24.84
+        },
+        {
+          "Name": "hwp.SetTextFile:HWP:insertfile",
+          "Site": "TemplateSource.cs:55:Insert",
+          "Calls": 2,
+          "TotalMs": 114.112,
+          "ExclusiveMs": 114.112,
+          "MeanMs": 57.056,
+          "P50Ms": 50.703,
+          "P95Ms": 63.409,
+          "MaxMs": 63.409
+        },
+        {
+          "Name": "hwp.RegisterModule",
+          "Site": "HancomPreviewWriter.cs:128:WithHwp",
+          "Calls": 1,
+          "TotalMs": 113.787,
+          "ExclusiveMs": 113.787,
+          "MeanMs": 113.787,
+          "P50Ms": 113.787,
+          "P95Ms": 113.787,
+          "MaxMs": 113.787
+        },
+        {
+          "Name": "hwp.HAction.Run:Cancel",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 11,
+          "TotalMs": 104.107,
+          "ExclusiveMs": 104.107,
+          "MeanMs": 9.464,
+          "P50Ms": 1.412,
+          "P95Ms": 42.305,
+          "MaxMs": 42.305
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveDocEnd",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 14,
+          "TotalMs": 99.696,
+          "ExclusiveMs": 99.696,
+          "MeanMs": 7.121,
+          "P50Ms": 0.626,
+          "P95Ms": 70.699,
+          "MaxMs": 70.699
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveDocEnd",
+          "Site": "CurrentParagraphStyle.cs:118:Run",
+          "Calls": 218,
+          "TotalMs": 98.472,
+          "ExclusiveMs": 98.472,
+          "MeanMs": 0.452,
+          "P50Ms": 0.399,
+          "P95Ms": 0.747,
+          "MaxMs": 2.363
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "HancomPreviewWriter.PrepareInsertionTarget",
+          "Calls": 2,
+          "TotalMs": 95.986,
+          "ExclusiveMs": 95.986,
+          "MeanMs": 47.993,
+          "P50Ms": 47.607,
+          "P95Ms": 48.379,
+          "MaxMs": 48.379
+        },
+        {
+          "Name": "control.GetAnchorPos",
+          "Site": "NativeTablePagination.cs:99:ReadStartPages",
+          "Calls": 384,
+          "TotalMs": 86.054,
+          "ExclusiveMs": 86.054,
+          "MeanMs": 0.224,
+          "P50Ms": 0.209,
+          "P95Ms": 0.333,
+          "MaxMs": 2.707
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "AuriMinimalBoxPrototype.cs:547:MoveToRoot",
+          "Calls": 20,
+          "TotalMs": 77.942,
+          "ExclusiveMs": 77.942,
+          "MeanMs": 3.897,
+          "P50Ms": 0.359,
+          "P95Ms": 21.727,
+          "MaxMs": 28.566
+        },
+        {
+          "Name": "hwp.HAction.Execute:ParagraphShape",
+          "Site": "HancomPreviewWriter.cs:457:ClearNativeListAtCaret",
+          "Calls": 67,
+          "TotalMs": 66.788,
+          "ExclusiveMs": 66.788,
+          "MeanMs": 0.997,
+          "P50Ms": 0.775,
+          "P95Ms": 1.861,
+          "MaxMs": 5.283
+        },
+        {
+          "Name": "hwp.HAction.Run:DeleteBack",
+          "Site": "CurrentParagraphStyle.cs:118:Run",
+          "Calls": 109,
+          "TotalMs": 64.992,
+          "ExclusiveMs": 64.992,
+          "MeanMs": 0.596,
+          "P50Ms": 0.564,
+          "P95Ms": 0.847,
+          "MaxMs": 2.413
+        },
+        {
+          "Name": "hwp.HAction.Run:TableRightCell",
+          "Site": "NativeTablePagination.cs:152:Run",
+          "Calls": 40,
+          "TotalMs": 64.752,
+          "ExclusiveMs": 64.752,
+          "MeanMs": 1.619,
+          "P50Ms": 1.127,
+          "P95Ms": 1.608,
+          "MaxMs": 19.756
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:RepeatFind",
+          "Site": "AuriMinimalBoxPrototype.cs:557:FindNext",
+          "Calls": 16,
+          "TotalMs": 51.596,
+          "ExclusiveMs": 51.596,
+          "MeanMs": 3.225,
+          "P50Ms": 1.668,
+          "P95Ms": 26.904,
+          "MaxMs": 26.904
+        },
+        {
+          "Name": "hwp.SelectText",
+          "Site": "CurrentParagraphStyle.cs:129:Select",
+          "Calls": 109,
+          "TotalMs": 51.357,
+          "ExclusiveMs": 51.357,
+          "MeanMs": 0.471,
+          "P50Ms": 0.408,
+          "P95Ms": 0.672,
+          "MaxMs": 4.536
+        },
+        {
+          "Name": "parameters.CreateItemSet",
+          "Site": "TemplateListPrototype.cs:92:Apply",
+          "Calls": 48,
+          "TotalMs": 47.322,
+          "ExclusiveMs": 47.322,
+          "MeanMs": 0.986,
+          "P50Ms": 0.521,
+          "P95Ms": 1.217,
+          "MaxMs": 16.946
+        },
+        {
+          "Name": "parentAnchor.Item",
+          "Site": "NativeTablePagination.cs:132:ReadRow",
+          "Calls": 144,
+          "TotalMs": 47.115,
+          "ExclusiveMs": 47.115,
+          "MeanMs": 0.327,
+          "P50Ms": 0.322,
+          "P95Ms": 0.687,
+          "MaxMs": 1.088
+        },
+        {
+          "Name": "hwp.Clear",
+          "Site": "TaggedTemplateWriter.cs:204:ImportFigureDocument",
+          "Calls": 3,
+          "TotalMs": 38.118,
+          "ExclusiveMs": 38.118,
+          "MeanMs": 12.706,
+          "P50Ms": 12.33,
+          "P95Ms": 17.533,
+          "MaxMs": 17.533
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveListBegin",
+          "Site": "NativeTablePagination.cs:152:Run",
+          "Calls": 72,
+          "TotalMs": 33.073,
+          "ExclusiveMs": 33.073,
+          "MeanMs": 0.459,
+          "P50Ms": 0.446,
+          "P95Ms": 0.69,
+          "MaxMs": 0.723
+        },
+        {
+          "Name": "hwp.HAction.Run:Cancel",
+          "Site": "AuriMinimalCaptionPrototype.cs:572:Run",
+          "Calls": 5,
+          "TotalMs": 32.698,
+          "ExclusiveMs": 32.698,
+          "MeanMs": 6.54,
+          "P50Ms": 3.942,
+          "P95Ms": 22.354,
+          "MaxMs": 22.354
+        },
+        {
+          "Name": "hwp.HAction.Execute:ParagraphShape",
+          "Site": "HancomPreviewWriter.cs:503:ApplyNativeListMarker",
+          "Calls": 24,
+          "TotalMs": 31.443,
+          "ExclusiveMs": 31.443,
+          "MeanMs": 1.31,
+          "P50Ms": 1.084,
+          "P95Ms": 1.583,
+          "MaxMs": 5.775
+        },
+        {
+          "Name": "subset.Merge",
+          "Site": "TemplateListPrototype.cs:94:Apply",
+          "Calls": 48,
+          "TotalMs": 31.288,
+          "ExclusiveMs": 31.288,
+          "MeanMs": 0.652,
+          "P50Ms": 0.518,
+          "P95Ms": 1.053,
+          "MaxMs": 3.767
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveParaBegin",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 27,
+          "TotalMs": 29.979,
+          "ExclusiveMs": 29.979,
+          "MeanMs": 1.11,
+          "P50Ms": 0.859,
+          "P95Ms": 1.242,
+          "MaxMs": 10.794
+        },
+        {
+          "Name": "action.CreateSet",
+          "Site": "TemplateListPrototype.cs:90:Apply",
+          "Calls": 48,
+          "TotalMs": 26.817,
+          "ExclusiveMs": 26.817,
+          "MeanMs": 0.559,
+          "P50Ms": 0.525,
+          "P95Ms": 0.794,
+          "MaxMs": 1.368
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:ParagraphShape",
+          "Site": "HancomPreviewWriter.cs:490:ApplyNativeListMarker",
+          "Calls": 24,
+          "TotalMs": 26.793,
+          "ExclusiveMs": 26.793,
+          "MeanMs": 1.116,
+          "P50Ms": 1.003,
+          "P95Ms": 1.941,
+          "MaxMs": 2.122
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:RepeatFind",
+          "Site": "AuriMinimalCaptionPrototype.cs:501:FindNext",
+          "Calls": 8,
+          "TotalMs": 26.279,
+          "ExclusiveMs": 26.279,
+          "MeanMs": 3.285,
+          "P50Ms": 1.96,
+          "P95Ms": 12.815,
+          "MaxMs": 12.815
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveDocEnd",
+          "Site": "AuriMinimalCaptionPrototype.cs:572:Run",
+          "Calls": 8,
+          "TotalMs": 25.668,
+          "ExclusiveMs": 25.668,
+          "MeanMs": 3.208,
+          "P50Ms": 0.501,
+          "P95Ms": 7.645,
+          "MaxMs": 7.645
+        },
+        {
+          "Name": "hwp.HAction.Run:Delete",
+          "Site": "NativeCrossReferences.cs:124:Insert",
+          "Calls": 18,
+          "TotalMs": 24.505,
+          "ExclusiveMs": 24.505,
+          "MeanMs": 1.361,
+          "P50Ms": 1.308,
+          "P95Ms": 2.36,
+          "MaxMs": 2.36
+        },
+        {
+          "Name": "action.Execute",
+          "Site": "TemplateListPrototype.cs:98:Apply",
+          "Calls": 48,
+          "TotalMs": 23.595,
+          "ExclusiveMs": 23.595,
+          "MeanMs": 0.492,
+          "P50Ms": 0.434,
+          "P95Ms": 0.747,
+          "MaxMs": 3.103
+        },
+        {
+          "Name": "hwp.HAction.Execute:RepeatFind",
+          "Site": "AuriMinimalBoxPrototype.cs:561:FindNext",
+          "Calls": 16,
+          "TotalMs": 22.085,
+          "ExclusiveMs": 22.085,
+          "MeanMs": 1.38,
+          "P50Ms": 1.075,
+          "P95Ms": 4.243,
+          "MaxMs": 4.243
+        },
+        {
+          "Name": "hwp.Clear",
+          "Site": "HancomPreviewWriter.cs:215:CloseDocument",
+          "Calls": 2,
+          "TotalMs": 21.352,
+          "ExclusiveMs": 21.352,
+          "MeanMs": 10.676,
+          "P50Ms": 7.887,
+          "P95Ms": 13.465,
+          "MaxMs": 13.465
+        },
+        {
+          "Name": "hwp.HAction.Execute:RepeatFind",
+          "Site": "NativeCrossReferences.cs:146:SelectMarker",
+          "Calls": 18,
+          "TotalMs": 19.448,
+          "ExclusiveMs": 19.448,
+          "MeanMs": 1.08,
+          "P50Ms": 0.964,
+          "P95Ms": 3.383,
+          "MaxMs": 3.383
+        },
+        {
+          "Name": "hwp.HAction.Run:BreakLine",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 14,
+          "TotalMs": 19.263,
+          "ExclusiveMs": 19.263,
+          "MeanMs": 1.376,
+          "P50Ms": 1.364,
+          "P95Ms": 1.7,
+          "MaxMs": 1.7
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:RepeatFind",
+          "Site": "TemplateSource.cs:81:Find",
+          "Calls": 4,
+          "TotalMs": 17.556,
+          "ExclusiveMs": 17.556,
+          "MeanMs": 4.389,
+          "P50Ms": 1.818,
+          "P95Ms": 11.742,
+          "MaxMs": 11.742
+        },
+        {
+          "Name": "set.SetItem",
+          "Site": "NativeCrossReferences.cs:142:SelectMarker",
+          "Calls": 36,
+          "TotalMs": 21.149,
+          "ExclusiveMs": 17.177,
+          "MeanMs": 0.587,
+          "P50Ms": 0.407,
+          "P95Ms": 4.128,
+          "MaxMs": 4.634
+        },
+        {
+          "Name": "parent.GetAnchorPos",
+          "Site": "NativeTablePagination.cs:131:ReadRow",
+          "Calls": 72,
+          "TotalMs": 16.935,
+          "ExclusiveMs": 16.935,
+          "MeanMs": 0.235,
+          "P50Ms": 0.203,
+          "P95Ms": 0.445,
+          "MaxMs": 0.928
+        },
+        {
+          "Name": "hwp.HAction.Run:TableLowerCell",
+          "Site": "NativeTablePagination.cs:152:Run",
+          "Calls": 16,
+          "TotalMs": 16.841,
+          "ExclusiveMs": 16.841,
+          "MeanMs": 1.053,
+          "P50Ms": 1.044,
+          "P95Ms": 1.312,
+          "MaxMs": 1.312
+        },
+        {
+          "Name": "hwp.HAction.Run:CharShapeBold",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 36,
+          "TotalMs": 15.805,
+          "ExclusiveMs": 15.805,
+          "MeanMs": 0.439,
+          "P50Ms": 0.391,
+          "P95Ms": 0.638,
+          "MaxMs": 0.751
+        },
+        {
+          "Name": "hwp.HAction.Run:ShapeObjTableSelCell",
+          "Site": "NativeTablePagination.cs:152:Run",
+          "Calls": 16,
+          "TotalMs": 14.865,
+          "ExclusiveMs": 14.865,
+          "MeanMs": 0.929,
+          "P50Ms": 0.596,
+          "P95Ms": 5.044,
+          "MaxMs": 5.044
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveDocEnd",
+          "Site": "TemplateSource.cs:78:Run",
+          "Calls": 4,
+          "TotalMs": 14.63,
+          "ExclusiveMs": 14.63,
+          "MeanMs": 3.658,
+          "P50Ms": 1.318,
+          "P95Ms": 6.618,
+          "MaxMs": 6.618
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveParaBegin",
+          "Site": "AuriMinimalCaptionPrototype.cs:572:Run",
+          "Calls": 9,
+          "TotalMs": 14.218,
+          "ExclusiveMs": 14.218,
+          "MeanMs": 1.58,
+          "P50Ms": 0.98,
+          "P95Ms": 6.017,
+          "MaxMs": 6.017
+        },
+        {
+          "Name": "hwp.HAction.Execute:RepeatFind",
+          "Site": "AuriMinimalCaptionPrototype.cs:505:FindNext",
+          "Calls": 8,
+          "TotalMs": 13.477,
+          "ExclusiveMs": 13.477,
+          "MeanMs": 1.685,
+          "P50Ms": 1.071,
+          "P95Ms": 5.18,
+          "MaxMs": 5.18
+        },
+        {
+          "Name": "hwp.HAction.Run:CharShapeItalic",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 32,
+          "TotalMs": 13.129,
+          "ExclusiveMs": 13.129,
+          "MeanMs": 0.41,
+          "P50Ms": 0.383,
+          "P95Ms": 0.639,
+          "MaxMs": 0.693
+        },
+        {
+          "Name": "characters.CreateSet",
+          "Site": "NativeCrossReferences.cs:122:Insert",
+          "Calls": 18,
+          "TotalMs": 12.78,
+          "ExclusiveMs": 12.78,
+          "MeanMs": 0.71,
+          "P50Ms": 0.546,
+          "P95Ms": 2.626,
+          "MaxMs": 2.626
+        },
+        {
+          "Name": "hwp.HAction.Execute:RepeatFind",
+          "Site": "TemplateSource.cs:85:Find",
+          "Calls": 4,
+          "TotalMs": 11.857,
+          "ExclusiveMs": 11.857,
+          "MeanMs": 2.964,
+          "P50Ms": 1.162,
+          "P95Ms": 7.818,
+          "MaxMs": 7.818
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Site": "TemplateListPrototype.cs:95:Apply",
+          "Calls": 48,
+          "TotalMs": 11.369,
+          "ExclusiveMs": 11.369,
+          "MeanMs": 0.237,
+          "P50Ms": 0.124,
+          "P95Ms": 0.231,
+          "MaxMs": 5.15
+        },
+        {
+          "Name": "hwp.Clear",
+          "Site": "HancomPreviewWriter.cs:145:WithHwp",
+          "Calls": 1,
+          "TotalMs": 11.244,
+          "ExclusiveMs": 11.244,
+          "MeanMs": 11.244,
+          "P50Ms": 11.244,
+          "P95Ms": 11.244,
+          "MaxMs": 11.244
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveSelNextParaBegin",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 26,
+          "TotalMs": 10.642,
+          "ExclusiveMs": 10.642,
+          "MeanMs": 0.409,
+          "P50Ms": 0.325,
+          "P95Ms": 0.624,
+          "MaxMs": 0.843
+        },
+        {
+          "Name": "hwp.CreateAction:ParagraphShape",
+          "Site": "TemplateListPrototype.cs:89:Apply",
+          "Calls": 48,
+          "TotalMs": 10.179,
+          "ExclusiveMs": 10.179,
+          "MeanMs": 0.212,
+          "P50Ms": 0.183,
+          "P95Ms": 0.363,
+          "MaxMs": 0.733
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Site": "NativeCrossReferences.cs:130:Insert",
+          "Calls": 18,
+          "TotalMs": 9.856,
+          "ExclusiveMs": 9.856,
+          "MeanMs": 0.548,
+          "P50Ms": 0.422,
+          "P95Ms": 1.983,
+          "MaxMs": 1.983
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:RepeatFind",
+          "Site": "NativeCrossReferences.cs:141:SelectMarker",
+          "Calls": 18,
+          "TotalMs": 9.832,
+          "ExclusiveMs": 9.832,
+          "MeanMs": 0.546,
+          "P50Ms": 0.338,
+          "P95Ms": 3.524,
+          "MaxMs": 3.524
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "AuriMinimalCaptionPrototype.cs:491:MoveToRoot",
+          "Calls": 8,
+          "TotalMs": 9.709,
+          "ExclusiveMs": 9.709,
+          "MeanMs": 1.214,
+          "P50Ms": 0.614,
+          "P95Ms": 2.372,
+          "MaxMs": 2.372
+        },
+        {
+          "Name": "action.CreateSet",
+          "Site": "NativeCrossReferences.cs:128:Insert",
+          "Calls": 18,
+          "TotalMs": 9.547,
+          "ExclusiveMs": 9.547,
+          "MeanMs": 0.53,
+          "P50Ms": 0.492,
+          "P95Ms": 0.71,
+          "MaxMs": 0.71
+        },
+        {
+          "Name": "action.GetDefault",
+          "Site": "TemplateListPrototype.cs:91:Apply",
+          "Calls": 48,
+          "TotalMs": 9.482,
+          "ExclusiveMs": 9.482,
+          "MeanMs": 0.198,
+          "P50Ms": 0.168,
+          "P95Ms": 0.38,
+          "MaxMs": 0.425
+        },
+        {
+          "Name": "hwp.SetPosBySet",
+          "Site": "NativeTablePagination.cs:105:ReadStartPages",
+          "Calls": 16,
+          "TotalMs": 9.456,
+          "ExclusiveMs": 9.456,
+          "MeanMs": 0.591,
+          "P50Ms": 0.396,
+          "P95Ms": 3.389,
+          "MaxMs": 3.389
+        },
+        {
+          "Name": "set.SetItem",
+          "Site": "NativeCrossReferences.cs:143:SelectMarker",
+          "Calls": 54,
+          "TotalMs": 9.416,
+          "ExclusiveMs": 9.416,
+          "MeanMs": 0.174,
+          "P50Ms": 0.109,
+          "P95Ms": 0.394,
+          "MaxMs": 2.331
+        },
+        {
+          "Name": "hwp.CreateAction:ParagraphShape",
+          "Site": "NativeListContinuations.cs:29:Record",
+          "Calls": 4,
+          "TotalMs": 9.075,
+          "ExclusiveMs": 9.075,
+          "MeanMs": 2.269,
+          "P50Ms": 2.519,
+          "P95Ms": 3.706,
+          "MaxMs": 3.706
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveParaBegin",
+          "Site": "TemplateSource.cs:78:Run",
+          "Calls": 5,
+          "TotalMs": 8.664,
+          "ExclusiveMs": 8.664,
+          "MeanMs": 1.733,
+          "P50Ms": 0.892,
+          "P95Ms": 5.083,
+          "MaxMs": 5.083
+        },
+        {
+          "Name": "parameters.Item",
+          "Site": "TemplateListPrototype.cs:82:Bind",
+          "Calls": 2,
+          "TotalMs": 8.635,
+          "ExclusiveMs": 8.635,
+          "MeanMs": 4.317,
+          "P50Ms": 0.683,
+          "P95Ms": 7.952,
+          "MaxMs": 7.952
+        },
+        {
+          "Name": "set.SetItem",
+          "Site": "NativeCrossReferences.cs:145:SelectMarker",
+          "Calls": 54,
+          "TotalMs": 8.561,
+          "ExclusiveMs": 8.561,
+          "MeanMs": 0.159,
+          "P50Ms": 0.109,
+          "P95Ms": 0.283,
+          "MaxMs": 2.052
+        },
+        {
+          "Name": "hwp.HAction.Run:Cancel",
+          "Site": "NativeTablePagination.cs:152:Run",
+          "Calls": 16,
+          "TotalMs": 8.545,
+          "ExclusiveMs": 8.545,
+          "MeanMs": 0.534,
+          "P50Ms": 0.485,
+          "P95Ms": 1.266,
+          "MaxMs": 1.266
+        },
+        {
+          "Name": "hwp.FindCtrl",
+          "Site": "NativeTablePagination.cs:107:ReadStartPages",
+          "Calls": 16,
+          "TotalMs": 8.476,
+          "ExclusiveMs": 8.476,
+          "MeanMs": 0.53,
+          "P50Ms": 0.403,
+          "P95Ms": 2.472,
+          "MaxMs": 2.472
+        },
+        {
+          "Name": "characters.Execute",
+          "Site": "NativeCrossReferences.cs:125:Insert",
+          "Calls": 18,
+          "TotalMs": 7.775,
+          "ExclusiveMs": 7.775,
+          "MeanMs": 0.432,
+          "P50Ms": 0.257,
+          "P95Ms": 3.356,
+          "MaxMs": 3.356
+        },
+        {
+          "Name": "action.CreateSet",
+          "Site": "TemplateListPrototype.cs:80:Bind",
+          "Calls": 2,
+          "TotalMs": 7.152,
+          "ExclusiveMs": 7.152,
+          "MeanMs": 3.576,
+          "P50Ms": 0.53,
+          "P95Ms": 6.622,
+          "MaxMs": 6.622
+        },
+        {
+          "Name": "set.SetItem",
+          "Site": "NativeCrossReferences.cs:144:SelectMarker",
+          "Calls": 54,
+          "TotalMs": 6.956,
+          "ExclusiveMs": 6.956,
+          "MeanMs": 0.129,
+          "P50Ms": 0.107,
+          "P95Ms": 0.278,
+          "MaxMs": 0.292
+        },
+        {
+          "Name": "characters.GetDefault",
+          "Site": "NativeCrossReferences.cs:123:Insert",
+          "Calls": 18,
+          "TotalMs": 6.904,
+          "ExclusiveMs": 6.904,
+          "MeanMs": 0.384,
+          "P50Ms": 0.196,
+          "P95Ms": 3.201,
+          "MaxMs": 3.201
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "TemplateSource.cs:77:Move",
+          "Calls": 5,
+          "TotalMs": 6.749,
+          "ExclusiveMs": 6.749,
+          "MeanMs": 1.35,
+          "P50Ms": 1.321,
+          "P95Ms": 2.525,
+          "MaxMs": 2.525
+        },
+        {
+          "Name": "action.Execute",
+          "Site": "NativeCrossReferences.cs:131:Insert",
+          "Calls": 18,
+          "TotalMs": 6.688,
+          "ExclusiveMs": 6.688,
+          "MeanMs": 0.372,
+          "P50Ms": 0.329,
+          "P95Ms": 0.607,
+          "MaxMs": 0.607
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Site": "TemplateListPrototype.cs:96:Apply",
+          "Calls": 48,
+          "TotalMs": 6.63,
+          "ExclusiveMs": 6.63,
+          "MeanMs": 0.138,
+          "P50Ms": 0.122,
+          "P95Ms": 0.231,
+          "MaxMs": 0.593
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Site": "TemplateListPrototype.cs:97:Apply",
+          "Calls": 48,
+          "TotalMs": 6.431,
+          "ExclusiveMs": 6.431,
+          "MeanMs": 0.134,
+          "P50Ms": 0.123,
+          "P95Ms": 0.215,
+          "MaxMs": 0.449
+        },
+        {
+          "Name": "action.GetDefault",
+          "Site": "TemplateListPrototype.cs:81:Bind",
+          "Calls": 2,
+          "TotalMs": 6.24,
+          "ExclusiveMs": 6.24,
+          "MeanMs": 3.12,
+          "P50Ms": 0.36,
+          "P95Ms": 5.88,
+          "MaxMs": 5.88
+        },
+        {
+          "Name": "parameters.Item",
+          "Site": "NativeListContinuations.cs:32:Record",
+          "Calls": 4,
+          "TotalMs": 6.015,
+          "ExclusiveMs": 6.015,
+          "MeanMs": 1.504,
+          "P50Ms": 0.456,
+          "P95Ms": 4.51,
+          "MaxMs": 4.51
+        },
+        {
+          "Name": "hwp.Quit",
+          "Site": "HancomPreviewWriter.cs:153:WithHwp",
+          "Calls": 1,
+          "TotalMs": 5.836,
+          "ExclusiveMs": 5.836,
+          "MeanMs": 5.836,
+          "P50Ms": 5.836,
+          "P95Ms": 5.836,
+          "MaxMs": 5.836
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveParaBegin",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 2,
+          "TotalMs": 5.55,
+          "ExclusiveMs": 5.55,
+          "MeanMs": 2.775,
+          "P50Ms": 0.739,
+          "P95Ms": 4.812,
+          "MaxMs": 4.812
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "NativeTablePagination.cs:115:ReadStartPages",
+          "Calls": 16,
+          "TotalMs": 5.189,
+          "ExclusiveMs": 5.189,
+          "MeanMs": 0.324,
+          "P50Ms": 0.197,
+          "P95Ms": 2.353,
+          "MaxMs": 2.353
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Site": "NativeListContinuations.cs:50:Apply",
+          "Calls": 4,
+          "TotalMs": 4.931,
+          "ExclusiveMs": 4.931,
+          "MeanMs": 1.233,
+          "P50Ms": 0.408,
+          "P95Ms": 3.305,
+          "MaxMs": 3.305
+        },
+        {
+          "Name": "action.GetDefault",
+          "Site": "NativeListContinuations.cs:31:Record",
+          "Calls": 4,
+          "TotalMs": 4.753,
+          "ExclusiveMs": 4.753,
+          "MeanMs": 1.188,
+          "P50Ms": 0.24,
+          "P95Ms": 3.76,
+          "MaxMs": 3.76
+        },
+        {
+          "Name": "action.CreateSet",
+          "Site": "NativeListContinuations.cs:30:Record",
+          "Calls": 4,
+          "TotalMs": 4.693,
+          "ExclusiveMs": 4.693,
+          "MeanMs": 1.173,
+          "P50Ms": 0.508,
+          "P95Ms": 2.899,
+          "MaxMs": 2.899
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "AuriMinimalBoxPrototype.cs:40:Bind",
+          "Calls": 1,
+          "TotalMs": 4.466,
+          "ExclusiveMs": 4.466,
+          "MeanMs": 4.466,
+          "P50Ms": 4.466,
+          "P95Ms": 4.466,
+          "MaxMs": 4.466
+        },
+        {
+          "Name": "((dynamic)nativeShape!).Item",
+          "Site": "TemplateListPrototype.cs:103:NumberFormat",
+          "Calls": 24,
+          "TotalMs": 4.123,
+          "ExclusiveMs": 4.123,
+          "MeanMs": 0.172,
+          "P50Ms": 0.138,
+          "P95Ms": 0.263,
+          "MaxMs": 0.764
+        },
+        {
+          "Name": "((dynamic)nativeShape!).Item",
+          "Site": "TemplateListPrototype.cs:101:StringFormat",
+          "Calls": 24,
+          "TotalMs": 4.116,
+          "ExclusiveMs": 4.116,
+          "MeanMs": 0.172,
+          "P50Ms": 0.131,
+          "P95Ms": 0.428,
+          "MaxMs": 0.492
+        },
+        {
+          "Name": "hwp.CreateAction:InsertCrossReference",
+          "Site": "NativeCrossReferences.cs:127:Insert",
+          "Calls": 18,
+          "TotalMs": 4.104,
+          "ExclusiveMs": 4.104,
+          "MeanMs": 0.228,
+          "P50Ms": 0.202,
+          "P95Ms": 0.501,
+          "MaxMs": 0.501
+        },
+        {
+          "Name": "hwp.FindDir",
+          "Site": "AuriMinimalBoxPrototype.cs:559:FindNext",
+          "Calls": 16,
+          "TotalMs": 4.077,
+          "ExclusiveMs": 4.077,
+          "MeanMs": 0.255,
+          "P50Ms": 0.126,
+          "P95Ms": 2.176,
+          "MaxMs": 2.176
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveSelParaEnd",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 6,
+          "TotalMs": 4.036,
+          "ExclusiveMs": 4.036,
+          "MeanMs": 0.673,
+          "P50Ms": 0.564,
+          "P95Ms": 0.999,
+          "MaxMs": 0.999
+        },
+        {
+          "Name": "hwp.FindDir",
+          "Site": "NativeCrossReferences.cs:142:SelectMarker",
+          "Calls": 18,
+          "TotalMs": 3.973,
+          "ExclusiveMs": 3.973,
+          "MeanMs": 0.221,
+          "P50Ms": 0.115,
+          "P95Ms": 1.968,
+          "MaxMs": 1.968
+        },
+        {
+          "Name": "hwp.HAction.Run:SelectCtrlFront",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 4,
+          "TotalMs": 3.941,
+          "ExclusiveMs": 3.941,
+          "MeanMs": 0.985,
+          "P50Ms": 0.927,
+          "P95Ms": 1.156,
+          "MaxMs": 1.156
+        },
+        {
+          "Name": "subset.Clone",
+          "Site": "TemplateListPrototype.cs:83:Bind",
+          "Calls": 2,
+          "TotalMs": 3.825,
+          "ExclusiveMs": 3.825,
+          "MeanMs": 1.912,
+          "P50Ms": 0.695,
+          "P95Ms": 3.13,
+          "MaxMs": 3.13
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Site": "NativeListContinuations.cs:52:Apply",
+          "Calls": 4,
+          "TotalMs": 3.598,
+          "ExclusiveMs": 3.598,
+          "MeanMs": 0.899,
+          "P50Ms": 0.116,
+          "P95Ms": 3.23,
+          "MaxMs": 3.23
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "AuriMinimalCaptionPrototype.cs:40:Bind",
+          "Calls": 1,
+          "TotalMs": 3.417,
+          "ExclusiveMs": 3.417,
+          "MeanMs": 3.417,
+          "P50Ms": 3.417,
+          "P95Ms": 3.417,
+          "MaxMs": 3.417
+        },
+        {
+          "Name": "action.Execute",
+          "Site": "NativeListContinuations.cs:54:Apply",
+          "Calls": 4,
+          "TotalMs": 3.416,
+          "ExclusiveMs": 3.416,
+          "MeanMs": 0.854,
+          "P50Ms": 0.16,
+          "P95Ms": 2.868,
+          "MaxMs": 2.868
+        },
+        {
+          "Name": "hwp.HAction.Run:Delete",
+          "Site": "AuriMinimalCaptionPrototype.cs:572:Run",
+          "Calls": 4,
+          "TotalMs": 3.316,
+          "ExclusiveMs": 3.316,
+          "MeanMs": 0.829,
+          "P50Ms": 0.798,
+          "P95Ms": 0.945,
+          "MaxMs": 0.945
+        },
+        {
+          "Name": "hwp.GetHeadingString",
+          "Site": "NativeListContinuations.cs:25:Record",
+          "Calls": 2,
+          "TotalMs": 3.262,
+          "ExclusiveMs": 3.262,
+          "MeanMs": 1.631,
+          "P50Ms": 0.153,
+          "P95Ms": 3.109,
+          "MaxMs": 3.109
+        },
+        {
+          "Name": "hwp.FindDir",
+          "Site": "TemplateSource.cs:83:Find",
+          "Calls": 4,
+          "TotalMs": 3.137,
+          "ExclusiveMs": 3.137,
+          "MeanMs": 0.784,
+          "P50Ms": 0.156,
+          "P95Ms": 2.688,
+          "MaxMs": 2.688
+        },
+        {
+          "Name": "hwp.FindDir",
+          "Site": "AuriMinimalCaptionPrototype.cs:503:FindNext",
+          "Calls": 8,
+          "TotalMs": 3.128,
+          "ExclusiveMs": 3.128,
+          "MeanMs": 0.391,
+          "P50Ms": 0.125,
+          "P95Ms": 2.173,
+          "MaxMs": 2.173
+        },
+        {
+          "Name": "hwp.CreateAction:ParagraphShape",
+          "Site": "TemplateListPrototype.cs:79:Bind",
+          "Calls": 2,
+          "TotalMs": 3.039,
+          "ExclusiveMs": 3.039,
+          "MeanMs": 1.52,
+          "P50Ms": 0.217,
+          "P95Ms": 2.823,
+          "MaxMs": 2.823
+        },
+        {
+          "Name": "hwp.HAction.Run:BreakLine",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 2,
+          "TotalMs": 2.973,
+          "ExclusiveMs": 2.973,
+          "MeanMs": 1.487,
+          "P50Ms": 1.477,
+          "P95Ms": 1.496,
+          "MaxMs": 1.496
+        },
+        {
+          "Name": "action.GetDefault",
+          "Site": "NativeCrossReferences.cs:129:Insert",
+          "Calls": 18,
+          "TotalMs": 2.906,
+          "ExclusiveMs": 2.906,
+          "MeanMs": 0.161,
+          "P50Ms": 0.137,
+          "P95Ms": 0.362,
+          "MaxMs": 0.362
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "TemplateListPrototype.cs:78:Bind",
+          "Calls": 2,
+          "TotalMs": 2.702,
+          "ExclusiveMs": 2.702,
+          "MeanMs": 1.351,
+          "P50Ms": 0.191,
+          "P95Ms": 2.511,
+          "MaxMs": 2.511
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "HancomPreviewWriter.cs:290:PrepareInsertionTarget",
+          "Calls": 1,
+          "TotalMs": 2.498,
+          "ExclusiveMs": 2.498,
+          "MeanMs": 2.498,
+          "P50Ms": 2.498,
+          "P95Ms": 2.498,
+          "MaxMs": 2.498
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveParaEnd",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 4,
+          "TotalMs": 2.416,
+          "ExclusiveMs": 2.416,
+          "MeanMs": 0.604,
+          "P50Ms": 0.611,
+          "P95Ms": 0.667,
+          "MaxMs": 0.667
+        },
+        {
+          "Name": "action.CreateSet",
+          "Site": "NativeListContinuations.cs:48:Apply",
+          "Calls": 4,
+          "TotalMs": 2.28,
+          "ExclusiveMs": 2.28,
+          "MeanMs": 0.57,
+          "P50Ms": 0.433,
+          "P95Ms": 0.76,
+          "MaxMs": 0.76
+        },
+        {
+          "Name": "hwp.HAction.Run:ShapeObjDetachCaption",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 4,
+          "TotalMs": 2.081,
+          "ExclusiveMs": 2.081,
+          "MeanMs": 0.52,
+          "P50Ms": 0.507,
+          "P95Ms": 0.589,
+          "MaxMs": 0.589
+        },
+        {
+          "Name": "hwp.HAction.Run:Delete",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 2,
+          "TotalMs": 1.885,
+          "ExclusiveMs": 1.885,
+          "MeanMs": 0.942,
+          "P50Ms": 0.795,
+          "P95Ms": 1.09,
+          "MaxMs": 1.09
+        },
+        {
+          "Name": "hwp.HAction.Run:Delete",
+          "Site": "TemplateSource.cs:78:Run",
+          "Calls": 2,
+          "TotalMs": 1.65,
+          "ExclusiveMs": 1.65,
+          "MeanMs": 0.825,
+          "P50Ms": 0.661,
+          "P95Ms": 0.988,
+          "MaxMs": 0.988
+        },
+        {
+          "Name": "hwp.HAction.Run:Delete",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 2,
+          "TotalMs": 1.419,
+          "ExclusiveMs": 1.419,
+          "MeanMs": 0.709,
+          "P50Ms": 0.624,
+          "P95Ms": 0.795,
+          "MaxMs": 0.795
+        },
+        {
+          "Name": "hwp.CreateAction:ParagraphShape",
+          "Site": "NativeListContinuations.cs:47:Apply",
+          "Calls": 4,
+          "TotalMs": 1.117,
+          "ExclusiveMs": 1.117,
+          "MeanMs": 0.279,
+          "P50Ms": 0.174,
+          "P95Ms": 0.469,
+          "MaxMs": 0.469
+        },
+        {
+          "Name": "action.GetDefault",
+          "Site": "NativeListContinuations.cs:49:Apply",
+          "Calls": 4,
+          "TotalMs": 0.933,
+          "ExclusiveMs": 0.933,
+          "MeanMs": 0.233,
+          "P50Ms": 0.189,
+          "P95Ms": 0.402,
+          "MaxMs": 0.402
+        },
+        {
+          "Name": "parameters.Item",
+          "Site": "NativeListContinuations.cs:33:Record",
+          "Calls": 4,
+          "TotalMs": 0.871,
+          "ExclusiveMs": 0.871,
+          "MeanMs": 0.218,
+          "P50Ms": 0.126,
+          "P95Ms": 0.493,
+          "MaxMs": 0.493
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveSelNextParaBegin",
+          "Site": "AuriMinimalCaptionPrototype.cs:572:Run",
+          "Calls": 1,
+          "TotalMs": 0.825,
+          "ExclusiveMs": 0.825,
+          "MeanMs": 0.825,
+          "P50Ms": 0.825,
+          "P95Ms": 0.825,
+          "MaxMs": 0.825
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveSelNextParaBegin",
+          "Site": "TemplateSource.cs:78:Run",
+          "Calls": 1,
+          "TotalMs": 0.797,
+          "ExclusiveMs": 0.797,
+          "MeanMs": 0.797,
+          "P50Ms": 0.797,
+          "P95Ms": 0.797,
+          "MaxMs": 0.797
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Site": "NativeListContinuations.cs:51:Apply",
+          "Calls": 4,
+          "TotalMs": 0.76,
+          "ExclusiveMs": 0.76,
+          "MeanMs": 0.19,
+          "P50Ms": 0.109,
+          "P95Ms": 0.364,
+          "MaxMs": 0.364
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Site": "NativeListContinuations.cs:53:Apply",
+          "Calls": 4,
+          "TotalMs": 0.752,
+          "ExclusiveMs": 0.752,
+          "MeanMs": 0.188,
+          "P50Ms": 0.107,
+          "P95Ms": 0.42,
+          "MaxMs": 0.42
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "TaggedTemplateWriter.cs:301:SelectRangeParagraphs",
+          "Calls": 1,
+          "TotalMs": 0.627,
+          "ExclusiveMs": 0.627,
+          "MeanMs": 0.627,
+          "P50Ms": 0.627,
+          "P95Ms": 0.627,
+          "MaxMs": 0.627
+        },
+        {
+          "Name": "hwp.HAction.Run:Cancel",
+          "Site": "TemplateSource.cs:78:Run",
+          "Calls": 1,
+          "TotalMs": 0.612,
+          "ExclusiveMs": 0.612,
+          "MeanMs": 0.612,
+          "P50Ms": 0.612,
+          "P95Ms": 0.612,
+          "MaxMs": 0.612
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveSelNextParaBegin",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 1,
+          "TotalMs": 0.6,
+          "ExclusiveMs": 0.6,
+          "MeanMs": 0.6,
+          "P50Ms": 0.6,
+          "P95Ms": 0.6,
+          "MaxMs": 0.6
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveDocEnd",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 1,
+          "TotalMs": 0.579,
+          "ExclusiveMs": 0.579,
+          "MeanMs": 0.579,
+          "P50Ms": 0.579,
+          "P95Ms": 0.579,
+          "MaxMs": 0.579
+        }
+      ],
+      "Phases": [
+        {
+          "Name": "phase.insert",
+          "Calls": 1,
+          "Milliseconds": 52690.32,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.import-native-references",
+          "Calls": 1,
+          "Milliseconds": 16908.236,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.validate-flat",
+          "Calls": 1,
+          "Milliseconds": 7847.919,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.verify-flat-reopened",
+          "Calls": 1,
+          "Milliseconds": 7434.296,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.save-flat-reopen",
+          "Calls": 1,
+          "Milliseconds": 3024.393,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.verify-native-reopened",
+          "Calls": 1,
+          "Milliseconds": 2897.983,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.prepare",
+          "Calls": 1,
+          "Milliseconds": 2007.304,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.attach-native",
+          "Calls": 1,
+          "Milliseconds": 1397.962,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.save-native-reopen",
+          "Calls": 1,
+          "Milliseconds": 847.4,
+          "ExportedUtf16CodeUnits": 0
+        }
+      ],
+      "Xml": [
+        {
+          "Name": "hwpml.block.export/CurrentParagraphStyle.ReadBlock",
+          "Calls": 109,
+          "Milliseconds": 15001.727,
+          "ExportedUtf16CodeUnits": 10367184
+        },
+        {
+          "Name": "hwpml.export/AuriMinimalBoxPrototype.ReadDocument",
+          "Calls": 41,
+          "Milliseconds": 13306.668,
+          "ExportedUtf16CodeUnits": 115752666
+        },
+        {
+          "Name": "hwpml.export/AuriMinimalCaptionPrototype.ReadDocument",
+          "Calls": 23,
+          "Milliseconds": 12498.649,
+          "ExportedUtf16CodeUnits": 117928103
+        },
+        {
+          "Name": "hwpml.export/TemplateSource.Insert",
+          "Calls": 8,
+          "Milliseconds": 4669.198,
+          "ExportedUtf16CodeUnits": 42382564
+        },
+        {
+          "Name": "hwpml.export/HancomPreviewWriter.ReadParagraphs",
+          "Calls": 7,
+          "Milliseconds": 4541.877,
+          "ExportedUtf16CodeUnits": 42128640
+        },
+        {
+          "Name": "hwpml.export/TaggedTemplateWriter.RangeRoots",
+          "Calls": 7,
+          "Milliseconds": 4201.236,
+          "ExportedUtf16CodeUnits": 38479064
+        },
+        {
+          "Name": "hwpml.export/TaggedTemplateWriter.RenderTaggedTemplate",
+          "Calls": 7,
+          "Milliseconds": 4102.119,
+          "ExportedUtf16CodeUnits": 33378121
+        },
+        {
+          "Name": "hwpml.export/TaggedTemplateWriter.ImportFigureDocument",
+          "Calls": 3,
+          "Milliseconds": 1917.308,
+          "ExportedUtf16CodeUnits": 13394915
+        },
+        {
+          "Name": "hwpml.export/NativeCrossReferences.Insert",
+          "Calls": 2,
+          "Milliseconds": 1398.214,
+          "ExportedUtf16CodeUnits": 13293782
+        },
+        {
+          "Name": "hwpml.export/HancomPreviewWriter.VerifyLists",
+          "Calls": 2,
+          "Milliseconds": 1247.254,
+          "ExportedUtf16CodeUnits": 11863371
+        },
+        {
+          "Name": "hwpml.export/HancomPreviewWriter.VerifyText",
+          "Calls": 1,
+          "Milliseconds": 700.58,
+          "ExportedUtf16CodeUnits": 6538527
+        },
+        {
+          "Name": "hwpml.export/HancomPreviewWriter.PrepareInsertionTarget",
+          "Calls": 2,
+          "Milliseconds": 96,
+          "ExportedUtf16CodeUnits": 195696
+        }
+      ],
+      "Completed": true,
+      "BackendTotalMilliseconds": 102063.518
+    },
+    "large": {
+      "Run": {
+        "WallMilliseconds": 426619.7157,
+        "Case": "large",
+        "ExitCode": 1
+      },
+      "MeasuredComMethodCalls": 13130,
+      "MeasuredComExclusiveMs": 325783.2773,
+      "Actions": [
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Calls": 379,
+          "TotalMs": 220602.711,
+          "ExclusiveMs": 220602.711,
+          "MeanMs": 582.065,
+          "P50Ms": 576.802,
+          "P95Ms": 700.478,
+          "MaxMs": 1030.083
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:saveblock",
+          "Calls": 475,
+          "TotalMs": 63078.823,
+          "ExclusiveMs": 63078.823,
+          "MeanMs": 132.798,
+          "P50Ms": 127.746,
+          "P95Ms": 161.789,
+          "MaxMs": 425.737
+        },
+        {
+          "Name": "hwp.SaveAs",
+          "Calls": 1,
+          "TotalMs": 13928.067,
+          "ExclusiveMs": 13928.067,
+          "MeanMs": 13928.067,
+          "P50Ms": 13928.067,
+          "P95Ms": 13928.067,
+          "MaxMs": 13928.067
+        },
+        {
+          "Name": "hwp.HAction.Run:Cancel",
+          "Calls": 994,
+          "TotalMs": 4752.618,
+          "ExclusiveMs": 4752.618,
+          "MeanMs": 4.781,
+          "P50Ms": 1.593,
+          "P95Ms": 19.9,
+          "MaxMs": 73.407
+        },
+        {
+          "Name": "hwp.SetTextFile:HWP:insertfile",
+          "Calls": 70,
+          "TotalMs": 3903.84,
+          "ExclusiveMs": 3903.84,
+          "MeanMs": 55.769,
+          "P50Ms": 54.745,
+          "P95Ms": 66.517,
+          "MaxMs": 85.084
+        },
+        {
+          "Name": "hwp.InsertPicture",
+          "Calls": 29,
+          "TotalMs": 3221.064,
+          "ExclusiveMs": 3221.064,
+          "MeanMs": 111.071,
+          "P50Ms": 101.276,
+          "P95Ms": 132.258,
+          "MaxMs": 350.899
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:InsertText",
+          "Calls": 1796,
+          "TotalMs": 2244.233,
+          "ExclusiveMs": 2244.233,
+          "MeanMs": 1.25,
+          "P50Ms": 0.87,
+          "P95Ms": 1.701,
+          "MaxMs": 133.542
+        },
+        {
+          "Name": "Activator.CreateInstance:HWPFrame.HwpObject",
+          "Calls": 1,
+          "TotalMs": 2084.033,
+          "ExclusiveMs": 2084.033,
+          "MeanMs": 2084.033,
+          "P50Ms": 2084.033,
+          "P95Ms": 2084.033,
+          "MaxMs": 2084.033
+        },
+        {
+          "Name": "hwp.HAction.Execute:InsertText",
+          "Calls": 1796,
+          "TotalMs": 1933.031,
+          "ExclusiveMs": 1933.031,
+          "MeanMs": 1.076,
+          "P50Ms": 0.84,
+          "P95Ms": 2.302,
+          "MaxMs": 42.309
+        },
+        {
+          "Name": "hwp.SetTextFile:HWPML2X",
+          "Calls": 2,
+          "TotalMs": 1885.534,
+          "ExclusiveMs": 1885.534,
+          "MeanMs": 942.767,
+          "P50Ms": 81.137,
+          "P95Ms": 1804.397,
+          "MaxMs": 1804.397
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveDocEnd",
+          "Calls": 1099,
+          "TotalMs": 1288.842,
+          "ExclusiveMs": 1288.842,
+          "MeanMs": 1.173,
+          "P50Ms": 0.402,
+          "P95Ms": 8.196,
+          "MaxMs": 31.602
+        },
+        {
+          "Name": "hwp.HAction.Run:BreakPara",
+          "Calls": 692,
+          "TotalMs": 1278.399,
+          "ExclusiveMs": 1278.399,
+          "MeanMs": 1.847,
+          "P50Ms": 1.389,
+          "P95Ms": 3.29,
+          "MaxMs": 70.654
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:StyleEx",
+          "Calls": 794,
+          "TotalMs": 866.962,
+          "ExclusiveMs": 866.962,
+          "MeanMs": 1.092,
+          "P50Ms": 1.051,
+          "P95Ms": 1.632,
+          "MaxMs": 21.968
+        },
+        {
+          "Name": "hwp.HAction.Execute:StyleEx",
+          "Calls": 794,
+          "TotalMs": 656.516,
+          "ExclusiveMs": 656.516,
+          "MeanMs": 0.827,
+          "P50Ms": 0.741,
+          "P95Ms": 1.056,
+          "MaxMs": 20.195
+        },
+        {
+          "Name": "hwp.GetTextFile:HWP:saveblock",
+          "Calls": 3,
+          "TotalMs": 579.373,
+          "ExclusiveMs": 579.373,
+          "MeanMs": 193.124,
+          "P50Ms": 179.291,
+          "P95Ms": 238.321,
+          "MaxMs": 238.321
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:RepeatFind",
+          "Calls": 164,
+          "TotalMs": 377.342,
+          "ExclusiveMs": 377.342,
+          "MeanMs": 2.301,
+          "P50Ms": 1.652,
+          "P95Ms": 2.507,
+          "MaxMs": 38.28
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:ParagraphShape",
+          "Calls": 221,
+          "TotalMs": 344.255,
+          "ExclusiveMs": 344.255,
+          "MeanMs": 1.558,
+          "P50Ms": 1.179,
+          "P95Ms": 2.759,
+          "MaxMs": 26.943
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Calls": 173,
+          "TotalMs": 322.536,
+          "ExclusiveMs": 322.536,
+          "MeanMs": 1.864,
+          "P50Ms": 0.696,
+          "P95Ms": 4.306,
+          "MaxMs": 36.769
+        },
+        {
+          "Name": "hwp.HAction.Run:DeleteBack",
+          "Calls": 473,
+          "TotalMs": 263.949,
+          "ExclusiveMs": 263.949,
+          "MeanMs": 0.558,
+          "P50Ms": 0.515,
+          "P95Ms": 0.809,
+          "MaxMs": 1.571
+        },
+        {
+          "Name": "hwp.HAction.Execute:ParagraphShape",
+          "Calls": 221,
+          "TotalMs": 256.419,
+          "ExclusiveMs": 256.419,
+          "MeanMs": 1.16,
+          "P50Ms": 0.778,
+          "P95Ms": 2.988,
+          "MaxMs": 4.858
+        },
+        {
+          "Name": "hwp.HAction.Execute:RepeatFind",
+          "Calls": 164,
+          "TotalMs": 232.447,
+          "ExclusiveMs": 232.447,
+          "MeanMs": 1.417,
+          "P50Ms": 1.141,
+          "P95Ms": 2.364,
+          "MaxMs": 11.779
+        },
+        {
+          "Name": "hwp.SelectText",
+          "Calls": 473,
+          "TotalMs": 197.056,
+          "ExclusiveMs": 197.056,
+          "MeanMs": 0.417,
+          "P50Ms": 0.381,
+          "P95Ms": 0.593,
+          "MaxMs": 4.61
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveParaBegin",
+          "Calls": 185,
+          "TotalMs": 180.347,
+          "ExclusiveMs": 180.347,
+          "MeanMs": 0.975,
+          "P50Ms": 0.85,
+          "P95Ms": 1.228,
+          "MaxMs": 11.774
+        },
+        {
+          "Name": "hwp.HAction.Run:BreakLine",
+          "Calls": 97,
+          "TotalMs": 141.811,
+          "ExclusiveMs": 141.811,
+          "MeanMs": 1.462,
+          "P50Ms": 1.409,
+          "P95Ms": 1.827,
+          "MaxMs": 5.897
+        },
+        {
+          "Name": "hwp.RegisterModule",
+          "Calls": 1,
+          "TotalMs": 140.01,
+          "ExclusiveMs": 140.01,
+          "MeanMs": 140.01,
+          "P50Ms": 140.01,
+          "P95Ms": 140.01,
+          "MaxMs": 140.01
+        },
+        {
+          "Name": "hwp.HAction.Run:CharShapeBold",
+          "Calls": 268,
+          "TotalMs": 133.159,
+          "ExclusiveMs": 133.159,
+          "MeanMs": 0.497,
+          "P50Ms": 0.382,
+          "P95Ms": 0.729,
+          "MaxMs": 18.897
+        },
+        {
+          "Name": "hwp.Open",
+          "Calls": 2,
+          "TotalMs": 112.355,
+          "ExclusiveMs": 112.355,
+          "MeanMs": 56.177,
+          "P50Ms": 54.429,
+          "P95Ms": 57.925,
+          "MaxMs": 57.925
+        },
+        {
+          "Name": "hwp.HAction.Run:CharShapeItalic",
+          "Calls": 224,
+          "TotalMs": 85.742,
+          "ExclusiveMs": 85.742,
+          "MeanMs": 0.383,
+          "P50Ms": 0.364,
+          "P95Ms": 0.527,
+          "MaxMs": 0.98
+        },
+        {
+          "Name": "action.CreateSet",
+          "Calls": 138,
+          "TotalMs": 83.68,
+          "ExclusiveMs": 83.68,
+          "MeanMs": 0.606,
+          "P50Ms": 0.494,
+          "P95Ms": 0.849,
+          "MaxMs": 6.289
+        },
+        {
+          "Name": "subset.Merge",
+          "Calls": 112,
+          "TotalMs": 79.425,
+          "ExclusiveMs": 79.425,
+          "MeanMs": 0.709,
+          "P50Ms": 0.507,
+          "P95Ms": 0.896,
+          "MaxMs": 20.439
+        },
+        {
+          "Name": "action.Execute",
+          "Calls": 124,
+          "TotalMs": 76.568,
+          "ExclusiveMs": 76.568,
+          "MeanMs": 0.617,
+          "P50Ms": 0.246,
+          "P95Ms": 2.324,
+          "MaxMs": 16.232
+        },
+        {
+          "Name": "parameters.CreateItemSet",
+          "Calls": 112,
+          "TotalMs": 65.775,
+          "ExclusiveMs": 65.775,
+          "MeanMs": 0.587,
+          "P50Ms": 0.476,
+          "P95Ms": 1.014,
+          "MaxMs": 3.861
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Calls": 384,
+          "TotalMs": 61.484,
+          "ExclusiveMs": 61.484,
+          "MeanMs": 0.16,
+          "P50Ms": 0.108,
+          "P95Ms": 0.379,
+          "MaxMs": 3.867
+        },
+        {
+          "Name": "hwp.HAction.Run:Delete",
+          "Calls": 70,
+          "TotalMs": 59.19,
+          "ExclusiveMs": 59.19,
+          "MeanMs": 0.846,
+          "P50Ms": 0.748,
+          "P95Ms": 1.109,
+          "MaxMs": 4.306
+        },
+        {
+          "Name": "hwp.Clear",
+          "Calls": 4,
+          "TotalMs": 57.205,
+          "ExclusiveMs": 57.205,
+          "MeanMs": 14.301,
+          "P50Ms": 10.939,
+          "P95Ms": 25.916,
+          "MaxMs": 25.916
+        },
+        {
+          "Name": "action.GetDefault",
+          "Calls": 138,
+          "TotalMs": 51.354,
+          "ExclusiveMs": 51.354,
+          "MeanMs": 0.372,
+          "P50Ms": 0.166,
+          "P95Ms": 0.43,
+          "MaxMs": 19.118
+        },
+        {
+          "Name": "hwp.CreateAction:ParagraphShape",
+          "Calls": 138,
+          "TotalMs": 38.819,
+          "ExclusiveMs": 38.819,
+          "MeanMs": 0.281,
+          "P50Ms": 0.184,
+          "P95Ms": 0.472,
+          "MaxMs": 4.358
+        },
+        {
+          "Name": "hwp.FindDir",
+          "Calls": 164,
+          "TotalMs": 30.972,
+          "ExclusiveMs": 30.972,
+          "MeanMs": 0.189,
+          "P50Ms": 0.122,
+          "P95Ms": 0.221,
+          "MaxMs": 3.437
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveParaEnd",
+          "Calls": 29,
+          "TotalMs": 19.583,
+          "ExclusiveMs": 19.583,
+          "MeanMs": 0.675,
+          "P50Ms": 0.633,
+          "P95Ms": 0.925,
+          "MaxMs": 1.202
+        },
+        {
+          "Name": "parameters.Item",
+          "Calls": 26,
+          "TotalMs": 19.208,
+          "ExclusiveMs": 19.208,
+          "MeanMs": 0.739,
+          "P50Ms": 0.4,
+          "P95Ms": 2.947,
+          "MaxMs": 8.283
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveSelNextParaBegin",
+          "Calls": 29,
+          "TotalMs": 13.811,
+          "ExclusiveMs": 13.811,
+          "MeanMs": 0.476,
+          "P50Ms": 0.381,
+          "P95Ms": 0.844,
+          "MaxMs": 0.891
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveSelParaEnd",
+          "Calls": 14,
+          "TotalMs": 10.253,
+          "ExclusiveMs": 10.253,
+          "MeanMs": 0.732,
+          "P50Ms": 0.68,
+          "P95Ms": 1.306,
+          "MaxMs": 1.306
+        },
+        {
+          "Name": "((dynamic)nativeShape!).Item",
+          "Calls": 48,
+          "TotalMs": 7.722,
+          "ExclusiveMs": 7.722,
+          "MeanMs": 0.161,
+          "P50Ms": 0.116,
+          "P95Ms": 0.578,
+          "MaxMs": 0.823
+        },
+        {
+          "Name": "hwp.Quit",
+          "Calls": 1,
+          "TotalMs": 4.877,
+          "ExclusiveMs": 4.877,
+          "MeanMs": 4.877,
+          "P50Ms": 4.877,
+          "P95Ms": 4.877,
+          "MaxMs": 4.877
+        },
+        {
+          "Name": "hwp.GetHeadingString",
+          "Calls": 2,
+          "TotalMs": 4.551,
+          "ExclusiveMs": 4.551,
+          "MeanMs": 2.276,
+          "P50Ms": 1.228,
+          "P95Ms": 3.324,
+          "MaxMs": 3.324
+        },
+        {
+          "Name": "subset.Clone",
+          "Calls": 2,
+          "TotalMs": 3.659,
+          "ExclusiveMs": 3.659,
+          "MeanMs": 1.83,
+          "P50Ms": 0.621,
+          "P95Ms": 3.039,
+          "MaxMs": 3.039
+        },
+        {
+          "Name": "hwp.HAction.Run:SelectCtrlFront",
+          "Calls": 2,
+          "TotalMs": 2.006,
+          "ExclusiveMs": 2.006,
+          "MeanMs": 1.003,
+          "P50Ms": 0.737,
+          "P95Ms": 1.269,
+          "MaxMs": 1.269
+        },
+        {
+          "Name": "hwp.HAction.Run:ShapeObjDetachCaption",
+          "Calls": 2,
+          "TotalMs": 1.661,
+          "ExclusiveMs": 1.661,
+          "MeanMs": 0.831,
+          "P50Ms": 0.505,
+          "P95Ms": 1.156,
+          "MaxMs": 1.156
+        }
+      ],
+      "Callsites": [
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "AuriMinimalCaptionPrototype.ReadDocument",
+          "Calls": 148,
+          "TotalMs": 86829.717,
+          "ExclusiveMs": 86829.717,
+          "MeanMs": 586.687,
+          "P50Ms": 573.557,
+          "P95Ms": 699.971,
+          "MaxMs": 904.903
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:saveblock",
+          "Site": "CurrentParagraphStyle.ReadBlock",
+          "Calls": 473,
+          "TotalMs": 62761.815,
+          "ExclusiveMs": 62761.815,
+          "MeanMs": 132.689,
+          "P50Ms": 127.708,
+          "P95Ms": 160.093,
+          "MaxMs": 425.737
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "TemplateSource.Insert",
+          "Calls": 108,
+          "TotalMs": 62645.308,
+          "ExclusiveMs": 62645.308,
+          "MeanMs": 580.049,
+          "P50Ms": 568.643,
+          "P95Ms": 658.722,
+          "MaxMs": 685.633
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "AuriMinimalBoxPrototype.ReadDocument",
+          "Calls": 99,
+          "TotalMs": 57949.274,
+          "ExclusiveMs": 57949.274,
+          "MeanMs": 585.346,
+          "P50Ms": 578.069,
+          "P95Ms": 719.292,
+          "MaxMs": 875.225
+        },
+        {
+          "Name": "hwp.SaveAs",
+          "Site": "TaggedTemplateWriter.cs:82:RenderTaggedTemplate",
+          "Calls": 1,
+          "TotalMs": 13928.067,
+          "ExclusiveMs": 13928.067,
+          "MeanMs": 13928.067,
+          "P50Ms": 13928.067,
+          "P95Ms": 13928.067,
+          "MaxMs": 13928.067
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "HancomPreviewWriter.ReadParagraphs",
+          "Calls": 7,
+          "TotalMs": 4711.102,
+          "ExclusiveMs": 4711.102,
+          "MeanMs": 673.015,
+          "P50Ms": 695.679,
+          "P95Ms": 782.296,
+          "MaxMs": 782.296
+        },
+        {
+          "Name": "hwp.HAction.Run:Cancel",
+          "Site": "CurrentParagraphStyle.cs:118:Run",
+          "Calls": 946,
+          "TotalMs": 4354.73,
+          "ExclusiveMs": 4354.73,
+          "MeanMs": 4.603,
+          "P50Ms": 1.538,
+          "P95Ms": 19.688,
+          "MaxMs": 73.407
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "TaggedTemplateWriter.RangeRoots",
+          "Calls": 7,
+          "TotalMs": 4311.684,
+          "ExclusiveMs": 4311.684,
+          "MeanMs": 615.955,
+          "P50Ms": 589.568,
+          "P95Ms": 739.767,
+          "MaxMs": 739.767
+        },
+        {
+          "Name": "hwp.InsertPicture",
+          "Site": "HancomPreviewWriter.cs:418:RenderOperation",
+          "Calls": 29,
+          "TotalMs": 3221.064,
+          "ExclusiveMs": 3221.064,
+          "MeanMs": 111.071,
+          "P50Ms": 101.276,
+          "P95Ms": 132.258,
+          "MaxMs": 350.899
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:InsertText",
+          "Site": "HancomPreviewWriter.cs:613:InsertText",
+          "Calls": 1796,
+          "TotalMs": 2244.233,
+          "ExclusiveMs": 2244.233,
+          "MeanMs": 1.25,
+          "P50Ms": 0.87,
+          "P95Ms": 1.701,
+          "MaxMs": 133.542
+        },
+        {
+          "Name": "Activator.CreateInstance:HWPFrame.HwpObject",
+          "Site": "HancomPreviewWriter.cs:WithHwp.activate",
+          "Calls": 1,
+          "TotalMs": 2084.033,
+          "ExclusiveMs": 2084.033,
+          "MeanMs": 2084.033,
+          "P50Ms": 2084.033,
+          "P95Ms": 2084.033,
+          "MaxMs": 2084.033
+        },
+        {
+          "Name": "hwp.HAction.Execute:InsertText",
+          "Site": "HancomPreviewWriter.cs:615:InsertText",
+          "Calls": 1796,
+          "TotalMs": 1933.031,
+          "ExclusiveMs": 1933.031,
+          "MeanMs": 1.076,
+          "P50Ms": 0.84,
+          "P95Ms": 2.302,
+          "MaxMs": 42.309
+        },
+        {
+          "Name": "hwp.SetTextFile:HWPML2X",
+          "Site": "TaggedTemplateWriter.cs:205:ImportFigureDocument",
+          "Calls": 2,
+          "TotalMs": 1885.534,
+          "ExclusiveMs": 1885.534,
+          "MeanMs": 942.767,
+          "P50Ms": 81.137,
+          "P95Ms": 1804.397,
+          "MaxMs": 1804.397
+        },
+        {
+          "Name": "hwp.SetTextFile:HWP:insertfile",
+          "Site": "AuriMinimalCaptionPrototype.cs:93:Insert",
+          "Calls": 29,
+          "TotalMs": 1654.423,
+          "ExclusiveMs": 1654.423,
+          "MeanMs": 57.049,
+          "P50Ms": 56.141,
+          "P95Ms": 71.01,
+          "MaxMs": 85.084
+        },
+        {
+          "Name": "hwp.SetTextFile:HWP:insertfile",
+          "Site": "TemplateSource.cs:55:Insert",
+          "Calls": 27,
+          "TotalMs": 1473.307,
+          "ExclusiveMs": 1473.307,
+          "MeanMs": 54.567,
+          "P50Ms": 53.342,
+          "P95Ms": 62.832,
+          "MaxMs": 69.253
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "HancomPreviewWriter.VerifyLists",
+          "Calls": 2,
+          "TotalMs": 1336.649,
+          "ExclusiveMs": 1336.649,
+          "MeanMs": 668.325,
+          "P50Ms": 585.922,
+          "P95Ms": 750.727,
+          "MaxMs": 750.727
+        },
+        {
+          "Name": "hwp.HAction.Run:BreakPara",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 692,
+          "TotalMs": 1278.399,
+          "ExclusiveMs": 1278.399,
+          "MeanMs": 1.847,
+          "P50Ms": 1.389,
+          "P95Ms": 3.29,
+          "MaxMs": 70.654
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "TaggedTemplateWriter.ImportFigureDocument",
+          "Calls": 2,
+          "TotalMs": 1083.518,
+          "ExclusiveMs": 1083.518,
+          "MeanMs": 541.759,
+          "P50Ms": 53.435,
+          "P95Ms": 1030.083,
+          "MaxMs": 1030.083
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "TaggedTemplateWriter.RenderTaggedTemplate",
+          "Calls": 3,
+          "TotalMs": 901.344,
+          "ExclusiveMs": 901.344,
+          "MeanMs": 300.448,
+          "P50Ms": 149.077,
+          "P95Ms": 698.661,
+          "MaxMs": 698.661
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:StyleEx",
+          "Site": "HancomPreviewWriter.cs:586:ApplyParagraphStyle",
+          "Calls": 794,
+          "TotalMs": 866.962,
+          "ExclusiveMs": 866.962,
+          "MeanMs": 1.092,
+          "P50Ms": 1.051,
+          "P95Ms": 1.632,
+          "MaxMs": 21.968
+        },
+        {
+          "Name": "hwp.SetTextFile:HWP:insertfile",
+          "Site": "AuriMinimalBoxPrototype.cs:107:Insert",
+          "Calls": 14,
+          "TotalMs": 776.11,
+          "ExclusiveMs": 776.11,
+          "MeanMs": 55.436,
+          "P50Ms": 52.826,
+          "P95Ms": 64.303,
+          "MaxMs": 64.303
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "HancomPreviewWriter.VerifyText",
+          "Calls": 1,
+          "TotalMs": 744.001,
+          "ExclusiveMs": 744.001,
+          "MeanMs": 744.001,
+          "P50Ms": 744.001,
+          "P95Ms": 744.001,
+          "MaxMs": 744.001
+        },
+        {
+          "Name": "hwp.HAction.Execute:StyleEx",
+          "Site": "HancomPreviewWriter.cs:588:ApplyParagraphStyle",
+          "Calls": 794,
+          "TotalMs": 656.516,
+          "ExclusiveMs": 656.516,
+          "MeanMs": 0.827,
+          "P50Ms": 0.741,
+          "P95Ms": 1.056,
+          "MaxMs": 20.195
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveDocEnd",
+          "Site": "CurrentParagraphStyle.cs:118:Run",
+          "Calls": 946,
+          "TotalMs": 476.62,
+          "ExclusiveMs": 476.62,
+          "MeanMs": 0.504,
+          "P50Ms": 0.386,
+          "P95Ms": 0.788,
+          "MaxMs": 31.602
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:ParagraphShape",
+          "Site": "HancomPreviewWriter.cs:451:ClearNativeListAtCaret",
+          "Calls": 197,
+          "TotalMs": 314.498,
+          "ExclusiveMs": 314.498,
+          "MeanMs": 1.596,
+          "P50Ms": 1.195,
+          "P95Ms": 2.813,
+          "MaxMs": 26.943
+        },
+        {
+          "Name": "hwp.HAction.Run:Cancel",
+          "Site": "AuriMinimalCaptionPrototype.cs:572:Run",
+          "Calls": 30,
+          "TotalMs": 291.283,
+          "ExclusiveMs": 291.283,
+          "MeanMs": 9.709,
+          "P50Ms": 4.283,
+          "P95Ms": 29.456,
+          "MaxMs": 33.619
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveDocEnd",
+          "Site": "AuriMinimalCaptionPrototype.cs:572:Run",
+          "Calls": 58,
+          "TotalMs": 276.319,
+          "ExclusiveMs": 276.319,
+          "MeanMs": 4.764,
+          "P50Ms": 1.031,
+          "P95Ms": 12.05,
+          "MaxMs": 15.063
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveDocEnd",
+          "Site": "TemplateSource.cs:78:Run",
+          "Calls": 54,
+          "TotalMs": 272.448,
+          "ExclusiveMs": 272.448,
+          "MeanMs": 5.045,
+          "P50Ms": 2.306,
+          "P95Ms": 11.635,
+          "MaxMs": 12.031
+        },
+        {
+          "Name": "hwp.HAction.Run:DeleteBack",
+          "Site": "CurrentParagraphStyle.cs:118:Run",
+          "Calls": 473,
+          "TotalMs": 263.949,
+          "ExclusiveMs": 263.949,
+          "MeanMs": 0.558,
+          "P50Ms": 0.515,
+          "P95Ms": 0.809,
+          "MaxMs": 1.571
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveDocEnd",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 40,
+          "TotalMs": 262.87,
+          "ExclusiveMs": 262.87,
+          "MeanMs": 6.572,
+          "P50Ms": 7.726,
+          "P95Ms": 13.242,
+          "MaxMs": 14.341
+        },
+        {
+          "Name": "hwp.GetTextFile:HWP:saveblock",
+          "Site": "AuriMinimalBoxPrototype.cs:48:Bind",
+          "Calls": 1,
+          "TotalMs": 238.321,
+          "ExclusiveMs": 238.321,
+          "MeanMs": 238.321,
+          "P50Ms": 238.321,
+          "P95Ms": 238.321,
+          "MaxMs": 238.321
+        },
+        {
+          "Name": "hwp.HAction.Execute:ParagraphShape",
+          "Site": "HancomPreviewWriter.cs:457:ClearNativeListAtCaret",
+          "Calls": 197,
+          "TotalMs": 200.161,
+          "ExclusiveMs": 200.161,
+          "MeanMs": 1.016,
+          "P50Ms": 0.753,
+          "P95Ms": 2.642,
+          "MaxMs": 4.328
+        },
+        {
+          "Name": "hwp.SelectText",
+          "Site": "CurrentParagraphStyle.cs:129:Select",
+          "Calls": 473,
+          "TotalMs": 197.056,
+          "ExclusiveMs": 197.056,
+          "MeanMs": 0.417,
+          "P50Ms": 0.381,
+          "P95Ms": 0.593,
+          "MaxMs": 4.61
+        },
+        {
+          "Name": "hwp.GetTextFile:HWP:saveblock",
+          "Site": "AuriMinimalCaptionPrototype.cs:48:Bind",
+          "Calls": 1,
+          "TotalMs": 179.291,
+          "ExclusiveMs": 179.291,
+          "MeanMs": 179.291,
+          "P50Ms": 179.291,
+          "P95Ms": 179.291,
+          "MaxMs": 179.291
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:saveblock",
+          "Site": "AuriMinimalBoxPrototype.cs:47:Bind",
+          "Calls": 1,
+          "TotalMs": 161.796,
+          "ExclusiveMs": 161.796,
+          "MeanMs": 161.796,
+          "P50Ms": 161.796,
+          "P95Ms": 161.796,
+          "MaxMs": 161.796
+        },
+        {
+          "Name": "hwp.GetTextFile:HWP:saveblock",
+          "Site": "TemplateSource.cs:44:Bind",
+          "Calls": 1,
+          "TotalMs": 161.761,
+          "ExclusiveMs": 161.761,
+          "MeanMs": 161.761,
+          "P50Ms": 161.761,
+          "P95Ms": 161.761,
+          "MaxMs": 161.761
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:saveblock",
+          "Site": "AuriMinimalCaptionPrototype.cs:47:Bind",
+          "Calls": 1,
+          "TotalMs": 155.212,
+          "ExclusiveMs": 155.212,
+          "MeanMs": 155.212,
+          "P50Ms": 155.212,
+          "P95Ms": 155.212,
+          "MaxMs": 155.212
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:RepeatFind",
+          "Site": "AuriMinimalCaptionPrototype.cs:501:FindNext",
+          "Calls": 58,
+          "TotalMs": 140.578,
+          "ExclusiveMs": 140.578,
+          "MeanMs": 2.424,
+          "P50Ms": 1.665,
+          "P95Ms": 3.062,
+          "MaxMs": 38.28
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "AuriMinimalBoxPrototype.cs:547:MoveToRoot",
+          "Calls": 54,
+          "TotalMs": 140.226,
+          "ExclusiveMs": 140.226,
+          "MeanMs": 2.597,
+          "P50Ms": 0.466,
+          "P95Ms": 13.337,
+          "MaxMs": 36.769
+        },
+        {
+          "Name": "hwp.RegisterModule",
+          "Site": "HancomPreviewWriter.cs:128:WithHwp",
+          "Calls": 1,
+          "TotalMs": 140.01,
+          "ExclusiveMs": 140.01,
+          "MeanMs": 140.01,
+          "P50Ms": 140.01,
+          "P95Ms": 140.01,
+          "MaxMs": 140.01
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:RepeatFind",
+          "Site": "AuriMinimalBoxPrototype.cs:557:FindNext",
+          "Calls": 52,
+          "TotalMs": 134.155,
+          "ExclusiveMs": 134.155,
+          "MeanMs": 2.58,
+          "P50Ms": 1.598,
+          "P95Ms": 2.952,
+          "MaxMs": 37.773
+        },
+        {
+          "Name": "hwp.HAction.Run:CharShapeBold",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 268,
+          "TotalMs": 133.159,
+          "ExclusiveMs": 133.159,
+          "MeanMs": 0.497,
+          "P50Ms": 0.382,
+          "P95Ms": 0.729,
+          "MaxMs": 18.897
+        },
+        {
+          "Name": "hwp.Open",
+          "Site": "HancomPreviewWriter.cs:203:Open",
+          "Calls": 2,
+          "TotalMs": 112.355,
+          "ExclusiveMs": 112.355,
+          "MeanMs": 56.177,
+          "P50Ms": 54.429,
+          "P95Ms": 57.925,
+          "MaxMs": 57.925
+        },
+        {
+          "Name": "hwp.HAction.Run:BreakLine",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 77,
+          "TotalMs": 111.416,
+          "ExclusiveMs": 111.416,
+          "MeanMs": 1.447,
+          "P50Ms": 1.366,
+          "P95Ms": 1.827,
+          "MaxMs": 5.897
+        },
+        {
+          "Name": "hwp.HAction.Run:Cancel",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 17,
+          "TotalMs": 105.954,
+          "ExclusiveMs": 105.954,
+          "MeanMs": 6.233,
+          "P50Ms": 6.644,
+          "P95Ms": 10.39,
+          "MaxMs": 10.39
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:RepeatFind",
+          "Site": "TemplateSource.cs:81:Find",
+          "Calls": 54,
+          "TotalMs": 102.609,
+          "ExclusiveMs": 102.609,
+          "MeanMs": 1.9,
+          "P50Ms": 1.65,
+          "P95Ms": 2.403,
+          "MaxMs": 12.502
+        },
+        {
+          "Name": "hwp.HAction.Execute:RepeatFind",
+          "Site": "AuriMinimalCaptionPrototype.cs:505:FindNext",
+          "Calls": 58,
+          "TotalMs": 99.213,
+          "ExclusiveMs": 99.213,
+          "MeanMs": 1.711,
+          "P50Ms": 1.184,
+          "P95Ms": 6.581,
+          "MaxMs": 11.779
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "AuriMinimalCaptionPrototype.cs:491:MoveToRoot",
+          "Calls": 58,
+          "TotalMs": 95.409,
+          "ExclusiveMs": 95.409,
+          "MeanMs": 1.645,
+          "P50Ms": 0.658,
+          "P95Ms": 2.659,
+          "MaxMs": 34.3
+        },
+        {
+          "Name": "hwp.GetTextFile:HWPML2X:full",
+          "Site": "HancomPreviewWriter.PrepareInsertionTarget",
+          "Calls": 2,
+          "TotalMs": 90.112,
+          "ExclusiveMs": 90.112,
+          "MeanMs": 45.056,
+          "P50Ms": 44.517,
+          "P95Ms": 45.595,
+          "MaxMs": 45.595
+        },
+        {
+          "Name": "hwp.HAction.Run:CharShapeItalic",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 224,
+          "TotalMs": 85.742,
+          "ExclusiveMs": 85.742,
+          "MeanMs": 0.383,
+          "P50Ms": 0.364,
+          "P95Ms": 0.527,
+          "MaxMs": 0.98
+        },
+        {
+          "Name": "subset.Merge",
+          "Site": "TemplateListPrototype.cs:94:Apply",
+          "Calls": 112,
+          "TotalMs": 79.425,
+          "ExclusiveMs": 79.425,
+          "MeanMs": 0.709,
+          "P50Ms": 0.507,
+          "P95Ms": 0.896,
+          "MaxMs": 20.439
+        },
+        {
+          "Name": "action.Execute",
+          "Site": "TemplateListPrototype.cs:98:Apply",
+          "Calls": 112,
+          "TotalMs": 71.776,
+          "ExclusiveMs": 71.776,
+          "MeanMs": 0.641,
+          "P50Ms": 0.253,
+          "P95Ms": 2.324,
+          "MaxMs": 16.232
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "TemplateSource.cs:77:Move",
+          "Calls": 55,
+          "TotalMs": 70.749,
+          "ExclusiveMs": 70.749,
+          "MeanMs": 1.286,
+          "P50Ms": 0.65,
+          "P95Ms": 2.61,
+          "MaxMs": 2.687
+        },
+        {
+          "Name": "hwp.HAction.Execute:RepeatFind",
+          "Site": "TemplateSource.cs:85:Find",
+          "Calls": 54,
+          "TotalMs": 67.658,
+          "ExclusiveMs": 67.658,
+          "MeanMs": 1.253,
+          "P50Ms": 1.131,
+          "P95Ms": 1.645,
+          "MaxMs": 4.582
+        },
+        {
+          "Name": "parameters.CreateItemSet",
+          "Site": "TemplateListPrototype.cs:92:Apply",
+          "Calls": 112,
+          "TotalMs": 65.775,
+          "ExclusiveMs": 65.775,
+          "MeanMs": 0.587,
+          "P50Ms": 0.476,
+          "P95Ms": 1.014,
+          "MaxMs": 3.861
+        },
+        {
+          "Name": "hwp.HAction.Execute:RepeatFind",
+          "Site": "AuriMinimalBoxPrototype.cs:561:FindNext",
+          "Calls": 52,
+          "TotalMs": 65.576,
+          "ExclusiveMs": 65.576,
+          "MeanMs": 1.261,
+          "P50Ms": 1.123,
+          "P95Ms": 2.671,
+          "MaxMs": 4.011
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveParaBegin",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 69,
+          "TotalMs": 62.859,
+          "ExclusiveMs": 62.859,
+          "MeanMs": 0.911,
+          "P50Ms": 0.798,
+          "P95Ms": 1.228,
+          "MaxMs": 11.774
+        },
+        {
+          "Name": "action.CreateSet",
+          "Site": "TemplateListPrototype.cs:90:Apply",
+          "Calls": 112,
+          "TotalMs": 62.236,
+          "ExclusiveMs": 62.236,
+          "MeanMs": 0.556,
+          "P50Ms": 0.498,
+          "P95Ms": 0.846,
+          "MaxMs": 1.561
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveParaBegin",
+          "Site": "AuriMinimalCaptionPrototype.cs:572:Run",
+          "Calls": 59,
+          "TotalMs": 59.623,
+          "ExclusiveMs": 59.623,
+          "MeanMs": 1.011,
+          "P50Ms": 0.904,
+          "P95Ms": 1.261,
+          "MaxMs": 6.253
+        },
+        {
+          "Name": "hwp.HAction.Execute:ParagraphShape",
+          "Site": "HancomPreviewWriter.cs:503:ApplyNativeListMarker",
+          "Calls": 24,
+          "TotalMs": 56.258,
+          "ExclusiveMs": 56.258,
+          "MeanMs": 2.344,
+          "P50Ms": 2.577,
+          "P95Ms": 4.323,
+          "MaxMs": 4.858
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveParaBegin",
+          "Site": "TemplateSource.cs:78:Run",
+          "Calls": 55,
+          "TotalMs": 51.907,
+          "ExclusiveMs": 51.907,
+          "MeanMs": 0.944,
+          "P50Ms": 0.834,
+          "P95Ms": 1.153,
+          "MaxMs": 4.581
+        },
+        {
+          "Name": "hwp.Clear",
+          "Site": "TaggedTemplateWriter.cs:204:ImportFigureDocument",
+          "Calls": 2,
+          "TotalMs": 35.126,
+          "ExclusiveMs": 35.126,
+          "MeanMs": 17.563,
+          "P50Ms": 9.211,
+          "P95Ms": 25.916,
+          "MaxMs": 25.916
+        },
+        {
+          "Name": "hwp.HAction.Run:BreakLine",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 20,
+          "TotalMs": 30.395,
+          "ExclusiveMs": 30.395,
+          "MeanMs": 1.52,
+          "P50Ms": 1.443,
+          "P95Ms": 1.765,
+          "MaxMs": 2.38
+        },
+        {
+          "Name": "hwp.HAction.GetDefault:ParagraphShape",
+          "Site": "HancomPreviewWriter.cs:490:ApplyNativeListMarker",
+          "Calls": 24,
+          "TotalMs": 29.756,
+          "ExclusiveMs": 29.756,
+          "MeanMs": 1.24,
+          "P50Ms": 0.993,
+          "P95Ms": 2.726,
+          "MaxMs": 3.897
+        },
+        {
+          "Name": "hwp.HAction.Run:Delete",
+          "Site": "AuriMinimalCaptionPrototype.cs:572:Run",
+          "Calls": 29,
+          "TotalMs": 25.027,
+          "ExclusiveMs": 25.027,
+          "MeanMs": 0.863,
+          "P50Ms": 0.837,
+          "P95Ms": 1.069,
+          "MaxMs": 1.222
+        },
+        {
+          "Name": "hwp.CreateAction:ParagraphShape",
+          "Site": "TemplateListPrototype.cs:89:Apply",
+          "Calls": 112,
+          "TotalMs": 24.22,
+          "ExclusiveMs": 24.22,
+          "MeanMs": 0.216,
+          "P50Ms": 0.182,
+          "P95Ms": 0.456,
+          "MaxMs": 0.613
+        },
+        {
+          "Name": "action.GetDefault",
+          "Site": "TemplateListPrototype.cs:91:Apply",
+          "Calls": 112,
+          "TotalMs": 21.956,
+          "ExclusiveMs": 21.956,
+          "MeanMs": 0.196,
+          "P50Ms": 0.165,
+          "P95Ms": 0.41,
+          "MaxMs": 0.605
+        },
+        {
+          "Name": "action.GetDefault",
+          "Site": "NativeListContinuations.cs:31:Record",
+          "Calls": 12,
+          "TotalMs": 21.582,
+          "ExclusiveMs": 21.582,
+          "MeanMs": 1.798,
+          "P50Ms": 0.197,
+          "P95Ms": 19.118,
+          "MaxMs": 19.118
+        },
+        {
+          "Name": "hwp.HAction.Run:Delete",
+          "Site": "TemplateSource.cs:78:Run",
+          "Calls": 27,
+          "TotalMs": 20.373,
+          "ExclusiveMs": 20.373,
+          "MeanMs": 0.755,
+          "P50Ms": 0.722,
+          "P95Ms": 1.109,
+          "MaxMs": 1.199
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveParaEnd",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 29,
+          "TotalMs": 19.583,
+          "ExclusiveMs": 19.583,
+          "MeanMs": 0.675,
+          "P50Ms": 0.633,
+          "P95Ms": 0.925,
+          "MaxMs": 1.202
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Site": "TemplateListPrototype.cs:95:Apply",
+          "Calls": 112,
+          "TotalMs": 18.154,
+          "ExclusiveMs": 18.154,
+          "MeanMs": 0.162,
+          "P50Ms": 0.113,
+          "P95Ms": 0.2,
+          "MaxMs": 3.867
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Site": "TemplateListPrototype.cs:96:Apply",
+          "Calls": 112,
+          "TotalMs": 14.759,
+          "ExclusiveMs": 14.759,
+          "MeanMs": 0.132,
+          "P50Ms": 0.106,
+          "P95Ms": 0.315,
+          "MaxMs": 0.89
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Site": "TemplateListPrototype.cs:97:Apply",
+          "Calls": 112,
+          "TotalMs": 14.704,
+          "ExclusiveMs": 14.704,
+          "MeanMs": 0.131,
+          "P50Ms": 0.107,
+          "P95Ms": 0.249,
+          "MaxMs": 0.8
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveSelNextParaBegin",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 26,
+          "TotalMs": 11.37,
+          "ExclusiveMs": 11.37,
+          "MeanMs": 0.437,
+          "P50Ms": 0.378,
+          "P95Ms": 0.629,
+          "MaxMs": 0.836
+        },
+        {
+          "Name": "hwp.Clear",
+          "Site": "HancomPreviewWriter.cs:215:CloseDocument",
+          "Calls": 1,
+          "TotalMs": 11.14,
+          "ExclusiveMs": 11.14,
+          "MeanMs": 11.14,
+          "P50Ms": 11.14,
+          "P95Ms": 11.14,
+          "MaxMs": 11.14
+        },
+        {
+          "Name": "hwp.Clear",
+          "Site": "HancomPreviewWriter.cs:145:WithHwp",
+          "Calls": 1,
+          "TotalMs": 10.939,
+          "ExclusiveMs": 10.939,
+          "MeanMs": 10.939,
+          "P50Ms": 10.939,
+          "P95Ms": 10.939,
+          "MaxMs": 10.939
+        },
+        {
+          "Name": "hwp.FindDir",
+          "Site": "AuriMinimalCaptionPrototype.cs:503:FindNext",
+          "Calls": 58,
+          "TotalMs": 10.793,
+          "ExclusiveMs": 10.793,
+          "MeanMs": 0.186,
+          "P50Ms": 0.125,
+          "P95Ms": 0.192,
+          "MaxMs": 3.437
+        },
+        {
+          "Name": "hwp.FindDir",
+          "Site": "AuriMinimalBoxPrototype.cs:559:FindNext",
+          "Calls": 52,
+          "TotalMs": 10.571,
+          "ExclusiveMs": 10.571,
+          "MeanMs": 0.203,
+          "P50Ms": 0.116,
+          "P95Ms": 0.449,
+          "MaxMs": 2.705
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveSelParaEnd",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 14,
+          "TotalMs": 10.253,
+          "ExclusiveMs": 10.253,
+          "MeanMs": 0.732,
+          "P50Ms": 0.68,
+          "P95Ms": 1.306,
+          "MaxMs": 1.306
+        },
+        {
+          "Name": "hwp.FindDir",
+          "Site": "TemplateSource.cs:83:Find",
+          "Calls": 54,
+          "TotalMs": 9.608,
+          "ExclusiveMs": 9.608,
+          "MeanMs": 0.178,
+          "P50Ms": 0.122,
+          "P95Ms": 0.324,
+          "MaxMs": 2.424
+        },
+        {
+          "Name": "hwp.CreateAction:ParagraphShape",
+          "Site": "NativeListContinuations.cs:29:Record",
+          "Calls": 12,
+          "TotalMs": 9.534,
+          "ExclusiveMs": 9.534,
+          "MeanMs": 0.794,
+          "P50Ms": 0.201,
+          "P95Ms": 4.358,
+          "MaxMs": 4.358
+        },
+        {
+          "Name": "action.CreateSet",
+          "Site": "NativeListContinuations.cs:30:Record",
+          "Calls": 12,
+          "TotalMs": 8.988,
+          "ExclusiveMs": 8.988,
+          "MeanMs": 0.749,
+          "P50Ms": 0.462,
+          "P95Ms": 2.897,
+          "MaxMs": 2.897
+        },
+        {
+          "Name": "parameters.Item",
+          "Site": "TemplateListPrototype.cs:82:Bind",
+          "Calls": 2,
+          "TotalMs": 8.904,
+          "ExclusiveMs": 8.904,
+          "MeanMs": 4.452,
+          "P50Ms": 0.621,
+          "P95Ms": 8.283,
+          "MaxMs": 8.283
+        },
+        {
+          "Name": "hwp.HAction.Run:Delete",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 12,
+          "TotalMs": 8.633,
+          "ExclusiveMs": 8.633,
+          "MeanMs": 0.719,
+          "P50Ms": 0.685,
+          "P95Ms": 0.981,
+          "MaxMs": 0.981
+        },
+        {
+          "Name": "parameters.Item",
+          "Site": "NativeListContinuations.cs:32:Record",
+          "Calls": 12,
+          "TotalMs": 8.313,
+          "ExclusiveMs": 8.313,
+          "MeanMs": 0.693,
+          "P50Ms": 0.407,
+          "P95Ms": 2.947,
+          "MaxMs": 2.947
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Site": "NativeListContinuations.cs:50:Apply",
+          "Calls": 12,
+          "TotalMs": 7.013,
+          "ExclusiveMs": 7.013,
+          "MeanMs": 0.584,
+          "P50Ms": 0.395,
+          "P95Ms": 2.568,
+          "MaxMs": 2.568
+        },
+        {
+          "Name": "action.CreateSet",
+          "Site": "TemplateListPrototype.cs:80:Bind",
+          "Calls": 2,
+          "TotalMs": 6.845,
+          "ExclusiveMs": 6.845,
+          "MeanMs": 3.422,
+          "P50Ms": 0.555,
+          "P95Ms": 6.289,
+          "MaxMs": 6.289
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveParaBegin",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 2,
+          "TotalMs": 5.959,
+          "ExclusiveMs": 5.959,
+          "MeanMs": 2.979,
+          "P50Ms": 0.818,
+          "P95Ms": 5.14,
+          "MaxMs": 5.14
+        },
+        {
+          "Name": "action.GetDefault",
+          "Site": "TemplateListPrototype.cs:81:Bind",
+          "Calls": 2,
+          "TotalMs": 5.712,
+          "ExclusiveMs": 5.712,
+          "MeanMs": 2.856,
+          "P50Ms": 0.36,
+          "P95Ms": 5.352,
+          "MaxMs": 5.352
+        },
+        {
+          "Name": "action.CreateSet",
+          "Site": "NativeListContinuations.cs:48:Apply",
+          "Calls": 12,
+          "TotalMs": 5.611,
+          "ExclusiveMs": 5.611,
+          "MeanMs": 0.468,
+          "P50Ms": 0.439,
+          "P95Ms": 0.672,
+          "MaxMs": 0.672
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "AuriMinimalBoxPrototype.cs:40:Bind",
+          "Calls": 1,
+          "TotalMs": 5.442,
+          "ExclusiveMs": 5.442,
+          "MeanMs": 5.442,
+          "P50Ms": 5.442,
+          "P95Ms": 5.442,
+          "MaxMs": 5.442
+        },
+        {
+          "Name": "hwp.HAction.Run:Delete",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 2,
+          "TotalMs": 5.157,
+          "ExclusiveMs": 5.157,
+          "MeanMs": 2.579,
+          "P50Ms": 0.851,
+          "P95Ms": 4.306,
+          "MaxMs": 4.306
+        },
+        {
+          "Name": "hwp.Quit",
+          "Site": "HancomPreviewWriter.cs:153:WithHwp",
+          "Calls": 1,
+          "TotalMs": 4.877,
+          "ExclusiveMs": 4.877,
+          "MeanMs": 4.877,
+          "P50Ms": 4.877,
+          "P95Ms": 4.877,
+          "MaxMs": 4.877
+        },
+        {
+          "Name": "action.Execute",
+          "Site": "NativeListContinuations.cs:54:Apply",
+          "Calls": 12,
+          "TotalMs": 4.792,
+          "ExclusiveMs": 4.792,
+          "MeanMs": 0.399,
+          "P50Ms": 0.163,
+          "P95Ms": 2.992,
+          "MaxMs": 2.992
+        },
+        {
+          "Name": "hwp.GetHeadingString",
+          "Site": "NativeListContinuations.cs:25:Record",
+          "Calls": 2,
+          "TotalMs": 4.551,
+          "ExclusiveMs": 4.551,
+          "MeanMs": 2.276,
+          "P50Ms": 1.228,
+          "P95Ms": 3.324,
+          "MaxMs": 3.324
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "AuriMinimalCaptionPrototype.cs:40:Bind",
+          "Calls": 1,
+          "TotalMs": 4.306,
+          "ExclusiveMs": 4.306,
+          "MeanMs": 4.306,
+          "P50Ms": 4.306,
+          "P95Ms": 4.306,
+          "MaxMs": 4.306
+        },
+        {
+          "Name": "((dynamic)nativeShape!).Item",
+          "Site": "TemplateListPrototype.cs:101:StringFormat",
+          "Calls": 24,
+          "TotalMs": 3.913,
+          "ExclusiveMs": 3.913,
+          "MeanMs": 0.163,
+          "P50Ms": 0.111,
+          "P95Ms": 0.578,
+          "MaxMs": 0.823
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Site": "NativeListContinuations.cs:52:Apply",
+          "Calls": 12,
+          "TotalMs": 3.887,
+          "ExclusiveMs": 3.887,
+          "MeanMs": 0.324,
+          "P50Ms": 0.105,
+          "P95Ms": 2.706,
+          "MaxMs": 2.706
+        },
+        {
+          "Name": "((dynamic)nativeShape!).Item",
+          "Site": "TemplateListPrototype.cs:103:NumberFormat",
+          "Calls": 24,
+          "TotalMs": 3.808,
+          "ExclusiveMs": 3.808,
+          "MeanMs": 0.159,
+          "P50Ms": 0.12,
+          "P95Ms": 0.299,
+          "MaxMs": 0.756
+        },
+        {
+          "Name": "subset.Clone",
+          "Site": "TemplateListPrototype.cs:83:Bind",
+          "Calls": 2,
+          "TotalMs": 3.659,
+          "ExclusiveMs": 3.659,
+          "MeanMs": 1.83,
+          "P50Ms": 0.621,
+          "P95Ms": 3.039,
+          "MaxMs": 3.039
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "HancomPreviewWriter.cs:290:PrepareInsertionTarget",
+          "Calls": 1,
+          "TotalMs": 2.918,
+          "ExclusiveMs": 2.918,
+          "MeanMs": 2.918,
+          "P50Ms": 2.918,
+          "P95Ms": 2.918,
+          "MaxMs": 2.918
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "TemplateListPrototype.cs:78:Bind",
+          "Calls": 2,
+          "TotalMs": 2.789,
+          "ExclusiveMs": 2.789,
+          "MeanMs": 1.394,
+          "P50Ms": 0.186,
+          "P95Ms": 2.602,
+          "MaxMs": 2.602
+        },
+        {
+          "Name": "hwp.CreateAction:ParagraphShape",
+          "Site": "TemplateListPrototype.cs:79:Bind",
+          "Calls": 2,
+          "TotalMs": 2.739,
+          "ExclusiveMs": 2.739,
+          "MeanMs": 1.369,
+          "P50Ms": 0.21,
+          "P95Ms": 2.529,
+          "MaxMs": 2.529
+        },
+        {
+          "Name": "hwp.CreateAction:ParagraphShape",
+          "Site": "NativeListContinuations.cs:47:Apply",
+          "Calls": 12,
+          "TotalMs": 2.327,
+          "ExclusiveMs": 2.327,
+          "MeanMs": 0.194,
+          "P50Ms": 0.166,
+          "P95Ms": 0.429,
+          "MaxMs": 0.429
+        },
+        {
+          "Name": "action.GetDefault",
+          "Site": "NativeListContinuations.cs:49:Apply",
+          "Calls": 12,
+          "TotalMs": 2.104,
+          "ExclusiveMs": 2.104,
+          "MeanMs": 0.175,
+          "P50Ms": 0.152,
+          "P95Ms": 0.378,
+          "MaxMs": 0.378
+        },
+        {
+          "Name": "hwp.HAction.Run:SelectCtrlFront",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 2,
+          "TotalMs": 2.006,
+          "ExclusiveMs": 2.006,
+          "MeanMs": 1.003,
+          "P50Ms": 0.737,
+          "P95Ms": 1.269,
+          "MaxMs": 1.269
+        },
+        {
+          "Name": "parameters.Item",
+          "Site": "NativeListContinuations.cs:33:Record",
+          "Calls": 12,
+          "TotalMs": 1.991,
+          "ExclusiveMs": 1.991,
+          "MeanMs": 0.166,
+          "P50Ms": 0.105,
+          "P95Ms": 0.453,
+          "MaxMs": 0.453
+        },
+        {
+          "Name": "hwp.HAction.Run:ShapeObjDetachCaption",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 2,
+          "TotalMs": 1.661,
+          "ExclusiveMs": 1.661,
+          "MeanMs": 0.831,
+          "P50Ms": 0.505,
+          "P95Ms": 1.156,
+          "MaxMs": 1.156
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Site": "NativeListContinuations.cs:53:Apply",
+          "Calls": 12,
+          "TotalMs": 1.49,
+          "ExclusiveMs": 1.49,
+          "MeanMs": 0.124,
+          "P50Ms": 0.104,
+          "P95Ms": 0.329,
+          "MaxMs": 0.329
+        },
+        {
+          "Name": "parameters.SetItem",
+          "Site": "NativeListContinuations.cs:51:Apply",
+          "Calls": 12,
+          "TotalMs": 1.476,
+          "ExclusiveMs": 1.476,
+          "MeanMs": 0.123,
+          "P50Ms": 0.103,
+          "P95Ms": 0.329,
+          "MaxMs": 0.329
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveSelNextParaBegin",
+          "Site": "AuriMinimalCaptionPrototype.cs:572:Run",
+          "Calls": 1,
+          "TotalMs": 0.891,
+          "ExclusiveMs": 0.891,
+          "MeanMs": 0.891,
+          "P50Ms": 0.891,
+          "P95Ms": 0.891,
+          "MaxMs": 0.891
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveSelNextParaBegin",
+          "Site": "TemplateSource.cs:78:Run",
+          "Calls": 1,
+          "TotalMs": 0.844,
+          "ExclusiveMs": 0.844,
+          "MeanMs": 0.844,
+          "P50Ms": 0.844,
+          "P95Ms": 0.844,
+          "MaxMs": 0.844
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveSelNextParaBegin",
+          "Site": "AuriMinimalBoxPrototype.cs:692:Run",
+          "Calls": 1,
+          "TotalMs": 0.707,
+          "ExclusiveMs": 0.707,
+          "MeanMs": 0.707,
+          "P50Ms": 0.707,
+          "P95Ms": 0.707,
+          "MaxMs": 0.707
+        },
+        {
+          "Name": "hwp.SetPos",
+          "Site": "TaggedTemplateWriter.cs:301:SelectRangeParagraphs",
+          "Calls": 1,
+          "TotalMs": 0.696,
+          "ExclusiveMs": 0.696,
+          "MeanMs": 0.696,
+          "P50Ms": 0.696,
+          "P95Ms": 0.696,
+          "MaxMs": 0.696
+        },
+        {
+          "Name": "hwp.HAction.Run:Cancel",
+          "Site": "TemplateSource.cs:78:Run",
+          "Calls": 1,
+          "TotalMs": 0.652,
+          "ExclusiveMs": 0.652,
+          "MeanMs": 0.652,
+          "P50Ms": 0.652,
+          "P95Ms": 0.652,
+          "MaxMs": 0.652
+        },
+        {
+          "Name": "hwp.HAction.Run:MoveDocEnd",
+          "Site": "HancomPreviewWriter.cs:736:Run",
+          "Calls": 1,
+          "TotalMs": 0.584,
+          "ExclusiveMs": 0.584,
+          "MeanMs": 0.584,
+          "P50Ms": 0.584,
+          "P95Ms": 0.584,
+          "MaxMs": 0.584
+        }
+      ],
+      "Phases": [
+        {
+          "Name": "phase.insert",
+          "Calls": 1,
+          "Milliseconds": 334387.616,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.attach-native",
+          "Calls": 1,
+          "Milliseconds": 31530.997,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.save-flat-reopen",
+          "Calls": 1,
+          "Milliseconds": 13998.65,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.validate-flat",
+          "Calls": 1,
+          "Milliseconds": 8312.623,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.verify-flat-reopened",
+          "Calls": 1,
+          "Milliseconds": 8203.99,
+          "ExportedUtf16CodeUnits": 0
+        },
+        {
+          "Name": "phase.prepare",
+          "Calls": 1,
+          "Milliseconds": 2364.3,
+          "ExportedUtf16CodeUnits": 0
+        }
+      ],
+      "Xml": [
+        {
+          "Name": "hwpml.export/AuriMinimalCaptionPrototype.ReadDocument",
+          "Calls": 148,
+          "Milliseconds": 86831.054,
+          "ExportedUtf16CodeUnits": 790318872
+        },
+        {
+          "Name": "hwpml.block.export/CurrentParagraphStyle.ReadBlock",
+          "Calls": 473,
+          "Milliseconds": 62764.679,
+          "ExportedUtf16CodeUnits": 44980620
+        },
+        {
+          "Name": "hwpml.export/TemplateSource.Insert",
+          "Calls": 108,
+          "Milliseconds": 62646.325,
+          "ExportedUtf16CodeUnits": 579436012
+        },
+        {
+          "Name": "hwpml.export/AuriMinimalBoxPrototype.ReadDocument",
+          "Calls": 99,
+          "Milliseconds": 57950.848,
+          "ExportedUtf16CodeUnits": 529796192
+        },
+        {
+          "Name": "hwpml.export/HancomPreviewWriter.ReadParagraphs",
+          "Calls": 7,
+          "Milliseconds": 4711.177,
+          "ExportedUtf16CodeUnits": 43429654
+        },
+        {
+          "Name": "hwpml.export/TaggedTemplateWriter.RangeRoots",
+          "Calls": 7,
+          "Milliseconds": 4311.747,
+          "ExportedUtf16CodeUnits": 39778728
+        },
+        {
+          "Name": "hwpml.export/HancomPreviewWriter.VerifyLists",
+          "Calls": 2,
+          "Milliseconds": 1336.67,
+          "ExportedUtf16CodeUnits": 12235025
+        },
+        {
+          "Name": "hwpml.export/TaggedTemplateWriter.ImportFigureDocument",
+          "Calls": 2,
+          "Milliseconds": 1083.535,
+          "ExportedUtf16CodeUnits": 7560026
+        },
+        {
+          "Name": "hwpml.export/TaggedTemplateWriter.RenderTaggedTemplate",
+          "Calls": 3,
+          "Milliseconds": 903.485,
+          "ExportedUtf16CodeUnits": 6959818
+        },
+        {
+          "Name": "hwpml.export/HancomPreviewWriter.VerifyText",
+          "Calls": 1,
+          "Milliseconds": 744.008,
+          "ExportedUtf16CodeUnits": 6724579
+        },
+        {
+          "Name": "hwpml.export/HancomPreviewWriter.PrepareInsertionTarget",
+          "Calls": 2,
+          "Milliseconds": 90.127,
+          "ExportedUtf16CodeUnits": 195696
+        }
+      ],
+      "Completed": false,
+      "BackendTotalMilliseconds": 425154.367
+    }
+  }
+}

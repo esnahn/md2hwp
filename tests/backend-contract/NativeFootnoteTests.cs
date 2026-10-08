@@ -77,6 +77,15 @@ internal static class NativeFootnoteTests
         continuous.NormalizeNumbers(continuousExpected, continuousActual);
         Check((int?)continuousActual.Descendants("FOOTNOTE").Last().Descendants("AUTONUM").Single().Attribute("Number") == 100,
             "Continuous numbering was normalized as page restarts.");
+        var splitRendered = new XDocument(continuousRendered);
+        var splitHost = splitRendered.Descendants("SECTION").Single().Elements("P").Last();
+        var markerRun = splitHost.Element("TEXT")!;
+        markerRun.AddBeforeSelf(new XElement("TEXT", markerRun.Attributes(), new XElement("CHAR", "같은 서식 앞부분 ")));
+        var splitExpected = continuous.Attach(splitRendered, plan);
+        Check((int?)splitExpected.Descendants("FOOTNOTE").Last().Descendants("AUTONUM").Single().Attribute("Number") == 2,
+            "Cloning a generated note while coalescing identical TEXT formats lost its continuous counter.");
+        Check(splitExpected.Descendants("SECTION").Single().Elements("P").Last().Elements("TEXT").Count() == 1,
+            "The continuous-counter regression did not exercise TEXT coalescing.");
         TestNativeSample();
         Console.WriteLine("Generated OnPage note counters follow final paragraph identities after reference-run changes.");
     }

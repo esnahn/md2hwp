@@ -91,3 +91,16 @@ Ipsum 본문 11,155어절을 5장·20절로 나누었으며, 작성 당시 최�
 [대규모 문서 성능 측정](render-performance.md)에 정리했습니다.
 
 [README로 돌아가기](../README.md)
+
+## 성능 측정 기준
+
+현재 Release의 액션별 기준 측정은 [2026-10-08 성능 보고서](performance/2026-10-08-baseline.md)와
+[비교용 JSON](performance/2026-10-08-baseline.json)에 보관합니다. 호출별 원시 시간선과 CSV는
+`artifacts/performance-2026-10-08/`에 있습니다. 대규모 원고는 네이티브 자동번호 검증에서
+실패했으므로 실패 지점까지의 비용이며, 정상 완료된 작은 원고와 구분해서 비교하십시오.
+
+각주 번호 추적을 수정한 뒤 같은 대규모 원고가 저장·재열기 검증까지 완료했습니다.
+최적화 작업은 [수정 후 완료 측정](performance/2026-10-08-large-remeasured.md)과
+[집계 JSON](performance/2026-10-08-large-remeasured.json)을 기준으로 진행하십시오.
+전체 실행은 530.699초이며, 호출별 원시 자료는
+`artifacts/performance-remeasure-2026-10-08/`에 있습니다.

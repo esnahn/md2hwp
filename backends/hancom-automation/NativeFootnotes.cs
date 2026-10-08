@@ -176,7 +176,6 @@ internal sealed class NativeFootnotes(XDocument source, XElement sample, XElemen
             .ToDictionary(r => r.Text, r => r.Footnote!, StringComparer.Ordinal);
         if (notes.Count == 0) return result;
         var found = new HashSet<string>(StringComparer.Ordinal);
-        var generated = new HashSet<XElement>();
         foreach (var paragraph in result.Descendants("P").ToArray())
         {
             if (!ReferenceMarker.Matches(TaggedTemplateBinding.DirectText(paragraph)).Any(m => notes.ContainsKey(m.Value))) continue;
@@ -217,7 +216,7 @@ internal sealed class NativeFootnotes(XDocument source, XElement sample, XElemen
                 if (identityAttribute is null) firstParagraph.SetAttributeValue("InstId", identity);
                 else identityAttribute.Value = identity;
                 generatedNoteParagraphIds.Add(identity);
-                generated.Add(control); found.Add(replacement.Marker);
+                found.Add(replacement.Marker);
                 var prefix = first.Element.Value[..first.Offset];
                 var suffix = last.Element.Value[(last.Offset + 1)..];
                 if (first.Element == last.Element)
@@ -265,7 +264,11 @@ internal sealed class NativeFootnotes(XDocument source, XElement sample, XElemen
             {
                 var note = element.Ancestors("FOOTNOTE").FirstOrDefault();
                 if (note is not null && element.Ancestors("P").First() != note.Element("PARALIST")!.Elements("P").First()) continue;
-                if (element.Ancestors("FOOTNOTE").Any(generated.Contains)) element.SetAttributeValue("Number", next);
+                // Coalescing adjacent TEXT runs above can clone the control.
+                // Its first paragraph identity survives; object references do not.
+                var firstParagraph = note?.Element("PARALIST")?.Elements("P").FirstOrDefault();
+                var identity = (string?)firstParagraph?.Attribute("InstId") ?? (string?)firstParagraph?.Attribute("InstID");
+                if (identity is not null && generatedNoteParagraphIds.Contains(identity)) element.SetAttributeValue("Number", next);
                 next++;
             }
         }
