@@ -309,8 +309,7 @@ fn references_inside_table_headers_cells_and_notes_resolve_forward_to_actual_tar
     );
     for field in ["Table:", "표:", "출처:"] {
         let paragraph = json!({"t":"Para","c":[{"t":"Str","c":field},{"t":"Space"},link.clone()]});
-        let error = normalize(json!([table.clone(), paragraph, image.clone()])).unwrap_err();
-        assert!(error.message.contains("cross references are allowed only"));
+        normalize(json!([table.clone(), paragraph, image.clone()])).unwrap();
     }
 }
 
@@ -446,4 +445,29 @@ fn multiple_object_notes_preserve_labels_order_and_stop_at_body() {
         ));
         assert_eq!(ir.as_document().blocks.len(), 2);
     }
+}
+
+#[test]
+fn table_caption_and_all_source_paragraphs_accept_forward_number_references() {
+    let r = json!({"t":"Link","c":[["",[],[]],[],["#figure",""]]});
+    let image = json!({"t":"Para","c":[{"t":"Image","c":[["figure",[],[]],[{"t":"Str","c":"그림"}],["image.png",""]]}]});
+    let ir = normalize(json!([
+        {"t":"Para","c":[{"t":"Str","c":"Table:"},{"t":"Space"},r.clone()]}, simple_table(),
+        {"t":"Para","c":[{"t":"Str","c":"출처:"},{"t":"Space"},r.clone()]},
+        {"t":"Para","c":[{"t":"Str","c":"주:"},{"t":"Space"},{"t":"Emph","c":[r]}]}, image]))
+    .unwrap();
+    let Block::Table {
+        caption: Some(caption),
+        source: Some(notes),
+        ..
+    } = &ir.as_document().blocks[0]
+    else {
+        panic!("table")
+    };
+    assert!(matches!(caption[0], Inline::CrossReference { .. }));
+    assert_eq!(notes.len(), 2);
+    assert_eq!(
+        read_ir(&write_ir(&ir).unwrap(), &ValidationLimits::default()).unwrap(),
+        ir
+    );
 }

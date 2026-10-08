@@ -293,7 +293,7 @@ fn duplicate_ids_missing_targets_and_wrong_direct_ir_kinds_fail() {
 }
 
 #[test]
-fn refs_work_in_headings_lists_formatting_and_note_body_but_not_object_fields() {
+fn refs_work_in_headings_lists_notes_captions_and_object_sources() {
     let r = link("#f");
     normalize(json!([
         {"t":"Header","c":[2,["section",[],[]],[{"t":"Strong","c":[r.clone()]}]]},
@@ -302,29 +302,29 @@ fn refs_work_in_headings_lists_formatting_and_note_body_but_not_object_fields() 
     ])).unwrap();
     let mut image = para_image("f");
     image["c"][0]["c"][1] = json!([r.clone()]);
-    assert!(
-        normalize(json!([image]))
-            .unwrap_err()
-            .message
-            .contains("figure alt/caption")
-    );
+    let caption_ir = normalize(json!([image])).unwrap();
+    let Block::Figure { caption, .. } = &caption_ir.as_document().blocks[0] else {
+        panic!("figure")
+    };
+    assert!(matches!(caption[0], Inline::CrossReference { .. }));
     for object in [
         para_image(""),
         json!({"t":"CodeBlock","c":[["",[],[]],"raw"]}),
     ] {
-        assert!(normalize(json!([object,{"t":"Para","c":[{"t":"Str","c":"출처:"},{"t":"Space"},r.clone()]},heading("f")])).unwrap_err().message.contains("object sources"));
+        let ir = normalize(json!([object,
+            {"t":"Para","c":[{"t":"Str","c":"출처:"},{"t":"Space"},r.clone()]},
+            {"t":"Para","c":[{"t":"Str","c":"주:"},{"t":"Space"},{"t":"Strong","c":[r.clone()]}]},heading("f")])).unwrap();
+        assert_eq!(
+            read_ir(&write_ir(&ir).unwrap(), &ValidationLimits::default()).unwrap(),
+            ir
+        );
     }
     let mut target = figure(Some("f"));
     let Block::Figure { caption, .. } = &mut target else {
         unreachable!()
     };
     *caption = vec![reference(CrossReferenceKind::FigureNumber, "f")];
-    assert_eq!(
-        validate(document(vec![target]), &ValidationLimits::default())
-            .unwrap_err()
-            .path,
-        "/blocks/0/caption/0"
-    );
+    validate(document(vec![target]), &ValidationLimits::default()).unwrap();
 }
 
 #[test]
@@ -636,4 +636,26 @@ fn jpeg_paths_and_figure_ids_survive_ir_roundtrip() {
             ir
         );
     }
+}
+
+#[test]
+fn reference_only_object_note_is_nonempty_and_targets_remain_validated() {
+    let mut r = link("#f");
+    r["c"][1] = json!([]);
+    let ir = normalize(
+        json!([para_image("f"), {"t":"Para","c":[{"t":"Str","c":"출처:"},{"t":"Space"},r]}]),
+    )
+    .unwrap();
+    let Block::Figure {
+        source: Some(notes),
+        ..
+    } = &ir.as_document().blocks[0]
+    else {
+        panic!("figure")
+    };
+    assert!(matches!(notes[0].inlines[0], Inline::CrossReference { .. }));
+    assert_eq!(
+        read_ir(&write_ir(&ir).unwrap(), &ValidationLimits::default()).unwrap(),
+        ir
+    );
 }

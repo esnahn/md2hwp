@@ -474,7 +474,7 @@
           "$ref": "#/$defs/target_id"
         }
       },
-      "$comment": "References are allowed in document paragraphs, headings, list paragraphs, table cells and footnote bodies, including formatting/link labels. Figure alt/caption and object sources reject references. Semantic validation checks global ID uniqueness, target existence and matching kind."
+      "$comment": "References are allowed in document paragraphs, headings, list paragraphs, table cells, figure alt/caption, table captions, object sources and footnote bodies, including formatting/link labels. Semantic validation checks global ID uniqueness, target existence and matching kind."
     },
     "footnote": {
       "type": "object",

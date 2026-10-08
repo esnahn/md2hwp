@@ -263,7 +263,7 @@ impl State<'_> {
                     self.table_row(row, columns.len(), &format!("{path}/rows/{index}"))?;
                 }
                 if let Some(caption) = caption {
-                    self.inline_array(caption, &format!("{path}/caption"), false, false, false)?;
+                    self.inline_array(caption, &format!("{path}/caption"), false, false, true)?;
                 }
                 if let Some(source) = source {
                     self.sources(source, &format!("{path}/source"))?;
@@ -293,8 +293,8 @@ impl State<'_> {
                         "image title",
                     )?;
                 }
-                self.inline_array(&image.alt, &format!("{path}/image/alt"), true, false, false)?;
-                self.inline_array(caption, &format!("{path}/caption"), false, false, false)?;
+                self.inline_array(&image.alt, &format!("{path}/image/alt"), true, false, true)?;
+                self.inline_array(caption, &format!("{path}/caption"), false, false, true)?;
                 if let Some(source) = source {
                     self.sources(source, &format!("{path}/source"))?;
                 }
@@ -332,14 +332,15 @@ impl State<'_> {
                 &format!("{p}/inlines"),
                 false,
                 false,
-                false,
+                true,
             )?;
             fn visible(inlines: &[Inline]) -> bool {
                 inlines.iter().any(|inline| match inline {
                     Inline::Text { value } => !value.trim().is_empty(),
+                    Inline::CrossReference { .. } => true,
                     Inline::Strong { inlines } | Inline::Emph { inlines } => visible(inlines),
-                    // Empty internal-link labels are symbolic references until
-                    // normalization resolves them; context validation rejects them.
+                    // Internal-link labels may be empty until normalization
+                    // replaces them with a validated symbolic reference.
                     Inline::Link {
                         target, inlines, ..
                     } => target.starts_with('#') || visible(inlines),
@@ -483,8 +484,11 @@ impl State<'_> {
         self.add_limited("inlines", path, 1)?;
         match inline {
             Inline::CrossReference { kind, target } => {
-                self.require(allow_reference, path,
-                    "cross references are allowed only in document paragraphs, headings, list paragraphs, table cells and footnote bodies; figure alt/caption, table captions and object sources are unsupported")?;
+                self.require(
+                    allow_reference,
+                    path,
+                    "cross references are not allowed in this inline context",
+                )?;
                 self.target_id(target, &format!("{path}/target"))?;
                 self.references
                     .push((kind.clone(), target.clone(), path.to_owned()));
