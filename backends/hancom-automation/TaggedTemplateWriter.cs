@@ -40,7 +40,7 @@ internal static partial class HancomPreviewWriter
                 document = RenderProfile.ReadDocument((object)hwp);
                 var binding = TaggedTemplateBinding.ReadFlat(document, temporary);
                 var profile = binding.Profile;
-                var plan = IrPreviewPlan.Load(irPath, repositoryRoot, profile);
+                var plan = HeadingReferenceNumbers.Bind(IrPreviewPlan.Load(irPath, repositoryRoot, profile), referenceTemplate.Layout);
                 var styles = AuriPreviewStyleBindings.BindDocument(document, profile);
                 var rootsBefore = AuriMinimalBoxPrototype.RootParagraphs(document);
                 var prefix = rootsBefore.Take(binding.TemplateBegin).ToArray();
@@ -131,7 +131,7 @@ internal static partial class HancomPreviewWriter
                 tables.Layout.RecalculateNumbers(attached);
                 TableWidthLimits.RequireFits(attached, tables.Layout.GeneratedTableInstances);
                 var references = NativeCrossReferences.Prepare(attached, plan, referenceTemplate.Layout,
-                    nativeFigure.Layout.GeneratedFigureInstances, headings.Layout.GeneratedHeadingInstances, tables.Layout.ReferencedTableInstances);
+                    nativeFigure.Layout.GeneratedFigureInstances, tables.Layout.ReferencedTableInstances);
                 attached = references.Document;
                 footnotes.RecordLayout(attached);
                 boxes.Layout.RecordLayout(attached);

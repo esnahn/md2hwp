@@ -165,8 +165,8 @@ internal static partial class HancomPreviewWriter
         var styles = result.Descendants().Where(e => e.Name.LocalName == "STYLE").ToArray();
         var styleList = styles[0].Parent!;
         var nextId = styles.Max(e => (int)e.Attribute("Id")!) + 1;
-        var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "footnote", "code", "code.title", "code.source", "figure.caption", "figure.source", "table.header", "table.content", "table.source", "table.caption", "ref.figure.number", "ref.heading.number", "ref.table.number", "reset" };
-        roles = roles.Append("footnote.next").ToArray();
+        var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "footnote", "code", "code.title", "code.source", "figure.caption", "figure.source", "table.header", "table.content", "table.source", "table.caption", "ref.figure.number", "ref.table.number", "reset" };
+        roles = roles.Append("footnote.next").Concat(Enumerable.Range(1, 6).Select(TemplateCrossReferences.HeadingRole)).ToArray();
         var ids = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var role in roles)
         {
@@ -300,13 +300,19 @@ internal static partial class HancomPreviewWriter
             Declaration("begin:ref.figure.number"),
             TextParagraph("ref.figure.number", "그림 " + TemplateHeadingNumbers.Tag + "-" + TemplateCrossReferences.FigureNumberSlot),
             Declaration("end:ref.figure.number"),
-            Declaration("begin:ref.heading.number"),
-            TextParagraph("ref.heading.number", TemplateCrossReferences.HeadingNumberSlot),
-            Declaration("end:ref.heading.number"),
             Declaration("begin:ref.table.number"),
             TextParagraph("ref.table.number", "표 " + TemplateHeadingNumbers.Tag + "-" + TemplateCrossReferences.TableNumberSlot),
             Declaration("end:ref.table.number"),
             Declaration("end:template"), Declaration("content"), TextParagraph("body", "") });
+        var referenceBlocks = new List<XElement>();
+        for (var level = 1; level <= 6; level++)
+        {
+            var role = TemplateCrossReferences.HeadingRole(level);
+            var number = string.Join(".", Enumerable.Range(1, level).Select(index => TaggedTemplateBinding.Tag($"num:heading{index}")));
+            var text = level == 1 ? "제" + number + "장" : number + (level == 2 ? "절" : "항");
+            referenceBlocks.AddRange([Declaration("begin:" + role), TextParagraph(role, text), Declaration("end:" + role)]);
+        }
+        roots.InsertRange(roots.FindIndex(root => TaggedTemplateBinding.DirectText(root) == TaggedTemplateBinding.Tag("end:template")), referenceBlocks);
         section.ReplaceNodes(roots);
         return result;
     }

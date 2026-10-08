@@ -510,6 +510,7 @@ Check((string?)numberRun.Attribute("CharShape") == "2" && (string?)numberRun.Ele
 Console.WriteLine("Native footnote structure, rich text, preserved controls and local numbering checks passed.");
 FigureReferenceContractTests.Run();
 TemplateCrossReferenceTests.Run();
+HeadingReferenceNumbersTests.Run();
 NativeCrossReferenceTests.Run();
 NativeFootnoteTests.Run();
 TableContractTests.Run();

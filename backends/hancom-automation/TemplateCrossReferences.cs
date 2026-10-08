@@ -6,14 +6,14 @@ namespace Md2Hwp.HancomIrPreview;
 
 // Paragraph prototypes own the wording and slots of native number references.
 // Native fields are inserted later by the adapter at the number slots.
-internal sealed class TemplateCrossReferences(XDocument source, XElement figureNumber, XElement? headingNumber = null, XElement? tableNumber = null)
+internal sealed class TemplateCrossReferences(XDocument source, XElement figureNumber, XElement? tableNumber = null, IReadOnlyDictionary<int, XElement>? headings = null)
 {
     internal const string FigureNumberRole = "ref.figure.number";
     internal const string TableNumberRole = "ref.table.number";
     internal static readonly string TableNumberSlot = TaggedTemplateBinding.Tag("slot:" + TableNumberRole);
-    internal const string HeadingNumberRole = "ref.heading.number";
+    internal static string HeadingRole(int level) => $"ref.heading{level}.number";
     internal static readonly string FigureNumberSlot = TaggedTemplateBinding.Tag("slot:" + FigureNumberRole);
-    internal static readonly string HeadingNumberSlot = TaggedTemplateBinding.Tag("slot:" + HeadingNumberRole);
+
     private static readonly Regex Tags = new(@"\{\{md2hwp:([^{}]+)\}\}", RegexOptions.CultureInvariant);
     private static readonly Regex ChapterSlot = new(Regex.Escape(TemplateHeadingNumbers.Tag), RegexOptions.CultureInvariant);
 
@@ -21,7 +21,7 @@ internal sealed class TemplateCrossReferences(XDocument source, XElement figureN
     {
         var document = new XDocument(source);
         var roots = AuriMinimalBoxPrototype.RootParagraphs(document).ToArray();
-        var roles = new[] { FigureNumberRole, HeadingNumberRole, TableNumberRole };
+        var roles = new[] { FigureNumberRole, TableNumberRole }.Concat(Enumerable.Range(1, 6).Select(HeadingRole)).ToArray();
         var permitted = roles.SelectMany(role => new[] { "begin:" + role, "end:" + role, "slot:" + role })
             .ToHashSet(StringComparer.Ordinal);
         foreach (var paragraph in document.Descendants("P"))
@@ -29,7 +29,7 @@ internal sealed class TemplateCrossReferences(XDocument source, XElement figureN
         {
             var name = token.Groups[1].Value;
             if (name.Split(':').Any(part => part.StartsWith("ref.", StringComparison.Ordinal)) && !permitted.Contains(name))
-                throw new InvalidDataException($"Unsupported template cross-reference declaration '{name}'. Only ref.figure.number, ref.table.number and ref.heading.number are supported; other reference types and page references are reserved.");
+                throw new InvalidDataException($"Unsupported template cross-reference declaration '{name}'. Use ref.figure.number, ref.table.number and ref.heading1.number through ref.heading6.number. Replace old ref.heading.number with six numbered heading reference blocks; other reference types and page references are reserved.");
         }
 
         int Find(string token)
@@ -58,18 +58,31 @@ internal sealed class TemplateCrossReferences(XDocument source, XElement figureN
                 accepted.Add(paragraph);
             }
             var sampleText = TaggedTemplateBinding.DirectText(sample);
-            var slot = TaggedTemplateBinding.Tag("slot:" + role);
-            var numberSlot = new Regex(Regex.Escape(slot), RegexOptions.CultureInvariant);
-            if (numberSlot.Matches(sampleText).Count != 1)
-                throw new InvalidDataException($"{role} sample requires exactly one slot:{role}.");
-            if (role == HeadingNumberRole && TemplateHeadingNumbers.ContainsNumberSlot(sample))
-                throw new InvalidDataException("ref.heading.number uses a native outline-number field; num:heading1 is not supported in its sample.");
-            foreach (Match token in Tags.Matches(sampleText))
-                if (token.Value != slot && !(role != HeadingNumberRole && token.Value == TemplateHeadingNumbers.Tag))
-                    throw new InvalidDataException($"Unsupported tag '{token.Value}' in {role} sample.");
-            var remaining = numberSlot.Replace(ChapterSlot.Replace(sampleText, ""), "");
-            if (remaining.Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal))
-                throw new InvalidDataException($"Malformed template tag in {role} sample.");
+            var headingLevel = Array.FindIndex(Enumerable.Range(1, 6).Select(HeadingRole).ToArray(), item => item == role) + 1;
+            if (headingLevel > 0)
+            {
+                if (headingLevel == 1 ? !TemplateHeadingNumbers.ContainsNumberSlot(sample) :
+                    !sampleText.Contains(TaggedTemplateBinding.Tag($"num:heading{headingLevel}"), StringComparison.Ordinal))
+                    throw new InvalidDataException($"{role} sample requires num:heading{headingLevel}.");
+                foreach (Match token in Tags.Matches(sampleText))
+                    if (!Enumerable.Range(1, headingLevel).Any(level => token.Value == TaggedTemplateBinding.Tag($"num:heading{level}")))
+                        throw new InvalidDataException($"Unsupported tag '{token.Value}' in {role} sample.");
+                var remainder = Tags.Replace(sampleText, "");
+                if (remainder.Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal))
+                    throw new InvalidDataException($"Malformed template tag in {role} sample.");
+            }
+            else
+            {
+                var slot = TaggedTemplateBinding.Tag("slot:" + role);
+                var numberSlot = new Regex(Regex.Escape(slot), RegexOptions.CultureInvariant);
+                if (numberSlot.Matches(sampleText).Count != 1)
+                    throw new InvalidDataException($"{role} sample requires exactly one slot:{role}.");
+                foreach (Match token in Tags.Matches(sampleText))
+                    if (token.Value != slot && token.Value != TemplateHeadingNumbers.Tag)
+                        throw new InvalidDataException($"Unsupported tag '{token.Value}' in {role} sample.");
+                if (numberSlot.Replace(ChapterSlot.Replace(sampleText, ""), "").Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal))
+                    throw new InvalidDataException($"Malformed template tag in {role} sample.");
+            }
             prototypes.Add(role, new XElement(sample));
         }
         foreach (var paragraph in document.Descendants("P").Where(paragraph => !accepted.Contains(paragraph)))
@@ -77,7 +90,7 @@ internal sealed class TemplateCrossReferences(XDocument source, XElement figureN
             if (permitted.Contains(token.Groups[1].Value))
                 throw new InvalidDataException("Reference declarations and number slots are allowed only in their single root prototypes inside template definitions.");
         foreach (var paragraph in accepted) paragraph.Remove();
-        return (new TemplateCrossReferences(new XDocument(source), prototypes[FigureNumberRole], prototypes[HeadingNumberRole], prototypes[TableNumberRole]), document);
+        return (new TemplateCrossReferences(new XDocument(source), prototypes[FigureNumberRole], prototypes[TableNumberRole], Enumerable.Range(1, 6).ToDictionary(level => level, level => prototypes[HeadingRole(level)])), document);
     }
 
     internal XElement[] CreateFigureNumberFragments(XDocument destination, int? targetHeading1Number, string nativeControlMarker, XElement? context = null) =>
@@ -87,9 +100,16 @@ internal sealed class TemplateCrossReferences(XDocument source, XElement figureN
         CreateFragments(destination, tableNumber ?? throw new InvalidDataException("Missing required ref.table.number prototype. Regenerate the template with init-template."),
             TableNumberSlot, nativeControlMarker, targetHeading1Number, true, context);
 
-    internal XElement[] CreateHeadingNumberFragments(XDocument destination, string nativeControlMarker, XElement? context = null) =>
-        CreateFragments(destination, headingNumber ?? throw new InvalidDataException("Missing required ref.heading.number prototype. Regenerate the template with init-template."),
-            HeadingNumberSlot, nativeControlMarker, null, false, context);
+    internal string HeadingText(int level, IReadOnlyList<int> numbers)
+    {
+        if (level is < 1 or > 6 || numbers.Count != 6 || headings is null || !headings.TryGetValue(level, out var sample))
+            throw new InvalidDataException("Missing heading reference block; add ref.heading1.number through ref.heading6.number or regenerate the template.");
+        var text = TaggedTemplateBinding.DirectText(TemplateHeadingNumbers.Fill([sample], numbers[0])[0]);
+        for (var index = 0; index < level; index++)
+            text = text.Replace(TaggedTemplateBinding.Tag($"num:heading{index + 1}"), numbers[index].ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        if (text.Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal)) throw new InvalidDataException("Unresolved heading reference number tag.");
+        return text;
+    }
 
     private XElement[] CreateFragments(XDocument destination, XElement sample, string slot, string nativeControlMarker,
         int? targetHeading1Number, bool allowChapterNumber, XElement? context)
@@ -100,8 +120,6 @@ internal sealed class TemplateCrossReferences(XDocument source, XElement figureN
         if (source.Descendants("P").Concat(destination.Descendants("P"))
             .Any(paragraph => TaggedTemplateBinding.DirectText(paragraph).Contains(nativeControlMarker, StringComparison.Ordinal)))
             throw new InvalidDataException("The native reference control marker must be unique.");
-        if (!allowChapterNumber && TemplateHeadingNumbers.ContainsNumberSlot(sample))
-            throw new InvalidDataException("ref.heading.number uses a native outline-number field; num:heading1 is not supported in its sample.");
         // The sample owns wording and slots; the source inline owns formatting.
         // Do not import sample style definitions when rendering a contextual reference.
         var imported = context is null ? TemplateHeadingBlocks.ImportParagraph(sample, source, destination) : new XElement(sample);

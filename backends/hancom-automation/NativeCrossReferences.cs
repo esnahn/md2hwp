@@ -12,24 +12,19 @@ internal sealed class NativeCrossReferences
 {
     private static readonly Regex SourceMarker = new("MD2HWP_CROSS_REFERENCE_[0-9a-f]{32}", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
     private readonly List<Reference> references = [];
-    private readonly List<HeadingAnchor> headingAnchors = [];
     private readonly HashSet<string> sourceMarkers = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, string> headingNumbers = new(StringComparer.Ordinal);
-    private XDocument? expectedDocument;
     private sealed record Reference(string Marker, string Kind, string Target, string TargetPath, string? Number, XElement Format,
         string ParagraphPath, int FieldOrdinal = -1);
-    private sealed record HeadingAnchor(string Target, string Marker, string ParagraphPath);
     private sealed record Atom(XElement Element, int Offset, char Character);
     internal int Count => references.Count;
 
     internal static (NativeCrossReferences Layout, XDocument Document) Prepare(XDocument document, IrPreviewPlan plan,
         TemplateCrossReferences template, IReadOnlyDictionary<string, string> figureInstances,
-        IReadOnlyDictionary<string, IReadOnlyList<string>>? headingInstances = null,
         IReadOnlyDictionary<string, string>? tableInstances = null)
     {
         FigureReferenceContract.Validate(plan.Operations);
         var result = new XDocument(document);
-        var layout = new NativeCrossReferences { expectedDocument = result };
+        var layout = new NativeCrossReferences();
         var sources = new Dictionary<string, PreviewCrossReference>(StringComparer.Ordinal);
         foreach (var run in FigureReferenceContract.ReadRuns(plan.Operations))
         {
@@ -48,37 +43,16 @@ internal sealed class NativeCrossReferences
         var targets = new Dictionary<string, XElement>(StringComparer.Ordinal);
         foreach (var reference in sources.Values.Distinct())
         {
-            XElement target;
-            if (reference.Kind is "figure_number" or "table_number")
-            {
-                var instances = reference.Kind == "figure_number" ? figureInstances : tableInstances;
-                if (instances is null || !instances.TryGetValue(reference.Target, out var instance))
-                    throw new InvalidOperationException($"Missing generated native object identity for {reference.Target}.");
-                var pictures = result.Descendants(reference.Kind == "figure_number" ? "PICTURE" : "TABLE").Where(p => Identity(p.Element("SHAPEOBJECT")) == instance).ToArray();
-                if (pictures.Length != 1) throw new InvalidOperationException($"Ambiguous native object target {reference.Target}.");
-                target = pictures[0];
-                RequireObject(target, reference.Kind);
-            }
-            else
-            {
-                if (headingInstances is null || !headingInstances.TryGetValue(reference.Target, out var instances))
-                    throw new InvalidOperationException($"Missing generated native heading identity for {reference.Target}.");
-                var candidates = result.Descendants("P").Where(p => instances.Contains(Identity(p) ?? "") && IsOutline(p, result)).ToArray();
-                if (candidates.Length != 1)
-                {
-                    var role = plan.Operations.Single(o => o.HeadingId == reference.Target).ParagraphStyle;
-                    throw new InvalidOperationException($"Heading target {reference.Target} ({role}) requires exactly one native outline paragraph; found {candidates.Length}. All heading1 through heading6 support references, but their target template paragraphs must use native Outline numbering with a nonempty display format; Bullet and Number paragraphs are not outline targets.");
-                }
-                target = candidates[0];
-                if (target.Ancestors().Any(a => a.Name.LocalName is "HEADER" or "FOOTER" or "MASTERPAGE"))
-                    throw new InvalidOperationException($"Heading target {reference.Target} is outside the document body.");
-                var marker = "MD2HWP_NATIVE_HEADING_TARGET_" + Guid.NewGuid().ToString("N");
-                var format = target.Elements("TEXT").FirstOrDefault(t => t.Elements("CHAR").Any()) ?? target.Elements("TEXT").FirstOrDefault()
-                    ?? throw new InvalidOperationException($"Heading target {reference.Target} has no text formatting.");
-                target.Add(new XElement("TEXT", format.Attributes(), new XElement("CHAR", marker)));
-                Coalesce(target);
-                layout.headingAnchors.Add(new(reference.Target, marker, Path(target)));
-            }
+            if (reference.Kind is not ("figure_number" or "table_number"))
+                throw new InvalidOperationException("Heading references must be resolved to fixed text before native object references.");
+            var instances = reference.Kind == "figure_number" ? figureInstances : tableInstances;
+            if (instances is null || !instances.TryGetValue(reference.Target, out var instance))
+                throw new InvalidOperationException($"Missing generated native object identity for {reference.Target}.");
+            var objectsWithIdentity = result.Descendants(reference.Kind == "figure_number" ? "PICTURE" : "TABLE")
+                .Where(item => Identity(item.Element("SHAPEOBJECT")) == instance).ToArray();
+            if (objectsWithIdentity.Length != 1) throw new InvalidOperationException($"Ambiguous native object target {reference.Target}.");
+            var target = objectsWithIdentity[0];
+            RequireObject(target, reference.Kind);
             targets[reference.Target] = target;
         }
         var found = new HashSet<string>(StringComparer.Ordinal);
@@ -103,13 +77,13 @@ internal sealed class NativeCrossReferences
                 {
                     "figure_number" => template.CreateFigureNumberFragments(result, objects[reference.Target].Heading1Number, marker, context),
                     "table_number" => template.CreateTableNumberFragments(result, objects[reference.Target].Heading1Number, marker, context),
-                    _ => template.CreateHeadingNumberFragments(result, marker, context)
+                    _ => throw new InvalidOperationException("Unsupported native reference kind.")
                 };
                 Replace(paragraph, atoms.Skip(match.Index).Take(match.Length).ToArray(), fragments);
                 Coalesce(paragraph);
                 var location = FindMarker(paragraph, marker);
                 layout.references.Add(new(marker, reference.Kind, reference.Target, Path(target),
-                    reference.Kind != "heading_number" ? ObjectNumber(target, reference.Kind) : null,
+                    ObjectNumber(target, reference.Kind),
                     Format(location.Atoms[0].Element.Parent!, result), Path(paragraph)));
                 found.Add(match.Value);
             }
@@ -135,16 +109,6 @@ internal sealed class NativeCrossReferences
     {
         if (Count == 0) return;
         var imported = RenderProfile.ReadDocument((object)hwp);
-        foreach (var anchor in headingAnchors)
-        {
-            SelectMarker(hwp, anchor.Marker, anchor.ParagraphPath);
-            RecordHeadingNumber(anchor.Target, (string)hwp.GetHeadingString());
-            if (!(bool)hwp.HAction.Run("Delete")) throw new InvalidOperationException("Could not remove native heading target marker.");
-            var expected = expectedDocument!.XPathSelectElement(anchor.ParagraphPath)!;
-            SplitCharacters(expected);
-            Replace(expected, FindMarker(expected, anchor.Marker).Atoms, []);
-            Coalesce(expected);
-        }
         foreach (var reference in references)
         {
             var target = imported.XPathSelectElement(reference.TargetPath) ?? throw new InvalidOperationException("Native reference target moved during final import.");
@@ -168,16 +132,6 @@ internal sealed class NativeCrossReferences
                 throw new InvalidOperationException("Could not insert the native number reference field.");
         }
         Verify(RenderProfile.ReadDocument((object)hwp));
-    }
-
-    internal void RecordHeadingNumber(string target, string number)
-    {
-        if (!headingAnchors.Any(a => a.Target == target) || string.IsNullOrWhiteSpace(number) || number.Any(char.IsControl))
-        {
-            var codes = string.Join(" ", number.Take(24).Select(c => $"U+{(int)c:X4}"));
-            throw new InvalidOperationException($"Cannot read native outline number for {target}: length={number.Length} prefixCodes={codes}. Configure the target heading in the template with native Outline numbering and a nonempty number display format.");
-        }
-        headingNumbers[target] = number;
     }
 
     private static void SelectMarker(dynamic hwp, string marker, string paragraphPath)
@@ -248,29 +202,20 @@ internal sealed class NativeCrossReferences
             if (!uint.TryParse(id, NumberStyles.None, CultureInfo.InvariantCulture, out _) || !fieldIds.Add(id!) ||
                 document.Descendants("FIELDBEGIN").Count(e => Identity(e) == id) != 1)
                 throw new InvalidOperationException("Native reference field identity is missing or duplicated.");
-            var number = reference.Kind != "heading_number" ? reference.Number : headingNumbers.GetValueOrDefault(reference.Target);
-            if (number is null || field.Text != number || reference.Kind != "heading_number" && ObjectNumber(target, reference.Kind) != number)
+            var number = reference.Number;
+            if (number is null || field.Text != number || ObjectNumber(target, reference.Kind) != number)
                 throw new InvalidOperationException("Native reference display does not match its target number.");
             foreach (var fragment in field.Fragments)
                 if (!XNode.DeepEquals(reference.Format, Format(fragment, document)))
                     throw new InvalidOperationException("Native reference number lost its source inline character formatting.");
         }
-        if (document.Descendants("P").Any(p => sourceMarkers.Any(m => TaggedTemplateBinding.DirectText(p).Contains(m, StringComparison.Ordinal)) || references.Any(r => TaggedTemplateBinding.DirectText(p).Contains(r.Marker, StringComparison.Ordinal)) ||
-            headingAnchors.Any(a => TaggedTemplateBinding.DirectText(p).Contains(a.Marker, StringComparison.Ordinal))))
+        if (document.Descendants("P").Any(p => sourceMarkers.Any(m => TaggedTemplateBinding.DirectText(p).Contains(m, StringComparison.Ordinal)) || references.Any(r => TaggedTemplateBinding.DirectText(p).Contains(r.Marker, StringComparison.Ordinal))))
             throw new InvalidOperationException("An unresolved native cross-reference marker remains.");
     }
 
     internal void NormalizeExpected(XDocument expected, XDocument actual)
     {
         Verify(actual);
-        foreach (var anchor in headingAnchors)
-        {
-            var paragraph = expected.XPathSelectElement(anchor.ParagraphPath)!;
-            if (MarkerCount(paragraph, anchor.Marker) == 0) continue;
-            SplitCharacters(paragraph);
-            Replace(paragraph, FindMarker(paragraph, anchor.Marker).Atoms, []);
-            Coalesce(paragraph);
-        }
         foreach (var reference in references)
         {
             var paragraph = expected.XPathSelectElement(reference.ParagraphPath) ?? throw new InvalidOperationException("Expected reference paragraph is missing.");
@@ -283,17 +228,12 @@ internal sealed class NativeCrossReferences
         }
     }
 
-    internal static string Command(string instance, string kind) => $"?#{instance};{(kind switch { "table_number" => 0, "figure_number" => 1, "heading_number" => 5, _ => throw new InvalidOperationException("Unsupported native reference kind.") })};1;0;0";
+    internal static string Command(string instance, string kind) => $"?#{instance};{(kind switch { "table_number" => 0, "figure_number" => 1, _ => throw new InvalidOperationException("Unsupported native reference kind.") })};1;0;0";
 
     private static string Instance(XElement target, string kind, XDocument document)
     {
-        XElement owner;
-        if (kind != "heading_number") { RequireObject(target, kind); owner = target.Element("SHAPEOBJECT")!; }
-        else
-        {
-            if (target.Name.LocalName != "P" || !IsOutline(target, document)) throw new InvalidOperationException("Native heading target is no longer an outline paragraph.");
-            owner = target;
-        }
+        RequireObject(target, kind);
+        var owner = target.Element("SHAPEOBJECT")!;
         var instance = Identity(owner);
         if (!uint.TryParse(instance, NumberStyles.None, CultureInfo.InvariantCulture, out _) ||
             document.Descendants().Count(e => Identity(e) == instance) != 1)
@@ -302,9 +242,6 @@ internal sealed class NativeCrossReferences
     }
 
     private static string? Identity(XElement? element) => (string?)element?.Attribute("InstId") ?? (string?)element?.Attribute("InstID");
-
-    private static bool IsOutline(XElement paragraph, XDocument document) =>
-        document.Descendants("PARASHAPE").SingleOrDefault(e => (string?)e.Attribute("Id") == (string?)paragraph.Attribute("ParaShape"))?.Attribute("HeadingType")?.Value == "Outline";
 
     private static void RequireObject(XElement picture, string kind)
     {

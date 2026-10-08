@@ -207,7 +207,7 @@ internal static class TableAutoWidths
             {
                 "figure_number" => references.CreateFigureNumberFragments(document, 999, marker),
                 "table_number" => references.CreateTableNumberFragments(document, 999, marker),
-                _ => references.CreateHeadingNumberFragments(document, marker)
+                _ => throw new InvalidDataException("Resolve heading references before measuring table widths.")
             };
             var width = 0.0;
             var previousGap = 0.0;
@@ -216,7 +216,7 @@ internal static class TableAutoWidths
                 var shape = document.Descendants("CHARSHAPE").Single(e =>
                     (string?)e.Attribute("Id") == (string?)fragment.Attribute("CharShape"));
                 var text = string.Concat(fragment.Elements("CHAR").Select(e => e.Value))
-                    .Replace(marker, reference.Kind != "heading_number" ? "999" : "999.999.999.", StringComparison.Ordinal);
+                    .Replace(marker, "999", StringComparison.Ordinal);
                 var measured = MeasurePlain(text, shape, run.Strong, run.Emphasis);
                 if (text.Length != 0)
                 {
