@@ -28,6 +28,8 @@ try {
     if (-not $versionMatch.Success) { throw 'Cannot determine package version from Cargo.toml.' }
     $version = $versionMatch.Groups[1].Value
     $readme = [IO.File]::ReadAllText((Join-Path $root 'README.md'))
+    # The manuscript summary is shipped locally beside the executables.
+    $readme = $readme.Replace('(docs/manuscript/README-MANUSCRIPT.md)', '(README-MANUSCRIPT.md)')
     # Deployment ZIPs do not contain the repository's docs and examples folders.
     # Keep their links usable from the README shipped beside the executables.
     $readme = [regex]::Replace($readme, '\]\((?<path>(?:docs|examples)/[^)\r\n]+)\)', {
@@ -35,21 +37,24 @@ try {
         '](https://github.com/esnahn/md2hwp/blob/v' + $version + '/' + $match.Groups['path'].Value + ')'
     })
     [IO.File]::WriteAllText((Join-Path $destination 'README.md'), $readme, [Text.UTF8Encoding]::new($false))
-    Write-Output "Deployment files: $destination (md2hwp.exe, md2hwp-backend.exe, template.hwp, README.md)"
+    foreach ($name in @('AGENTS.md', 'README-MANUSCRIPT.md')) {
+        Copy-Item -LiteralPath (Join-Path $root "docs/manuscript/$name") -Destination (Join-Path $destination $name) -Force
+    }
+    Write-Output "Deployment files: $destination (md2hwp.exe, md2hwp-backend.exe, template.hwp, README.md, AGENTS.md, README-MANUSCRIPT.md)"
     if ($Package) {
         $dist = [IO.Path]::GetFullPath((Join-Path $root 'target/dist'))
         $null = New-Item -ItemType Directory -Path $dist -Force
         $stage = Join-Path $dist ('.package-' + [Guid]::NewGuid().ToString('N'))
         $null = New-Item -ItemType Directory -Path $stage
         try {
-            foreach ($name in @('md2hwp.exe', 'md2hwp-backend.exe', 'README.md')) {
+            foreach ($name in @('md2hwp.exe', 'md2hwp-backend.exe', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md')) {
                 Copy-Item -LiteralPath (Join-Path $destination $name) -Destination $stage
             }
             # Ship the tracked default; never adopt a user's deployment template implicitly.
             Copy-Item -LiteralPath (Join-Path $root 'templates/template.hwp') -Destination $stage
             $archive = Join-Path $dist "md2hwp-v$version-windows-x64.zip"
             $temporaryArchive = Join-Path $stage 'package.zip'
-            $files = @('md2hwp.exe', 'md2hwp-backend.exe', 'template.hwp', 'README.md') | ForEach-Object { Join-Path $stage $_ }
+            $files = @('md2hwp.exe', 'md2hwp-backend.exe', 'template.hwp', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md') | ForEach-Object { Join-Path $stage $_ }
             Compress-Archive -LiteralPath $files -DestinationPath $temporaryArchive
             Move-Item -LiteralPath $temporaryArchive -Destination $archive -Force
             Write-Output "Package: $archive"

@@ -20,7 +20,10 @@ redirect ordinary builds there merely to preserve an older release.
 The JSON fixtures still tracked are included directly by Rust test compilation.
 Builds include a deployment README.md with usable versioned documentation links.
 Create release ZIPs with tools/development/build.ps1 -Configuration Release -Package;
-include both executables, the tracked default template and README.md. Always replace
+include both executables, the tracked default template, README.md and the manuscript guides.
+Maintain docs/manuscript/AGENTS.md and its concise human counterpart
+docs/manuscript/README-MANUSCRIPT.md together; ship both at the package root.
+Never ship the repository-root development AGENTS.md. Always replace
 Debug/Release deployment templates from templates/template.hwp during builds. Attach only the executable ZIP to GitHub Releases; put its
 SHA-256 in the release body. Use GitHub's automatic source downloads and do not attach
 separate source ZIPs, release-note copies, checksum files or build manifests.
