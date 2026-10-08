@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:md2hwp:schema:ir:0.3",
-  "title": "md2hwp project IR v0.3",
-  "description": "Closed structural serialization contract for md2hwp IR version 0.3.",
+  "$id": "urn:md2hwp:schema:ir:0.4",
+  "title": "md2hwp project IR v0.4",
+  "description": "Closed structural serialization contract for md2hwp IR version 0.4.",
   "$comment": "Human-readable string values must use Unicode NFC. Opaque link targets and image paths retain exact scalar values and are exempt. This semantic invariant is enforced by typed validation because JSON Schema cannot express it.",
   "type": "object",
   "additionalProperties": false,
@@ -17,7 +17,7 @@
       "const": "md2hwp.ir"
     },
     "ir_version": {
-      "const": "0.3"
+      "const": "0.4"
     },
     "metadata": {
       "type": "object",
@@ -181,10 +181,10 @@
         "source": {
           "oneOf": [
             {
-              "$ref": "#/$defs/inline_array"
+              "type": "null"
             },
             {
-              "type": "null"
+              "$ref": "#/$defs/source_paragraphs"
             }
           ]
         }
@@ -361,7 +361,7 @@
               "type": "null"
             },
             {
-              "$ref": "#/$defs/inline_array"
+              "$ref": "#/$defs/source_paragraphs"
             }
           ]
         }
@@ -665,7 +665,7 @@
               "type": "null"
             },
             {
-              "$ref": "#/$defs/inline_array"
+              "$ref": "#/$defs/source_paragraphs"
             }
           ]
         }
@@ -676,6 +676,32 @@
       "minItems": 1,
       "items": {
         "$ref": "#/$defs/inline_array_allow_empty"
+      }
+    },
+    "source_paragraph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prefix",
+        "inlines"
+      ],
+      "properties": {
+        "prefix": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?:(?:출처|주|주석|참고|자료|설명|비고|단위|기준|해설|약어|참조|주의|작성|제공|재구성|번역|[sS][oO][uU][rR][cC][eE]|[sS][rR][cC]|[nN][oO][tT][eE]|[aA][nN][nN][oO][tT][aA][tT][iI][oO][nN]|[aA][nN][nN][oO][tT]|[rR][eE][fF][eE][rR][eE][nN][cC][eE]|[rR][eE][fF]|[dD][aA][tT][aA]|[dD][eE][sS][cC][rR][iI][pP][tT][iI][oO][nN]|[dD][eE][sS][cC]|[rR][eE][mM][aA][rR][kK]|[rR][eE][mM][aA][rR][kK][sS]|[uU][nN][iI][tT]|[bB][aA][sS][iI][sS]|[cC][oO][mM][mM][eE][nN][tT][aA][rR][yY]|[cC][mM][tT]|[aA][bB][bB][rR][eE][vV][iI][aA][tT][iI][oO][nN]|[aA][bB][bB][rR]|[cC][rR][eE][dD][iI][tT]|[tT][rR][aA][nN][sS][lL][aA][tT][iI][oO][nN]|[tT][rR][aA][nN][sS])\\.?|(?:주|주석|[nN][oO][tT][eE])\\.?[0-9]+)$",
+          "description": "Recognized label without colon; English comparison is ASCII case-insensitive; original spelling retained. Semantic validation checks case-insensitively."
+        },
+        "inlines": {
+          "$ref": "#/$defs/inline_array"
+        }
+      }
+    },
+    "source_paragraphs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/source_paragraph"
       }
     }
   }

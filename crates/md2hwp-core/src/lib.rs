@@ -15,3 +15,5 @@ pub use ir_io::{IrReadError, IrReadErrorCode, IrWriteError, read_ir, write_ir};
 pub use normalize::{NormalizeError, normalize_pandoc};
 pub use pandoc_input::{PandocDocument, PandocInputError, read_pandoc_json};
 pub use validate::{SemanticError, ValidatedDocument, ValidationLimits, validate};
+
+mod source_prefix;

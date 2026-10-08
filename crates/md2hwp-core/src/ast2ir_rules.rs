@@ -11,7 +11,7 @@ use crate::ir::{IR_VERSION, SCHEMA_NAME};
 use crate::ir_io::read_strict_json_value;
 use crate::validate::ValidationLimits;
 
-const RULES_JSON: &str = include_str!("../../../rules/ast2ir/ir-v0.3.json");
+const RULES_JSON: &str = include_str!("../../../rules/ast2ir/ir-v0.4.json");
 const RULES_SCHEMA: &str = include_str!("../../../schemas/ast2ir-rules.schema.json");
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
@@ -49,7 +49,8 @@ pub struct DocumentRules {
 #[serde(deny_unknown_fields)]
 pub struct ObjectSources {
     pub handler: String,
-    pub prefix: String,
+    pub prefixes: Vec<String>,
+    pub numbered_prefixes: Vec<String>,
     pub separator: String,
     pub empty: String,
     pub owners: Vec<String>,
@@ -220,7 +221,7 @@ pub fn load_builtin_rules() -> Result<Ast2IrRules, RulesError> {
     if rules.target_ir.schema != SCHEMA_NAME || rules.target_ir.version != IR_VERSION {
         return Err(rules_error(
             "/target_ir",
-            "rules target does not match IR 0.3",
+            "rules target does not match IR 0.4",
         ));
     }
     if let Some(BlockRule::Heading {

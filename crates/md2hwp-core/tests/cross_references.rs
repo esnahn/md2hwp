@@ -94,7 +94,7 @@ fn document(blocks: Vec<Block>) -> Document {
 fn actual_pandoc_inline_and_reference_links_resolve_while_at_syntax_remains_literal() {
     let limits = ValidationLimits::default();
     let fixture =
-        include_bytes!("../../../tests/fixtures/pandoc-json/cross-reference-links-v0.3.json");
+        include_bytes!("../../../tests/fixtures/pandoc-json/cross-reference-links-v0.4.json");
     let raw: Value = serde_json::from_slice(fixture).unwrap();
     assert!(
         raw["blocks"]
@@ -495,7 +495,7 @@ fn reference_label_notes_fail_explicitly_while_notes_after_refs_and_external_lab
 fn empty_internal_reference_labels_use_actual_targets_without_hidden_label_text() {
     let limits = ValidationLimits::default();
     let fixture = include_bytes!(
-        "../../../tests/fixtures/pandoc-json/cross-reference-empty-labels-v0.3.json"
+        "../../../tests/fixtures/pandoc-json/cross-reference-empty-labels-v0.4.json"
     );
     let raw: Value = serde_json::from_slice(fixture).unwrap();
     assert_eq!(raw["blocks"][0]["c"][0]["t"], "Link");

@@ -29,7 +29,7 @@
           "const": "md2hwp.ir"
         },
         "version": {
-          "const": "0.3"
+          "const": "0.4"
         }
       }
     },
@@ -50,14 +50,58 @@
         "object_sources": {
           "const": {
             "separator": "space",
-            "prefix": "출처:",
             "owners": [
               "figure",
               "verbatim_block",
               "table"
             ],
             "empty": "reject",
-            "handler": "adjacent_paragraph"
+            "handler": "adjacent_paragraph",
+            "prefixes": [
+              "출처",
+              "주",
+              "주석",
+              "참고",
+              "자료",
+              "설명",
+              "비고",
+              "단위",
+              "기준",
+              "해설",
+              "약어",
+              "참조",
+              "주의",
+              "작성",
+              "제공",
+              "재구성",
+              "번역",
+              "source",
+              "src",
+              "note",
+              "annotation",
+              "annot",
+              "reference",
+              "ref",
+              "data",
+              "description",
+              "desc",
+              "remark",
+              "remarks",
+              "unit",
+              "basis",
+              "commentary",
+              "cmt",
+              "abbreviation",
+              "abbr",
+              "credit",
+              "translation",
+              "trans"
+            ],
+            "numbered_prefixes": [
+              "주",
+              "주석",
+              "note"
+            ]
           }
         }
       }

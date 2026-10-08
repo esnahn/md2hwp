@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 pub const SCHEMA_NAME: &str = "md2hwp.ir";
-pub const IR_VERSION: &str = "0.3";
+pub const IR_VERSION: &str = "0.4";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -49,7 +49,7 @@ pub enum Block {
     VerbatimBlock {
         lines: Vec<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        source: Option<Vec<Inline>>,
+        source: Option<Vec<SourceParagraph>>,
     },
     List {
         kind: ListKind,
@@ -63,14 +63,14 @@ pub enum Block {
         header: Vec<Vec<Inline>>,
         rows: Vec<Vec<Vec<Inline>>>,
         caption: Option<Vec<Inline>>,
-        source: Option<Vec<Inline>>,
+        source: Option<Vec<SourceParagraph>>,
     },
     Figure {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         id: Option<String>,
         image: ImageRef,
         caption: Vec<Inline>,
-        source: Option<Vec<Inline>>,
+        source: Option<Vec<SourceParagraph>>,
     },
 }
 
@@ -165,4 +165,11 @@ pub(crate) fn is_target_id(value: &str) -> bool {
         && !value
             .chars()
             .any(|ch| ch.is_whitespace() || ch.is_control() || ch == '#')
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SourceParagraph {
+    pub prefix: String,
+    pub inlines: Vec<Inline>,
 }

@@ -1,0 +1,499 @@
+{
+  "schema": "md2hwp.ir",
+  "ir_version": "0.4",
+  "metadata": {
+    "title": "여러 하단 설명 문단 검증"
+  },
+  "blocks": [
+    {
+      "type": "heading",
+      "level": 1,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "여러"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "하단"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "설명"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "문단"
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "image": {
+        "path": "image.png",
+        "alt": [
+          {
+            "type": "text",
+            "value": "조사"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "결과"
+          }
+        ],
+        "title": null
+      },
+      "caption": [
+        {
+          "type": "text",
+          "value": "조사"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "결과"
+        }
+      ],
+      "source": [
+        {
+          "prefix": "주.1",
+          "inlines": [
+            {
+              "type": "strong",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "조사"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "기준"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": "은"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "전체"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "응답자입니다."
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "긴"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "설명이"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "여러"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "줄로"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "이어질"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "때에도"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "별도의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "문단으로"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "유지되는지"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "확인합니다."
+            }
+          ]
+        },
+        {
+          "prefix": "단위",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "명"
+            }
+          ]
+        },
+        {
+          "prefix": "Source.",
+          "inlines": [
+            {
+              "type": "link",
+              "target": "https://example.net",
+              "title": null,
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "자료"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "제공"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "기관"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "이"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "문단은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "일반"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "본문입니다."
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "결과는"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다음과"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "같습니다:"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "출처"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "문단으로"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "연결하지"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "않습니다."
+        }
+      ]
+    },
+    {
+      "type": "verbatim_block",
+      "lines": [
+        "제목: 박스 설명",
+        "첫 번째 본문 줄입니다.",
+        "두 번째 본문 줄입니다."
+      ],
+      "source": [
+        {
+          "prefix": "번역",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "연구진"
+            }
+          ]
+        },
+        {
+          "prefix": "trans.",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "Translation"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "team"
+            }
+          ]
+        },
+        {
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "관련"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "자료."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "columns": [
+        "default",
+        "default"
+      ],
+      "header": [
+        [
+          {
+            "type": "text",
+            "value": "항목"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "value": "값"
+          }
+        ]
+      ],
+      "rows": [
+        [
+          [
+            {
+              "type": "text",
+              "value": "대상"
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "100"
+            }
+          ]
+        ],
+        [
+          [
+            {
+              "type": "text",
+              "value": "응답"
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "80"
+            }
+          ]
+        ]
+      ],
+      "caption": [
+        {
+          "type": "text",
+          "value": "표의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "조사"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "결과"
+        }
+      ],
+      "source": [
+        {
+          "prefix": "기준",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "2026년"
+            }
+          ]
+        },
+        {
+          "prefix": "note.3",
+          "inlines": [
+            {
+              "type": "emph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "일부"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "항목"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": "은"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "제외하였습니다."
+            }
+          ]
+        },
+        {
+          "prefix": "src",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "연구진"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "작성."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "마지막"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "본문입니다."
+        }
+      ]
+    }
+  ]
+}

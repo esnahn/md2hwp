@@ -108,7 +108,7 @@ fn validate_semantics(
     state.require(
         document.ir_version == IR_VERSION,
         "/ir_version",
-        "IR version must be 0.3",
+        "IR version must be 0.4",
     )?;
     crate::metadata::validate(&document.metadata)
         .map_err(|(path, message)| SemanticError { path, message })?;
@@ -242,7 +242,7 @@ impl State<'_> {
                     self.add_limited("text bytes", &line_path, line.len())?;
                 }
                 if let Some(source) = source {
-                    self.inline_array(source, &format!("{path}/source"), false, false, false)?;
+                    self.sources(source, &format!("{path}/source"))?;
                 }
                 Ok(())
             }
@@ -266,7 +266,7 @@ impl State<'_> {
                     self.inline_array(caption, &format!("{path}/caption"), false, false, false)?;
                 }
                 if let Some(source) = source {
-                    self.inline_array(source, &format!("{path}/source"), false, false, false)?;
+                    self.sources(source, &format!("{path}/source"))?;
                 }
                 Ok(())
             }
@@ -296,11 +296,60 @@ impl State<'_> {
                 self.inline_array(&image.alt, &format!("{path}/image/alt"), true, false, false)?;
                 self.inline_array(caption, &format!("{path}/caption"), false, false, false)?;
                 if let Some(source) = source {
-                    self.inline_array(source, &format!("{path}/source"), false, false, false)?;
+                    self.sources(source, &format!("{path}/source"))?;
                 }
                 Ok(())
             }
         }
+    }
+
+    fn sources(
+        &mut self,
+        paragraphs: &[crate::ir::SourceParagraph],
+        path: &str,
+    ) -> Result<(), SemanticError> {
+        self.require(
+            !paragraphs.is_empty(),
+            path,
+            "source must contain at least one paragraph",
+        )?;
+        for (i, paragraph) in paragraphs.iter().enumerate() {
+            let p = format!("{path}/{i}");
+            self.add_limited("blocks", &p, 1)?;
+            self.require(
+                crate::source_prefix::is_supported(&paragraph.prefix),
+                &format!("{p}/prefix"),
+                "unrecognized source prefix",
+            )?;
+            self.require_nfc(&paragraph.prefix, &format!("{p}/prefix"), "source prefix")?;
+            self.add_limited(
+                "text bytes",
+                &format!("{p}/prefix"),
+                paragraph.prefix.len() + 2,
+            )?;
+            self.inline_array(
+                &paragraph.inlines,
+                &format!("{p}/inlines"),
+                false,
+                false,
+                false,
+            )?;
+            fn visible(inlines: &[Inline]) -> bool {
+                inlines.iter().any(|inline| match inline {
+                    Inline::Text { value } => !value.trim().is_empty(),
+                    Inline::Strong { inlines }
+                    | Inline::Emph { inlines }
+                    | Inline::Link { inlines, .. } => visible(inlines),
+                    _ => false,
+                })
+            }
+            self.require(
+                visible(&paragraph.inlines),
+                &format!("{p}/inlines"),
+                "source paragraph content must not be empty",
+            )?;
+        }
+        Ok(())
     }
 
     fn table_row(
@@ -795,9 +844,12 @@ mod tests {
                         title: None,
                     },
                     caption: vec![text("caption")],
-                    source: Some(vec![text("가")]),
+                    source: Some(vec![crate::ir::SourceParagraph {
+                        prefix: "출처".into(),
+                        inlines: vec![text("가")],
+                    }]),
                 },
-                "/blocks/0/source/0/value",
+                "/blocks/0/source/0/inlines/0/value",
             ),
         ];
 
@@ -992,7 +1044,12 @@ mod tests {
             match field {
                 "alt" => image.alt = value,
                 "caption" => *caption = value,
-                "source" => *source = Some(value),
+                "source" => {
+                    *source = Some(vec![crate::ir::SourceParagraph {
+                        prefix: "출처".into(),
+                        inlines: value,
+                    }])
+                }
                 _ => unreachable!(),
             }
             let error = validate(document(vec![block]), &ValidationLimits::default()).unwrap_err();

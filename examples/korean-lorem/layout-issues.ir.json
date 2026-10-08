@@ -1,6 +1,6 @@
 {
   "schema": "md2hwp.ir",
-  "ir_version": "0.3",
+  "ir_version": "0.4",
   "metadata": {},
   "blocks": [
     {
@@ -1188,50 +1188,55 @@
       ],
       "source": [
         {
-          "type": "text",
-          "value": "대규모"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "원고의"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "시각"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "문제"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "재현용"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "축약"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "자료."
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "대규모"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "원고의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "시각"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "문제"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "재현용"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "축약"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "자료."
+            }
+          ]
         }
       ]
     }

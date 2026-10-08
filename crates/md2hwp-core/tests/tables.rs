@@ -9,7 +9,7 @@ use md2hwp_core::{
 use serde_json::{Value, json};
 
 const FIXTURE: &[u8] =
-    include_bytes!("../../../tests/fixtures/pandoc-json/commonmark-tables-v0.3.json");
+    include_bytes!("../../../tests/fixtures/pandoc-json/commonmark-tables-v0.4.json");
 
 fn normalize(blocks: Value) -> Result<md2hwp_core::ValidatedDocument, md2hwp_core::NormalizeError> {
     let limits = ValidationLimits::default();
@@ -106,7 +106,10 @@ fn actual_commonmark_tables_have_caption_source_alignment_empty_cells_and_refere
         caption.as_ref().unwrap()[0],
         Inline::Strong { .. }
     ));
-    assert!(matches!(source.as_ref().unwrap()[2], Inline::Emph { .. }));
+    assert!(matches!(
+        source.as_ref().unwrap()[0].inlines[2],
+        Inline::Emph { .. }
+    ));
     assert!(rows[0][2].iter().any(|i| matches!(i,Inline::CrossReference { kind:CrossReferenceKind::HeadingNumber,target } if target == "chapter")));
     let Inline::Footnote { blocks: notes } = rows[1][2].last().unwrap() else {
         panic!("note");
@@ -158,7 +161,7 @@ fn supported_caption_prefixes_attach_above_or_below_without_losing_format() {
                 }]
             );
             assert_eq!(
-                s,
+                &s[0].inlines,
                 &[Inline::Emph {
                     inlines: vec![text("작성자")]
                 }]
@@ -365,7 +368,10 @@ fn table_rows_cells_notes_and_caption_source_share_cumulative_limits() {
         unreachable!()
     };
     *caption = Some(vec![text("제목")]);
-    *source = Some(vec![text("출처")]);
+    *source = Some(vec![md2hwp_core::ir::SourceParagraph {
+        prefix: "출처".into(),
+        inlines: vec![text("출처")],
+    }]);
     rows[0][0] = vec![Inline::Footnote {
         blocks: vec![FootnoteBlock::Paragraph {
             inlines: vec![text("주석")],
@@ -400,5 +406,44 @@ fn table_rows_cells_notes_and_caption_source_share_cumulative_limits() {
                 .message
                 .contains(expected)
         );
+    }
+}
+
+#[test]
+fn multiple_object_notes_preserve_labels_order_and_stop_at_body() {
+    let note = |label: &str| json!({"t":"Para","c":[{"t":"Str","c":format!("{label}:")},{"t":"Space"},{"t":"Strong","c":[{"t":"Str","c":"설명"}]}]});
+    let ir = normalize(json!([simple_table(), note("주.3"), note("Source."), note("trans."),
+        {"t":"Para","c":[{"t":"Str","c":"일반"},{"t":"Space"},{"t":"Str","c":"문장:"},{"t":"Space"},{"t":"Str","c":"본문"}]}, note("출처")])).unwrap();
+    let Block::Table {
+        source: Some(source),
+        ..
+    } = &ir.as_document().blocks[0]
+    else {
+        panic!("source")
+    };
+    assert_eq!(
+        source.iter().map(|s| s.prefix.as_str()).collect::<Vec<_>>(),
+        ["주.3", "Source.", "trans."]
+    );
+    assert!(matches!(source[0].inlines[0], Inline::Strong { .. }));
+    assert_eq!(ir.as_document().blocks.len(), 3);
+    let bytes = write_ir(&ir).unwrap();
+    assert_eq!(read_ir(&bytes, &ValidationLimits::default()).unwrap(), ir);
+    let limits = ValidationLimits {
+        max_blocks: 3,
+        ..ValidationLimits::default()
+    };
+    assert!(read_ir(&bytes, &limits).is_err());
+    for nodes in [
+        json!([{"t":"Str","c":"출처"},{"t":"Space"},{"t":"Str","c":":"},{"t":"Space"},{"t":"Str","c":"내용"}]),
+        json!([{"t":"Str","c":"note1.:"},{"t":"Space"},{"t":"Str","c":"내용"}]),
+        json!([{"t":"Str","c":"결과:"},{"t":"Space"},{"t":"Str","c":"내용"}]),
+    ] {
+        let ir = normalize(json!([simple_table(), {"t":"Para","c":nodes}])).unwrap();
+        assert!(matches!(
+            ir.as_document().blocks[0],
+            Block::Table { source: None, .. }
+        ));
+        assert_eq!(ir.as_document().blocks.len(), 2);
     }
 }

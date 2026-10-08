@@ -1,6 +1,6 @@
 {
   "schema": "md2hwp.ir",
-  "ir_version": "0.3",
+  "ir_version": "0.4",
   "metadata": {
     "md2hwp-heading1-start": "3",
     "title": "상호참조 검증"
@@ -164,15 +164,20 @@
       ],
       "source": [
         {
-          "type": "text",
-          "value": "작성자"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "작성."
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "작성자"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "작성."
+            }
+          ]
         }
       ]
     },

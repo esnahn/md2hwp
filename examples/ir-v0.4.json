@@ -1,6 +1,6 @@
 {
   "schema": "md2hwp.ir",
-  "ir_version": "0.3",
+  "ir_version": "0.4",
   "metadata": {},
   "blocks": [
     {
@@ -264,8 +264,13 @@
       ],
       "source": [
         {
-          "type": "text",
-          "value": "작성자"
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "작성자"
+            }
+          ]
         }
       ]
     }

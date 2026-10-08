@@ -1,6 +1,6 @@
 {
   "schema": "md2hwp.ir",
-  "ir_version": "0.3",
+  "ir_version": "0.4",
   "metadata": {
     "author": [
       "홍길동",
@@ -3038,66 +3038,71 @@
       ],
       "source": [
         {
-          "type": "strong",
+          "prefix": "출처",
           "inlines": [
             {
+              "type": "strong",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "박스"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "자료"
+                }
+              ]
+            },
+            {
               "type": "text",
-              "value": "박스"
+              "value": "와"
             },
             {
               "type": "space"
             },
             {
-              "type": "text",
-              "value": "자료"
-            }
-          ]
-        },
-        {
-          "type": "text",
-          "value": "와"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "emph",
-          "inlines": [
+              "type": "emph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "부연"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "설명"
+                }
+              ]
+            },
             {
               "type": "text",
-              "value": "부연"
+              "value": ","
             },
             {
               "type": "space"
             },
             {
-              "type": "text",
-              "value": "설명"
-            }
-          ]
-        },
-        {
-          "type": "text",
-          "value": ","
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "link",
-          "target": "https://example.com/box",
-          "title": null,
-          "inlines": [
-            {
-              "type": "text",
-              "value": "자료"
-            },
-            {
-              "type": "space"
-            },
-            {
-              "type": "text",
-              "value": "안내"
+              "type": "link",
+              "target": "https://example.com/box",
+              "title": null,
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "자료"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "안내"
+                }
+              ]
             }
           ]
         }
@@ -3311,66 +3316,71 @@
       ],
       "source": [
         {
-          "type": "strong",
+          "prefix": "출처",
           "inlines": [
             {
+              "type": "strong",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "그림"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "자료"
+                }
+              ]
+            },
+            {
               "type": "text",
-              "value": "그림"
+              "value": "와"
             },
             {
               "type": "space"
             },
             {
-              "type": "text",
-              "value": "자료"
-            }
-          ]
-        },
-        {
-          "type": "text",
-          "value": "와"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "emph",
-          "inlines": [
+              "type": "emph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "부연"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "설명"
+                }
+              ]
+            },
             {
               "type": "text",
-              "value": "부연"
+              "value": ","
             },
             {
               "type": "space"
             },
             {
-              "type": "text",
-              "value": "설명"
-            }
-          ]
-        },
-        {
-          "type": "text",
-          "value": ","
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "link",
-          "target": "https://example.com/figure",
-          "title": null,
-          "inlines": [
-            {
-              "type": "text",
-              "value": "자료"
-            },
-            {
-              "type": "space"
-            },
-            {
-              "type": "text",
-              "value": "안내"
+              "type": "link",
+              "target": "https://example.com/figure",
+              "title": null,
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "자료"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "안내"
+                }
+              ]
             }
           ]
         }
@@ -4138,66 +4148,71 @@
       ],
       "source": [
         {
-          "type": "strong",
+          "prefix": "출처",
           "inlines": [
             {
+              "type": "strong",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "표"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "자료"
+                }
+              ]
+            },
+            {
               "type": "text",
-              "value": "표"
+              "value": "와"
             },
             {
               "type": "space"
             },
             {
-              "type": "text",
-              "value": "자료"
-            }
-          ]
-        },
-        {
-          "type": "text",
-          "value": "와"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "emph",
-          "inlines": [
+              "type": "emph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "부연"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "설명"
+                }
+              ]
+            },
             {
               "type": "text",
-              "value": "부연"
+              "value": ","
             },
             {
               "type": "space"
             },
             {
-              "type": "text",
-              "value": "설명"
-            }
-          ]
-        },
-        {
-          "type": "text",
-          "value": ","
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "link",
-          "target": "https://example.com/table-source",
-          "title": null,
-          "inlines": [
-            {
-              "type": "text",
-              "value": "자료"
-            },
-            {
-              "type": "space"
-            },
-            {
-              "type": "text",
-              "value": "안내"
+              "type": "link",
+              "target": "https://example.com/table-source",
+              "title": null,
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "자료"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "안내"
+                }
+              ]
             }
           ]
         }
@@ -4351,36 +4366,41 @@
       "caption": null,
       "source": [
         {
-          "type": "text",
-          "value": "캡션"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "없이"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "출처만"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "있는"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "표입니다."
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "캡션"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "없이"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "출처만"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "있는"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "표입니다."
+            }
+          ]
         }
       ]
     },
@@ -4482,36 +4502,41 @@
       ],
       "source": [
         {
-          "type": "text",
-          "value": "아래"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "캡션"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "다음에"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "연결하는"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "출처입니다."
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "아래"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "캡션"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "다음에"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "연결하는"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "출처입니다."
+            }
+          ]
         }
       ]
     },
@@ -8077,66 +8102,71 @@
       ],
       "source": [
         {
-          "type": "strong",
+          "prefix": "출처",
           "inlines": [
             {
+              "type": "strong",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "박스"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "자료"
+                }
+              ]
+            },
+            {
               "type": "text",
-              "value": "박스"
+              "value": "와"
             },
             {
               "type": "space"
             },
             {
-              "type": "text",
-              "value": "자료"
-            }
-          ]
-        },
-        {
-          "type": "text",
-          "value": "와"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "emph",
-          "inlines": [
+              "type": "emph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "부연"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "설명"
+                }
+              ]
+            },
             {
               "type": "text",
-              "value": "부연"
+              "value": ","
             },
             {
               "type": "space"
             },
             {
-              "type": "text",
-              "value": "설명"
-            }
-          ]
-        },
-        {
-          "type": "text",
-          "value": ","
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "link",
-          "target": "https://example.com/box",
-          "title": null,
-          "inlines": [
-            {
-              "type": "text",
-              "value": "자료"
-            },
-            {
-              "type": "space"
-            },
-            {
-              "type": "text",
-              "value": "안내"
+              "type": "link",
+              "target": "https://example.com/box",
+              "title": null,
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "자료"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "안내"
+                }
+              ]
             }
           ]
         }
@@ -8350,66 +8380,71 @@
       ],
       "source": [
         {
-          "type": "strong",
+          "prefix": "출처",
           "inlines": [
             {
+              "type": "strong",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "그림"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "자료"
+                }
+              ]
+            },
+            {
               "type": "text",
-              "value": "그림"
+              "value": "와"
             },
             {
               "type": "space"
             },
             {
-              "type": "text",
-              "value": "자료"
-            }
-          ]
-        },
-        {
-          "type": "text",
-          "value": "와"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "emph",
-          "inlines": [
+              "type": "emph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "부연"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "설명"
+                }
+              ]
+            },
             {
               "type": "text",
-              "value": "부연"
+              "value": ","
             },
             {
               "type": "space"
             },
             {
-              "type": "text",
-              "value": "설명"
-            }
-          ]
-        },
-        {
-          "type": "text",
-          "value": ","
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "link",
-          "target": "https://example.com/figure",
-          "title": null,
-          "inlines": [
-            {
-              "type": "text",
-              "value": "자료"
-            },
-            {
-              "type": "space"
-            },
-            {
-              "type": "text",
-              "value": "안내"
+              "type": "link",
+              "target": "https://example.com/figure",
+              "title": null,
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "자료"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "안내"
+                }
+              ]
             }
           ]
         }
@@ -9177,66 +9212,71 @@
       ],
       "source": [
         {
-          "type": "strong",
+          "prefix": "출처",
           "inlines": [
             {
+              "type": "strong",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "표"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "자료"
+                }
+              ]
+            },
+            {
               "type": "text",
-              "value": "표"
+              "value": "와"
             },
             {
               "type": "space"
             },
             {
-              "type": "text",
-              "value": "자료"
-            }
-          ]
-        },
-        {
-          "type": "text",
-          "value": "와"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "emph",
-          "inlines": [
+              "type": "emph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "부연"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "설명"
+                }
+              ]
+            },
             {
               "type": "text",
-              "value": "부연"
+              "value": ","
             },
             {
               "type": "space"
             },
             {
-              "type": "text",
-              "value": "설명"
-            }
-          ]
-        },
-        {
-          "type": "text",
-          "value": ","
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "link",
-          "target": "https://example.com/table-source",
-          "title": null,
-          "inlines": [
-            {
-              "type": "text",
-              "value": "자료"
-            },
-            {
-              "type": "space"
-            },
-            {
-              "type": "text",
-              "value": "안내"
+              "type": "link",
+              "target": "https://example.com/table-source",
+              "title": null,
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "자료"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "안내"
+                }
+              ]
             }
           ]
         }
@@ -9390,36 +9430,41 @@
       "caption": null,
       "source": [
         {
-          "type": "text",
-          "value": "캡션"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "없이"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "출처만"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "있는"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "표입니다."
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "캡션"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "없이"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "출처만"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "있는"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "표입니다."
+            }
+          ]
         }
       ]
     },
@@ -9521,36 +9566,41 @@
       ],
       "source": [
         {
-          "type": "text",
-          "value": "아래"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "캡션"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "다음에"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "연결하는"
-        },
-        {
-          "type": "space"
-        },
-        {
-          "type": "text",
-          "value": "출처입니다."
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "아래"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "캡션"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "다음에"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "연결하는"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "출처입니다."
+            }
+          ]
         }
       ]
     },

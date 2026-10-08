@@ -1,4 +1,4 @@
-//! Closed Pandoc AST-to-IR 0.3 normalization handlers.
+//! Closed Pandoc AST-to-IR 0.4 normalization handlers.
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -108,13 +108,24 @@ pub fn normalize_pandoc(
         if let Block::Figure { source, .. }
         | Block::VerbatimBlock { source, .. }
         | Block::Table { source, .. } = &mut block
-            && let Some(next) = document.blocks.get(source_index)
-            && !consumed[source_index]
-            && let Some(attached) =
-                normalizer.object_source(next, &format!("/blocks/{source_index}"))?
         {
-            *source = Some(attached);
-            consumed[source_index] = true;
+            let mut paragraphs = Vec::new();
+            while let Some(next) = document.blocks.get(source_index) {
+                if consumed[source_index] {
+                    break;
+                }
+                let Some(attached) =
+                    normalizer.object_source(next, &format!("/blocks/{source_index}"))?
+                else {
+                    break;
+                };
+                paragraphs.push(attached);
+                consumed[source_index] = true;
+                source_index += 1;
+            }
+            if !paragraphs.is_empty() {
+                *source = Some(paragraphs);
+            }
         }
         blocks.push(block);
     }
@@ -510,44 +521,43 @@ impl Normalizer<'_> {
         &mut self,
         node: &Value,
         path: &str,
-    ) -> Result<Option<Vec<Inline>>, NormalizeError> {
+    ) -> Result<Option<crate::ir::SourceParagraph>, NormalizeError> {
         if node.get("t").and_then(Value::as_str) != Some("Para") {
             return Ok(None);
         }
         let (_, content) = self.node(node, path)?;
         let nodes = self.array(content, &format!("{path}/c"))?;
-        let prefix = &self.rules.document.object_sources.prefix;
-        if nodes
+        let Some(first) = nodes
             .first()
-            .and_then(|n| n.get("t"))
+            .filter(|n| n.get("t").and_then(Value::as_str) == Some("Str"))
+        else {
+            return Ok(None);
+        };
+        let Some(prefix) = first
+            .get("c")
             .and_then(Value::as_str)
-            != Some("Str")
-            || nodes
-                .first()
-                .and_then(|n| n.get("c"))
-                .and_then(Value::as_str)
-                != Some(prefix.as_str())
-        {
+            .and_then(|s| s.strip_suffix(':'))
+        else {
+            return Ok(None);
+        };
+        if !crate::source_prefix::is_supported(prefix) {
             return Ok(None);
         }
-        // Validate even the consumed prefix and separator, so unknown AST fields
-        // cannot disappear through metadata attachment.
-        self.inline(&nodes[0], &format!("{path}/c/0"))?;
+        self.inline(first, &format!("{path}/c/0"))?;
         if nodes.len() < 3 || nodes[1].get("t").and_then(Value::as_str) != Some("Space") {
-            return Err(self.invalid(
-                path,
-                "Para",
-                "object source requires '출처: ' followed by nonempty inline content",
-            ));
+            return Err(self.invalid(path, "Para", "object source requires a recognized prefix followed by ': ', and nonempty inline content"));
         }
         self.inline(&nodes[1], &format!("{path}/c/1"))?;
-        let source = nodes
+        let inlines = nodes
             .iter()
             .enumerate()
             .skip(2)
             .map(|(i, node)| self.inline(node, &format!("{path}/c/{i}")))
             .collect::<Result<Vec<_>, _>>()?;
-        Ok(Some(source))
+        Ok(Some(crate::ir::SourceParagraph {
+            prefix: prefix.to_owned(),
+            inlines,
+        }))
     }
 
     fn block(&mut self, node: &Value, path: &str) -> Result<Block, NormalizeError> {
@@ -1075,12 +1085,24 @@ impl Normalizer<'_> {
                     self.resolve_inlines(&mut image.alt, &format!("{path}/image/alt"), &targets)?;
                     self.resolve_inlines(caption, &format!("{path}/caption"), &targets)?;
                     if let Some(source) = source {
-                        self.resolve_inlines(source, &format!("{path}/source"), &targets)?;
+                        for (i, paragraph) in source.iter_mut().enumerate() {
+                            self.resolve_inlines(
+                                &mut paragraph.inlines,
+                                &format!("{path}/source/{i}/inlines"),
+                                &targets,
+                            )?;
+                        }
                     }
                 }
                 Block::VerbatimBlock { source, .. } => {
                     if let Some(source) = source {
-                        self.resolve_inlines(source, &format!("{path}/source"), &targets)?;
+                        for (i, paragraph) in source.iter_mut().enumerate() {
+                            self.resolve_inlines(
+                                &mut paragraph.inlines,
+                                &format!("{path}/source/{i}/inlines"),
+                                &targets,
+                            )?;
+                        }
                     }
                 }
                 Block::Table {
@@ -1110,7 +1132,13 @@ impl Normalizer<'_> {
                         self.resolve_inlines(caption, &format!("{path}/caption"), &targets)?;
                     }
                     if let Some(source) = source {
-                        self.resolve_inlines(source, &format!("{path}/source"), &targets)?;
+                        for (i, paragraph) in source.iter_mut().enumerate() {
+                            self.resolve_inlines(
+                                &mut paragraph.inlines,
+                                &format!("{path}/source/{i}/inlines"),
+                                &targets,
+                            )?;
+                        }
                     }
                 }
                 Block::List { items, .. } => self.resolve_list(items, &path, &targets)?,
@@ -1301,7 +1329,7 @@ mod tests {
 
     const COMMONMARK_FIXTURE: &[u8] =
         include_bytes!("../../../tests/fixtures/pandoc-json/commonmark.json");
-    const EXPECTED_IR: &[u8] = include_bytes!("../../../examples/commonmark-v0.3.expected.ir.json");
+    const EXPECTED_IR: &[u8] = include_bytes!("../../../examples/commonmark-v0.4.expected.ir.json");
 
     #[test]
     fn normalizes_the_commonmark_fixture() {
@@ -1354,7 +1382,7 @@ mod tests {
         )
         .unwrap();
         let expected = read_ir(
-            include_bytes!("../../../examples/commonmark-sources-v0.3.expected.ir.json"),
+            include_bytes!("../../../examples/commonmark-sources-v0.4.expected.ir.json"),
             &limits,
         )
         .unwrap();
@@ -1410,8 +1438,8 @@ mod tests {
         ]))
         .unwrap()
         .into_document();
-        assert_eq!(result.ir_version, "0.3");
-        assert_eq!(result.blocks.len(), 4);
+        assert_eq!(result.ir_version, "0.4");
+        assert_eq!(result.blocks.len(), 3);
         let Block::Figure {
             image,
             caption,
@@ -1423,17 +1451,18 @@ mod tests {
         };
         assert_eq!(image.alt, *caption);
         assert_eq!(image.title.as_deref(), Some("제목"));
-        assert!(matches!(source[0], Inline::Strong { .. }));
-        assert!(matches!(result.blocks[1], Block::Paragraph { .. }));
+        assert_eq!(source.len(), 2);
+        assert!(matches!(source[0].inlines[0], Inline::Strong { .. }));
+
         assert!(matches!(
-            result.blocks[2],
+            result.blocks[1],
             Block::VerbatimBlock {
                 source: Some(_),
                 ..
             }
         ));
         assert!(matches!(
-            result.blocks[3],
+            result.blocks[2],
             Block::VerbatimBlock { source: None, .. }
         ));
     }
@@ -1479,7 +1508,7 @@ mod tests {
     fn normalizes_reference_footnotes_in_headings_body_and_list_items() {
         let limits = ValidationLimits::default();
         let pandoc = read_pandoc_json(
-            include_bytes!("../../../tests/fixtures/pandoc-json/commonmark-footnotes-v0.3.json"),
+            include_bytes!("../../../tests/fixtures/pandoc-json/commonmark-footnotes-v0.4.json"),
             &limits,
         )
         .unwrap();
@@ -1555,7 +1584,7 @@ mod tests {
             ]))
             .unwrap_err();
             assert_eq!(error.code, "invalid_ir_semantics");
-            assert_eq!(error.path, "/blocks/0/source/0");
+            assert_eq!(error.path, "/blocks/0/source/0/inlines/0");
         }
     }
 
