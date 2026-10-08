@@ -57,7 +57,7 @@ internal sealed class TemplateCrossReferences(XDocument source, XElement figureN
                 RequirePlain(paragraph, role);
                 accepted.Add(paragraph);
             }
-            var sampleText = TaggedTemplateBinding.DirectText(sample);
+            var sampleText = TemplateHeadingNumbers.PublicTags(TaggedTemplateBinding.DirectText(sample));
             var headingLevel = Array.FindIndex(Enumerable.Range(1, 6).Select(HeadingRole).ToArray(), item => item == role) + 1;
             if (headingLevel > 0)
             {
@@ -104,7 +104,7 @@ internal sealed class TemplateCrossReferences(XDocument source, XElement figureN
     {
         if (level is < 1 or > 6 || numbers.Count != 6 || headings is null || !headings.TryGetValue(level, out var sample))
             throw new InvalidDataException("Missing heading reference block; add ref.heading1.number through ref.heading6.number or regenerate the template.");
-        var text = TaggedTemplateBinding.DirectText(TemplateHeadingNumbers.Fill([sample], numbers[0])[0]);
+        var text = TemplateHeadingNumbers.PublicTags(TaggedTemplateBinding.DirectText(TemplateHeadingNumbers.Fill([sample], numbers[0])[0]));
         for (var index = 0; index < level; index++)
             text = text.Replace(TaggedTemplateBinding.Tag($"num:heading{index + 1}"), numbers[index].ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
         if (text.Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal)) throw new InvalidDataException("Unresolved heading reference number tag.");

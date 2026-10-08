@@ -511,6 +511,7 @@ Console.WriteLine("Native footnote structure, rich text, preserved controls and 
 FigureReferenceContractTests.Run();
 TemplateCrossReferenceTests.Run();
 HeadingReferenceNumbersTests.Run();
+HeadingTemplateNumbersTests.Run();
 NativeCrossReferenceTests.Run();
 NativeFootnoteTests.Run();
 TableContractTests.Run();

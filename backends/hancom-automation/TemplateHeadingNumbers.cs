@@ -28,11 +28,21 @@ internal static class TemplateHeadingNumbers
             return operation with { Heading1Number = chapter };
         }).ToArray();
     }
+    private static string NumberMarker(int level) => Marker.Replace("HEADING1", $"HEADING{level}", StringComparison.Ordinal);
+    private static readonly Regex Markers = new(@"MD2HWP_HEADING([1-6])_NUMBER_47C7C3F9", RegexOptions.CultureInvariant);
+    internal static string PublicTags(string text) => Markers.Replace(text, match => TaggedTemplateBinding.Tag("num:heading" + match.Groups[1].Value));
     internal static XDocument Prepare(XDocument source)
     {
-        if (source.Descendants("P").Any(p=>TaggedTemplateBinding.DirectText(p).Contains(Marker,StringComparison.Ordinal)))
-            throw new InvalidDataException("Reserved internal heading1 number marker in template.");
-        return TemplateMetadata.Transform(source,Tag,new Regex(Regex.Escape(Tag)),_=>Marker);
+        if (source.Descendants("P").Any(p => Markers.IsMatch(TaggedTemplateBinding.DirectText(p))))
+            throw new InvalidDataException("Reserved internal heading number marker in template.");
+        var document = new XDocument(source);
+        for (var level = 1; level <= 6; level++)
+        {
+            var tag = TaggedTemplateBinding.Tag($"num:heading{level}");
+            var replacement = NumberMarker(level);
+            document = TemplateMetadata.Transform(document, tag, new Regex(Regex.Escape(tag)), _ => replacement);
+        }
+        return document;
     }
     internal static XElement[] Fill(IEnumerable<XElement> paragraphs,int? number)
     {
@@ -44,9 +54,28 @@ internal static class TemplateHeadingNumbers
     internal static bool ContainsNumberSlot(XElement paragraph) =>
         TaggedTemplateBinding.DirectText(paragraph).Contains(Tag, StringComparison.Ordinal) ||
         TaggedTemplateBinding.DirectText(paragraph).Contains(Marker, StringComparison.Ordinal);
+    private static readonly Regex NumberTags = new(@"\{\{md2hwp:num:heading([1-6])\}\}|MD2HWP_HEADING([1-6])_NUMBER_47C7C3F9", RegexOptions.CultureInvariant);
+    internal static string WithoutNumbers(string text, int level)
+    {
+        var clean = NumberTags.Replace(text, match =>
+        {
+            var target = int.Parse(match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value, CultureInfo.InvariantCulture);
+            if (target > level) throw new InvalidDataException($"heading{level} scope cannot use num:heading{target}.");
+            return "";
+        });
+        if (clean.Contains("{{md2hwp:num:", StringComparison.Ordinal)) throw new InvalidDataException("Unsupported or malformed heading number tag.");
+        return clean;
+    }
+    internal static void FillParagraph(XElement paragraph, int level, IReadOnlyList<int> numbers)
+    {
+        WithoutNumbers(TaggedTemplateBinding.DirectText(paragraph), level);
+        string Value(Match match) => numbers[int.Parse(match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value, CultureInfo.InvariantCulture) - 1].ToString(CultureInfo.InvariantCulture);
+        TemplateMetadata.TransformParagraph(paragraph, "{{md2hwp:num:", NumberTags, Value);
+        TemplateMetadata.TransformParagraph(paragraph, "MD2HWP_HEADING", NumberTags, Value);
+    }
     internal static void RequireResolved(XDocument document)
     {
-        if (document.Descendants("P").Any(p=>TaggedTemplateBinding.DirectText(p).Contains(Marker,StringComparison.Ordinal)))
-            throw new InvalidDataException("num:heading1 is allowed only inside heading blocks, figure/table captions and object-reference samples.");
+        if (document.Descendants("P").Any(p=>Markers.IsMatch(TaggedTemplateBinding.DirectText(p))))
+            throw new InvalidDataException("Unresolved heading number tag: use own/ancestor numbers in heading scopes, or num:heading1 in figure/table captions and object-reference samples.");
     }
 }

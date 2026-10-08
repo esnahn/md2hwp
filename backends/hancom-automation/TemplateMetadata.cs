@@ -106,48 +106,51 @@ internal static class TemplateMetadata
     {
         var document = new XDocument(source);
         foreach (var paragraph in document.Descendants("P").ToArray())
-        {
-            var atoms = paragraph.Elements("TEXT").SelectMany(t => t.Elements()).SelectMany(e =>
-                e.Name.LocalName == "CHAR" && !e.HasElements
-                    ? e.Value.Select(c => new Atom(e,c)) : new[] { new Atom(e,'\0') }).ToArray();
-            var text = new string(atoms.Select(a => a.Character).ToArray());
-            if (!text.Contains(prefix, StringComparison.Ordinal)) continue;
-            var matches = tokens.Matches(text).Cast<Match>().ToArray();
-            var keep = Enumerable.Repeat(true, atoms.Length).ToArray();
-            var replacements = new Dictionary<int,string>();
-            foreach (var match in matches)
-            {
-                if (match.Value.Contains('\0')) throw new InvalidDataException("Metadata tag cannot cross a native control.");
-                string value;
-                try { value = resolve(match); }
-                catch (InvalidDataException error) {
-                    throw new InvalidDataException($"{error.Message} Paragraph: '{TaggedTemplateBinding.DirectText(paragraph)}'.",error);
-                }
-                Array.Fill(keep, false, match.Index, match.Length);
-                replacements.Add(match.Index,value);
-            }
-            var remaining = new string(text.Where((_,i) => keep[i]).ToArray());
-            if (remaining.Contains(prefix,StringComparison.Ordinal))
-                throw new InvalidDataException($"Malformed metadata tag in paragraph '{text}'.");
-            foreach (var group in atoms.Select((atom,i) => (atom,i)).GroupBy(a => a.atom.Node))
-            {
-                if (group.Key.Name.LocalName != "CHAR") continue;
-                var output = new StringBuilder();
-                foreach (var (atom,i) in group)
-                {
-                    if (replacements.TryGetValue(i,out var replacement)) output.Append(replacement);
-                    if (keep[i]) output.Append(atom.Character);
-                }
-                if (output.Length == 0)
-                {
-                    var parent = group.Key.Parent;
-                    group.Key.Remove();
-                    if (parent?.Name.LocalName == "TEXT" && !parent.HasElements) parent.Remove();
-                }
-                else group.Key.Value = output.ToString();
-            }
-        }
+            TransformParagraph(paragraph, prefix, tokens, resolve);
         return document;
+    }
+
+    internal static void TransformParagraph(XElement paragraph, string prefix, Regex tokens, Func<Match, string> resolve)
+    {
+        var atoms = paragraph.Elements("TEXT").SelectMany(t => t.Elements()).SelectMany(e =>
+            e.Name.LocalName == "CHAR" && !e.HasElements
+                ? e.Value.Select(c => new Atom(e,c)) : new[] { new Atom(e,'\0') }).ToArray();
+        var text = new string(atoms.Select(a => a.Character).ToArray());
+        if (!text.Contains(prefix, StringComparison.Ordinal)) return;
+        var matches = tokens.Matches(text).Cast<Match>().ToArray();
+        var keep = Enumerable.Repeat(true, atoms.Length).ToArray();
+        var replacements = new Dictionary<int,string>();
+        foreach (var match in matches)
+        {
+            if (match.Value.Contains('\0')) throw new InvalidDataException("Metadata tag cannot cross a native control.");
+            string value;
+            try { value = resolve(match); }
+            catch (InvalidDataException error) {
+                throw new InvalidDataException($"{error.Message} Paragraph: '{TaggedTemplateBinding.DirectText(paragraph)}'.",error);
+            }
+            Array.Fill(keep, false, match.Index, match.Length);
+            replacements.Add(match.Index,value);
+        }
+        var remaining = new string(text.Where((_,i) => keep[i]).ToArray());
+        if (remaining.Contains(prefix,StringComparison.Ordinal))
+            throw new InvalidDataException($"Malformed metadata tag in paragraph '{text}'.");
+        foreach (var group in atoms.Select((atom,i) => (atom,i)).GroupBy(a => a.atom.Node))
+        {
+            if (group.Key.Name.LocalName != "CHAR") continue;
+            var output = new StringBuilder();
+            foreach (var (atom,i) in group)
+            {
+                if (replacements.TryGetValue(i,out var replacement)) output.Append(replacement);
+                if (keep[i]) output.Append(atom.Character);
+            }
+            if (output.Length == 0)
+            {
+                var parent = group.Key.Parent;
+                group.Key.Remove();
+                if (parent?.Name.LocalName == "TEXT" && !parent.HasElements) parent.Remove();
+            }
+            else group.Key.Value = output.ToString();
+        }
     }
 
     internal static string FormatDate(string iso, string format)

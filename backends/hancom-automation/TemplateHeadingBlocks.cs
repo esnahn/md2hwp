@@ -36,6 +36,16 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
         {
             var role = $"heading{level}";
             var roots = AuriMinimalBoxPrototype.RootParagraphs(document).ToArray();
+            // A numbered paragraph declaration is the one-paragraph form of a heading block.
+            foreach (var paragraph in roots.Where(p => TaggedTemplateBinding.DirectText(p).Contains(TaggedTemplateBinding.Tag(role), StringComparison.Ordinal) &&
+                TaggedTemplateBinding.DirectText(p) != TaggedTemplateBinding.Tag(role)).ToArray())
+            {
+                var slot = new XElement(paragraph);
+                TemplateMetadata.TransformParagraph(slot, TaggedTemplateBinding.Tag(role), new System.Text.RegularExpressions.Regex(System.Text.RegularExpressions.Regex.Escape(TaggedTemplateBinding.Tag(role))), _ => TaggedTemplateBinding.Tag("slot:" + role));
+                XElement Boundary(string name) => new("P", new XElement("TEXT", new XAttribute("CharShape", "0"), new XElement("CHAR", TaggedTemplateBinding.Tag(name + role))));
+                paragraph.ReplaceWith(Boundary("begin:"), slot, Boundary("end:"));
+            }
+            roots = AuriMinimalBoxPrototype.RootParagraphs(document).ToArray();
             var begin = roots.Where(p => TaggedTemplateBinding.DirectText(p) == TaggedTemplateBinding.Tag("begin:" + role)).ToArray();
             var end = roots.Where(p => TaggedTemplateBinding.DirectText(p) == TaggedTemplateBinding.Tag("end:" + role)).ToArray();
             if (begin.Length == 0 && end.Length == 0) continue;
@@ -82,6 +92,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
         titleHeightElements.Clear();
         var reflow = new HashSet<XElement>();
         var usedRoles = new HashSet<string>(StringComparer.Ordinal);
+        var counted = HeadingReferenceNumbers.CountOperations(plan.Operations);
         var result = new XDocument(rendered);
         var roots = AuriMinimalBoxPrototype.RootParagraphs(result).ToArray();
         for (var index = 0; index < plan.Operations.Count; index++)
@@ -97,13 +108,13 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             TemplateOnceRanges.Apply(instance, usedRoles.Add(operation.ParagraphStyle));
             var block = instance.Select(p => ImportParagraph(p, source, result)).ToArray();
             if ((string?)generated.Attribute("PageBreak") == "true") SetPageBreak(block[0]);
-            block = TemplateHeadingEach.Expand(TemplateHeadingNumbers.Fill(block, operation.Heading1Number), int.Parse(operation.ParagraphStyle[7..]), index, plan,
+            block = TemplateHeadingEach.Expand(block, int.Parse(operation.ParagraphStyle[7..]), index, plan,
                 (target, title, ordinal) =>
                 {
                     target.AddAnnotation(title);
                     FillTitle(target, title, result);
                     if (ordinal > 0) SetRepeatedNumber(target, ordinal, result);
-                });
+                }, counted);
             foreach (var target in block.SelectMany(p => p.DescendantsAndSelf("P")).Where(p => p.Annotation<PreviewOperation>() is not null))
             foreach (var table in target.Ancestors("TABLE"))
             {
@@ -158,7 +169,11 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
 
     private static void FillTitle(XElement target, PreviewOperation operation, XDocument document)
     {
-        var id = (string?)target.Elements("TEXT").FirstOrDefault(t => t.Elements("CHAR").Any(c => c.Value.Length > 0))?.Attribute("CharShape")
+        var slot = TaggedTemplateBinding.Tag("slot:" + operation.ParagraphStyle);
+        const string marker = "MD2HWP_HEADING_TITLE_INSERT_60CF9A";
+        TemplateMetadata.TransformParagraph(target, slot, new System.Text.RegularExpressions.Regex(System.Text.RegularExpressions.Regex.Escape(slot)), _ => marker);
+        var insertion = target.Elements("TEXT").Single(t => string.Concat(t.Elements("CHAR").Select(c => c.Value)).Contains(marker, StringComparison.Ordinal));
+        var id = (string?)insertion.Attribute("CharShape")
             ?? throw new InvalidDataException("Heading slot has no character format.");
         var baseline = document.Descendants("CHARSHAPE").Single(c => (string?)c.Attribute("Id") == id);
         var table = baseline.Parent!;
@@ -182,7 +197,11 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             }
             texts.Add(new XElement("TEXT", new XAttribute("CharShape", (string)match.Attribute("Id")!), new XElement("CHAR", run.Text)));
         }
-        target.ReplaceNodes(texts);
+        var parts = string.Concat(insertion.Elements("CHAR").Select(c => c.Value)).Split(marker, StringSplitOptions.None);
+        if (parts.Length != 2) throw new InvalidDataException("Ambiguous heading title slot.");
+        XElement Affix(string text) => new("TEXT", insertion.Attributes(), new XElement("CHAR", text));
+        insertion.ReplaceWith(new[] { Affix(parts[0]) }.Concat(texts).Append(Affix(parts[1])).Where(text => text.Elements("CHAR").Any(c => c.Value.Length > 0)));
+
     }
 
     // NEWNUM is retained verbatim. Update only the calculated Figure AUTONUM

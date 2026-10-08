@@ -15,11 +15,11 @@ internal static class TemplateHeadingEach
     }
 
     internal static XElement[] Expand(IEnumerable<XElement> roots, int level, int index, IrPreviewPlan plan,
-        Action<XElement, PreviewOperation, int> fill) => Rewrite(roots, level, index, plan,
-            (p, operation, ordinal) => fill(p, operation!, ordinal), 0);
+        Action<XElement, PreviewOperation, int> fill, HeadingReferenceNumbers.Target?[]? counted = null) => Rewrite(roots, level, index, plan,
+            (p, operation, ordinal) => fill(p, operation!, ordinal), 0, numbers: counted ?? HeadingReferenceNumbers.CountOperations(plan.Operations));
 
     private static XElement[] Rewrite(IEnumerable<XElement> input, int level, int? index, IrPreviewPlan? plan,
-        Action<XElement, PreviewOperation?, int> fill, int ordinal, bool requireSlot = true, Action<int>? reportCount = null)
+        Action<XElement, PreviewOperation?, int> fill, int ordinal, bool requireSlot = true, Action<int>? reportCount = null, HeadingReferenceNumbers.Target?[]? numbers = null)
     {
         var paragraphs = input.Select(p => new XElement(p)).ToArray();
         var output = new List<XElement>();
@@ -56,7 +56,7 @@ internal static class TemplateHeadingEach
                     var number = 0;
                     foreach (var child in Children(plan, index!.Value, level))
                     {
-                        var copies = Rewrite(sample, childLevel, child, plan, fill, ++number);
+                        var copies = Rewrite(sample, childLevel, child, plan, fill, ++number, numbers: numbers);
                         if ((string?)p.Attribute("PageBreak") == "true" && copies.Length > 0)
                         { copies[0].SetAttributeValue("PageBreak", "true"); copies[0].SetAttributeValue("ColumnBreak", "false"); }
                         output.AddRange(copies);
@@ -71,16 +71,25 @@ internal static class TemplateHeadingEach
                 if (element.Name.LocalName == "P")
                 {
                     var direct = TaggedTemplateBinding.DirectText(element);
-                    if (direct == TaggedTemplateBinding.Tag($"slot:heading{level}"))
-                    { Plain(element); slots++; fill(element, plan is null ? null : plan.Operations[index!.Value], ordinal); return; }
-                    if (direct.Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal))
+                    var clean = TemplateHeadingNumbers.WithoutNumbers(direct, level);
+                    if (plan is not null)
+                        TemplateHeadingNumbers.FillParagraph(element, level, numbers![index!.Value]!.Numbers);
+                    var slot = TaggedTemplateBinding.Tag($"slot:heading{level}");
+                    if (clean.Contains(slot, StringComparison.Ordinal))
+                    {
+                        Plain(element);
+                        if (clean.Split(slot, StringSplitOptions.None).Length != 2 || clean.Replace(slot, "", StringComparison.Ordinal).Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal))
+                            throw new InvalidDataException($"heading{level} paragraph requires one title slot and only own/ancestor number tags.");
+                        slots++; fill(element, plan is null ? null : plan.Operations[index!.Value], ordinal); return;
+                    }
+                    if (clean.Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal))
                         throw new InvalidDataException($"Unexpected declaration in heading{level} scope: {direct}");
                 }
                 if (element.Elements("P").Any())
                 {
                     // A nested paragraph container belongs to the same heading.
                     // It need not itself contain a title, so count slots in the caller.
-                    var result = RewriteContainer(element.Elements("P"), level, index, plan, fill, ordinal, out var count);
+                    var result = RewriteContainer(element.Elements("P"), level, index, plan, fill, ordinal, numbers, out var count);
                     slots += count;
                     if (result.Length == 0)
                     {
@@ -99,15 +108,15 @@ internal static class TemplateHeadingEach
             Visit(p); output.Add(p);
         }
         reportCount?.Invoke(slots);
-        if (requireSlot && slots == 0) throw new InvalidDataException($"heading{level} scope requires at least one standalone slot:heading{level} paragraph.");
+        if (requireSlot && slots == 0) throw new InvalidDataException($"heading{level} scope requires at least one slot:heading{level} paragraph.");
         return output.ToArray();
     }
 
     private static XElement[] RewriteContainer(IEnumerable<XElement> input, int level, int? index, IrPreviewPlan? plan,
-        Action<XElement, PreviewOperation?, int> fill, int ordinal, out int count)
+        Action<XElement, PreviewOperation?, int> fill, int ordinal, HeadingReferenceNumbers.Target?[]? numbers, out int count)
     {
         var found = 0;
-        var result = Rewrite(input, level, index, plan, fill, ordinal, false, n => found = n);
+        var result = Rewrite(input, level, index, plan, fill, ordinal, false, n => found = n, numbers);
         count = found; return result;
     }
 
@@ -126,6 +135,6 @@ internal static class TemplateHeadingEach
     private static void Plain(XElement p)
     {
         if (p.Elements().Any(e => e.Name.LocalName != "TEXT") || p.Elements().SelectMany(e => e.Elements()).Any(e => e.Name.LocalName != "CHAR" || e.HasElements))
-            throw new InvalidDataException("each.child boundaries and heading slots must be standalone plain-text paragraphs.");
+            throw new InvalidDataException("each.child boundaries must be standalone; heading slots must be plain-text paragraphs without native controls.");
     }
 }

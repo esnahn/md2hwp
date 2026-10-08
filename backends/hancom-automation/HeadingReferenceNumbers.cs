@@ -7,9 +7,20 @@ internal static class HeadingReferenceNumbers
     internal static Dictionary<string, Target> Count(IReadOnlyList<PreviewOperation> operations)
     {
         var result = new Dictionary<string, Target>(StringComparer.Ordinal);
+        var counted = CountOperations(operations);
+        for (var index = 0; index < operations.Count; index++)
+            if (operations[index].HeadingId is { } id && counted[index] is { } target && !result.TryAdd(id, target))
+                throw new InvalidDataException("Duplicate heading reference target.");
+        return result;
+    }
+
+    internal static Target?[] CountOperations(IReadOnlyList<PreviewOperation> operations)
+    {
+        var result = new Target?[operations.Count];
         var counters = new int[6];
-        foreach (var operation in operations)
+        for (var operationIndex = 0; operationIndex < operations.Count; operationIndex++)
         {
+            var operation = operations[operationIndex];
             var role = operation.ParagraphStyle;
             if (operation.Kind != "text" || role is null || role.Length != 8 || !role.StartsWith("heading", StringComparison.Ordinal) || role[7] is < '1' or > '6') continue;
             var index = role[7] - '1';
@@ -20,8 +31,7 @@ internal static class HeadingReferenceNumbers
                 counters[index] = checked(counters[index] + 1);
             }
             Array.Clear(counters, index + 1, counters.Length - index - 1);
-            if (operation.HeadingId is { } id && !result.TryAdd(id, new(index + 1, (int[])counters.Clone())))
-                throw new InvalidDataException("Duplicate heading reference target.");
+            result[operationIndex] = new(index + 1, (int[])counters.Clone());
         }
         return result;
     }
