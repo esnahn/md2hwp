@@ -388,8 +388,8 @@ internal sealed class PlanBuilder(
         catch (InvalidDataException error) { throw JsonContract.Error(path + "/image/path", error.Message); }
         var width = profile.Figure.MaxWidthMillimeters;
         var height = width * pixelHeight / pixelWidth;
-        var alt = InlineText.Read(image.GetProperty("alt"), path + "/image/alt", allowFootnotes: false, allowCrossReferences: false);
-        var caption = InlineText.Read(block.GetProperty("caption"), path + "/caption", allowFootnotes: false, allowCrossReferences: false);
+        var alt = InlineText.Read(image.GetProperty("alt"), path + "/image/alt", allowFootnotes: false, allowCrossReferences: true);
+        var caption = InlineText.Read(block.GetProperty("caption"), path + "/caption", allowFootnotes: false, allowCrossReferences: true);
         var sources = PreviewSourceParagraph.ReadOptional(block, path);
         var source = sources?.First().Content ?? PreviewInlineContent.Plain([string.Empty]);
         var figureLines = new[]
@@ -434,7 +434,7 @@ internal sealed class PlanBuilder(
             if (!block.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null) return null;
             if (JsonContract.ExpectArray(value, path + "/" + name).GetArrayLength() == 0)
                 throw JsonContract.Error(path + "/" + name, "table caption/source must not be empty when supplied");
-            return InlineText.Read(value, path + "/" + name, allowFootnotes: false, allowCrossReferences: false);
+            return InlineText.Read(value, path + "/" + name, allowFootnotes: false, allowCrossReferences: true);
         }
 
         var header = ReadRow(block.GetProperty("header"), path + "/header");
@@ -545,7 +545,7 @@ internal static class InlineText
                 break;
             case "cross_reference":
                 if (!allowCrossReferences)
-                    throw JsonContract.Error(path + "/type", "cross references are not supported in figure alt/caption or object sources");
+                    throw JsonContract.Error(path + "/type", "cross references are not supported in this inline context");
                 JsonContract.ExpectObject(inline, path, ["type", "kind", "target"]);
                 var kind = JsonContract.RequiredString(inline, "kind", path);
                 if (kind is not ("figure_number" or "heading_number"))

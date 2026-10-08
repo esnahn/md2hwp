@@ -433,7 +433,7 @@ var splitNoteSample = AuriMinimalBoxPrototype.RootParagraphs(splitNoteSampleTemp
 splitNoteSample.Element("TEXT")!.Element("CHAR")!.Value = "{{md2hwp:foot";
 splitNoteSample.Add(new XElement("TEXT", new XAttribute("CharShape", "3"), new XElement("CHAR", "note}}")));
 _ = NativeFootnotes.Bind(splitNoteSampleTemplate);
-foreach (var host in new[] { "HEADER", "FOOTER", "MASTERPAGE", "FOOTNOTE", "ENDNOTE" })
+foreach (var host in new[] { "HEADER", "FOOTER", "MASTERPAGE", "CAPTION", "FOOTNOTE", "ENDNOTE" })
 {
     var hostDocument = FootnoteRendered(nativeNoteTemplate, new XElement("P", new XElement("TEXT", new XAttribute("CharShape", "0"), new XElement(host, new XElement("PARALIST", BoxParagraph(noteMarkerA))))));
     Reject(() => nativeNoteBinding.Attach(hostDocument, NativeFootnotePlan(singleNoteContent)));

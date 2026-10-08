@@ -93,6 +93,13 @@ internal static class NativeCrossReferenceTests
         var validCopy = new XDocument(fixture); validCopy.Descendants("SECTION").Single().Add(plainCopy);
         var acceptedCopy = NativeCrossReferences.Prepare(validCopy, Plan(), template, Figures(), new Dictionary<string, IReadOnlyList<string>> { ["fig:heading"] = new[] { "110", "112" } });
         Check(acceptedCopy.Layout.Count == 5, "An ordinary decorative title copy was mistaken for an outline target.");
+        var captionFixture = Fixture();
+        captionFixture.Descendants("CAPTION").Single().Element("PARALIST")!.Add(Paragraph(Source + " " + HeadingSource, "2"));
+        var captionPrepared = NativeCrossReferences.Prepare(captionFixture, Plan(), new TemplateCrossReferences(captionFixture, sample, headingSample), Figures(), Headings());
+        captionPrepared.Layout.RecordHeadingNumber("fig:heading", "IV.(가)");
+        var captionNative = NativeFields(captionPrepared.Document);
+        captionPrepared.Layout.Verify(captionNative);
+        Check(captionNative.Descendants("CAPTION").Descendants("FIELDBEGIN").Count() == 2, "Native caption references lost their target or formatting.");
         SelectionContracts(Check, Reject);
         for (var level = 1; level <= 6; level++)
         {

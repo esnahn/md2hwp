@@ -196,8 +196,8 @@ internal sealed class NativeFootnotes(XDocument source, XElement sample, XElemen
             if (replacements.Length == 0) continue;
             foreach (var replacement in replacements)
             {
-                if (paragraph.Ancestors().Any(e => e.Name.LocalName is "HEADER" or "FOOTER" or "MASTERPAGE" or "FOOTNOTE" or "ENDNOTE"))
-                    throw new InvalidDataException("Footnote references cannot be placed in headers, footers, master pages or other notes.");
+                if (paragraph.Ancestors().Any(e => e.Name.LocalName is "HEADER" or "FOOTER" or "MASTERPAGE" or "CAPTION" or "FOOTNOTE" or "ENDNOTE"))
+                    throw new InvalidDataException("Footnote references cannot be placed in native captions, headers, footers, master pages or other notes.");
                 var first = atoms[replacement.Offset];
                 var last = atoms[replacement.Offset + replacement.Marker.Length - 1];
                 var control = Create(replacement.Note, result);

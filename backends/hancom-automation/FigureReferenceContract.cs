@@ -41,7 +41,8 @@ internal static class FigureReferenceContract
             Add(operation.FigureId, "figure_number");
             Add(operation.HeadingId, "heading_number");
         }
-        foreach (var run in ReadRuns(operations))
+        foreach (var run in ReadRuns(operations).Concat(operations.Where(o => o.Kind == "figure")
+            .SelectMany(o => o.FormattedLines?.FirstOrDefault() ?? []).SelectMany(Descendants)))
         {
             if (run.CrossReference is not { } reference) continue;
             RequireId(reference.Target, "/inlines/target");
@@ -55,12 +56,33 @@ internal static class FigureReferenceContract
     }
 
     internal static IEnumerable<PreviewTextRun> ReadRuns(IEnumerable<PreviewOperation> operations) =>
-        operations.SelectMany(o => (o.FormattedLines ?? []).SelectMany(r => r).Concat(o.SourceRuns ?? [])
-            .Concat(o.Table is null ? [] : o.Table.Header.Concat(o.Table.Rows.SelectMany(row => row))
-                .Concat(o.Table.Caption is null ? [] : [o.Table.Caption])
-                .Concat(o.Table.Source is null ? [] : [o.Table.Source])
-                .SelectMany(content => content.Lines).SelectMany(line => line.Runs)))
-            .SelectMany(Descendants);
+        operations.SelectMany(RenderedRuns).SelectMany(Descendants);
+
+    private static IEnumerable<PreviewTextRun> RenderedRuns(PreviewOperation operation)
+    {
+        // Figure alt is descriptive metadata, not an emitted text paragraph.
+        // Figure source and table source are emitted from all source paragraphs
+        // after native attachment; do not also enumerate their flat first copy.
+        var lines = operation.FormattedLines ?? [];
+        foreach (var run in (operation.Kind == "figure" ? lines.Skip(1).Take(1) : lines).SelectMany(r => r))
+            yield return run;
+        if (operation.Sources is { } sources)
+        {
+            foreach (var run in sources.SelectMany(s => s.Content.Lines).SelectMany(l => l.Runs))
+                yield return run;
+        }
+        else
+        {
+            foreach (var run in operation.SourceRuns ?? []) yield return run;
+            if (operation.Kind == "figure")
+                foreach (var run in lines.Skip(2).SelectMany(r => r)) yield return run;
+        }
+        if (operation.Table is not { } table) yield break;
+        var contents = table.Header.Concat(table.Rows.SelectMany(row => row))
+            .Concat(table.Caption is null ? [] : [table.Caption])
+            .Concat(operation.Sources is null && table.Source is not null ? [table.Source] : []);
+        foreach (var run in contents.SelectMany(c => c.Lines).SelectMany(l => l.Runs)) yield return run;
+    }
 
     private static IEnumerable<PreviewTextRun> Descendants(PreviewTextRun run)
     {

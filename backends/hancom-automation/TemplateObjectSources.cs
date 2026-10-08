@@ -28,7 +28,7 @@ internal sealed record PreviewSourceParagraph(string Prefix, PreviewInlineConten
             var match = PrefixPattern.Match(prefix);
             if (!match.Success || match.Length != prefix.Length)
                 throw JsonContract.Error(p + "/prefix", "unrecognized source prefix or invalid punctuation");
-            var content = InlineText.Read(paragraph.GetProperty("inlines"), p + "/inlines", allowFootnotes: false, allowCrossReferences: false);
+            var content = InlineText.Read(paragraph.GetProperty("inlines"), p + "/inlines", allowFootnotes: false, allowCrossReferences: true);
             if (string.IsNullOrWhiteSpace(content.Flatten(" ").Text))
                 throw JsonContract.Error(p + "/inlines", "source paragraph content must not be empty");
             return new PreviewSourceParagraph(prefix, content);

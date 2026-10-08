@@ -32,6 +32,15 @@ internal static class FigureReferenceContractTests
         var note = Read("[{\"type\":\"footnote\",\"blocks\":[{\"type\":\"paragraph\",\"inlines\":[{\"type\":\"cross_reference\",\"kind\":\"heading_number\",\"target\":\"fig:heading\"}]}]}]");
         FigureReferenceContract.Validate(new[] { operations[1], new PreviewOperation("text", "note", [], FormattedLines: note.Lines.Select(l => l.Runs).ToArray()) });
         Reject(() => FigureReferenceContract.Validate(new[] { new PreviewOperation("text", "note", [], FormattedLines: note.Lines.Select(l => l.Runs).ToArray()) }));
+        var first = new PreviewSourceParagraph("출처", Read("[{\"type\":\"text\",\"value\":\"plain\"}]"));
+        var second = new PreviewSourceParagraph("주", Read(input));
+        var sourced = new PreviewOperation("code", "sources", [], Sources: [first, second]);
+        FigureReferenceContract.Validate([sourced, operations[1], operations[2]]);
+        Reject(() => FigureReferenceContract.Validate([sourced, operations[2]]));
+        Check(FigureReferenceContract.ReadRuns([sourced]).Count(r => r.CrossReference is not null) == 2, "References in later object notes disappeared.");
+        var altOnly = operations[2] with { FormattedLines = [runs, Array.Empty<PreviewTextRun>()] };
+        Check(!FigureReferenceContract.ReadRuns([altOnly]).Any(), "Figure alt was mistaken for rendered caption text.");
+        Reject(() => FigureReferenceContract.Validate([altOnly]));
         Reject(() => Read(input, false));
         Reject(() => Read("[{\"type\":\"link\",\"target\":\"https://example.org\",\"title\":null,\"inlines\":[{\"type\":\"cross_reference\",\"kind\":\"figure_number\",\"target\":\"plain\"}]}]", false));
         foreach (var json in new[] {
