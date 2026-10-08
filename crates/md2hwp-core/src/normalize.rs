@@ -336,7 +336,7 @@ impl Normalizer<'_> {
 
     fn table(&mut self, content: Option<&Value>, path: &str) -> Result<Block, NormalizeError> {
         let values = self.fixed_array(content, 6, &format!("{path}/c"))?;
-        self.require_empty_attr(&values[0], &format!("{path}/c/0"), "Table")?;
+        let id = self.optional_id(&values[0], &format!("{path}/c/0"), "Table")?;
         let caption_values = self.fixed_array(Some(&values[1]), 2, &format!("{path}/c/1"))?;
         if !caption_values[0].is_null() {
             return Err(self.invalid(
@@ -430,6 +430,7 @@ impl Normalizer<'_> {
             ));
         }
         Ok(Block::Table {
+            id,
             columns,
             header,
             rows,
@@ -1064,6 +1065,7 @@ impl Normalizer<'_> {
                     Some((id, CrossReferenceKind::HeadingNumber))
                 }
                 Block::Figure { id: Some(id), .. } => Some((id, CrossReferenceKind::FigureNumber)),
+                Block::Table { id: Some(id), .. } => Some((id, CrossReferenceKind::TableNumber)),
                 _ => None,
             };
             if let Some((id, kind)) = target {

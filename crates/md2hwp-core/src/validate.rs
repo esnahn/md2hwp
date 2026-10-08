@@ -247,12 +247,16 @@ impl State<'_> {
                 Ok(())
             }
             Block::Table {
+                id,
                 columns,
                 header,
                 rows,
                 caption,
                 source,
             } => {
+                if let Some(id) = id {
+                    self.register_id(id, CrossReferenceKind::TableNumber, &format!("{path}/id"))?;
+                }
                 self.require(
                     !columns.is_empty(),
                     &format!("{path}/columns"),

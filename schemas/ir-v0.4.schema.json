@@ -450,7 +450,7 @@
       "not": {
         "pattern": "[\\s#\\u0000-\\u001f\\u007f-\\u009f]"
       },
-      "description": "Exact Unicode target identifier; no whitespace, controls or fragment separator. Target kind follows its heading or figure block."
+      "description": "Exact Unicode target identifier; no whitespace, controls or fragment separator. Target kind follows its heading, figure or table block."
     },
     "cross_reference": {
       "type": "object",
@@ -467,7 +467,8 @@
         "kind": {
           "enum": [
             "heading_number",
-            "figure_number"
+            "figure_number",
+            "table_number"
           ]
         },
         "target": {
@@ -625,6 +626,9 @@
         "source"
       ],
       "properties": {
+        "id": {
+          "$ref": "#/$defs/target_id"
+        },
         "type": {
           "const": "table"
         },

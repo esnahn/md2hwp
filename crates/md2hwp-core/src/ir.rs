@@ -59,6 +59,8 @@ pub enum Block {
         items: Vec<ListItem>,
     },
     Table {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        id: Option<String>,
         columns: Vec<TableAlignment>,
         header: Vec<Vec<Inline>>,
         rows: Vec<Vec<Vec<Inline>>>,
@@ -158,6 +160,7 @@ pub enum Inline {
 pub enum CrossReferenceKind {
     HeadingNumber,
     FigureNumber,
+    TableNumber,
 }
 
 pub(crate) fn is_target_id(value: &str) -> bool {

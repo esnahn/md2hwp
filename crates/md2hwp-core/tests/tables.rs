@@ -61,6 +61,7 @@ fn document(block: Block) -> Document {
 }
 fn direct_table() -> Block {
     Block::Table {
+        id: None,
         columns: vec![TableAlignment::Default, TableAlignment::Center],
         header: vec![vec![text("항목")], vec![]],
         rows: vec![vec![vec![], vec![text("값")]]],
@@ -87,6 +88,7 @@ fn actual_commonmark_tables_have_caption_source_alignment_empty_cells_and_refere
         rows,
         caption,
         source,
+        ..
     } = &blocks[1]
     else {
         panic!("table");
@@ -222,7 +224,7 @@ fn empty_or_unsupported_caption_and_source_content_is_not_silently_consumed() {
 #[test]
 fn closed_pandoc_table_structure_rejects_unrepresented_features() {
     let cases = [
-        ("/c/0/0", json!("table-id")),
+        ("/c/0/0", json!("invalid id")),
         ("/c/0/1", json!(["class"])),
         ("/c/1/0", json!([])),
         (
@@ -335,7 +337,8 @@ fn direct_ir_tables_are_closed_rectangular_and_context_validated() {
         assert!(read_ir(&bytes, &ValidationLimits::default()).is_err());
     }
     for (member, value) in [
-        ("id", json!("t")),
+        ("id", json!("invalid id")),
+        ("id", Value::Null),
         ("extra", json!(1)),
         ("caption", json!([])),
         ("source", json!([])),
@@ -470,4 +473,38 @@ fn table_caption_and_all_source_paragraphs_accept_forward_number_references() {
         read_ir(&write_ir(&ir).unwrap(), &ValidationLimits::default()).unwrap(),
         ir
     );
+}
+
+#[test]
+fn table_ids_resolve_forward_references_and_roundtrip() {
+    let mut table = simple_table();
+    table["c"][0] = json!(["한글-표", [], []]);
+    let reference = json!({"t":"Link","c":[["",[],[]],[],["#%ED%95%9C%EA%B8%80-%ED%91%9C",""]]});
+    let ir =
+        normalize(json!([{"t":"Para","c":[reference]},caption("Table:"),table.clone()])).unwrap();
+    assert!(
+        matches!(&ir.as_document().blocks[0],Block::Paragraph{inlines} if matches!(&inlines[0],Inline::CrossReference{kind:CrossReferenceKind::TableNumber,target} if target=="한글-표"))
+    );
+    assert!(matches!(&ir.as_document().blocks[1],Block::Table{id:Some(id),..} if id=="한글-표"));
+    assert_eq!(
+        read_ir(&write_ir(&ir).unwrap(), &ValidationLimits::default()).unwrap(),
+        ir
+    );
+    assert!(
+        normalize(json!([table.clone(), table.clone()]))
+            .unwrap_err()
+            .message
+            .contains("duplicate")
+    );
+    let heading = json!({"t":"Header","c":[2,["한글-표",[],[]],[{"t":"Str","c":"Title"}]]});
+    assert!(
+        normalize(json!([heading, table.clone()]))
+            .unwrap_err()
+            .message
+            .contains("duplicate")
+    );
+    table["c"][0] = json!(["two words", [], []]);
+    assert!(normalize(json!([table.clone()])).is_err());
+    table["c"][0] = json!(["table", ["class"], []]);
+    assert!(normalize(json!([table])).is_err());
 }
