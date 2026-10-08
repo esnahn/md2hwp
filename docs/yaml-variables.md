@@ -1,6 +1,6 @@
 # YAML 메타데이터와 템플릿 태그
 
-v0.3.0 / IR 0.3에서 지원합니다. 이전 IR 0.2는 원고에서 다시 생성해야 합니다.
+v0.4.0 / IR 0.4에서 지원합니다. 이전 IR은 원고에서 다시 생성해야 합니다.
 변수 입력 위치는 Markdown 원고 맨 앞의 YAML 블록으로 정했습니다.
 지원 키는 title·subtitle·author·date·publisher와 비어 있지 않은 최상위 `md2hwp-<이름>` 키입니다.
 템플릿 태그는 `{{md2hwp:meta:<키>}}`로 정했습니다. 아래 치환 규칙을 사용합니다.
@@ -102,7 +102,7 @@ Pandoc의 날짜 입력 형식 전체와 한국어·점·슬래시 구분자 형
 Markdown 앞의 YAML
     → Pandoc JSON의 meta
     → Rust core에서 이름·자료형·문자열 검증
-    → IR 0.3의 metadata
+    → IR 0.4의 metadata
     → C# 백엔드에서 템플릿 변수 치환
 ```
 
@@ -113,12 +113,12 @@ IR에는 고정 문서 정보와 지원하는 임의 키의 값, 인식한 날�
 
 [원고 YAML 블록](https://pandoc.org/MANUAL.html#extension-yaml_metadata_block)은
 `commonmark+yaml_metadata_block`으로 읽을 수 있음을 로컬 Pandoc 3.10.1에서 확인했습니다.
-0.3 앱은 `commonmark+yaml_metadata_block+footnotes+attributes+implicit_figures+pipe_tables`를 사용합니다. 이전 IR 0.2는 메타데이터를 지원하지 않습니다.
+0.4 앱은 `commonmark+yaml_metadata_block+footnotes+attributes+implicit_figures+pipe_tables`를 사용합니다. 이전 IR 0.2는 메타데이터를 지원하지 않습니다.
 
 ## 버전 전환
 
-IR과 프로그램 버전은 각각 0.3, 0.3.0입니다.
-0.2 원고의 IR을 다시 생성하고, 템플릿의 IR 버전도 0.3과 일치시켜야 합니다.
+IR과 프로그램 버전은 각각 0.4, 0.4.0입니다.
+이전 원고의 IR을 다시 생성하고, 템플릿의 IR 버전도 0.4와 일치시켜야 합니다.
 변수 태그는 필요한 자리에서만 사용하며 필수 원형 선언을 대체하지 않습니다.
 
 ## 장 시작 번호

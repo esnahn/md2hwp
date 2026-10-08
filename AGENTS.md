@@ -29,7 +29,7 @@ separate source ZIPs, release-note copies, checksum files or build manifests.
 
 Keep Pandoc invocation in the app and Pandoc AST handling in the core. Backends
 consume validated IR. Preserve Unicode. Reject unsupported constructors explicitly.
-Use only the current IR 0.3 closed schema. AST2IR rules target that IR without
+Use only the current IR 0.4 closed schema. AST2IR rules target that IR without
 an independent rules version. Input IR and template ir-version must match the
 program's current IR exactly; reject old versions with regeneration guidance.
 Template-owned begin:template/end:template declarations supply all current IR
@@ -98,7 +98,7 @@ Hancom 2020 may export OnPage AUTONUM Number="1" for every note while displaying
 keep continuous/section numbering and all other structures exact. Verify the
 rendered footnote numbers visually; XML counters alone do not establish display numbering.
 Existing user deployment templates require explicit adoption
-of new declarations or regeneration, even while the development IR remains 0.3.
+of new declarations or regeneration, even while the development IR remains 0.4.
 IDs on headings and figures are document-wide unique Unicode strings without
 whitespace, control characters or #. Preserve them in IR; decode internal Link
 fragments strictly as UTF-8 URI escapes and resolve by actual target kind, without
@@ -158,7 +158,7 @@ formatting and horizontal borders; use both samples for outer and internal verti
 borders. The left sample's left edge and right sample's right edge own the exterior;
 repeat their facing edges at interior boundaries. A one-column output combines both
 outer edges. Reject old one-column prototypes with explicit adoption/regeneration
-guidance without changing IR 0.3. The
+guidance without changing IR 0.4. The
 last cell has no side/bottom borders or background; its visible top border may
 exactly match the content sample's bottom border. Preserve that shared boundary;
 for header-only outputs align it to the header sample's bottom border. An absent
@@ -229,8 +229,8 @@ existing Debug and Release templates remain unchanged. Use a separate template
 copy and explicit --template for experiments and live verification.
 Update the tracked default only when the user authorizes adopting the edited copy.
 
-Align release major/minor versions with the IR version (IR 0.3 corresponds to
-v0.3.0). A Git tag alone does not update application/package version metadata or
+Align release major/minor versions with the IR version (IR 0.4 corresponds to
+v0.4.0). A Git tag alone does not update application/package version metadata or
 README version labels; check their consistency when preparing a release.
 
 Track heading1 from md2hwp-heading1-start, incrementing only for heading1.
@@ -284,3 +284,21 @@ Explicit option paths resolve from caller cwd, independently of image resources.
 option-based render modes remain. Defaults resolve beside the relevant EXE.
 Shorthand resources resolve within the source/IR directory; explicit render modes
 use cwd. Maintain source/template protection and successful-result replacement.
+
+## Object sources (IR 0.4)
+
+Object source is an optional nonempty array of closed {prefix, inlines} paragraphs.
+Use only the approved labels in rules/ast2ir/ir-v0.4.json, case-insensitive for English.
+Preserve spelling, punctuation, numbers and order. Optional period precedes an optional
+ASCII digit suffix; digits are supported only for 주/주석/note. Require an immediate
+colon followed by space and nonempty content. No space before colon. Attach consecutive
+recognized paragraphs after figures/boxes/tables, allowing an intervening below-table
+caption. Stop at the first nonmatching block; never absorb earlier unlabeled prose.
+No ※, footnotes or cross references in these notes. Count every source paragraph and
+prefix against cumulative limits. See docs/object-sources.md.
+Require slot:<role>.source.prefix followed by ': ' and slot:<role>.source in each
+box/figure/table source sample. Clone the complete template paragraph per IR paragraph
+into the object's native caption or the table's single merged source cell. Preserve
+sample paragraph formatting and each slot's first-character formatting; do not recompute
+hanging indents from prefix lengths. Intermediate one-paragraph verification remains
+adapter-private; final full-document save/reopen comparison covers all notes.

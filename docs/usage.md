@@ -53,7 +53,7 @@ DLL을 찾을 수 없으면 안내와 함께 HWP 생성을 중단하고 기존 �
 > 프로그램 실행에 외부 `lock.json`은 필요하지 않습니다. 프로그램이 스크립트를 자동으로
 > 실행하지도 않습니다.
 
-IR 0.3의 YAML 메타데이터와 템플릿 태그는 [메타데이터 문서](yaml-variables.md)에 정리했습니다.
+IR 0.4의 YAML 메타데이터와 템플릿 태그는 [메타데이터 문서](yaml-variables.md)에 정리했습니다.
 
 ## 실행
 
@@ -90,11 +90,11 @@ Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔�
 .\md2hwp-backend.exe --version
 ```
 
-v0.3.0의 첫 명령 출력은 다음과 같습니다.
+v0.4.0의 첫 명령 출력은 다음과 같습니다.
 
 ```text
-md2hwp 0.3.0
-md2hwp-backend 0.3.0
+md2hwp 0.4.0
+md2hwp-backend 0.4.0
 ```
 
 `--worker`를 생략하면 md2hwp.exe 옆의 백엔드를 확인합니다. `--worker`와 `--dotnet`은
@@ -116,7 +116,7 @@ md2hwp-backend 0.3.0
 
 `--template`과 Rust의 `--worker`를 생략하면 각 EXE 옆의 `template.hwp`,
 `md2hwp-backend.exe`를 찾습니다. 옵션 방식의 이미지 기준 폴더는 작업 폴더입니다.
-현재 IR `0.3`, 정규화 규칙과 스키마는 실행 파일에 포함됩니다.
+현재 IR `0.4`, 정규화 규칙과 스키마는 실행 파일에 포함됩니다.
 입력 IR과 템플릿의 IR 버전은 프로그램의 현재 IR 버전과 정확히 같아야 합니다.
 변환 규칙과 템플릿에는 별도의 계약 버전을 두지 않습니다.
 
