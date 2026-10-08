@@ -337,9 +337,12 @@ impl State<'_> {
             fn visible(inlines: &[Inline]) -> bool {
                 inlines.iter().any(|inline| match inline {
                     Inline::Text { value } => !value.trim().is_empty(),
-                    Inline::Strong { inlines }
-                    | Inline::Emph { inlines }
-                    | Inline::Link { inlines, .. } => visible(inlines),
+                    Inline::Strong { inlines } | Inline::Emph { inlines } => visible(inlines),
+                    // Empty internal-link labels are symbolic references until
+                    // normalization resolves them; context validation rejects them.
+                    Inline::Link {
+                        target, inlines, ..
+                    } => target.starts_with('#') || visible(inlines),
                     _ => false,
                 })
             }
