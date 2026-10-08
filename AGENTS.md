@@ -41,7 +41,7 @@ Only begin:template may carry native SECDEF/COLDEF controls. Preserve those
 settings outside disposable definitions in the working document, without changing
 the source template. Do not extend this exception to other declarations.
 Generated links render as formatted labels/plain text; strip automatic hyperlinks
-only in generated content. Figures embed PNGs; caption and source belong to the picture's native caption.
+only in generated content. Figures embed PNG/JPG/JPEG images; caption and source belong to the picture's native caption.
 The begin:figure/end:figure sample contains one picture with a
 two-paragraph native caption. Ignore sample image content/size; inherit caption options.
 Native list.bullet/list.ordered sample paragraphs own bullet and per-level numbering
@@ -304,3 +304,11 @@ into the object's native caption or the table's single merged source cell. Prese
 sample paragraph formatting and each slot's first-character formatting; do not recompute
 hanging indents from prefix lengths. Intermediate one-paragraph verification remains
 adapter-private; final full-document save/reopen comparison covers all notes.
+
+JPEG figures accept .jpg/.jpeg case-insensitively. Read bounded SOF0/SOF1/SOF2
+8-bit frame headers after skipping length-delimited metadata; reject malformed,
+truncated, zero-size and unsupported frame encodings explicitly. Pass the original
+JPEG file directly to embedded InsertPicture, using the template width and pixel
+aspect ratio. Hancom may re-encode or deduplicate embedded image data; do not
+claim byte-for-byte preservation. Do not transcode JPEG into PNG or add format
+fields to IR.
