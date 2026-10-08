@@ -140,7 +140,7 @@ and ColWidthDefault column widths only. Reject table IDs/attributes, merged cell
 columns, multiple/intermediate headers or bodies, footer rows and nonparagraph or
 multiple-paragraph cell blocks explicitly. Table number references remain unsupported.
 Cells allow rich text, footnotes and current heading/figure references; caption and
-source reject footnotes/references. Include rows/cells and every inline/text in
+source reject footnotes but allow heading/figure number references. Include rows/cells and every inline/text in
 cumulative validation limits.
 
 CommonMark does not support table_captions. Attach standalone Table:/table:/:/표: plus
@@ -296,7 +296,7 @@ ASCII digit suffix; digits are supported only for 주/주석/note. Require an im
 colon followed by space and nonempty content. No space before colon. Attach consecutive
 recognized paragraphs after figures/boxes/tables, allowing an intervening below-table
 caption. Stop at the first nonmatching block; never absorb earlier unlabeled prose.
-No ※, footnotes or cross references in these notes. Count every source paragraph and
+No ※ or footnotes in these notes; heading/figure number references are supported. Count every source paragraph and
 prefix against cumulative limits. See docs/object-sources.md.
 Require slot:<role>.source.prefix followed by ': ' and slot:<role>.source in each
 box/figure/table source sample. Clone the complete template paragraph per IR paragraph
@@ -312,3 +312,17 @@ JPEG file directly to embedded InsertPicture, using the template width and pixel
 aspect ratio. Hancom may re-encode or deduplicate embedded image data; do not
 claim byte-for-byte preservation. Do not transcode JPEG into PNG or add format
 fields to IR.
+
+Hancom 2020 11.0.0.9136 native-caption capability verification: InsertCrossReference
+succeeds inside picture, table and code-box CAPTION paragraphs; targets, cached
+numbers and fields survive save/reopen. InsertFootnote returns false in all three
+caption kinds, while the same-session body positive control succeeds. This is a
+native insertion restriction on that version, not proof about every Hancom version
+or forced HWPML structures. Keep caption footnotes forbidden, including heading
+slots copied into CAPTION. Table sources live in merged cells: their footnotes
+remain unsupported by the current object-note contract, not this caption test.
+Allow heading/figure number references in figure captions/alt, table captions and
+all object-note paragraphs, preserving surrounding formats and native AUTONUMs.
+Figure alt remains descriptive metadata: validate its targets but do not expect
+its reference markers in rendered paragraphs. Enumerate all object-note runs,
+not only the first note; avoid double-enumerating intermediate source copies.
