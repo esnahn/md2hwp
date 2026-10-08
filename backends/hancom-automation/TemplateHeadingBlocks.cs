@@ -79,7 +79,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
     }
 
     // Native figure captions are already attached: each operation now owns one root.
-    internal XDocument Attach(XDocument rendered, IrPreviewPlan plan, int start)
+    internal XDocument Attach(XDocument rendered, IrPreviewPlan plan, int start, Action<XDocument>? beforeRecordLayout = null)
     {
         titleHeightElements.Clear();
         generatedHeadingInstances.Clear();
@@ -130,6 +130,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
         }
         if (samples.Values.SelectMany(p => p).SelectMany(p => p.Descendants("NEWNUM"))
             .Any(e => (string?)e.Attribute("NumberType") == "Figure")) RecalculateFigureNumbers(result);
+        beforeRecordLayout?.Invoke(result);
         foreach (var element in reflow)
             titleHeightElements.Add("/" + string.Join("/", element.AncestorsAndSelf().Reverse()
                 .Select(e => $"{e.Name.LocalName}[{e.ElementsBeforeSelf(e.Name).Count() + 1}]")));

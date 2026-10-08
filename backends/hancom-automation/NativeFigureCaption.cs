@@ -4,10 +4,12 @@ namespace Md2Hwp.HancomIrPreview;
 
 // Lower the native caption sample to the existing text renderer, then attach its
 // verified output to each generated picture. The intermediate form is never published.
-internal sealed class NativeFigureCaption(XElement settings)
+internal sealed class NativeFigureCaption(XElement settings, TemplateObjectSpacing? spacing = null)
 {
     private readonly Dictionary<string, string> generatedFigureInstances = new(StringComparer.Ordinal);
     internal IReadOnlyDictionary<string, string> GeneratedFigureInstances => generatedFigureInstances;
+    private readonly HashSet<string> generatedShapes = [];
+    internal void AttachSpacing(XDocument document) => spacing?.Attach(document, "PICTURE", generatedShapes);
 
     internal static (NativeFigureCaption Layout, XDocument Document) Lower(XDocument source)
     {
@@ -25,8 +27,9 @@ internal sealed class NativeFigureCaption(XElement settings)
         }
         var begin = Find("begin:figure");
         var end = Find("end:figure");
-        if (end != begin + 2) throw new InvalidDataException("figure range must contain exactly one sample picture paragraph.");
-        var root = roots[begin + 1];
+        if (end < begin + 2 || end - begin > 65) throw new InvalidDataException("figure range requires one sample picture with 0–63 empty paragraphs before/after it.");
+        var range = roots.Skip(begin + 1).Take(end - begin - 1).ToArray();
+        var (root, spacing) = TemplateObjectSpacing.CaptureRange(source, range, "PICTURE", "figure");
         var pictures = root.Descendants("PICTURE").ToArray();
         if (pictures.Length != 1 || root.Elements().Any(e => e.Name.LocalName != "TEXT") ||
             root.Elements().SelectMany(e => e.Elements()).Any(e => e.Name.LocalName != "PICTURE" &&
@@ -52,12 +55,14 @@ internal sealed class NativeFigureCaption(XElement settings)
         roots[begin].ReplaceWith(Declaration(roots[begin], "begin:figure"));
         root.ReplaceWith(Declaration(root, "slot:figure.image"), new XElement(paragraphs[0]), new XElement(paragraphs[1]));
         roots[end].ReplaceWith(Declaration(roots[end], "end:figure"));
-        return (new(new XElement(caption)), document);
+        foreach (var paragraph in range.Where(paragraph => paragraph != root)) paragraph.Remove();
+        return (new(new XElement(caption), spacing), document);
     }
 
     internal XDocument Attach(XDocument rendered, IrPreviewPlan plan, int start)
     {
         generatedFigureInstances.Clear();
+        generatedShapes.Clear();
         var result = new XDocument(rendered);
         var roots = AuriMinimalBoxPrototype.RootParagraphs(result);
         var index = start;
@@ -68,6 +73,11 @@ internal sealed class NativeFigureCaption(XElement settings)
             var root = roots[index];
             var shape = root.Descendants("PICTURE").Single().Element("SHAPEOBJECT")!;
             shape.SetAttributeValue("NumberingType", "Figure");
+            var shapeId = (string?)shape.Attribute("InstId") ?? (string?)shape.Attribute("InstID");
+            if (shapeId is not null && !generatedShapes.Add(shapeId))
+                throw new InvalidOperationException("Generated figures have ambiguous native identities.");
+            if (spacing is not null && shapeId is null)
+                throw new InvalidOperationException("Generated figure spacing requires a native instance ID.");
             if (operation.FigureId is { } figureId)
             {
                 var instance = (string?)shape.Attribute("InstId") ?? (string?)shape.Attribute("InstID")

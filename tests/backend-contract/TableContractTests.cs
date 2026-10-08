@@ -97,6 +97,99 @@ internal static class TableContractTests
             (string?)rightParagraph.Attribute("ParaShape")).Attribute("Align") == "Right", "Explicit manuscript alignment was not applied.");
         Check(lower.Layout.GeneratedTableInstances.Count == 1, "Generated table native identity was not recorded.");
 
+        // Surrounding prototype spacing repeats only around generated objects, with full formatting.
+        var spacedSource = Fixture();
+        var blank = Paragraph("");
+        blank.SetAttributeValue("PageBreak", "true");
+        blank.SetAttributeValue("ColumnBreak", "false");
+        spacedSource.Descendants("P").Single(p => TaggedTemplateBinding.DirectText(p) == Tag("end:table")).AddBeforeSelf(blank, Paragraph("  "));
+        var leading = Paragraph("");
+        leading.SetAttributeValue("ColumnBreak", "true");
+        leading.SetAttributeValue("PageBreak", "false");
+        spacedSource.Descendants("P").Single(p => TaggedTemplateBinding.DirectText(p) == Tag("begin:table"))
+            .AddAfterSelf(leading, Paragraph(" "));
+        var spacedBefore = spacedSource.ToString();
+        var spaced = TemplateTables.Lower(spacedSource);
+        Check(spacedSource.ToString() == spacedBefore && AuriMinimalBoxPrototype.RootParagraphs(spaced.Document).Count == 5,
+            "Spacing capture changed the template or left spacing in disposable definitions.");
+        var repeated = tableOperation with { TableId = null };
+        var twoTables = tablePlan with { Operations = [repeated, new PreviewOperation("text", "body", ["between"]), repeated] };
+        var spacedResult = spaced.Layout.Attach(Destination(Paragraph("MARKER"), Paragraph("between"), Paragraph("MARKER"), Paragraph("after")),
+            twoTables, 0, (_, _, _) => [4000, 10400]);
+        spaced.Layout.AttachSpacing(spacedResult);
+        var spacedRoots = AuriMinimalBoxPrototype.RootParagraphs(spacedResult);
+        Check(spacedRoots.Count == 12 && spacedRoots[2].Descendants("TABLE").Any() && spacedRoots[8].Descendants("TABLE").Any() &&
+            TaggedTemplateBinding.DirectText(spacedRoots[5]) == "between" && TaggedTemplateBinding.DirectText(spacedRoots[11]) == "after",
+            "Repeated table spacing moved manuscript content or attached to the wrong object.");
+        foreach (var index in new[] { 3, 9 })
+            Check((string?)spacedRoots[index].Attribute("PageBreak") == "true" &&
+                (string?)spacedRoots[index].Attribute("ColumnBreak") == "false" &&
+                TaggedTemplateBinding.DirectText(spacedRoots[index + 1]) == "  ", "Spacing formatting, breaks or whitespace were lost.");
+        foreach (var index in new[] { 0, 6 })
+            Check((string?)spacedRoots[index].Attribute("ColumnBreak") == "true" &&
+                (string?)spacedRoots[index].Attribute("PageBreak") == "false" &&
+                TaggedTemplateBinding.DirectText(spacedRoots[index + 1]) == " ", "Leading paragraph order or break settings were lost.");
+        Check(spacedRoots.Select(p => (string?)p.Attribute("InstId")).Distinct().Count() == spacedRoots.Count,
+            "Spacing clones share native identities.");
+        foreach (var invalid in new[] { Paragraph("unexpected text"), new XElement("P", new XElement("TEXT", new XElement("TAB"))),
+            new XElement("P", new XElement("TEXT", new XElement("PICTURE"))) })
+        {
+            var bad = Fixture();
+            bad.Descendants("P").Single(p => TaggedTemplateBinding.DirectText(p) == Tag("end:table")).AddBeforeSelf(invalid);
+            Reject(() => TemplateTables.Lower(bad));
+            bad = Fixture();
+            bad.Descendants("P").Single(p => TaggedTemplateBinding.DirectText(p) == Tag("begin:table")).AddAfterSelf(new XElement(invalid));
+            Reject(() => TemplateTables.Lower(bad));
+        }
+        var numberedSpacing = Fixture();
+        numberedSpacing.Descendants("PARASHAPE").Single().SetAttributeValue("HeadingType", "Outline");
+        numberedSpacing.Descendants("P").Single(p => TaggedTemplateBinding.DirectText(p) == Tag("end:table")).AddBeforeSelf(Paragraph(""));
+        Reject(() => TemplateTables.Lower(numberedSpacing));
+        // The same identity-based spacing supports pictures without disturbing static objects.
+        var picture = Paragraph("");
+        picture.Element("TEXT")!.Add(new XElement("PICTURE", new XElement("SHAPEOBJECT", new XAttribute("InstId", "picture-instance"))));
+        var pictureDocument = Destination(picture, Paragraph("tail"));
+        TemplateObjectSpacing.Capture(spacedSource, [blank], "figure").Attach(pictureDocument, "PICTURE", ["picture-instance"]);
+        Check(AuriMinimalBoxPrototype.RootParagraphs(pictureDocument).Count == 3 &&
+            (string?)AuriMinimalBoxPrototype.RootParagraphs(pictureDocument)[1].Attribute("PageBreak") == "true",
+            "Picture spacing did not retain its paragraph break.");
+
+        // Native figure lowering locates its anchor after leading spacing, then preserves both sides.
+        var figureSource = Destination(Paragraph(Tag("begin:figure")), Paragraph(" "),
+            Paragraph(""), Paragraph(""), Paragraph(Tag("end:figure")));
+        var figureRoots = AuriMinimalBoxPrototype.RootParagraphs(figureSource);
+        figureRoots[2].Element("TEXT")!.AddFirst(new XElement("PICTURE", new XElement("SHAPEOBJECT", new XAttribute("InstId", "sample-picture"),
+            new XElement("CAPTION", new XAttribute("Side", "Bottom"), new XElement("PARALIST",
+                Paragraph(Tag("slot:figure.caption")), Paragraph(Tag("slot:figure.source")))))));
+        var figureBefore = figureSource.ToString();
+        var figureLower = NativeFigureCaption.Lower(figureSource);
+        Check(figureSource.ToString() == figureBefore && AuriMinimalBoxPrototype.RootParagraphs(figureLower.Document).Count == 5,
+            "Figure lowering mutated its source or kept surrounding blanks among flat slots.");
+        XElement GeneratedPicture(string id)
+        {
+            var p = Paragraph("");
+            p.Element("TEXT")!.AddFirst(new XElement("PICTURE", new XElement("SHAPEOBJECT", new XAttribute("InstId", id),
+                new XElement("SIZE", new XAttribute("Width", 1000)))));
+            return p;
+        }
+        var figureOperation = new PreviewOperation("figure", "figure", ["image", "caption", ""]);
+        var figurePlan = tablePlan with { Operations = [figureOperation, new PreviewOperation("text", "body", ["between"]), figureOperation] };
+        var figures = figureLower.Layout.Attach(Destination(GeneratedPicture("one"), Paragraph("caption"), Paragraph("between"),
+            GeneratedPicture("two"), Paragraph("caption"), Paragraph("after")), figurePlan, 0);
+        figureLower.Layout.AttachSpacing(figures);
+        var figureOutput = AuriMinimalBoxPrototype.RootParagraphs(figures);
+        Check(figureOutput.Count == 8 && figureOutput[1].Descendants("PICTURE").Any() && figureOutput[5].Descendants("PICTURE").Any() &&
+            TaggedTemplateBinding.DirectText(figureOutput[0]) == " " && TaggedTemplateBinding.DirectText(figureOutput[4]) == " " &&
+            TaggedTemplateBinding.DirectText(figureOutput[3]) == "between" && TaggedTemplateBinding.DirectText(figureOutput[7]) == "after",
+            "Leading/trailing figure spacing disturbed native attachment or manuscript order.");
+        var leadingOnly = Fixture();
+        leadingOnly.Descendants("P").Single(p => TaggedTemplateBinding.DirectText(p) == Tag("begin:table")).AddAfterSelf(Paragraph(" "));
+        var leadingLayout = TemplateTables.Lower(leadingOnly);
+        var leadingOutput = leadingLayout.Layout.Attach(destination, tablePlan, 0, (_, _, _) => [4000, 10400]);
+        leadingLayout.Layout.AttachSpacing(leadingOutput);
+        Check(AuriMinimalBoxPrototype.RootParagraphs(leadingOutput).Count == 2 &&
+            TaggedTemplateBinding.DirectText(AuriMinimalBoxPrototype.RootParagraphs(leadingOutput)[0]) == " ", "Leading-only spacing requires trailing blanks.");
+
         var without = tableOperation with { Table = content with { Caption = null, Source = null } };
         var absent = lower.Layout.Attach(Destination(Paragraph("MARKER")), tablePlan with { Operations = [without] }, 0, (_, _, _) => [4000, 10400]);
         Check(!absent.Descendants("CAPTION").Any() && absent.Descendants("ROW").Count() == 2,

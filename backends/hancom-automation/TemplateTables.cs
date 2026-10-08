@@ -7,7 +7,7 @@ namespace Md2Hwp.HancomIrPreview;
 
 // A three-row, two-column native table is a formatting prototype. Its dimensions
 // and sample content do not determine the generated table's rows or columns.
-internal sealed class TemplateTables(XDocument source, XElement prototype, double widthMillimeters)
+internal sealed class TemplateTables(XDocument source, XElement prototype, double widthMillimeters, TemplateObjectSpacing? spacing = null)
 {
     internal static readonly string HeaderSlot = TaggedTemplateBinding.Tag("slot:table.header");
     internal static readonly string ContentSlot = TaggedTemplateBinding.Tag("slot:table.content");
@@ -26,6 +26,7 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
     internal IReadOnlyCollection<string> GeneratedTableInstances => generatedShapeIds;
     internal IReadOnlyDictionary<string, string> ReferencedTableInstances => generatedTableInstances;
     internal IReadOnlyCollection<string> GeneratedTableBodyInstances => generatedBodyShapeIds;
+    internal void AttachSpacing(XDocument document) => spacing?.Attach(document, "TABLE", generatedShapeIds);
     internal void RecalculateNumbers(XDocument document) => RecalculateTableNumbers(document);
 
     internal static (TemplateTables Layout, XDocument Document) Lower(XDocument source)
@@ -44,8 +45,8 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
         var templateEnd = Find("end:template");
         var begin = Find("begin:table");
         var end = Find("end:table");
-        if (begin <= templateBegin || end >= templateEnd || end != begin + 2)
-            throw new InvalidDataException("table requires exactly one root sample paragraph inside template definitions.");
+        if (begin <= templateBegin || end >= templateEnd || end < begin + 2 || end - begin > 65)
+            throw new InvalidDataException("table requires one root sample with 0–63 empty paragraphs before/after it inside template definitions.");
         RequirePlain(roots[begin], "table boundary"); RequirePlain(roots[end], "table boundary");
         var widths = roots.Select((paragraph, index) => (paragraph, index, match: WidthTag.Match(TaggedTemplateBinding.DirectText(paragraph))))
             .Where(item => item.match.Success).ToArray();
@@ -56,7 +57,8 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
             !double.IsFinite(width) || width <= 0 || width * 7200 / 25.4 > int.MaxValue || Math.Round(width * 7200 / 25.4) < 1)
             throw new InvalidDataException("table.width-mm must be a positive decimal width in millimeters.");
 
-        var root = roots[begin + 1];
+        var range = roots.Skip(begin + 1).Take(end - begin - 1).ToArray();
+        var (root, spacing) = TemplateObjectSpacing.CaptureRange(source, range, "TABLE", "table");
         var tables = root.Descendants("TABLE").ToArray();
         if (tables.Length != 1 || root.Elements().Any(element => element.Name.LocalName != "TEXT") ||
             root.Elements("TEXT").SelectMany(text => text.Elements()).Any(element =>
@@ -141,8 +143,9 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
             if (remaining.Contains(TaggedTemplateBinding.Prefix, StringComparison.Ordinal))
                 throw new InvalidDataException("Malformed template tag in table source/caption sample.");
         }
-        var layout = new TemplateTables(new XDocument(source), new XElement(root), width);
+        var layout = new TemplateTables(new XDocument(source), new XElement(root), width, spacing);
         widths[0].paragraph.Remove(); roots[begin].Remove(); root.Remove(); roots[end].Remove();
+        foreach (var paragraph in range.Where(paragraph => paragraph != root)) paragraph.Remove();
         return (layout, document);
     }
 

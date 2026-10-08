@@ -119,7 +119,12 @@ internal static partial class HancomPreviewWriter
                 attached = tables.Layout.Attach(attached, plan, start, (table, target, prototype) =>
                     TableAutoWidths.Calculate(table, target, prototype, checked((int)Math.Round(tables.Layout.WidthMillimeters * 7200 / 25.4)), referenceTemplate.Layout));
                 attached = objectSources.Layout.Attach(attached, plan, start);
-                attached = preparedMetadata.Restore(headings.Layout.Attach(attached, plan, start));
+                attached = preparedMetadata.Restore(headings.Layout.Attach(attached, plan, start, document =>
+                {
+                    boxes.Layout.AttachSpacing(document);
+                    nativeFigure.Layout.AttachSpacing(document);
+                    tables.Layout.AttachSpacing(document);
+                }));
                 attached = footnotes.Attach(attached, plan);
                 TemplateHeadingNumbers.RequireResolved(attached);
                 TemplateHeadingBlocks.RecalculateFigureNumbers(attached);

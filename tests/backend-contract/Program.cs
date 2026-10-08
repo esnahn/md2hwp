@@ -196,6 +196,19 @@ var loweredBox = TemplateBoxParagraphs.Lower(boxFixture);
 Check(boxFixture.ToString() == originalBoxFixture, "Box lowering mutated the source template.");
 Check(BoxCellParagraphs(AuriMinimalBoxPrototype.RootParagraphs(loweredBox.Document)[1]).Length == 1, "Box lowering retained the optional title sample.");
 Check(TaggedTemplateBinding.DirectText(BoxCellParagraphs(AuriMinimalBoxPrototype.RootParagraphs(loweredBox.Document)[1]).Single()) == TaggedTemplateBinding.Tag("slot:code.content"), "Box lowering changed the content slot.");
+var spacedBoxFixture = BoxTemplate(withTitle: true);
+var boxSpacer = BoxParagraph("");
+boxSpacer.SetAttributeValue("PageBreak", "true");
+spacedBoxFixture.Descendants("P").Single(p => TaggedTemplateBinding.DirectText(p) == TaggedTemplateBinding.Tag("end:code")).AddBeforeSelf(boxSpacer);
+spacedBoxFixture.Descendants("P").Single(p => TaggedTemplateBinding.DirectText(p) == TaggedTemplateBinding.Tag("begin:code"))
+    .AddAfterSelf(BoxParagraph(" "));
+var spacedBox = TemplateBoxParagraphs.Lower(spacedBoxFixture);
+var spacedBoxOutput = spacedBox.Layout.Attach(BoxRenderedDocument(spacedBox.Document, BoxRenderedRoot(spacedBox.Document, ["body"]), BoxParagraph("after")), BoxPlan(["body"]), 0);
+spacedBox.Layout.AttachSpacing(spacedBoxOutput);
+Check(AuriMinimalBoxPrototype.RootParagraphs(spacedBoxOutput).Count == 4 &&
+    TaggedTemplateBinding.DirectText(AuriMinimalBoxPrototype.RootParagraphs(spacedBoxOutput)[0]) == " " &&
+    (string?)AuriMinimalBoxPrototype.RootParagraphs(spacedBoxOutput)[2].Attribute("PageBreak") == "true" &&
+    TaggedTemplateBinding.DirectText(AuriMinimalBoxPrototype.RootParagraphs(spacedBoxOutput)[3]) == "after", "Box spacing or surrounding content was lost.");
 var boxLines = new[] { "제목: 건축물의 사용승인", "", " \t", "제22조 ① 원문", "  ② 둘째\t열  ", "", "제목: 본문 리터럴", "{{md2hwp:meta:title}}", "" };
 var boxParagraphs = AttachBoxLines(loweredBox.Layout, loweredBox.Document, boxLines);
 Check(boxParagraphs.Select(TaggedTemplateBinding.DirectText).SequenceEqual(new[] { "건축물의 사용승인", "제22조 ① 원문", "  ② 둘째\t열  ", "", "제목: 본문 리터럴", "{{md2hwp:meta:title}}", "" }), "Box title extraction or verbatim paragraphs lost text, indentation, tabs, internal blank lines or literal tags.");

@@ -337,3 +337,5 @@ never the reader chapter; keep native Table AUTONUM and existing restarts. Rejec
 referenced tables without a numbered native caption. Resolve generated table
 shape identities before final import and verify field target, cache and formatting
 after save/reopen, including captions, all notes, rich cells and footnote bodies.
+
+Code, figure and table ranges may include 0–63 empty plain root paragraphs in total before and/or after the single native object anchor. Clone them on the corresponding sides of each generated object with their formatting, whitespace and page/column breaks. Reject text, controls and list/outline numbering. Attach spacing only after operation-indexed passes, before recording final layout paths; never space unrelated static template objects.

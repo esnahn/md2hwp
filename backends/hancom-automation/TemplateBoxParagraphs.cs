@@ -5,7 +5,7 @@ namespace Md2Hwp.HancomIrPreview;
 
 // Native cloning and its checks use the existing one-paragraph intermediate.
 // Before publication, expand raw IR lines into template-owned paragraphs.
-internal sealed class TemplateBoxParagraphs(XDocument source, XElement contentSample, XElement? titleSample)
+internal sealed class TemplateBoxParagraphs(XDocument source, XElement contentSample, XElement? titleSample, TemplateObjectSpacing? spacing = null)
 {
     private readonly HashSet<string> generatedShapeIds = [];
     private readonly HashSet<string> heightPaths = [];
@@ -26,9 +26,11 @@ internal sealed class TemplateBoxParagraphs(XDocument source, XElement contentSa
         }
         var begin = Find("begin:code");
         var end = Find("end:code");
-        if (end != begin + 2)
-            throw new InvalidDataException("Box range must contain exactly one root paragraph.");
-        var tables = roots[begin + 1].Descendants("TABLE").ToArray();
+        if (end < begin + 2 || end - begin > 65)
+            throw new InvalidDataException("code range requires one sample box with 0–63 empty paragraphs before/after it.");
+        var range = roots.Skip(begin + 1).Take(end - begin - 1).ToArray();
+        var (root, spacing) = TemplateObjectSpacing.CaptureRange(source, range, "TABLE", "code");
+        var tables = root.Descendants("TABLE").ToArray();
         if (tables.Length != 1 || tables[0].Descendants("ROW").Count() != 1 ||
             tables[0].Descendants("CELL").Count() != 1)
             throw new InvalidDataException("Box requires one single-cell table.");
@@ -49,10 +51,13 @@ internal sealed class TemplateBoxParagraphs(XDocument source, XElement contentSa
             paragraphs[^1] != content[0] || title is not null && paragraphs[0] != title)
             throw new InvalidDataException("Box cell requires an optional title slot followed by one content slot, with no extra paragraphs.");
         var layout = new TemplateBoxParagraphs(new XDocument(source), new XElement(content[0]),
-            title is null ? null : new XElement(title));
+            title is null ? null : new XElement(title), spacing);
+        foreach (var paragraph in range.Where(paragraph => paragraph != root)) paragraph.Remove();
         title?.Remove();
         return (layout, document);
     }
+
+    internal void AttachSpacing(XDocument document) => spacing?.Attach(document, "TABLE", generatedShapeIds);
 
     private static bool PlainSlot(XElement paragraph) =>
         paragraph.Name.LocalName == "P" && paragraph.Elements().Any() &&
