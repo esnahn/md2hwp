@@ -51,7 +51,7 @@ title: 문서 제목
 `# 장 제목`, `## 절 제목`처럼 `#` 1~6개로 작성하며 템플릿의 `heading1`~`heading6`에 대응합니다. 실제 한글 개요 번호는 템플릿에 설정되어 있어야 표시됩니다.
 
 - **템플릿:** 단일 `{{md2hwp:heading1}}` 선언 또는 `begin:heading1`~`end:heading1` 범위 안의 `slot:heading1`로 제목을 배치합니다.
-- **하위 제목 목록:** `begin:each.child:heading2`~`end:each.child:heading2` 안에 `slot:heading2`를 두면 해당 장의 절 제목을 순서대로 반복합니다.
+- **하위 제목 목록:** `begin:each.child:heading2`~`end:each.child:heading2` 안에 `slot:heading2`를 두면 해당 장의 절 제목을 순서대로 반복합니다. 제목과 반복 범위에서 `num:heading1`~`num:heading6`으로 자신의 번호와 상위 번호를 함께 표시할 수 있습니다.
 - **장 시작 번호:** YAML의 `md2hwp-heading1-start: 3`으로 지정합니다. 1일 경우 지정하지 않은 것과 같은 결과를 얻습니다. 장 번호는 장마다 증가합니다.
 
 태그는 모두 `{{md2hwp:…}}` 형태입니다. [템플릿 상세](docs/templates.md)를 참고하십시오.

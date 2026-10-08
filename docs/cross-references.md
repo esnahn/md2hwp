@@ -118,3 +118,5 @@ Table: 표 설명
 ```
 
 표 ID도 접두어가 필수가 아니며 문서 전체에서 유일해야 합니다. 새 전용 문법을 추가하지 않습니다. [Pandoc attributes 설명](https://pandoc.org/MANUAL.html#extension-attributes)의 블록 앞 속성 문법을 사용합니다. [표 참조 검증 원고](../examples/table-references/table-references.md)는 앞뒤·다른 장·캡션·출처·각주·셀 참조를 포함합니다.
+
+제목 블록·한 문단 제목 선언·`each.child`에서도 같은 `num:heading1`~`num:heading6` 번호를 사용합니다. 범위별 자신의 수준과 상위 수준만 지원합니다. [템플릿의 반복·번호 예시](templates.md)를 참고하십시오.

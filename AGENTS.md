@@ -245,8 +245,17 @@ v0.4.0). A Git tag alone does not update application/package version metadata or
 README version labels; check their consistency when preparing a release.
 
 Track heading1 from md2hwp-heading1-start, incrementing only for heading1.
-Use num:heading1 inside heading blocks and native figure/table captions; preserve
-its first character formatting, reject unresolved or orphan slots. Figure counters
+Use num:heading1 through num:heading6 in heading blocks, numbered plain heading
+samples and each.child scopes; resolve only own/ancestor levels from the same
+manuscript counters as fixed heading references, including ID-less headings and
+skipped parents. Bind repeated children using their own operation index, never
+pre-fill descendants with the parent's counters. Title slots may have number/literal
+affixes, one per plain paragraph; preserve the slot's first-character formatting,
+rich manuscript title runs and independently formatted affixes. Keep existing native
+list numbering optional and independent; do not silently disable it. Figure/table
+captions and object-reference samples continue to allow only num:heading1.
+Use adapter-private markers for template number tags so manuscript/metadata literals
+are never interpreted recursively. Reject unresolved, orphan and deeper-level slots. Figure counters
 restart with a native NEWNUM Figure=1 at the first figure of each chapter. Keep
 AUTONUM as native controls. Literal # markers remain unchanged without the new slot.
 User deployment templates require explicit authorization before adopting new slots.
