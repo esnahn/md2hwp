@@ -16,13 +16,34 @@ internal static class TemplateRangeStructure
     }
 
     public static bool Equivalent(IReadOnlyList<XElement> before, IReadOnlyList<XElement> after,
-        XDocument beforeDocument, XDocument afterDocument) =>
-        Equivalent(before.Select(p => TemplateFormatting.Copy(p, beforeDocument)).ToArray(),
+        XDocument beforeDocument, XDocument afterDocument)
+    {
+#if DEBUG
+        return Equivalent(before.Select(p => TemplateFormatting.Copy(p, beforeDocument)).ToArray(),
             after.Select(p => TemplateFormatting.Copy(p, afterDocument)).ToArray());
+#else
+        var leftCopies = ExpandedCopies(before, beforeDocument);
+        var rightCopies = ExpandedCopies(after, afterDocument);
+        if (before.Count != after.Count) return false;
+        var left = CanonicalizeOwned(leftCopies);
+        var right = CanonicalizeOwned(rightCopies);
+        return left.Zip(right).All(pair => XNode.DeepEquals(pair.First, pair.Second));
+#endif
+    }
+
+    private static XElement[] ExpandedCopies(IReadOnlyList<XElement> roots, XDocument document)
+    {
+        var reader = new TemplateFormatting.ComparisonReader(document);
+        return roots.Select(reader.Copy).ToArray();
+    }
 
     private static XElement[] Canonicalize(IReadOnlyList<XElement> roots)
     {
-        var copies = roots.Select(root => new XElement(root)).ToArray();
+        return CanonicalizeOwned(roots.Select(root => new XElement(root)).ToArray());
+    }
+
+    private static XElement[] CanonicalizeOwned(XElement[] copies)
+    {
         // Hancom adds/removes empty character payloads in control-only and empty
         // paragraphs. Preserve TEXT formatting, all whitespace and actual text.
         copies.SelectMany(p => p.Descendants("CHAR"))
@@ -92,8 +113,12 @@ internal static class TemplateRangeStructure
 
     public static string DescribeDifference(IReadOnlyList<XElement> before, IReadOnlyList<XElement> after,
         XDocument beforeDocument, XDocument afterDocument) => DescribeDifference(
+#if DEBUG
             before.Select(p => TemplateFormatting.Copy(p, beforeDocument)).ToArray(),
             after.Select(p => TemplateFormatting.Copy(p, afterDocument)).ToArray());
+#else
+            ExpandedCopies(before, beforeDocument), ExpandedCopies(after, afterDocument));
+#endif
 
     public static void RequireOriginalStyleDefinitions(XDocument before, XDocument after,
         IReadOnlyList<XElement>? preservedRoots = null)
@@ -101,11 +126,19 @@ internal static class TemplateRangeStructure
         // Named style identity remains stable; its formatting references need not.
         // Retained paragraphs are checked separately through Equivalent.
         var current = after.Descendants("STYLE").ToDictionary(e => (string)e.Attribute("Id")!);
+#if !DEBUG
+        var beforeReader = new TemplateFormatting.ComparisonReader(before);
+        var afterReader = new TemplateFormatting.ComparisonReader(after);
+#endif
         foreach (var original in before.Descendants("STYLE"))
         {
             var id = (string)original.Attribute("Id")!;
             if (!current.TryGetValue(id, out var saved) ||
+#if DEBUG
                 !XNode.DeepEquals(TemplateFormatting.Copy(original, before), TemplateFormatting.Copy(saved, after)))
+#else
+                !XNode.DeepEquals(beforeReader.Copy(original), afterReader.Copy(saved)))
+#endif
                 throw new InvalidOperationException($"Original style formatting changed: {(string?)original.Attribute("Name")} ({id}).");
         }
     }

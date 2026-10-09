@@ -68,6 +68,7 @@ internal static partial class HancomPreviewWriter
                 ClearNativeListAtCaret(hwp, styles.Resolve("body"));
                 ApplyResolvedParagraphStyle(hwp, styles, styles.Resolve("body"));
                 RemoveHyperlinksInRoots(hwp, start, ((XElement[])RangeRoots(hwp)).Length);
+#if DEBUG
                 VerifyStyles(hwp, plan, styles, start, continuations);
                 VerifyCharacterMarks(hwp, plan, styles, start);
                 VerifyBoxes(hwp, plan, styles, box, start);
@@ -76,6 +77,20 @@ internal static partial class HancomPreviewWriter
                 RequireNoHyperlinks(((XElement[])RangeRoots(hwp)).Skip(start));
                 // All clones are verified before removing the original prototypes.
                 DeleteRangeParagraphs(hwp, binding.TemplateBegin, binding.TemplateEnd + 1);
+#else
+                // No document changes between these checks: read one snapshot
+                // after hyperlink removal, then discard it after deletion.
+                var flatDocument = RenderProfile.ReadDocument((object)hwp);
+                var flatRoots = RangeRoots(flatDocument);
+                var flatParagraphs = ReadParagraphs(flatDocument);
+                VerifyStyles(flatParagraphs, plan, styles, start, continuations);
+                VerifyCharacterMarks(flatParagraphs, plan, styles, start);
+                VerifyBoxes(flatDocument, plan, styles, box, start);
+                VerifyCaptions(flatDocument, plan, styles, caption, start);
+                VerifyLists(flatDocument, flatParagraphs, plan, profile, start);
+                RequireNoHyperlinks(flatRoots.Skip(start));
+                DeleteRangeParagraphs(hwp, binding.TemplateBegin, binding.TemplateEnd + 1, flatRoots);
+#endif
                 start -= binding.TemplateEnd + 1 - binding.TemplateBegin;
                 validateTiming.Dispose();
                 var saveFlatTiming = RenderProfile.Measure("phase.save-flat-reopen");
@@ -84,6 +99,7 @@ internal static partial class HancomPreviewWriter
                 CloseDocument(hwp); Open(hwp, temporary, visible);
                 saveFlatTiming.Dispose();
                 var verifyFlatTiming = RenderProfile.Measure("phase.verify-flat-reopened");
+#if DEBUG
                 VerifyText(hwp, plan, profile);
                 VerifyStyles(hwp, plan, styles, start, continuations);
                 VerifyCharacterMarks(hwp, plan, styles, start);
@@ -93,6 +109,20 @@ internal static partial class HancomPreviewWriter
                 XElement[] finalRoots = RangeRoots(hwp);
                 RequireNoHyperlinks(finalRoots.Skip(start));
                 XDocument finalDocument = RenderProfile.ReadDocument((object)hwp);
+#else
+                // Opening the saved flat document starts a new snapshot scope.
+                // All checks are pure; native attachment happens only afterwards.
+                XDocument finalDocument = RenderProfile.ReadDocument((object)hwp);
+                XElement[] finalRoots = RangeRoots(finalDocument);
+                IReadOnlyList<SavedParagraph> saved = ReadParagraphs(finalDocument);
+                VerifyText(finalDocument, plan, profile);
+                VerifyStyles(saved, plan, styles, start, continuations);
+                VerifyCharacterMarks(saved, plan, styles, start);
+                VerifyBoxes(finalDocument, plan, styles, box, start, verifyPrototype: false);
+                VerifyCaptions(finalDocument, plan, styles, caption, start, verifyPrototype: false);
+                VerifyLists(finalDocument, saved, plan, profile, start);
+                RequireNoHyperlinks(finalRoots.Skip(start));
+#endif
                 TemplateRangeStructure.RequireOriginalStyleDefinitions(document, finalDocument, prefix);
                 if (!TemplateRangeStructure.Equivalent(prefix, finalRoots.Take(prefix.Length).ToArray(), document, finalDocument))
                     throw new InvalidOperationException("Rendering changed static cover/header content: " +
@@ -100,7 +130,9 @@ internal static partial class HancomPreviewWriter
                 var expected = ExpectedParagraphs(plan, profile).ToArray();
                 if (finalRoots.Length != prefix.Length + expected.Length + 1 || !IsSimpleParagraph(finalRoots[^1], ""))
                     throw new InvalidOperationException("Unexpected leftover template definitions or generated paragraph count.");
+#if DEBUG
                 IReadOnlyList<SavedParagraph> saved = ReadParagraphs(hwp);
+#endif
                 if (saved[^1].NativeList is not null ||
                     (string?)finalRoots[^1].Attribute("Style") != styles.Resolve("body").Id.ToString())
                     throw new InvalidOperationException("The empty terminal paragraph inherited a heading or list marker.");
@@ -218,8 +250,13 @@ internal static partial class HancomPreviewWriter
         references?.NormalizeExpected(expected, actual);
         // Hancom adds identity scale/rotation pairs during HWPML import.
         // Ignore only mathematically neutral matrices in comparison copies.
+#if DEBUG
         expected = NormalizeFigureMatrices(expected);
         actual = NormalizeFigureMatrices(actual);
+#else
+        NormalizeFigureMatricesInPlace(expected);
+        NormalizeFigureMatricesInPlace(actual);
+#endif
         var before = AuriMinimalBoxPrototype.RootParagraphs(expected);
         var after = AuriMinimalBoxPrototype.RootParagraphs(actual);
         TemplateRangeStructure.RequireOriginalStyleDefinitions(expected, actual, before);
@@ -238,6 +275,12 @@ internal static partial class HancomPreviewWriter
     internal static XDocument NormalizeFigureMatrices(XDocument document)
     {
         var copy = new XDocument(document);
+        NormalizeFigureMatricesInPlace(copy);
+        return copy;
+    }
+
+    private static void NormalizeFigureMatricesInPlace(XDocument copy)
+    {
         // Group children retain original dimensions and transformation matrices;
         // Hancom may omit their derived current dimensions after saving.
         foreach (var component in copy.Descendants("SHAPECOMPONENT").Where(e => (int?)e.Attribute("GroupLevel") > 0))
@@ -255,7 +298,6 @@ internal static partial class HancomPreviewWriter
                 decimal.TryParse((string?)matrix.Attribute("E" + i), System.Globalization.NumberStyles.Float,
                     System.Globalization.CultureInfo.InvariantCulture, out var value) && value == identity[i - 1])) matrix.Remove();
         }
-        return copy;
     }
 
     internal static string ValidateRenderedOutput(string outputPath, params string[] protectedPaths)
@@ -288,6 +330,11 @@ internal static partial class HancomPreviewWriter
     private static XElement[] RangeRoots(dynamic hwp)
     {
         var document = RenderProfile.ReadDocument((object)hwp);
+        return RangeRoots(document);
+    }
+
+    private static XElement[] RangeRoots(XDocument document)
+    {
         var sections = document.Descendants().Where(e => e.Name.LocalName == "SECTION").ToArray();
         if (sections.Length != 1) throw new InvalidOperationException("Tagged rendering requires one section.");
         return sections[0].Elements().Where(e => e.Name.LocalName == "P").ToArray();
@@ -296,6 +343,11 @@ internal static partial class HancomPreviewWriter
     private static void SelectRangeParagraphs(dynamic hwp, int start, int end)
     {
         XElement[] roots = RangeRoots(hwp);
+        SelectRangeParagraphs(hwp, start, end, roots);
+    }
+
+    private static void SelectRangeParagraphs(dynamic hwp, int start, int end, XElement[] roots)
+    {
         if (start < 0 || end <= start || end >= roots.Length)
             throw new InvalidOperationException("Invalid range or missing successor.");
         if (!(bool)hwp.SetPos(0, start, 0)) throw new InvalidOperationException("Cannot resolve range beginning.");
@@ -313,9 +365,24 @@ internal static partial class HancomPreviewWriter
         RequireRangeText(hwp, expected, "immediately after deletion");
     }
 
+    private static void DeleteRangeParagraphs(dynamic hwp, int start, int end, XElement[] before)
+    {
+        // Reuse the already verified, unchanged snapshot for range/successor
+        // checks, then verify actual deletion with a fresh native export.
+        var expected = before.Take(start).Concat(before.Skip(end)).Select(p => p.Value).ToArray();
+        SelectRangeParagraphs(hwp, start, end, before);
+        Run(hwp, "Delete");
+        RequireRangeText(hwp, expected, "immediately after deletion");
+    }
+
     private static void RequireRangeText(dynamic hwp, string[] expected, string stage)
     {
         XElement[] roots = RangeRoots(hwp);
+        RequireRangeText(roots, expected, stage);
+    }
+
+    private static void RequireRangeText(XElement[] roots, string[] expected, string stage)
+    {
         var actual = roots.Select(p => p.Value).ToArray();
         if (!actual.SequenceEqual(expected, StringComparer.Ordinal))
             throw new InvalidOperationException($"{stage}: expected {System.Text.Json.JsonSerializer.Serialize(expected)}; actual {System.Text.Json.JsonSerializer.Serialize(actual)}");

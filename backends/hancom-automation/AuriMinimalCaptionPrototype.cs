@@ -78,6 +78,7 @@ internal sealed class AuriMinimalCaptionPrototype
                 "A figure caption requires nonempty CR/LF-free formatted text.");
         }
 
+#if DEBUG
         XDocument beforeDocument = ReadDocument(hwp);
         IReadOnlyList<XElement> beforeRoots = RootParagraphs(beforeDocument);
         VerifyOriginal(beforeRoots);
@@ -87,9 +88,13 @@ internal sealed class AuriMinimalCaptionPrototype
         var tablesBefore = Count(beforeDocument, "TABLE");
         var picturesBefore = Count(beforeDocument, "PICTURE");
         var figureNumbersBefore = CountFigureAutoNumbers(beforeDocument);
+#endif
 
         Run(hwp, "Cancel");
         Run(hwp, "MoveDocEnd");
+#if !DEBUG
+        var clonePosition = NativeClonePosition.Begin((object)hwp);
+#endif
         object? insertionResult = hwp.SetTextFile(
             selectedBlockHwp,
             "HWP",
@@ -99,6 +104,7 @@ internal sealed class AuriMinimalCaptionPrototype
             throw new InvalidOperationException("Hancom rejected the native HWP caption insertion.");
         }
 
+#if DEBUG
         XDocument afterDocument = ReadDocument(hwp);
         IReadOnlyList<XElement> afterRoots = RootParagraphs(afterDocument);
         var afterRootXml = afterRoots
@@ -159,6 +165,11 @@ internal sealed class AuriMinimalCaptionPrototype
                 "Caption insertion did not add exactly one figure automatic number " +
                 "while preserving tables and pictures.");
         }
+#else
+        var insertedIndex = NativeClonePosition.Complete((object)hwp, clonePosition);
+        if (insertedIndex <= originalRootParagraphIndex)
+            throw new InvalidOperationException("The caption was not inserted after its source prototype.");
+#endif
 
         ReplaceCloneCaption(hwp, styles, insertedIndex, captionRuns);
 
@@ -224,6 +235,9 @@ internal sealed class AuriMinimalCaptionPrototype
         IReadOnlyList<PreviewTextRun> captionRuns)
     {
         var sentinel = $"MD2HWP_CAPTION_{Guid.NewGuid():N}";
+        // Clone discovery still reads the document in both builds. Replacement
+        // diagnostics repeat the completed-document checks and belong to Debug.
+#if DEBUG
         XDocument beforeDocument = ReadDocument(hwp);
         IReadOnlyList<XElement> beforeRoots = RootParagraphs(beforeDocument);
         VerifyOriginal(beforeRoots);
@@ -235,10 +249,12 @@ internal sealed class AuriMinimalCaptionPrototype
                 "Generated caption sentinel already existed in the document.");
         }
 
+#endif
         MoveToRoot(hwp, cloneRootParagraphIndex);
         FindNext(hwp, styles.Profile.CaptionSelector.PrototypeCaption);
         InsertText(hwp, sentinel);
 
+#if DEBUG
         XDocument sentinelDocument = ReadDocument(hwp);
         IReadOnlyList<XElement> sentinelRoots = RootParagraphs(sentinelDocument);
         VerifyOriginal(sentinelRoots);
@@ -252,6 +268,7 @@ internal sealed class AuriMinimalCaptionPrototype
             styles,
             sentinel);
 
+#endif
         MoveToRoot(hwp, cloneRootParagraphIndex);
         FindNext(hwp, sentinel);
         // Character-shape toggles apply to an active find selection instead of
@@ -265,6 +282,7 @@ internal sealed class AuriMinimalCaptionPrototype
 
         var caption = string.Concat(captionRuns.Select(run => run.Text));
         HancomPreviewWriter.RemoveHyperlinksInRoots(hwp, cloneRootParagraphIndex, cloneRootParagraphIndex + 1);
+#if DEBUG
         XDocument finalDocument = ReadDocument(hwp);
         IReadOnlyList<XElement> finalRoots = RootParagraphs(finalDocument);
         VerifyOriginal(finalRoots);
@@ -276,6 +294,8 @@ internal sealed class AuriMinimalCaptionPrototype
                 "Caption sentinel remained after content replacement.");
         }
         VerifyRenderedRoot(finalRoots[cloneRootParagraphIndex], styles, caption);
+#endif
+
     }
 
     private static IReadOnlyList<CaptionCandidate> FindCandidates(

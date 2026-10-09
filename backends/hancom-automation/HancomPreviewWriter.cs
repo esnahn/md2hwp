@@ -750,10 +750,17 @@ internal static partial class HancomPreviewWriter
         dynamic hwp,
         IrPreviewPlan plan,
         InvestigationTemplateProfile profile)
+        => VerifyText(RenderProfile.ReadDocument((object)hwp), plan, profile);
+
+    // These overloads consume one read-only snapshot between native mutations.
+    // Keep the COM wrappers above/below for the Debug rendering path.
+    internal static void VerifyText(
+        XDocument document,
+        IrPreviewPlan plan,
+        InvestigationTemplateProfile profile)
     {
         // TEXT export can substitute Unicode characters (for example © with ⓒ).
         // Verify the saved document's Unicode content through HWPML instead.
-        var document = RenderProfile.ReadDocument((object)hwp);
         var extracted = string.Join("\n", document.Descendants()
             .Where(element => element.Name.LocalName == "P").Select(element => element.Value));
         foreach (var expected in StyledTexts(plan, profile).Select(item => item.Text).Where(text => text.Length > 0))
@@ -771,8 +778,15 @@ internal static partial class HancomPreviewWriter
         AuriPreviewStyleBindings styles,
         int paragraphsBefore,
         NativeListContinuations? continuations = null)
+        => VerifyStyles(ReadParagraphs((object)hwp), plan, styles, paragraphsBefore, continuations);
+
+    internal static void VerifyStyles(
+        IReadOnlyList<SavedParagraph> savedParagraphs,
+        IrPreviewPlan plan,
+        AuriPreviewStyleBindings styles,
+        int paragraphsBefore,
+        NativeListContinuations? continuations = null)
     {
-        IReadOnlyList<SavedParagraph> savedParagraphs = ReadParagraphs(hwp);
         var appended = savedParagraphs.Skip(paragraphsBefore).ToArray();
         var expectedParagraphs = ExpectedParagraphs(plan, styles.Profile).ToArray();
         if (appended.Length < expectedParagraphs.Length)
@@ -832,8 +846,14 @@ internal static partial class HancomPreviewWriter
         IrPreviewPlan plan,
         AuriPreviewStyleBindings styles,
         int paragraphsBefore)
+        => VerifyCharacterMarks(ReadParagraphs((object)hwp), plan, styles, paragraphsBefore);
+
+    internal static void VerifyCharacterMarks(
+        IReadOnlyList<SavedParagraph> savedParagraphs,
+        IrPreviewPlan plan,
+        AuriPreviewStyleBindings styles,
+        int paragraphsBefore)
     {
-        IReadOnlyList<SavedParagraph> savedParagraphs = ReadParagraphs(hwp);
         var appended = savedParagraphs.Skip(paragraphsBefore).ToArray();
         var expectedParagraphs = ExpectedParagraphs(plan, styles.Profile).ToArray();
         for (var index = 0; index < expectedParagraphs.Length; index++)
@@ -910,22 +930,39 @@ internal static partial class HancomPreviewWriter
         int paragraphsBefore,
         bool verifyPrototype = true)
     {
+        if (!RequireBoxPrototype(plan, prototype)) return;
+        VerifyBoxes(AuriMinimalBoxPrototype.ReadDocument((object)hwp), plan, styles, prototype,
+            paragraphsBefore, verifyPrototype);
+    }
+
+    private static bool RequireBoxPrototype(IrPreviewPlan plan, AuriMinimalBoxPrototype? prototype)
+    {
         if (plan.Summary.BoxOperations == 0)
         {
             if (prototype is not null)
             {
                 throw new InvalidOperationException("A box prototype was bound without a box operation.");
             }
-            return;
+            return false;
         }
         if (prototype is null)
         {
             throw new InvalidOperationException("Missing minimal-fixture box prototype verification.");
         }
+        return true;
+    }
 
-        XDocument document = AuriMinimalBoxPrototype.ReadDocument(hwp);
+    internal static void VerifyBoxes(
+        XDocument document,
+        IrPreviewPlan plan,
+        AuriPreviewStyleBindings styles,
+        AuriMinimalBoxPrototype? prototype,
+        int paragraphsBefore,
+        bool verifyPrototype = true)
+    {
+        if (!RequireBoxPrototype(plan, prototype)) return;
         IReadOnlyList<XElement> roots = AuriMinimalBoxPrototype.RootParagraphs(document);
-        if (verifyPrototype) prototype.VerifyOriginal(roots);
+        if (verifyPrototype) prototype!.VerifyOriginal(roots);
         var appended = roots.Skip(paragraphsBefore).ToArray();
         var rootIndex = 0;
         var verified = 0;
@@ -942,7 +979,7 @@ internal static partial class HancomPreviewWriter
                     {
                         throw new InvalidOperationException("Saved preview lost an expected box root.");
                     }
-                    prototype.VerifyRenderedRoot(
+                    prototype!.VerifyRenderedRoot(
                         appended[rootIndex],
                         styles,
                         operation.Lines,
@@ -973,6 +1010,13 @@ internal static partial class HancomPreviewWriter
         int paragraphsBefore,
         bool verifyPrototype = true)
     {
+        if (!RequireCaptionPrototype(plan, prototype)) return;
+        VerifyCaptions(AuriMinimalCaptionPrototype.ReadDocument((object)hwp), plan, styles, prototype,
+            paragraphsBefore, verifyPrototype);
+    }
+
+    private static bool RequireCaptionPrototype(IrPreviewPlan plan, AuriMinimalCaptionPrototype? prototype)
+    {
         if (plan.Summary.FigureOperations == 0)
         {
             if (prototype is not null)
@@ -980,17 +1024,27 @@ internal static partial class HancomPreviewWriter
                 throw new InvalidOperationException(
                     "A caption prototype was bound without a figure operation.");
             }
-            return;
+            return false;
         }
         if (prototype is null)
         {
             throw new InvalidOperationException(
                 "Missing minimal-fixture figure-caption prototype verification.");
         }
+        return true;
+    }
 
-        XDocument document = AuriMinimalCaptionPrototype.ReadDocument(hwp);
+    internal static void VerifyCaptions(
+        XDocument document,
+        IrPreviewPlan plan,
+        AuriPreviewStyleBindings styles,
+        AuriMinimalCaptionPrototype? prototype,
+        int paragraphsBefore,
+        bool verifyPrototype = true)
+    {
+        if (!RequireCaptionPrototype(plan, prototype)) return;
         IReadOnlyList<XElement> roots = AuriMinimalCaptionPrototype.RootParagraphs(document);
-        if (verifyPrototype) prototype.VerifyOriginal(roots);
+        if (verifyPrototype) prototype!.VerifyOriginal(roots);
         var appended = roots.Skip(paragraphsBefore).ToArray();
         var rootIndex = 0;
         var verified = 0;
@@ -1011,7 +1065,7 @@ internal static partial class HancomPreviewWriter
                         throw new InvalidOperationException(
                             "Saved preview lost an expected automatic-number caption root.");
                     }
-                    prototype.VerifyRenderedRoot(
+                    prototype!.VerifyRenderedRoot(
                         appended[rootIndex + 1],
                         styles,
                         operation.Lines[1]);
@@ -1048,6 +1102,30 @@ internal static partial class HancomPreviewWriter
         }
 
         var document = RenderProfile.ReadDocument((object)hwp);
+        VerifyLists(document, appended, expected, profile, plan.Summary.ListItems);
+    }
+
+    internal static void VerifyLists(
+        XDocument document,
+        IReadOnlyList<SavedParagraph> savedParagraphs,
+        IrPreviewPlan plan,
+        InvestigationTemplateProfile profile,
+        int paragraphsBefore)
+    {
+        var expected = ExpectedParagraphs(plan, profile).ToArray();
+        var appended = savedParagraphs.Skip(paragraphsBefore).ToArray();
+        if (appended.Length < expected.Length)
+            throw new InvalidOperationException("Saved preview lost paragraphs before native-list verification.");
+        VerifyLists(document, appended, expected, profile, plan.Summary.ListItems);
+    }
+
+    private static void VerifyLists(
+        XDocument document,
+        SavedParagraph[] appended,
+        ExpectedParagraph[] expected,
+        InvestigationTemplateProfile profile,
+        int expectedListItems)
+    {
         int? activeListId = null;
         int? activeDefinitionId = null;
         var verified = 0;
@@ -1079,10 +1157,10 @@ internal static partial class HancomPreviewWriter
             }
             verified++;
         }
-        if (verified != plan.Summary.ListItems)
+        if (verified != expectedListItems)
         {
             throw new InvalidOperationException(
-                $"Expected {plan.Summary.ListItems} verified native list items, observed {verified}.");
+                $"Expected {expectedListItems} verified native list items, observed {verified}.");
         }
     }
 
@@ -1233,8 +1311,10 @@ internal static partial class HancomPreviewWriter
     }
 
     private static IReadOnlyList<SavedParagraph> ReadParagraphs(dynamic hwp)
+        => ReadParagraphs(RenderProfile.ReadDocument((object)hwp));
+
+    internal static IReadOnlyList<SavedParagraph> ReadParagraphs(XDocument document)
     {
-        var document = RenderProfile.ReadDocument((object)hwp);
         var characterShapes = HwpmlCharacterShapes.Read(document);
         var paragraphShapes = document.Descendants()
             .Where(element => element.Name.LocalName == "PARASHAPE")

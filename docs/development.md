@@ -94,6 +94,24 @@ Ipsum 본문 11,155어절을 5장·20절로 나누었으며, 작성 당시 최�
 
 ## 성능 측정 기준
 
+현재 Release의 XML 재사용·반복 비교 최적화는 [성능·출력 비교](performance/2026-10-09-xml-comparison.md)와
+[집계 JSON](performance/2026-10-09-xml-comparison.json)에 있습니다. 같은 대규모 원고의 일반 Release가
+277.016 → 209.830초로 단축됐고, 전체 XML 조회는 37 → 19회로 줄었습니다.
+캐시를 단발 조회까지 적용해 처음에는 느려졌던 실험과 적용 범위 수정도 기록했습니다.
+기존 Debug와 새 Release의 구조·내장 이미지 데이터 및 107쪽 전체 픽셀이 일치했습니다.
+문단 스타일 조회와 저장·재열기 검증은 유지하며, 원시 로그는
+`artifacts/performance-xml-comparison-2026-10-09/`에 보관합니다.
+
+직전 Release의 원형 복제 좌표 추적 변경은 [성능·출력 비교](performance/2026-10-09-clone-coordinates.md)와
+[집계 JSON](performance/2026-10-09-clone-coordinates.json)에 있습니다. 전체 XML 조회 140회를 줄였고,
+기존 Debug와 새 Release의 구조·내장 이미지 데이터 및 107쪽 전체 픽셀이 일치했습니다.
+원시 로그는 `artifacts/performance-coordinates-2026-10-09/`에 보관합니다.
+
+직전 Release의 기준 측정은 [2026-10-09 현재 Release 상세 보고서](performance/2026-10-09-current-release.md)와
+[집계 JSON](performance/2026-10-09-current-release.json)에 있습니다. 실제 배포 빌드의 시간과
+별도 계측 빌드의 호출별 시간을 구분했으며, 원시 로그와 CSV는
+`artifacts/performance-release-2026-10-09/`에 보관합니다.
+
 현재 Release의 액션별 기준 측정은 [2026-10-08 성능 보고서](performance/2026-10-08-baseline.md)와
 [비교용 JSON](performance/2026-10-08-baseline.json)에 보관합니다. 호출별 원시 시간선과 CSV는
 `artifacts/performance-2026-10-08/`에 있습니다. 대규모 원고는 네이티브 자동번호 검증에서
@@ -104,3 +122,9 @@ Ipsum 본문 11,155어절을 5장·20절로 나누었으며, 작성 당시 최�
 [집계 JSON](performance/2026-10-08-large-remeasured.json)을 기준으로 진행하십시오.
 전체 실행은 530.699초이며, 호출별 원시 자료는
 `artifacts/performance-remeasure-2026-10-08/`에 있습니다.
+
+첫 Release 최적화는 [Debug·Release 동등성 및 시간 비교](performance/2026-10-09-release-diagnostics.md)에
+기록했습니다. 변경 전 두 빌드, 그리고 변경 전 Debug와 수정 Release의 문서 구조·서식·참조 및
+107쪽 전체 렌더링이 일치했습니다. 그림·박스·출처 치환 중 검증용 전체 XML export만 Debug에
+남기고 완성 문서 검증은 두 빌드에 유지하여, 같은 원고의 Release 실행이 511.752 → 383.004초로
+줄었습니다. 기존 Debug 실행 파일과 세 실행 결과는 `artifacts/debug-release-equivalence/`에 보존합니다.

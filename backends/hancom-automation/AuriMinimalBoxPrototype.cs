@@ -92,6 +92,7 @@ internal sealed class AuriMinimalBoxPrototype
                 "A box requires at least one CR/LF-free logical line.");
         }
 
+#if DEBUG
         XDocument beforeDocument = ReadDocument(hwp);
         IReadOnlyList<XElement> beforeRoots = RootParagraphs(beforeDocument);
         VerifyOriginal(beforeRoots);
@@ -101,9 +102,13 @@ internal sealed class AuriMinimalBoxPrototype
         var tablesBefore = Count(beforeDocument, "TABLE");
         var picturesBefore = Count(beforeDocument, "PICTURE");
         var autoNumbersBefore = Count(beforeDocument, "AUTONUM");
+#endif
 
         Run(hwp, "Cancel");
         Run(hwp, "MoveDocEnd");
+#if !DEBUG
+        var clonePosition = NativeClonePosition.Begin((object)hwp);
+#endif
         object? insertionResult = hwp.SetTextFile(
             selectedBlockHwp,
             "HWP",
@@ -113,6 +118,7 @@ internal sealed class AuriMinimalBoxPrototype
             throw new InvalidOperationException("Hancom rejected the native HWP box insertion.");
         }
 
+#if DEBUG
         XDocument afterDocument = ReadDocument(hwp);
         IReadOnlyList<XElement> afterRoots = RootParagraphs(afterDocument);
         var afterRootXml = afterRoots
@@ -185,6 +191,11 @@ internal sealed class AuriMinimalBoxPrototype
             throw new InvalidOperationException(
                 "Box insertion did not add exactly one table while preserving pictures and automatic numbers.");
         }
+#else
+        var insertedIndex = NativeClonePosition.Complete((object)hwp, clonePosition);
+        if (insertedIndex <= originalRootParagraphIndex)
+            throw new InvalidOperationException("The box was not inserted after its source prototype.");
+#endif
 
         ReplaceCloneContent(hwp, styles, insertedIndex, lines, sourceRuns);
 
@@ -276,22 +287,27 @@ internal sealed class AuriMinimalBoxPrototype
         IReadOnlyList<string> lines, IReadOnlyList<PreviewTextRun> sourceRuns)
     {
         // Search only while the new clone still has the original placeholder.
-        // A sentinel proves the selected paragraph is its source before inserting IR.
+        // Locate the source before inserting IR; Debug verifies its intermediate
+        // state, while both builds verify the completed box and saved document.
         var sentinel = "MD2HWP_SOURCE_" + Guid.NewGuid().ToString("N");
         MoveToRoot(hwp, rootIndex);
         FindNext(hwp, styles.Profile.BoxSource.Slot);
         InsertText(hwp, sentinel);
+#if DEBUG
         XDocument marked = ReadDocument(hwp);
         var roots = RootParagraphs(marked);
         VerifyOriginal(roots);
         if (!TryReadParts(roots[rootIndex], styles, false, out var parts) || ReadSourceText(parts.SourceParagraph) != styles.Profile.BoxSource.PrototypeText.Replace(styles.Profile.BoxSource.Slot, sentinel, StringComparison.Ordinal))
             throw new InvalidOperationException("Box source selection did not identify the cloned source paragraph.");
+#endif
         MoveToRoot(hwp, rootIndex); FindNext(hwp, sentinel); Run(hwp, "Delete");
         HancomPreviewWriter.InsertBoxSourceLine(hwp, styles, sourceRuns);
         HancomPreviewWriter.RemoveHyperlinksInRoots(hwp, rootIndex, rootIndex + 1);
+#if DEBUG
         XDocument saved = ReadDocument(hwp);
         VerifyOriginal(RootParagraphs(saved));
         VerifyRenderedRoot(RootParagraphs(saved)[rootIndex], styles, lines, sourceRuns);
+#endif
         Run(hwp, "MoveDocEnd");
     }
 
@@ -321,6 +337,9 @@ internal sealed class AuriMinimalBoxPrototype
         IReadOnlyList<PreviewTextRun>? sourceRuns)
     {
         var sentinel = $"MD2HWP_BOX_{Guid.NewGuid():N}";
+        // Keep clone discovery in both builds and intermediate replacement
+        // diagnostics in Debug. Completed box verification remains unconditional.
+#if DEBUG
         XDocument beforeDocument = ReadDocument(hwp);
         IReadOnlyList<XElement> beforeRoots = RootParagraphs(beforeDocument);
         VerifyOriginal(beforeRoots);
@@ -331,12 +350,14 @@ internal sealed class AuriMinimalBoxPrototype
             throw new InvalidOperationException("Generated box sentinel already existed in the document.");
         }
 
+#endif
         MoveToRoot(hwp, cloneRootParagraphIndex);
         FindNext(hwp, styles.Profile.BoxSelector.PrototypeTextMarker);
         Run(hwp, "MoveParaBegin");
         Run(hwp, "MoveSelParaEnd");
         InsertText(hwp, sentinel);
 
+#if DEBUG
         XDocument sentinelDocument = ReadDocument(hwp);
         IReadOnlyList<XElement> sentinelRoots = RootParagraphs(sentinelDocument);
         VerifyOriginal(sentinelRoots);
@@ -350,6 +371,7 @@ internal sealed class AuriMinimalBoxPrototype
             styles,
             [sentinel], sourcePending: true);
 
+#endif
         // The body now has a unique sentinel. Fill the source before inserting
         // manuscript text so neither slot lookup can match the other's IR text.
         if (sourceRuns is not null)
@@ -360,9 +382,11 @@ internal sealed class AuriMinimalBoxPrototype
             Run(hwp, "SelectCtrlFront");
             Run(hwp, "ShapeObjDetachCaption");
             Run(hwp, "Cancel");
+#if DEBUG
             XDocument detached = ReadDocument(hwp);
             VerifyOriginal(RootParagraphs(detached));
             VerifyRenderedRoot(RootParagraphs(detached)[cloneRootParagraphIndex], styles, new[] { sentinel });
+#endif
         }
 
         MoveToRoot(hwp, cloneRootParagraphIndex);
@@ -385,6 +409,7 @@ internal sealed class AuriMinimalBoxPrototype
         }
 
         HancomPreviewWriter.RemoveHyperlinksInRoots(hwp, cloneRootParagraphIndex, cloneRootParagraphIndex + 1);
+#if DEBUG
         XDocument finalDocument = ReadDocument(hwp);
         IReadOnlyList<XElement> finalRoots = RootParagraphs(finalDocument);
         VerifyOriginal(finalRoots);
@@ -395,6 +420,8 @@ internal sealed class AuriMinimalBoxPrototype
             throw new InvalidOperationException("Box sentinel remained after content replacement.");
         }
         VerifyRenderedRoot(finalRoots[cloneRootParagraphIndex], styles, lines, sourceRuns);
+#endif
+
     }
 
     private static IReadOnlyList<BoxCandidate> FindCandidates(

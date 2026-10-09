@@ -49,28 +49,43 @@ internal sealed class FigureSourcePrototype
 
     public void Insert(dynamic hwp, AuriPreviewStyleBindings styles, IReadOnlyList<PreviewTextRun> runs)
     {
+#if DEBUG
         XDocument before = RenderProfile.ReadDocument((object)hwp);
         var roots = AuriMinimalBoxPrototype.RootParagraphs(before);
+#endif
         Run(hwp, "MoveDocEnd");
+#if !DEBUG
+        var clonePosition = NativeClonePosition.Begin((object)hwp);
+#endif
         object result = hwp.SetTextFile(nativeBlock, "HWP", "insertfile");
         if (result is not int status || status != 1) throw new InvalidOperationException("Source clone insertion failed.");
+#if DEBUG
         XDocument after = RenderProfile.ReadDocument((object)hwp);
         var cloned = AuriMinimalBoxPrototype.RootParagraphs(after);
         var index = roots.Count - 1;
         if (cloned.Count != roots.Count + 1 || TaggedTemplateBinding.DirectText(cloned[index]) != source.PrototypeText)
             throw new InvalidOperationException("Source clone must add exactly one paragraph at document end.");
+#else
+        var index = NativeClonePosition.Complete((object)hwp, clonePosition);
+#endif
         Move(hwp, index);
         Find(hwp, source.Slot);
         var sentinel = "MD2HWP_SOURCE_" + Guid.NewGuid().ToString("N");
         HancomPreviewWriter.InsertText(hwp, sentinel);
+        // Both builds verify completed sources before and after save/reopen.
+        // Keep per-replacement full-document exports for Debug diagnostics.
+#if DEBUG
         XDocument marked = RenderProfile.ReadDocument((object)hwp);
         if (TaggedTemplateBinding.DirectText(AuriMinimalBoxPrototype.RootParagraphs(marked)[index]) != source.PrototypeText.Replace(source.Slot, sentinel, StringComparison.Ordinal))
             throw new InvalidOperationException("Source slot selection escaped its clone.");
+#endif
         Move(hwp, index); Find(hwp, sentinel); Run(hwp, "Delete");
         HancomPreviewWriter.InsertFormattedLine(hwp, runs, styles.Resolve("figure.source"));
         HancomPreviewWriter.RemoveHyperlinksInRoots(hwp, index, index + 1);
+#if DEBUG
         XDocument saved = RenderProfile.ReadDocument((object)hwp);
         source.Verify(AuriMinimalBoxPrototype.RootParagraphs(saved)[index], string.Concat(runs.Select(r => r.Text)));
+#endif
         Run(hwp, "MoveDocEnd");
     }
 
