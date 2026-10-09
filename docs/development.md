@@ -46,6 +46,50 @@ pwsh -NoProfile -File tools/development/dotnet.ps1 run --project tests/backend-c
 
 계약 테스트는 실제 한글 실행이나 시각적 배치 검증을 대신하지 않습니다.
 
+## 생성 방식 비교
+
+Debug와 Release의 기본 생성 방식은 IR·템플릿 XML 구성입니다. Debug 백엔드는
+`--legacy-com`으로 기존 COM 문단 삽입 방식을 선택할 수 있습니다. 이 옵션은
+Rust 실행 파일의 원고 변환·`ir2hwp`와 백엔드 직접 실행에서 모두 전달됩니다.
+레거시 옵션과 안내는 Debug 실행 파일에만 있습니다. Rust를 거칠 때는 앱과
+백엔드 모두 Debug 빌드를 사용하십시오. Release에는 레거시 인자 처리·안내와
+상세 계측 코드가 컴파일되지 않습니다.
+
+속도 개선은 Debug 기본 XML 경로에서 진행하고, Debug의 기존 COM 경로를 비교 기준으로
+사용합니다. Release에서는 전체 실행 시간만 측정합니다.
+
+같은 IR과 템플릿으로 세 결과를 별도 경로에 생성하십시오. 한글 작업은 차례로 실행합니다.
+
+```powershell
+.\target\debug\md2hwp-backend.exe source.ir.json debug-xml.hwp --template templates/template.hwp
+.\target\debug\md2hwp-backend.exe source.ir.json debug-com.hwp --template templates/template.hwp --legacy-com
+.\target\release\md2hwp-backend.exe source.ir.json release-xml.hwp --template templates/template.hwp
+```
+
+원고에서 시작할 때도 `md2hwp.exe source.md debug-com.hwp --legacy-com`처럼 지정합니다.
+Debug의 네이티브 복제·import 추가 진단은 두 생성 방식에 유지합니다.
+기존 COM 삽입의 중간 저장·재열기 검사는 `--legacy-com` 경로에 적용합니다.
+실제 비교 결과는 [세 생성 방식 검증](performance/2026-10-09-generation-modes.md)에 기록합니다.
+
+Debug의 상세 단계·작업·XML export 계측은 `MD2HWP_PROFILE=1`로 켭니다.
+두 Debug 경로에 동일하게 적용되며, 출력은 stderr의 `md2hwp-profile:` JSON입니다.
+Release에서는 이 환경 변수를 사용하지 않습니다.
+
+전체 생성 시간은 Debug·Release 모두 `MD2HWP_TIMING=1`로 켤 수 있습니다.
+stderr의 `md2hwp-time:` JSON에 `Completed`와 `TotalMilliseconds`만 출력합니다.
+실행 파일 시작 시간을 포함하려면 PowerShell의 `Measure-Command`를 사용하십시오.
+
+```powershell
+$env:MD2HWP_TIMING = '1'
+try {
+    .\target\release\md2hwp.exe source.md
+} finally {
+    Remove-Item Env:MD2HWP_TIMING
+}
+```
+
+현재 계측 구분과 출력 검증은 [Debug 전용 계측](performance/2026-10-09-debug-profiling.md)에 기록합니다.
+
 ## 기능 검증 원고
 
 [`examples/all-features-twice/`](../examples/all-features-twice/)에는 검증 원고
@@ -94,7 +138,11 @@ Ipsum 본문 11,155어절을 5장·20절로 나누었으며, 작성 당시 최�
 
 ## 성능 측정 기준
 
-현재 Release는 IR·템플릿 XML에서 평면 문서를 직접 구성합니다. [성능·출력 비교](performance/2026-10-09-direct-xml.md)와
+성능 개선의 최종 효과·검증과 정리된 커밋의 역할은
+[성능 이력·#7 해결 근거](performance/README.md)에 정리합니다.
+이전 보고서의 해시는 측정 당시 이력이며, 현재 커밋 대응과 되돌리기 안내도 이 문서를 따릅니다.
+
+현재 Debug와 Release는 IR·템플릿 XML에서 평면 문서를 직접 구성합니다. [성능·출력 비교](performance/2026-10-09-direct-xml.md)와
 [집계 JSON](performance/2026-10-09-direct-xml.json)에 일반 실행 209.830 → 121.349초,
 COM 메서드 계측 35,025 → 22,360회 감소를 기록했습니다. 문단 스타일 블록 조회는
 473 → 1회, 전체 XML export는 19 → 14회로 줄었습니다. 기존 Debug 생성 경로와 최종

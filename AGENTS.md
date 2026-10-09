@@ -279,8 +279,17 @@ fallback, checks the digest, and preserves upstream notices. No runtime lock sid
 
 ## Hancom safety and verification
 
-Release builds compose the unpublished flat manuscript from validated IR and
-template XML; Debug retains the original COM insertion path for comparison.
+Debug and Release builds compose the unpublished flat manuscript from validated IR
+and template XML by default. Debug retains the original COM insertion path behind
+--legacy-com for three-way comparison (Debug XML, Debug COM, Release XML).
+Legacy option parsing/help is compiled only into Debug (Rust and backend).
+Optimize the default Debug XML path; use Debug legacy COM as the comparison
+baseline. Compile detailed RenderProfile metrics and call sites only into Debug,
+enabled by MD2HWP_PROFILE=1. Release XML reads have no profiling wrappers/caller
+metadata. Release measures total rendering time only via MD2HWP_TIMING=1;
+this optional total timer also works in Debug and reports completion and elapsed
+milliseconds without per-action metrics. Preserve document verification in both
+configurations; instrumentation removal is not permission to weaken checks.
 The live picture resource document supplies embedded data, native geometry and
 object allocation order only, never expected manuscript/static content. Prime
 body/master-page allocation with one native caption clone and discard that clone;
@@ -291,7 +300,8 @@ Measure native list marker display only when continuation widths require it.
 Keep final full-document import and save/reopen checks against the independently
 composed expected XML. Do not weaken structural or stacking-order comparisons to
 make the faster path pass. Performance and Debug/Release equivalence evidence is
-recorded in docs/performance/2026-10-09-direct-xml.md.
+recorded in docs/performance/2026-10-09-direct-xml.md; current three-way generation
+evidence and profiles are in docs/performance/2026-10-09-generation-modes.md.
 
 Use documented COM only, not UI clicks/keystrokes. Process one document at a time.
 Never modify source templates or manuscripts. Replace generated HWP only after

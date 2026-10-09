@@ -127,7 +127,7 @@ internal static class CurrentParagraphStyle
         public void InsertMarker() => HancomPreviewWriter.InsertText((object)hwp, Marker);
         public bool Select(ParagraphProbePosition begin, ParagraphProbePosition end) =>
             (bool)hwp.SelectText(begin.Paragraph, begin.Offset, end.Paragraph, end.Offset);
-        public XDocument ReadBlock() => RenderProfile.ReadBlock((object)hwp);
-        public XDocument ReadDocument() => RenderProfile.ReadDocument((object)hwp);
+        public XDocument ReadBlock() => HwpMarkup.ReadBlock((object)hwp);
+        public XDocument ReadDocument() => HwpMarkup.ReadDocument((object)hwp);
     }
 }

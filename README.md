@@ -113,6 +113,9 @@ title: 문서 제목
 
 개발할 때 기본 서식은 `templates/template.hwp`에서 편집합니다. 빌드는 `target/debug`·`target/release`의 템플릿을 매번 이 파일로 교체합니다. 실행용 배포본에서는 EXE 옆의 `template.hwp`를 사용합니다. 새 파일은 `md2hwp init-template 새템플릿.hwp`로 만듭니다. 이전 IR은 다시 생성하고, 기존 사용자 템플릿의 새 선언은 직접 반영하거나 별도 파일로 재생성해야 합니다.
 
+Debug와 Release는 XML 구성 방식으로 생성합니다. 개발용 성능 비교는
+[빌드·검증 안내](docs/development.md#생성-방식-비교)를 참고하십시오.
+
 - [설치·실행 옵션](docs/usage.md) · [템플릿 편집·태그](docs/templates.md)
 - [표](docs/tables.md) · [번호 상호참조](docs/cross-references.md) · [메타데이터](docs/yaml-variables.md) · [날짜](docs/date-metadata.md)
 - [빌드·검증](docs/development.md) · [통합 예제](examples/all-features-twice/) · [v0.3.0 릴리스 노트](docs/release-v0.3.0.md)

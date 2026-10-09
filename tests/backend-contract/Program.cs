@@ -524,6 +524,8 @@ TemplateFormattingComparisonTests.Run();
 FlatSnapshotTests.Run();
 DirectXmlCompositionTests.Run();
 DirectXmlListTests.Run();
+GenerationModeTests.Run();
+RenderTimingTests.Run();
 BoxPrototypeStructureTests.Run();
 ListMarkerFormattingTests.Run();
 ListContinuationTests.Run();

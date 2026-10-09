@@ -179,7 +179,17 @@ pub fn run_with_resource_root(
     }
     let (mut dotnet, mut worker, mut ir, mut template, mut output) = (None, None, None, None, None);
     let mut verbose = false;
+    #[cfg(debug_assertions)]
+    let mut legacy_com = false;
     while let Some(key) = args.next() {
+        #[cfg(debug_assertions)]
+        if key == "--legacy-com" && !check && !init {
+            if legacy_com {
+                return Err("duplicate --legacy-com".into());
+            }
+            legacy_com = true;
+            continue;
+        }
         if key == "--verbose" && !check && !init {
             if verbose {
                 return Err("duplicate --verbose".into());
@@ -275,6 +285,10 @@ pub fn run_with_resource_root(
     if verbose {
         forwarded.push("--verbose".into());
     }
+    #[cfg(debug_assertions)]
+    if legacy_com {
+        forwarded.push("--legacy-com".into());
+    }
     launch_worker(worker, dotnet, forwarded, resource_root)
 }
 
@@ -326,12 +340,32 @@ fn adjacent_default(explicit: Option<PathBuf>, name: &str) -> Result<PathBuf, St
 }
 
 fn usage() -> String {
-    "usage: md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp".into()
+    let base = "usage: md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp";
+    #[cfg(debug_assertions)]
+    {
+        base.replace("[--verbose]", "[--verbose] [--legacy-com]")
+            + "\n--legacy-com: original COM insertion (comparison baseline). Default: XML composition."
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        base.to_owned()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn help_advertises_legacy_only_in_debug() {
+        assert_eq!(usage().contains("--legacy-com"), cfg!(debug_assertions));
+    }
+
+    #[test]
+    #[cfg(all(not(debug_assertions), target_os = "windows", target_arch = "x86_64"))]
+    fn release_rejects_legacy_before_starting_worker() {
+        let error = run(vec!["ir2hwp".into(), "--legacy-com".into()]).unwrap_err();
+        assert!(!error.contains("legacy"));
+    }
     #[test]
     fn version_options_support_free_order_and_reject_ambiguous_inputs() {
         let defaults = VersionOptions::parse(vec!["--version".into()]).unwrap();

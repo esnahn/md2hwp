@@ -64,7 +64,9 @@ internal sealed record DirectXmlFlatDocument(XDocument Document, int Start, Dire
         foreach (var operation in plan.Operations)
         {
             if (verbose) Console.Error.WriteLine($"ir2hwp: {operation.Kind}/{operation.Label}");
+#if DEBUG
             using var timing = RenderProfile.Measure("compose." + operation.Kind);
+#endif
             if (operation.Kind is "text" or "table")
             {
                 var generated = paragraphs.Create(operation);

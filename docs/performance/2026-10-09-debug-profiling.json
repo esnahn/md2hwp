@@ -1,0 +1,1164 @@
+{
+  "ImplementationCommit": "faa8dcf",
+  "DetailedProfiling": "Debug only; default XML optimization target, legacy COM comparison baseline",
+  "TotalTimingEnvironment": "MD2HWP_TIMING=1",
+  "LegacyBaseline": "artifacts/debug-generation-modes-2026-10-09/small-debug-com",
+  "Modes": {
+    "debug-xml": {
+      "Run": {
+        "WallMilliseconds": 44625.5644,
+        "ExitCode": 0,
+        "TemplateUnchanged": true,
+        "InputUnchanged": true
+      },
+      "Timing": {
+        "Completed": true,
+        "TotalMilliseconds": 43912.473
+      },
+      "Profile": {
+        "Completed": true,
+        "TotalMilliseconds": 43856.536,
+        "Metrics": [
+          {
+            "Name": "phase.import-native-references",
+            "Calls": 1,
+            "Milliseconds": 15837.652,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "phase.compose-flat",
+            "Calls": 1,
+            "Milliseconds": 13090.655,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "compose.picture-resources",
+            "Calls": 1,
+            "Milliseconds": 10646.262,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "compose.materialize-picture-resources",
+            "Calls": 1,
+            "Milliseconds": 4641.384,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "hwpml.export/AuriMinimalCaptionPrototype.ReadDocument",
+            "Calls": 6,
+            "Milliseconds": 4073.093,
+            "ExportedUtf16CodeUnits": 26240450
+          },
+          {
+            "Name": "hwpml.export/TaggedTemplateWriter.RenderTaggedTemplate",
+            "Calls": 6,
+            "Milliseconds": 3154.999,
+            "ExportedUtf16CodeUnits": 26838506
+          },
+          {
+            "Name": "phase.verify-native-reopened",
+            "Calls": 1,
+            "Milliseconds": 2559.139,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "table.pagination",
+            "Calls": 1,
+            "Milliseconds": 2279.99,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "phase.prepare",
+            "Calls": 1,
+            "Milliseconds": 1995.068,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "phase.attach-native",
+            "Calls": 1,
+            "Milliseconds": 1629.523,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "compose.list-marker-measurement",
+            "Calls": 1,
+            "Milliseconds": 1600.579,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "hwpml.export/TaggedTemplateWriter.ImportFigureDocument",
+            "Calls": 3,
+            "Milliseconds": 1554.156,
+            "ExportedUtf16CodeUnits": 13394369
+          },
+          {
+            "Name": "hwpml.export/NativeCrossReferences.Insert",
+            "Calls": 2,
+            "Milliseconds": 1460.07,
+            "ExportedUtf16CodeUnits": 13293263
+          },
+          {
+            "Name": "phase.save-native-reopen",
+            "Calls": 1,
+            "Milliseconds": 763.059,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "hwpml.export/TaggedTemplateWriter.CreateDirectPictureResources",
+            "Calls": 1,
+            "Milliseconds": 734.704,
+            "ExportedUtf16CodeUnits": 6451913
+          },
+          {
+            "Name": "compose.text",
+            "Calls": 134,
+            "Milliseconds": 553.688,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "phase.verify-composed-flat",
+            "Calls": 1,
+            "Milliseconds": 260.202,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "hwpml.parse/AuriMinimalCaptionPrototype.ReadDocument",
+            "Calls": 6,
+            "Milliseconds": 243.16,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "hwpml.parse/TaggedTemplateWriter.RenderTaggedTemplate",
+            "Calls": 6,
+            "Milliseconds": 185.362,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "compose.code",
+            "Calls": 6,
+            "Milliseconds": 161.153,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "hwpml.block.export/CurrentParagraphStyle.ReadBlock",
+            "Calls": 1,
+            "Milliseconds": 140.355,
+            "ExportedUtf16CodeUnits": 95066
+          },
+          {
+            "Name": "hwpml.parse/NativeCrossReferences.Insert",
+            "Calls": 2,
+            "Milliseconds": 112.245,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "hwpml.parse/TaggedTemplateWriter.ImportFigureDocument",
+            "Calls": 3,
+            "Milliseconds": 79.96,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "hwpml.export/AuriMinimalBoxPrototype.ReadDocument",
+            "Calls": 1,
+            "Milliseconds": 52.074,
+            "ExportedUtf16CodeUnits": 97893
+          },
+          {
+            "Name": "hwpml.parse/TaggedTemplateWriter.CreateDirectPictureResources",
+            "Calls": 1,
+            "Milliseconds": 37.11,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "compose.figure",
+            "Calls": 4,
+            "Milliseconds": 26.189,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "hwpml.block.parse/CurrentParagraphStyle.ReadBlock",
+            "Calls": 1,
+            "Milliseconds": 3.718,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "hwpml.parse/AuriMinimalBoxPrototype.ReadDocument",
+            "Calls": 1,
+            "Milliseconds": 3.58,
+            "ExportedUtf16CodeUnits": 0
+          },
+          {
+            "Name": "compose.table",
+            "Calls": 8,
+            "Milliseconds": 0.47,
+            "ExportedUtf16CodeUnits": 0
+          }
+        ]
+      },
+      "OutputSHA256": "7561DB6712121201AFBBC11C8D081FDB8070FF1A2D2C1E8A51F9465899EE4044"
+    },
+    "release-xml": {
+      "Run": {
+        "WallMilliseconds": 34451.3956,
+        "ExitCode": 0,
+        "TemplateUnchanged": true,
+        "InputUnchanged": true
+      },
+      "Timing": {
+        "Completed": true,
+        "TotalMilliseconds": 34167.078
+      },
+      "Profile": null,
+      "OutputSHA256": "AA7BAC0E78AA1A38AE2E7A96473A558CF839FB2E0D000EC7D72A4AFAF6ED2AA1"
+    }
+  },
+  "Comparisons": {
+    "legacy-vs-debug-xml": {
+      "Structure": {
+        "StructureEqual": true,
+        "EmbeddedDataEqual": true,
+        "RootParagraphsBefore": 184,
+        "RootParagraphsAfter": 184,
+        "FootnotesBefore": 14,
+        "FootnotesAfter": 14,
+        "Difference": ""
+      },
+      "Pixels": {
+        "PagesBefore": 17,
+        "PagesAfter": 17,
+        "AllPagesEqual": true,
+        "Dpi": 144,
+        "Pages": [
+          {
+            "Page": "page-01.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "1d0cdda78de30c746b00d5418d2b9d17af5d5ec9d05a308c4c03853ab909d86c",
+            "PixelSHA256After": "1d0cdda78de30c746b00d5418d2b9d17af5d5ec9d05a308c4c03853ab909d86c",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-02.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "234ada9f225c2a0745a494357acca7170c5efff11f0b31024f1f480ebba54d72",
+            "PixelSHA256After": "234ada9f225c2a0745a494357acca7170c5efff11f0b31024f1f480ebba54d72",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-03.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "2a811ec469bfe426df078b0bb0d9478d2848a19f32e38568abda7c1fa64a844c",
+            "PixelSHA256After": "2a811ec469bfe426df078b0bb0d9478d2848a19f32e38568abda7c1fa64a844c",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-04.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "0a9c02740e94632f0c6937eb3b1865539ddf09c9e70c1d868574d49942bfc812",
+            "PixelSHA256After": "0a9c02740e94632f0c6937eb3b1865539ddf09c9e70c1d868574d49942bfc812",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-05.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "02c780ae0bd14db1f35d812de2f0c647780462f0e4e3acd84aaffe10cab4c520",
+            "PixelSHA256After": "02c780ae0bd14db1f35d812de2f0c647780462f0e4e3acd84aaffe10cab4c520",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-06.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "42e8b634ccf03e13916cb3654be7ed5000ab6eee2379569778e2929cdbefe8ad",
+            "PixelSHA256After": "42e8b634ccf03e13916cb3654be7ed5000ab6eee2379569778e2929cdbefe8ad",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-07.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "5858fccce67b43677a65aeb8537703b1d67fba9efa3d92762eb13a9b5cfa3324",
+            "PixelSHA256After": "5858fccce67b43677a65aeb8537703b1d67fba9efa3d92762eb13a9b5cfa3324",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-08.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "493380e8afd1dd21bc5d9f51f8ea90fd5630c97fb8b95ef8d6c3169c1d235c11",
+            "PixelSHA256After": "493380e8afd1dd21bc5d9f51f8ea90fd5630c97fb8b95ef8d6c3169c1d235c11",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-09.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "dffc925d7c6c2ee59ca8cf65e962f4e6391e13477a1664499442ae145978d5c3",
+            "PixelSHA256After": "dffc925d7c6c2ee59ca8cf65e962f4e6391e13477a1664499442ae145978d5c3",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-10.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "a114985490b03ee9824bde4b22c8be8aba3e1fd76bfd70748b3e87c5f72341f8",
+            "PixelSHA256After": "a114985490b03ee9824bde4b22c8be8aba3e1fd76bfd70748b3e87c5f72341f8",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-11.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "9d3212651c211b1f9fdcd707b529d655820e27e27b0cf9a88b93e28a97a35ec6",
+            "PixelSHA256After": "9d3212651c211b1f9fdcd707b529d655820e27e27b0cf9a88b93e28a97a35ec6",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-12.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "f82fdb61a3fa0da70be04c7ccddb6d111b7df8c77683c304b87c393f55af6cdc",
+            "PixelSHA256After": "f82fdb61a3fa0da70be04c7ccddb6d111b7df8c77683c304b87c393f55af6cdc",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-13.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "c16ccb51a2379cb3a44d021c6d69b0fe8085d9df4f7388445fc77bfecad2a8c4",
+            "PixelSHA256After": "c16ccb51a2379cb3a44d021c6d69b0fe8085d9df4f7388445fc77bfecad2a8c4",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-14.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "c2f52106901cbf852a56c3733871d08386631453851259cc5da1874251dcf37a",
+            "PixelSHA256After": "c2f52106901cbf852a56c3733871d08386631453851259cc5da1874251dcf37a",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-15.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "549b1dc8fe29a890caf8e2f9ebfea30da8eb7408368e0ae5e40dbc1cfddd946a",
+            "PixelSHA256After": "549b1dc8fe29a890caf8e2f9ebfea30da8eb7408368e0ae5e40dbc1cfddd946a",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-16.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "dad51c5a9214eb6148c59200b15b0c12d6a8e088caea7d9fc7324f2e463aa1d1",
+            "PixelSHA256After": "dad51c5a9214eb6148c59200b15b0c12d6a8e088caea7d9fc7324f2e463aa1d1",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-17.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "75a109da342a0fa6d8da386c1c180d75fc73088bde258445a661aaea799f6f25",
+            "PixelSHA256After": "75a109da342a0fa6d8da386c1c180d75fc73088bde258445a661aaea799f6f25",
+            "DifferenceBounds": null
+          }
+        ]
+      }
+    },
+    "legacy-vs-release-xml": {
+      "Structure": {
+        "StructureEqual": true,
+        "EmbeddedDataEqual": true,
+        "RootParagraphsBefore": 184,
+        "RootParagraphsAfter": 184,
+        "FootnotesBefore": 14,
+        "FootnotesAfter": 14,
+        "Difference": ""
+      },
+      "Pixels": {
+        "PagesBefore": 17,
+        "PagesAfter": 17,
+        "AllPagesEqual": true,
+        "Dpi": 144,
+        "Pages": [
+          {
+            "Page": "page-01.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "1d0cdda78de30c746b00d5418d2b9d17af5d5ec9d05a308c4c03853ab909d86c",
+            "PixelSHA256After": "1d0cdda78de30c746b00d5418d2b9d17af5d5ec9d05a308c4c03853ab909d86c",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-02.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "234ada9f225c2a0745a494357acca7170c5efff11f0b31024f1f480ebba54d72",
+            "PixelSHA256After": "234ada9f225c2a0745a494357acca7170c5efff11f0b31024f1f480ebba54d72",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-03.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "2a811ec469bfe426df078b0bb0d9478d2848a19f32e38568abda7c1fa64a844c",
+            "PixelSHA256After": "2a811ec469bfe426df078b0bb0d9478d2848a19f32e38568abda7c1fa64a844c",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-04.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "0a9c02740e94632f0c6937eb3b1865539ddf09c9e70c1d868574d49942bfc812",
+            "PixelSHA256After": "0a9c02740e94632f0c6937eb3b1865539ddf09c9e70c1d868574d49942bfc812",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-05.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "02c780ae0bd14db1f35d812de2f0c647780462f0e4e3acd84aaffe10cab4c520",
+            "PixelSHA256After": "02c780ae0bd14db1f35d812de2f0c647780462f0e4e3acd84aaffe10cab4c520",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-06.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "42e8b634ccf03e13916cb3654be7ed5000ab6eee2379569778e2929cdbefe8ad",
+            "PixelSHA256After": "42e8b634ccf03e13916cb3654be7ed5000ab6eee2379569778e2929cdbefe8ad",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-07.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "5858fccce67b43677a65aeb8537703b1d67fba9efa3d92762eb13a9b5cfa3324",
+            "PixelSHA256After": "5858fccce67b43677a65aeb8537703b1d67fba9efa3d92762eb13a9b5cfa3324",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-08.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "493380e8afd1dd21bc5d9f51f8ea90fd5630c97fb8b95ef8d6c3169c1d235c11",
+            "PixelSHA256After": "493380e8afd1dd21bc5d9f51f8ea90fd5630c97fb8b95ef8d6c3169c1d235c11",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-09.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "dffc925d7c6c2ee59ca8cf65e962f4e6391e13477a1664499442ae145978d5c3",
+            "PixelSHA256After": "dffc925d7c6c2ee59ca8cf65e962f4e6391e13477a1664499442ae145978d5c3",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-10.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "a114985490b03ee9824bde4b22c8be8aba3e1fd76bfd70748b3e87c5f72341f8",
+            "PixelSHA256After": "a114985490b03ee9824bde4b22c8be8aba3e1fd76bfd70748b3e87c5f72341f8",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-11.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "9d3212651c211b1f9fdcd707b529d655820e27e27b0cf9a88b93e28a97a35ec6",
+            "PixelSHA256After": "9d3212651c211b1f9fdcd707b529d655820e27e27b0cf9a88b93e28a97a35ec6",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-12.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "f82fdb61a3fa0da70be04c7ccddb6d111b7df8c77683c304b87c393f55af6cdc",
+            "PixelSHA256After": "f82fdb61a3fa0da70be04c7ccddb6d111b7df8c77683c304b87c393f55af6cdc",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-13.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "c16ccb51a2379cb3a44d021c6d69b0fe8085d9df4f7388445fc77bfecad2a8c4",
+            "PixelSHA256After": "c16ccb51a2379cb3a44d021c6d69b0fe8085d9df4f7388445fc77bfecad2a8c4",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-14.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "c2f52106901cbf852a56c3733871d08386631453851259cc5da1874251dcf37a",
+            "PixelSHA256After": "c2f52106901cbf852a56c3733871d08386631453851259cc5da1874251dcf37a",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-15.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "549b1dc8fe29a890caf8e2f9ebfea30da8eb7408368e0ae5e40dbc1cfddd946a",
+            "PixelSHA256After": "549b1dc8fe29a890caf8e2f9ebfea30da8eb7408368e0ae5e40dbc1cfddd946a",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-16.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "dad51c5a9214eb6148c59200b15b0c12d6a8e088caea7d9fc7324f2e463aa1d1",
+            "PixelSHA256After": "dad51c5a9214eb6148c59200b15b0c12d6a8e088caea7d9fc7324f2e463aa1d1",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-17.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "75a109da342a0fa6d8da386c1c180d75fc73088bde258445a661aaea799f6f25",
+            "PixelSHA256After": "75a109da342a0fa6d8da386c1c180d75fc73088bde258445a661aaea799f6f25",
+            "DifferenceBounds": null
+          }
+        ]
+      }
+    },
+    "debug-vs-release-xml": {
+      "Structure": {
+        "StructureEqual": true,
+        "EmbeddedDataEqual": true,
+        "RootParagraphsBefore": 184,
+        "RootParagraphsAfter": 184,
+        "FootnotesBefore": 14,
+        "FootnotesAfter": 14,
+        "Difference": ""
+      },
+      "Pixels": {
+        "PagesBefore": 17,
+        "PagesAfter": 17,
+        "AllPagesEqual": true,
+        "Dpi": 144,
+        "Pages": [
+          {
+            "Page": "page-01.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "1d0cdda78de30c746b00d5418d2b9d17af5d5ec9d05a308c4c03853ab909d86c",
+            "PixelSHA256After": "1d0cdda78de30c746b00d5418d2b9d17af5d5ec9d05a308c4c03853ab909d86c",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-02.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "234ada9f225c2a0745a494357acca7170c5efff11f0b31024f1f480ebba54d72",
+            "PixelSHA256After": "234ada9f225c2a0745a494357acca7170c5efff11f0b31024f1f480ebba54d72",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-03.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "2a811ec469bfe426df078b0bb0d9478d2848a19f32e38568abda7c1fa64a844c",
+            "PixelSHA256After": "2a811ec469bfe426df078b0bb0d9478d2848a19f32e38568abda7c1fa64a844c",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-04.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "0a9c02740e94632f0c6937eb3b1865539ddf09c9e70c1d868574d49942bfc812",
+            "PixelSHA256After": "0a9c02740e94632f0c6937eb3b1865539ddf09c9e70c1d868574d49942bfc812",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-05.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "02c780ae0bd14db1f35d812de2f0c647780462f0e4e3acd84aaffe10cab4c520",
+            "PixelSHA256After": "02c780ae0bd14db1f35d812de2f0c647780462f0e4e3acd84aaffe10cab4c520",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-06.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "42e8b634ccf03e13916cb3654be7ed5000ab6eee2379569778e2929cdbefe8ad",
+            "PixelSHA256After": "42e8b634ccf03e13916cb3654be7ed5000ab6eee2379569778e2929cdbefe8ad",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-07.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "5858fccce67b43677a65aeb8537703b1d67fba9efa3d92762eb13a9b5cfa3324",
+            "PixelSHA256After": "5858fccce67b43677a65aeb8537703b1d67fba9efa3d92762eb13a9b5cfa3324",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-08.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "493380e8afd1dd21bc5d9f51f8ea90fd5630c97fb8b95ef8d6c3169c1d235c11",
+            "PixelSHA256After": "493380e8afd1dd21bc5d9f51f8ea90fd5630c97fb8b95ef8d6c3169c1d235c11",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-09.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "dffc925d7c6c2ee59ca8cf65e962f4e6391e13477a1664499442ae145978d5c3",
+            "PixelSHA256After": "dffc925d7c6c2ee59ca8cf65e962f4e6391e13477a1664499442ae145978d5c3",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-10.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "a114985490b03ee9824bde4b22c8be8aba3e1fd76bfd70748b3e87c5f72341f8",
+            "PixelSHA256After": "a114985490b03ee9824bde4b22c8be8aba3e1fd76bfd70748b3e87c5f72341f8",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-11.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "9d3212651c211b1f9fdcd707b529d655820e27e27b0cf9a88b93e28a97a35ec6",
+            "PixelSHA256After": "9d3212651c211b1f9fdcd707b529d655820e27e27b0cf9a88b93e28a97a35ec6",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-12.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "f82fdb61a3fa0da70be04c7ccddb6d111b7df8c77683c304b87c393f55af6cdc",
+            "PixelSHA256After": "f82fdb61a3fa0da70be04c7ccddb6d111b7df8c77683c304b87c393f55af6cdc",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-13.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "c16ccb51a2379cb3a44d021c6d69b0fe8085d9df4f7388445fc77bfecad2a8c4",
+            "PixelSHA256After": "c16ccb51a2379cb3a44d021c6d69b0fe8085d9df4f7388445fc77bfecad2a8c4",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-14.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "c2f52106901cbf852a56c3733871d08386631453851259cc5da1874251dcf37a",
+            "PixelSHA256After": "c2f52106901cbf852a56c3733871d08386631453851259cc5da1874251dcf37a",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-15.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "549b1dc8fe29a890caf8e2f9ebfea30da8eb7408368e0ae5e40dbc1cfddd946a",
+            "PixelSHA256After": "549b1dc8fe29a890caf8e2f9ebfea30da8eb7408368e0ae5e40dbc1cfddd946a",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-16.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "dad51c5a9214eb6148c59200b15b0c12d6a8e088caea7d9fc7324f2e463aa1d1",
+            "PixelSHA256After": "dad51c5a9214eb6148c59200b15b0c12d6a8e088caea7d9fc7324f2e463aa1d1",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-17.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "75a109da342a0fa6d8da386c1c180d75fc73088bde258445a661aaea799f6f25",
+            "PixelSHA256After": "75a109da342a0fa6d8da386c1c180d75fc73088bde258445a661aaea799f6f25",
+            "DifferenceBounds": null
+          }
+        ]
+      }
+    }
+  },
+  "BinaryScan": {
+    "target\\debug\\md2hwp.exe": {
+      "--legacy-com": true,
+      "MD2HWP_PROFILE": false,
+      "md2hwp-profile:": false,
+      "phase.compose-flat": false,
+      "ExportedUtf16CodeUnits": false
+    },
+    "target\\debug\\md2hwp-backend.exe": {
+      "--legacy-com": true,
+      "MD2HWP_PROFILE": true,
+      "md2hwp-profile:": true,
+      "phase.compose-flat": true,
+      "ExportedUtf16CodeUnits": true
+    },
+    "target\\release\\md2hwp.exe": {
+      "--legacy-com": false,
+      "MD2HWP_PROFILE": false,
+      "md2hwp-profile:": false,
+      "phase.compose-flat": false,
+      "ExportedUtf16CodeUnits": false
+    },
+    "target\\release\\md2hwp-backend.exe": {
+      "--legacy-com": false,
+      "MD2HWP_PROFILE": false,
+      "md2hwp-profile:": false,
+      "phase.compose-flat": false,
+      "ExportedUtf16CodeUnits": false
+    }
+  },
+  "Help": [
+    {
+      "Configuration": "debug",
+      "Executable": "md2hwp.exe",
+      "Arguments": [],
+      "ExitCode": 1,
+      "Output": "md2hwp: usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose] [--legacy-com]\n       md2hwp md2ir [--input] <source.md|source.json> [[--output] <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose] [--legacy-com]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp --version [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n--legacy-com: original COM insertion (comparison baseline). Default: XML composition.\n"
+    },
+    {
+      "Configuration": "debug",
+      "Executable": "md2hwp.exe",
+      "Arguments": [
+        "ir2hwp",
+        "--legacy-com"
+      ],
+      "ExitCode": 1,
+      "Output": "md2hwp: usage: md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose] [--legacy-com]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp\n--legacy-com: original COM insertion (comparison baseline). Default: XML composition.\n"
+    },
+    {
+      "Configuration": "debug",
+      "Executable": "md2hwp-backend.exe",
+      "Arguments": [],
+      "ExitCode": 1,
+      "Output": "md2hwp-backend: System.ArgumentException: usage:\n  md2hwp-backend init-template [[--output] <template.hwp>]\n  md2hwp-backend <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--visible] [--verbose] [--legacy-com]\n  md2hwp-backend ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--visible] [--verbose] [--legacy-com]\n  md2hwp-backend --version\nDefault template: template.hwp beside the executable.\n--legacy-com: original COM insertion (comparison baseline). Default: XML composition.\n   at Md2Hwp.HancomIrPreview.CommandLine.Parse(String[] args)\n   at Md2Hwp.HancomIrPreview.Program.Main(String[] args)\n"
+    },
+    {
+      "Configuration": "debug",
+      "Executable": "md2hwp-backend.exe",
+      "Arguments": [
+        "ir2hwp",
+        "--legacy-com"
+      ],
+      "ExitCode": 1,
+      "Output": "md2hwp-backend: System.ArgumentException: usage:\n  md2hwp-backend init-template [[--output] <template.hwp>]\n  md2hwp-backend <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--visible] [--verbose] [--legacy-com]\n  md2hwp-backend ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--visible] [--verbose] [--legacy-com]\n  md2hwp-backend --version\nDefault template: template.hwp beside the executable.\n--legacy-com: original COM insertion (comparison baseline). Default: XML composition.\n   at Md2Hwp.HancomIrPreview.CommandLine.Parse(String[] args)\n   at Md2Hwp.HancomIrPreview.Program.Main(String[] args)\n"
+    },
+    {
+      "Configuration": "release",
+      "Executable": "md2hwp.exe",
+      "Arguments": [],
+      "ExitCode": 1,
+      "Output": "md2hwp: usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp md2ir [--input] <source.md|source.json> [[--output] <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp --version [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n"
+    },
+    {
+      "Configuration": "release",
+      "Executable": "md2hwp.exe",
+      "Arguments": [
+        "ir2hwp",
+        "--legacy-com"
+      ],
+      "ExitCode": 1,
+      "Output": "md2hwp: usage: md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp\n"
+    },
+    {
+      "Configuration": "release",
+      "Executable": "md2hwp-backend.exe",
+      "Arguments": [],
+      "ExitCode": 1,
+      "Output": "md2hwp-backend: System.ArgumentException: usage:\n  md2hwp-backend init-template [[--output] <template.hwp>]\n  md2hwp-backend <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--visible] [--verbose]\n  md2hwp-backend ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--visible] [--verbose]\n  md2hwp-backend --version\nDefault template: template.hwp beside the executable.\n   at Md2Hwp.HancomIrPreview.CommandLine.Parse(String[] args)\n   at Md2Hwp.HancomIrPreview.Program.Main(String[] args)\n"
+    },
+    {
+      "Configuration": "release",
+      "Executable": "md2hwp-backend.exe",
+      "Arguments": [
+        "ir2hwp",
+        "--legacy-com"
+      ],
+      "ExitCode": 1,
+      "Output": "md2hwp-backend: System.ArgumentException: usage:\n  md2hwp-backend init-template [[--output] <template.hwp>]\n  md2hwp-backend <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--visible] [--verbose]\n  md2hwp-backend ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--visible] [--verbose]\n  md2hwp-backend --version\nDefault template: template.hwp beside the executable.\n   at Md2Hwp.HancomIrPreview.CommandLine.Parse(String[] args)\n   at Md2Hwp.HancomIrPreview.Program.Main(String[] args)\n"
+    }
+  ],
+  "Binaries": {
+    "target/debug/md2hwp.exe": "164AF02A9314A328DF2C32CF7209048E088C2A0653DE18310EF1A7175C2F1A7A",
+    "target/debug/md2hwp-backend.exe": "F83E6004D2DFEE23ADDEB7A77F20378532C613D5BCA8E2F9336966D12A3440CC",
+    "target/release/md2hwp.exe": "AE4C1987EC8FF19FB654DE534CC7FDCC7ACDCE70DC6D18CF879CE50020B44C37",
+    "target/release/md2hwp-backend.exe": "AD58F0AE9505680FF512F6140637C9F1871AC8B7A2AAE17ED70AE88930873B33"
+  },
+  "Inputs": {
+    "examples/all-features-twice/all-features.md": "42A72D39251E0BE76CE063983A71FE4D4CA52350F637C8AF6A3E33726583DC5D",
+    "examples/all-features-twice/all-features.ir.json": "545233A000145EAEDA965445890CC479156FD514D7C1AE93D255607DB6965BE5",
+    "examples/all-features-twice/image.png": "39BB81EABC91B69C6FB209F9FE6FF81A787E4EB6E9EFC23711D3840C8577A47B",
+    "templates/template.hwp": "E7C678D3014A82C34B565E860E42526BA6D75C688B5D3B33491BAFE64430FDE9"
+  },
+  "Verification": {
+    "RustWorkspaceTests": true,
+    "RustReleaseCliTests": true,
+    "Clippy": true,
+    "BackendContractsDebug": true,
+    "BackendContractsRelease": true,
+    "OfficialBuildsDebugAndRelease": true,
+    "DetailedProfileTypeAbsentInRelease": true,
+    "ReleaseXmlReaderCallerMetadataAbsent": true,
+    "ReleaseLegacyParameterAbsent": true,
+    "LegacyHelpAbsentInRelease": true,
+    "FormerProfileEnvIgnoredInLiveRelease": true
+  }
+}

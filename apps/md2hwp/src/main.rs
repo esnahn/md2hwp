@@ -163,9 +163,12 @@ fn manuscript_options(arguments: &[std::ffi::OsString]) -> Result<ManuscriptOpti
     let mut args = arguments.iter().skip(1);
     while let Some(key) = args.next() {
         let option = key.to_str();
-        if option == Some("--verbose") {
+        let flag = option == Some("--verbose");
+        #[cfg(debug_assertions)]
+        let flag = flag || option == Some("--legacy-com");
+        if flag {
             if !seen.insert(key.clone()) {
-                return Err("Duplicate --verbose".into());
+                return Err(format!("Duplicate {}", key.to_string_lossy()));
             }
             forwarded.push(key.clone());
             continue;
@@ -476,7 +479,16 @@ fn default_pandoc_path() -> PathBuf {
 }
 
 fn usage() -> String {
-    "usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp md2ir [--input] <source.md|source.json> [[--output] <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp --version [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]".to_owned()
+    let base = "usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp md2ir [--input] <source.md|source.json> [[--output] <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp --version [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]";
+    #[cfg(debug_assertions)]
+    {
+        base.replace("[--verbose]", "[--verbose] [--legacy-com]")
+            + "\n--legacy-com: original COM insertion (comparison baseline). Default: XML composition."
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        base.to_owned()
+    }
 }
 
 #[cfg(test)]
@@ -582,6 +594,32 @@ mod tests {
         );
         assert_eq!(fs::read_to_string(template).unwrap(), "preserve template");
         assert!(!source.with_extension("ir.json").exists());
+    }
+
+    #[test]
+    #[cfg(debug_assertions)]
+    fn shorthand_forwards_legacy_mode_without_consuming_output() {
+        let args = ["source.md", "--legacy-com", "result.hwp", "--verbose"].map(Into::into);
+        let options = manuscript_options(&args).unwrap();
+        assert_eq!(options.output, std::path::absolute("result.hwp").unwrap());
+        assert_eq!(options.forwarded, arguments(&["--legacy-com", "--verbose"]));
+        assert!(
+            manuscript_options(&arguments(&["source.md", "--legacy-com", "--legacy-com"])).is_err()
+        );
+    }
+
+    #[test]
+    fn help_advertises_legacy_only_in_debug() {
+        assert_eq!(usage().contains("--legacy-com"), cfg!(debug_assertions));
+    }
+
+    #[test]
+    #[cfg(not(debug_assertions))]
+    fn release_shorthand_rejects_legacy_without_advertising_it() {
+        let error = manuscript_options(&arguments(&["source.md", "--legacy-com"]))
+            .err()
+            .unwrap();
+        assert!(!error.contains("legacy"));
     }
 
     #[test]

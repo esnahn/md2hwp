@@ -312,7 +312,7 @@ internal sealed class AuriMinimalBoxPrototype
     }
 
     public static XDocument ReadDocument(dynamic hwp) =>
-        RenderProfile.ReadDocument((object)hwp);
+        HwpMarkup.ReadDocument((object)hwp);
 
     public static IReadOnlyList<XElement> RootParagraphs(XDocument document)
     {

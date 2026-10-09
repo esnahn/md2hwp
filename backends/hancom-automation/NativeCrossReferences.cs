@@ -108,7 +108,7 @@ internal sealed class NativeCrossReferences
     internal void Insert(dynamic hwp)
     {
         if (Count == 0) return;
-        var imported = RenderProfile.ReadDocument((object)hwp);
+        var imported = HwpMarkup.ReadDocument((object)hwp);
         foreach (var reference in references)
         {
             var target = imported.XPathSelectElement(reference.TargetPath) ?? throw new InvalidOperationException("Native reference target moved during final import.");
@@ -131,7 +131,7 @@ internal sealed class NativeCrossReferences
             if (!(bool)action.Execute(parameters))
                 throw new InvalidOperationException("Could not insert the native number reference field.");
         }
-        Verify(RenderProfile.ReadDocument((object)hwp));
+        Verify(HwpMarkup.ReadDocument((object)hwp));
     }
 
     private static void SelectMarker(dynamic hwp, string marker, string paragraphPath)

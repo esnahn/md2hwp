@@ -266,7 +266,7 @@ internal static partial class HancomPreviewWriter
 
         var marker = profile.InsertionTarget.Marker ??
             throw new InvalidOperationException("The marker insertion target has no marker text.");
-        var beforeDocument = RenderProfile.ReadDocument((object)hwp);
+        var beforeDocument = HwpMarkup.ReadDocument((object)hwp);
         var beforeRoots = beforeDocument.Descendants()
             .Where(element => element.Name.LocalName == "SECTION")
             .SelectMany(section => section.Elements()
@@ -296,7 +296,7 @@ internal static partial class HancomPreviewWriter
         Run(hwp, "MoveSelNextParaBegin");
         Run(hwp, "Delete");
 
-        var afterDocument = RenderProfile.ReadDocument((object)hwp);
+        var afterDocument = HwpMarkup.ReadDocument((object)hwp);
         var afterRoots = afterDocument.Descendants()
             .Where(element => element.Name.LocalName == "SECTION")
             .SelectMany(section => section.Elements()
@@ -750,7 +750,7 @@ internal static partial class HancomPreviewWriter
         dynamic hwp,
         IrPreviewPlan plan,
         InvestigationTemplateProfile profile)
-        => VerifyText(RenderProfile.ReadDocument((object)hwp), plan, profile);
+        => VerifyText(HwpMarkup.ReadDocument((object)hwp), plan, profile);
 
     // These overloads consume one read-only snapshot between native mutations.
     // Keep the COM wrappers above/below for the Debug rendering path.
@@ -1101,7 +1101,7 @@ internal static partial class HancomPreviewWriter
                 "Saved preview lost paragraphs before native-list verification.");
         }
 
-        var document = RenderProfile.ReadDocument((object)hwp);
+        var document = HwpMarkup.ReadDocument((object)hwp);
         VerifyLists(document, appended, expected, profile, plan.Summary.ListItems);
     }
 
@@ -1302,7 +1302,7 @@ internal static partial class HancomPreviewWriter
 
     private static int CountFigureAutoNumbers(dynamic hwp) =>
         AuriMinimalCaptionPrototype.CountFigureAutoNumbers(
-            RenderProfile.ReadDocument((object)hwp));
+            HwpMarkup.ReadDocument((object)hwp));
 
     private static int CountNativeListParagraphs(dynamic hwp)
     {
@@ -1311,7 +1311,7 @@ internal static partial class HancomPreviewWriter
     }
 
     private static IReadOnlyList<SavedParagraph> ReadParagraphs(dynamic hwp)
-        => ReadParagraphs(RenderProfile.ReadDocument((object)hwp));
+        => ReadParagraphs(HwpMarkup.ReadDocument((object)hwp));
 
     internal static IReadOnlyList<SavedParagraph> ReadParagraphs(XDocument document)
     {
@@ -1539,7 +1539,7 @@ internal sealed class AuriPreviewStyleBindings
         dynamic hwp,
         InvestigationTemplateProfile profile)
     {
-        var document = RenderProfile.ReadDocument((object)hwp);
+        var document = HwpMarkup.ReadDocument((object)hwp);
         return BindDocument(document, profile);
     }
 

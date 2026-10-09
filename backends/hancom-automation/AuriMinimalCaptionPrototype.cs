@@ -215,7 +215,7 @@ internal sealed class AuriMinimalCaptionPrototype
     }
 
     public static XDocument ReadDocument(dynamic hwp) =>
-        RenderProfile.ReadDocument((object)hwp);
+        HwpMarkup.ReadDocument((object)hwp);
 
     public static IReadOnlyList<XElement> RootParagraphs(XDocument document) =>
         AuriMinimalBoxPrototype.RootParagraphs(document);

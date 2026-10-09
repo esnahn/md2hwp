@@ -42,7 +42,11 @@ internal static class Program
             var resourceRoot = CommandLine.IsPositional(args)
                 ? Path.GetDirectoryName(options.IrPath)! : Directory.GetCurrentDirectory();
             Console.WriteLine(JsonSerializer.Serialize(HancomPreviewWriter.RenderTaggedTemplate(
-                options.IrPath, options.TemplatePath, options.OutputPath, resourceRoot, options.Visible, options.Verbose), JsonOutput.Options));
+                options.IrPath, options.TemplatePath, options.OutputPath, resourceRoot, options.Visible, options.Verbose
+#if DEBUG
+                , options.LegacyCom
+#endif
+                ), JsonOutput.Options));
             return 0;
         }
         catch (Exception error)
@@ -58,7 +62,11 @@ internal static class JsonOutput
     public static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 }
 
-internal sealed record CommandLine(string IrPath, string TemplatePath, string OutputPath, bool Visible, bool Verbose)
+internal sealed record CommandLine(string IrPath, string TemplatePath, string OutputPath, bool Visible, bool Verbose
+#if DEBUG
+    , bool LegacyCom = false
+#endif
+    )
 {
     internal static bool IsPositional(string[] args) => args.Length > 0 &&
         !args[0].StartsWith("--", StringComparison.Ordinal) && args[0].EndsWith(".json", StringComparison.OrdinalIgnoreCase);
@@ -90,6 +98,9 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
                     else forwarded.AddRange([option, args[index]]);
                 }
                 else if (option is "--visible" or "--verbose") forwarded.Add(option);
+#if DEBUG
+                else if (option == "--legacy-com") forwarded.Add(option);
+#endif
                 else
                 {
                     if (option.StartsWith("-", StringComparison.Ordinal) || result is not null) throw new ArgumentException(Usage);
@@ -103,6 +114,9 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
         string? ir = null, template = null, output = null;
         var visible = false;
         var verbose = false;
+#if DEBUG
+        var legacyCom = false;
+#endif
         var seen = new HashSet<string>(StringComparer.Ordinal);
         for (var index = 1; index < args.Length; index++)
         {
@@ -110,6 +124,9 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
             if (!seen.Add(option)) throw new ArgumentException($"Duplicate argument: {option}");
             if (option == "--visible") { visible = true; continue; }
             if (option == "--verbose") { verbose = true; continue; }
+#if DEBUG
+            if (option == "--legacy-com") { legacyCom = true; continue; }
+#endif
             if (option is not ("--ir" or "--template" or "--output")) throw new ArgumentException(Usage);
             if (++index >= args.Length || args[index].StartsWith("--", StringComparison.Ordinal))
                 throw new ArgumentException($"Missing value for {option}.\n{Usage}");
@@ -122,9 +139,19 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
         }
         if (ir is null || output is null) throw new ArgumentException(Usage);
         return new(Path.GetFullPath(ir), Path.GetFullPath(template ?? Path.Combine(AppContext.BaseDirectory, "template.hwp")),
-            Path.GetFullPath(output), visible, verbose);
+            Path.GetFullPath(output), visible, verbose
+#if DEBUG
+            , legacyCom
+#endif
+            );
     }
-    private const string Usage = """
+    internal static string Usage => BaseUsage
+#if DEBUG
+        .Replace("[--verbose]", "[--verbose] [--legacy-com]", StringComparison.Ordinal) +
+        "\n--legacy-com: original COM insertion (comparison baseline). Default: XML composition."
+#endif
+        ;
+    private const string BaseUsage = """
         usage:
           md2hwp-backend init-template [[--output] <template.hwp>]
           md2hwp-backend <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--visible] [--verbose]

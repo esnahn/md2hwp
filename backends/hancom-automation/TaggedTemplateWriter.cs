@@ -7,9 +7,16 @@ internal sealed record TaggedTemplateResult(string Output, string IrVersion, boo
 internal static partial class HancomPreviewWriter
 {
     public static TaggedTemplateResult RenderTaggedTemplate(string irPath, string templatePath,
-        string outputPath, string repositoryRoot, bool visible, bool verbose = false)
+        string outputPath, string repositoryRoot, bool visible, bool verbose = false
+#if DEBUG
+        , bool legacyCom = false
+#endif
+        )
     {
-        using var timing = RenderProfile.Start();
+        using var timing = RenderTiming.Start();
+#if DEBUG
+        using var profileTiming = RenderProfile.Start();
+#endif
         var source = ValidateTemplate(templatePath);
         var output = ValidateRenderedOutput(outputPath, source, irPath);
         var hash = HashFile(source);
@@ -23,9 +30,11 @@ internal static partial class HancomPreviewWriter
             File.Copy(source, temporary, false);
             WithHwp(module, hwp =>
             {
+#if DEBUG
                 var prepareTiming = RenderProfile.Measure("phase.prepare");
+#endif
                 Open(hwp, temporary, visible);
-                var preparedMetadata = TemplateMetadata.Prepare(RenderProfile.ReadDocument((object)hwp), metadata);
+                var preparedMetadata = TemplateMetadata.Prepare(HwpMarkup.ReadDocument((object)hwp), metadata);
                 XDocument document = TemplateHeadingNumbers.Prepare(TaggedTemplateBinding.PreserveBeginSectionSettings(preparedMetadata.Document));
                 var footnotes = NativeFootnotes.Bind(document);
                 document = footnotes.LowerSample(document);
@@ -37,7 +46,7 @@ internal static partial class HancomPreviewWriter
                 var nativeFigure = NativeFigureCaption.Lower(boxes.Document);
                 _ = TaggedTemplateBinding.ReadFlat(nativeFigure.Document, temporary);
                 ImportFigureDocument(hwp, TemplateListPrototype.FreezeMarkerFormatting(nativeFigure.Document));
-                document = RenderProfile.ReadDocument((object)hwp);
+                document = HwpMarkup.ReadDocument((object)hwp);
                 var binding = TaggedTemplateBinding.ReadFlat(document, temporary);
                 var profile = binding.Profile;
                 var plan = HeadingReferenceNumbers.Bind(IrPreviewPlan.Load(irPath, repositoryRoot, profile), referenceTemplate.Layout);
@@ -46,86 +55,101 @@ internal static partial class HancomPreviewWriter
                 var prefix = rootsBefore.Take(binding.TemplateBegin).ToArray();
                 var boundBox = AuriMinimalBoxPrototype.Bind(hwp, styles);
                 var boundCaption = AuriMinimalCaptionPrototype.Bind(hwp, styles);
-#if DEBUG
-                var figureSource = FigureSourcePrototype.Bind(hwp, binding.CaptionRoot + 1, profile.FigureSource);
-#endif
                 var box = plan.Summary.BoxOperations > 0 ? boundBox : null;
                 var caption = plan.Summary.FigureOperations > 0 ? boundCaption : null;
+                int start;
+                XDocument finalDocument;
+                XElement[] finalRoots;
+                IReadOnlyList<SavedParagraph> saved;
 #if DEBUG
-                profile.Lists.Prototype("bullet").Bind(hwp);
-                profile.Lists.Prototype("ordered").Bind(hwp);
-                int start = PrepareInsertionTarget(hwp, profile);
-                prepareTiming.Dispose();
-                var insertTiming = RenderProfile.Measure("phase.insert");
+                IDisposable verifyFlatTiming;
+                if (legacyCom)
+                {
+                    var figureSource = FigureSourcePrototype.Bind(hwp, binding.CaptionRoot + 1, profile.FigureSource);
+                    profile.Lists.Prototype("bullet").Bind(hwp);
+                    profile.Lists.Prototype("ordered").Bind(hwp);
+                    start = PrepareInsertionTarget(hwp, profile);
+                    prepareTiming.Dispose();
+                    var insertTiming = RenderProfile.Measure("phase.insert");
 
-                int? list = null;
-                var continuations = new NativeListContinuations(document, plan);
-                foreach (var operation in plan.Operations)
-                {
-                    if (verbose) Console.Error.WriteLine($"ir2hwp: {operation.Kind}/{operation.Label}");
-                    using var operationTiming = RenderProfile.Measure("operation." + operation.Kind + "/" + operation.ParagraphStyle);
-                    list = RenderOperation(hwp, operation, styles, box, caption, figureSource, list, continuations);
+                    int? list = null;
+                    var continuations = new NativeListContinuations(document, plan);
+                    foreach (var operation in plan.Operations)
+                    {
+                        if (verbose) Console.Error.WriteLine($"ir2hwp: {operation.Kind}/{operation.Label}");
+                        using var operationTiming = RenderProfile.Measure("operation." + operation.Kind + "/" + operation.ParagraphStyle);
+                        list = RenderOperation(hwp, operation, styles, box, caption, figureSource, list, continuations);
+                    }
+                    insertTiming.Dispose();
+                    var validateTiming = RenderProfile.Measure("phase.validate-flat");
+                    ClearNativeListAtCaret(hwp, styles.Resolve("body"));
+                    ApplyResolvedParagraphStyle(hwp, styles, styles.Resolve("body"));
+                    RemoveHyperlinksInRoots(hwp, start, ((XElement[])RangeRoots(hwp)).Length);
+                    VerifyStyles(hwp, plan, styles, start, continuations);
+                    VerifyCharacterMarks(hwp, plan, styles, start);
+                    VerifyBoxes(hwp, plan, styles, box, start);
+                    VerifyCaptions(hwp, plan, styles, caption, start);
+                    VerifyLists(hwp, plan, profile, start);
+                    RequireNoHyperlinks(((XElement[])RangeRoots(hwp)).Skip(start));
+                    // All clones are verified before removing the original prototypes.
+                    DeleteRangeParagraphs(hwp, binding.TemplateBegin, binding.TemplateEnd + 1);
+                    start -= binding.TemplateEnd + 1 - binding.TemplateBegin;
+                    validateTiming.Dispose();
+                    var saveFlatTiming = RenderProfile.Measure("phase.save-flat-reopen");
+                    if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
+                        throw new InvalidOperationException("Could not save rendered document.");
+                    CloseDocument(hwp); Open(hwp, temporary, visible);
+                    saveFlatTiming.Dispose();
+                    verifyFlatTiming = RenderProfile.Measure("phase.verify-flat-reopened");
+                    VerifyText(hwp, plan, profile);
+                    VerifyStyles(hwp, plan, styles, start, continuations);
+                    VerifyCharacterMarks(hwp, plan, styles, start);
+                    VerifyBoxes(hwp, plan, styles, box, start, verifyPrototype: false);
+                    VerifyCaptions(hwp, plan, styles, caption, start, verifyPrototype: false);
+                    VerifyLists(hwp, plan, profile, start);
+                    finalRoots = RangeRoots(hwp);
+                    RequireNoHyperlinks(finalRoots.Skip(start));
+                    finalDocument = HwpMarkup.ReadDocument((object)hwp);
+                    saved = ReadParagraphs(hwp);
                 }
-                insertTiming.Dispose();
-                var validateTiming = RenderProfile.Measure("phase.validate-flat");
-                ClearNativeListAtCaret(hwp, styles.Resolve("body"));
-                ApplyResolvedParagraphStyle(hwp, styles, styles.Resolve("body"));
-                RemoveHyperlinksInRoots(hwp, start, ((XElement[])RangeRoots(hwp)).Length);
-                VerifyStyles(hwp, plan, styles, start, continuations);
-                VerifyCharacterMarks(hwp, plan, styles, start);
-                VerifyBoxes(hwp, plan, styles, box, start);
-                VerifyCaptions(hwp, plan, styles, caption, start);
-                VerifyLists(hwp, plan, profile, start);
-                RequireNoHyperlinks(((XElement[])RangeRoots(hwp)).Skip(start));
-                // All clones are verified before removing the original prototypes.
-                DeleteRangeParagraphs(hwp, binding.TemplateBegin, binding.TemplateEnd + 1);
-                start -= binding.TemplateEnd + 1 - binding.TemplateBegin;
-                validateTiming.Dispose();
-                var saveFlatTiming = RenderProfile.Measure("phase.save-flat-reopen");
-                if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
-                    throw new InvalidOperationException("Could not save rendered document.");
-                CloseDocument(hwp); Open(hwp, temporary, visible);
-                saveFlatTiming.Dispose();
-                var verifyFlatTiming = RenderProfile.Measure("phase.verify-flat-reopened");
-                VerifyText(hwp, plan, profile);
-                VerifyStyles(hwp, plan, styles, start, continuations);
-                VerifyCharacterMarks(hwp, plan, styles, start);
-                VerifyBoxes(hwp, plan, styles, box, start, verifyPrototype: false);
-                VerifyCaptions(hwp, plan, styles, caption, start, verifyPrototype: false);
-                VerifyLists(hwp, plan, profile, start);
-                XElement[] finalRoots = RangeRoots(hwp);
-                RequireNoHyperlinks(finalRoots.Skip(start));
-                XDocument finalDocument = RenderProfile.ReadDocument((object)hwp);
-#else
-                prepareTiming.Dispose();
-                var composeTiming = RenderProfile.Measure("phase.compose-flat");
-                var resources = CreateDirectPictureResources(hwp, document, plan, styles, boundBox, boundCaption, temporary, visible, out XElement[] pictures, out int? zOrderStart);
-                var direct = DirectXmlFlatDocument.Compose(document, resources, binding, styles, plan, pictures, verbose, zOrderStart);
-                int start = direct.Start;
-                XDocument finalDocument = direct.Document;
-                var continuations = direct.Lists.Continuations;
-                if (direct.Lists.NeedsNativeMeasurement)
-                {
-                    using var listTiming = RenderProfile.Measure("compose.list-marker-measurement");
-                    // Only native marker display is measured here. The expected
-                    // document remains IR/template-derived, never an export of
-                    // a potentially incorrect COM-generated intermediate.
-                    ImportDirectMeasurementDocument(hwp, finalDocument);
-                    direct.Lists.ResolveContinuations((object)hwp, finalDocument);
-                }
-                CanonicalizeDirectCharacterDefinitions(document, finalDocument);
-                composeTiming.Dispose();
-                var verifyFlatTiming = RenderProfile.Measure("phase.verify-composed-flat");
-                XElement[] finalRoots = RangeRoots(finalDocument);
-                IReadOnlyList<SavedParagraph> saved = ReadParagraphs(finalDocument);
-                VerifyText(finalDocument, plan, profile);
-                VerifyStyles(saved, plan, styles, start, continuations);
-                VerifyCharacterMarks(saved, plan, styles, start);
-                VerifyBoxes(finalDocument, plan, styles, box, start, verifyPrototype: false);
-                VerifyCaptions(finalDocument, plan, styles, caption, start, verifyPrototype: false);
-                VerifyLists(finalDocument, saved, plan, profile, start);
-                RequireNoHyperlinks(finalRoots.Skip(start));
+                else
 #endif
+                {
+#if DEBUG
+                    prepareTiming.Dispose();
+                    var composeTiming = RenderProfile.Measure("phase.compose-flat");
+#endif
+                    var resources = CreateDirectPictureResources(hwp, document, plan, styles, boundBox, boundCaption, temporary, visible, out XElement[] pictures, out int? zOrderStart);
+                    var direct = DirectXmlFlatDocument.Compose(document, resources, binding, styles, plan, pictures, verbose, zOrderStart);
+                    start = direct.Start;
+                    finalDocument = direct.Document;
+                    var continuations = direct.Lists.Continuations;
+                    if (direct.Lists.NeedsNativeMeasurement)
+                    {
+#if DEBUG
+                        using var listTiming = RenderProfile.Measure("compose.list-marker-measurement");
+#endif
+                        // Only native marker display is measured here. The expected
+                        // document remains IR/template-derived, never an export of
+                        // a potentially incorrect COM-generated intermediate.
+                        ImportDirectMeasurementDocument(hwp, finalDocument);
+                        direct.Lists.ResolveContinuations((object)hwp, finalDocument);
+                    }
+                    CanonicalizeDirectCharacterDefinitions(document, finalDocument);
+#if DEBUG
+                    composeTiming.Dispose();
+                    verifyFlatTiming = RenderProfile.Measure("phase.verify-composed-flat");
+#endif
+                    finalRoots = RangeRoots(finalDocument);
+                    saved = ReadParagraphs(finalDocument);
+                    VerifyText(finalDocument, plan, profile);
+                    VerifyStyles(saved, plan, styles, start, continuations);
+                    VerifyCharacterMarks(saved, plan, styles, start);
+                    VerifyBoxes(finalDocument, plan, styles, box, start, verifyPrototype: false);
+                    VerifyCaptions(finalDocument, plan, styles, caption, start, verifyPrototype: false);
+                    VerifyLists(finalDocument, saved, plan, profile, start);
+                    RequireNoHyperlinks(finalRoots.Skip(start));
+                }
                 TemplateRangeStructure.RequireOriginalStyleDefinitions(document, finalDocument, prefix);
                 if (!TemplateRangeStructure.Equivalent(prefix, finalRoots.Take(prefix.Length).ToArray(), document, finalDocument))
                     throw new InvalidOperationException("Rendering changed static cover/header content: " +
@@ -133,9 +157,6 @@ internal static partial class HancomPreviewWriter
                 var expected = ExpectedParagraphs(plan, profile).ToArray();
                 if (finalRoots.Length != prefix.Length + expected.Length + 1 || !IsSimpleParagraph(finalRoots[^1], ""))
                     throw new InvalidOperationException("Unexpected leftover template definitions or generated paragraph count.");
-#if DEBUG
-                IReadOnlyList<SavedParagraph> saved = ReadParagraphs(hwp);
-#endif
                 if (saved[^1].NativeList is not null ||
                     (string?)finalRoots[^1].Attribute("Style") != styles.Resolve("body").Id.ToString())
                     throw new InvalidOperationException("The empty terminal paragraph inherited a heading or list marker.");
@@ -147,8 +168,10 @@ internal static partial class HancomPreviewWriter
                 if (finalRoots.SelectMany(p => p.Descendants()).Count(e => e.Name.LocalName == "AUTONUM" && (string?)e.Attribute("NumberType") == "Figure") !=
                     prefix.SelectMany(p => p.Descendants()).Count(e => e.Name.LocalName == "AUTONUM" && (string?)e.Attribute("NumberType") == "Figure") + plan.Summary.FigureOperations)
                     throw new InvalidOperationException("Unexpected generated caption count.");
+#if DEBUG
                 verifyFlatTiming.Dispose();
                 var attachTiming = RenderProfile.Measure("phase.attach-native");
+#endif
                 var attached = boxes.Layout.Attach(finalDocument, plan, start);
                 attached = nativeFigure.Layout.Attach(attached, plan, start);
                 attached = tables.Layout.Attach(attached, plan, start, (table, target, prototype) =>
@@ -165,17 +188,20 @@ internal static partial class HancomPreviewWriter
                 TemplateHeadingBlocks.RecalculateFigureNumbers(attached);
                 tables.Layout.RecalculateNumbers(attached);
                 TableWidthLimits.RequireFits(attached, tables.Layout.GeneratedTableInstances);
-#if !DEBUG
-                CanonicalizeDirectCharacterDefinitions(document, attached);
+#if DEBUG
+                if (!legacyCom)
 #endif
+                    CanonicalizeDirectCharacterDefinitions(document, attached);
                 var references = NativeCrossReferences.Prepare(attached, plan, referenceTemplate.Layout,
                     nativeFigure.Layout.GeneratedFigureInstances, tables.Layout.ReferencedTableInstances);
                 attached = references.Document;
                 footnotes.RecordLayout(attached);
                 boxes.Layout.RecordLayout(attached);
                 tables.Layout.RecordLayout(attached);
+#if DEBUG
                 attachTiming.Dispose();
                 var nativeTiming = RenderProfile.Measure("phase.import-native-references");
+#endif
                 var tableStarts = NativeTablePagination.ResolveAnchors(attached, tables.Layout.GeneratedTableBodyInstances);
                 ImportFigureDocument(hwp, attached, headings.Layout, boxes.Layout, footnotes, tables.Layout);
                 references.Layout.Insert(hwp);
@@ -184,25 +210,27 @@ internal static partial class HancomPreviewWriter
                     // Replacing long markers with short native fields can leave
                     // Hancom's saved line layout stale. Import the completed
                     // controls to recalculate layout before measuring tables.
-                    var completedReferences = RenderProfile.ReadDocument((object)hwp);
+                    var completedReferences = HwpMarkup.ReadDocument((object)hwp);
                     RequireFigureDocument(attached, completedReferences, headings.Layout, boxes: boxes.Layout,
                         footnotes: footnotes, references: references.Layout, tables: tables.Layout);
                     ImportFigureDocument(hwp, completedReferences, headings.Layout, boxes.Layout, footnotes, tables.Layout);
-                    references.Layout.Verify(RenderProfile.ReadDocument((object)hwp));
+                    references.Layout.Verify(HwpMarkup.ReadDocument((object)hwp));
                 }
                 // Measure the completed fields, whose displayed text can be much
                 // shorter than the temporary reference markers in table cells.
                 if (tableStarts.Count > 0)
                 {
+#if DEBUG
                     using var paginationTiming = RenderProfile.Measure("table.pagination");
-                    var completed = RenderProfile.ReadDocument((object)hwp);
+#endif
+                    var completed = HwpMarkup.ReadDocument((object)hwp);
                     RequireFigureDocument(attached, completed, headings.Layout, boxes: boxes.Layout,
                         footnotes: footnotes, references: references.Layout, tables: tables.Layout);
                     var moved = NativeTablePagination.Reflow((object)hwp, completed,
                         tableStarts, corrected =>
                         {
                             ImportFigureDocument(hwp, corrected, headings.Layout, boxes.Layout, footnotes, tables.Layout);
-                            references.Layout.Verify(RenderProfile.ReadDocument((object)hwp));
+                            references.Layout.Verify(HwpMarkup.ReadDocument((object)hwp));
                         });
                     if (moved > 0)
                     {
@@ -217,14 +245,18 @@ internal static partial class HancomPreviewWriter
                         if (verbose) Console.Error.WriteLine($"ir2hwp: moved {moved} orphaned table header(s) to the first body row's page.");
                     }
                 }
+#if DEBUG
                 nativeTiming.Dispose();
                 var saveNativeTiming = RenderProfile.Measure("phase.save-native-reopen");
+#endif
                 if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
                     throw new InvalidOperationException("Could not save native figure captions.");
                 CloseDocument(hwp); Open(hwp, temporary, visible);
+#if DEBUG
                 saveNativeTiming.Dispose();
                 using var verifyNativeTiming = RenderProfile.Measure("phase.verify-native-reopened");
-                var nativeSaved = RenderProfile.ReadDocument((object)hwp);
+#endif
+                var nativeSaved = HwpMarkup.ReadDocument((object)hwp);
                 RequireFigureDocument(attached, nativeSaved, headings.Layout, reportLayout: true, boxes: boxes.Layout, footnotes: footnotes, references: references.Layout, tables: tables.Layout);
                 NativeTablePagination.VerifyReopened((object)hwp, tableStarts);
                 return true;
@@ -232,6 +264,9 @@ internal static partial class HancomPreviewWriter
             if (HashFile(source) != hash) throw new InvalidOperationException("Source template changed.");
             PublishRenderedOutput(temporary, output);
             timing?.Complete();
+#if DEBUG
+            profileTiming?.Complete();
+#endif
             return new(output, IrContract.Version, true, true);
         }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
@@ -241,7 +276,9 @@ internal static partial class HancomPreviewWriter
         IrPreviewPlan plan, AuriPreviewStyleBindings styles, AuriMinimalBoxPrototype boundBox, AuriMinimalCaptionPrototype boundCaption,
         string temporary, bool visible, out XElement[] pictures, out int? zOrderStart)
     {
+#if DEBUG
         using var timing = RenderProfile.Measure("compose.picture-resources");
+#endif
         var figures = plan.Operations.Where(operation => operation.Kind == "figure").ToArray();
         if (figures.Length == 0)
         {
@@ -251,7 +288,7 @@ internal static partial class HancomPreviewWriter
             // Read the native insertion-order origin rather than infer it from
             // static/template object ZOrders, which need not be sequential.
             boundBox.Insert(hwp, styles, firstCode.Lines, firstCode.SourceRuns);
-            var codeResources = RenderProfile.ReadDocument((object)hwp);
+            var codeResources = HwpMarkup.ReadDocument((object)hwp);
             zOrderStart = (int?)AuriMinimalBoxPrototype.RootParagraphs(codeResources)[^2]
                 .Descendants("TABLE").Single().Element("SHAPEOBJECT")!.Attribute("ZOrder")
                 ?? throw new InvalidOperationException("Code resource has no native insertion order.");
@@ -278,11 +315,13 @@ internal static partial class HancomPreviewWriter
             // Saving materializes lazy image geometry and the native body /
             // master-page allocation order, including images already cached.
             // Both are needed to match native HWP clone insertion faithfully.
+#if DEBUG
             using var materialize = RenderProfile.Measure("compose.materialize-picture-resources");
+#endif
             if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
                 throw new InvalidOperationException("Could not materialize embedded picture resources.");
             CloseDocument(hwp); Open(hwp, temporary, visible);
-            resources = RenderProfile.ReadDocument((object)hwp);
+            resources = HwpMarkup.ReadDocument((object)hwp);
         }
         var roots = AuriMinimalBoxPrototype.RootParagraphs(resources);
         zOrderStart = (int?)roots[first].Descendants("PICTURE").Single().Element("SHAPEOBJECT")!.Attribute("ZOrder")
@@ -318,7 +357,7 @@ internal static partial class HancomPreviewWriter
         _ = hwp.Clear(1);
         object imported = hwp.SetTextFile("<?xml version=\"1.0\" encoding=\"UTF-16\" standalone=\"no\"?>" + document.ToString(SaveOptions.DisableFormatting), "HWPML2X", "");
         if (imported is not int status || status != 1) throw new InvalidOperationException("Could not import native figure caption structure.");
-        RequireFigureDocument(document, RenderProfile.ReadDocument((object)hwp), headings, boxes: boxes, footnotes: footnotes, tables: tables);
+        RequireFigureDocument(document, HwpMarkup.ReadDocument((object)hwp), headings, boxes: boxes, footnotes: footnotes, tables: tables);
     }
 
     private static void RequireFigureDocument(XDocument expected, XDocument actual, TemplateHeadingBlocks? headings = null, bool reportLayout = false, TemplateBoxParagraphs? boxes = null, NativeFootnotes? footnotes = null, NativeCrossReferences? references = null, TemplateTables? tables = null)
@@ -411,7 +450,7 @@ internal static partial class HancomPreviewWriter
 
     private static XElement[] RangeRoots(dynamic hwp)
     {
-        var document = RenderProfile.ReadDocument((object)hwp);
+        var document = HwpMarkup.ReadDocument((object)hwp);
         return RangeRoots(document);
     }
 
