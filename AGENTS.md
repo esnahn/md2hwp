@@ -279,6 +279,20 @@ fallback, checks the digest, and preserves upstream notices. No runtime lock sid
 
 ## Hancom safety and verification
 
+Release builds compose the unpublished flat manuscript from validated IR and
+template XML; Debug retains the original COM insertion path for comparison.
+The live picture resource document supplies embedded data, native geometry and
+object allocation order only, never expected manuscript/static content. Prime
+body/master-page allocation with one native caption clone and discard that clone;
+save/reopen the resource document to materialize image caches. Remap all imported
+template format references because native block insertion can renumber definitions;
+preserve static control identities and fields while remapping their formats.
+Measure native list marker display only when continuation widths require it.
+Keep final full-document import and save/reopen checks against the independently
+composed expected XML. Do not weaken structural or stacking-order comparisons to
+make the faster path pass. Performance and Debug/Release equivalence evidence is
+recorded in docs/performance/2026-10-09-direct-xml.md.
+
 Use documented COM only, not UI clicks/keystrokes. Process one document at a time.
 Never modify source templates or manuscripts. Replace generated HWP only after
 successful temporary rendering, save/reopen and structural verification. Preserve

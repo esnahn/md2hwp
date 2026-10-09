@@ -522,6 +522,8 @@ NativeClonePositionTests.Run();
 TemplateRangeStructureTests.Run();
 TemplateFormattingComparisonTests.Run();
 FlatSnapshotTests.Run();
+DirectXmlCompositionTests.Run();
+DirectXmlListTests.Run();
 BoxPrototypeStructureTests.Run();
 ListMarkerFormattingTests.Run();
 ListContinuationTests.Run();

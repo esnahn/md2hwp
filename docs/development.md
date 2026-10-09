@@ -94,7 +94,16 @@ Ipsum 본문 11,155어절을 5장·20절로 나누었으며, 작성 당시 최�
 
 ## 성능 측정 기준
 
-현재 Release의 XML 재사용·반복 비교 최적화는 [성능·출력 비교](performance/2026-10-09-xml-comparison.md)와
+현재 Release는 IR·템플릿 XML에서 평면 문서를 직접 구성합니다. [성능·출력 비교](performance/2026-10-09-direct-xml.md)와
+[집계 JSON](performance/2026-10-09-direct-xml.json)에 일반 실행 209.830 → 121.349초,
+COM 메서드 계측 35,025 → 22,360회 감소를 기록했습니다. 문단 스타일 블록 조회는
+473 → 1회, 전체 XML export는 19 → 14회로 줄었습니다. 기존 Debug 생성 경로와 최종
+저장·재열기 검증을 유지하며, 대규모 107쪽과 모든 기능 원고 17쪽의 구조·서식·내장 이미지·
+전체 픽셀이 일치했습니다. 기존 템플릿의 긴 표 clipping과 간헐적 초기 import 높이 오류는
+동등성 결과와 별도로 보고서에 기록합니다. 원시 증거는
+`artifacts/performance-direct-xml-2026-10-09/`에 보관합니다.
+
+직전 Release의 XML 재사용·반복 비교 최적화는 [성능·출력 비교](performance/2026-10-09-xml-comparison.md)와
 [집계 JSON](performance/2026-10-09-xml-comparison.json)에 있습니다. 같은 대규모 원고의 일반 Release가
 277.016 → 209.830초로 단축됐고, 전체 XML 조회는 37 → 19회로 줄었습니다.
 캐시를 단발 조회까지 적용해 처음에는 느려졌던 실험과 적용 범위 수정도 기록했습니다.
@@ -112,7 +121,7 @@ Ipsum 본문 11,155어절을 5장·20절로 나누었으며, 작성 당시 최�
 별도 계측 빌드의 호출별 시간을 구분했으며, 원시 로그와 CSV는
 `artifacts/performance-release-2026-10-09/`에 보관합니다.
 
-현재 Release의 액션별 기준 측정은 [2026-10-08 성능 보고서](performance/2026-10-08-baseline.md)와
+초기 Release의 액션별 기준 측정은 [2026-10-08 성능 보고서](performance/2026-10-08-baseline.md)와
 [비교용 JSON](performance/2026-10-08-baseline.json)에 보관합니다. 호출별 원시 시간선과 CSV는
 `artifacts/performance-2026-10-08/`에 있습니다. 대규모 원고는 네이티브 자동번호 검증에서
 실패했으므로 실패 지점까지의 비용이며, 정상 완료된 작은 원고와 구분해서 비교하십시오.

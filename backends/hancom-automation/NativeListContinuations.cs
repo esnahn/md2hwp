@@ -9,6 +9,8 @@ internal sealed class NativeListContinuations(XDocument document, IrPreviewPlan 
         .Select(o => (o.ListContinuation!.ListId, o.ListContinuation.Number)).ToHashSet();
     private readonly Dictionary<(int, int), int> margins = [];
 
+    internal void RecordMargin(PreviewListMarker marker, int margin) => margins[(marker.ListId, marker.Number)] = margin;
+
     internal int Margin(PreviewListMarker marker) => margins.TryGetValue((marker.ListId, marker.Number), out var value)
         ? value : throw new InvalidOperationException("Missing first paragraph for a list continuation.");
 
