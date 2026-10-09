@@ -1,0 +1,1095 @@
+{
+  "schema": "md2hwp.ir",
+  "ir_version": "0.4",
+  "metadata": {
+    "author": "md2hwp",
+    "date": "2026-10-09",
+    "date-meta": "2026-10-09",
+    "md2hwp-heading1-start": "3",
+    "md2hwp-literal": "{{md2hwp:meta:title}}",
+    "md2hwp-report-number": "EMF-2026-01",
+    "publisher": "md2hwp 검증 예제",
+    "subtitle": "내장·재열기·캡션·출처·상호참조",
+    "title": "EMF 그림 검증"
+  },
+  "blocks": [
+    {
+      "type": "heading",
+      "level": 1,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "첫"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "번째"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "장"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "id": "emf-section",
+      "level": 2,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "일반"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "EMF"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "다음"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "장의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "figure_number",
+          "target": "emf-only-repeat"
+        },
+        {
+          "type": "text",
+          "value": "과"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "현재"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "장의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "figure_number",
+          "target": "emf-only"
+        },
+        {
+          "type": "text",
+          "value": "을"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "참조합니다."
+        },
+        {
+          "type": "footnote",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "각주"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "안에서"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "figure_number",
+                  "target": "emf-plus"
+                },
+                {
+                  "type": "text",
+                  "value": "과"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "cross_reference",
+                  "kind": "heading_number",
+                  "target": "emf-section"
+                },
+                {
+                  "type": "text",
+                  "value": "을"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "참조합니다."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "id": "emf-only",
+      "image": {
+        "path": "EmfOnly.emf",
+        "alt": [
+          {
+            "type": "text",
+            "value": "일반"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "EMF"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "—"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "선·한글·클리핑·회전·투명도·비트맵"
+          }
+        ],
+        "title": null
+      },
+      "caption": [
+        {
+          "type": "text",
+          "value": "일반"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "EMF"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "—"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "선·한글·클리핑·회전·투명도·비트맵"
+        }
+      ],
+      "source": [
+        {
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "md2hwp에서"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "생성한"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "재현용"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "그림"
+            }
+          ]
+        },
+        {
+          "prefix": "주.1",
+          "inlines": [
+            {
+              "type": "strong",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "한글"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": "과"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "Windows"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "GDI+의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "표현을"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "비교합니다."
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "cross_reference",
+              "kind": "figure_number",
+              "target": "emf-dual"
+            },
+            {
+              "type": "text",
+              "value": "도"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "확인합니다."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "EMF+"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "Dual"
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "id": "emf-dual",
+      "image": {
+        "path": "EmfPlusDual.emf",
+        "alt": [
+          {
+            "type": "text",
+            "value": "EMF+"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "Dual"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "—"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "GDI와"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "GDI+"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "명령"
+          }
+        ],
+        "title": null
+      },
+      "caption": [
+        {
+          "type": "text",
+          "value": "EMF+"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "Dual"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "—"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "GDI와"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "GDI+"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "명령"
+        }
+      ],
+      "source": [
+        {
+          "prefix": "Source",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "md2hwp"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "fixture"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "generator"
+            }
+          ]
+        },
+        {
+          "prefix": "note2",
+          "inlines": [
+            {
+              "type": "cross_reference",
+              "kind": "heading_number",
+              "target": "emf-section"
+            },
+            {
+              "type": "text",
+              "value": "와"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "cross_reference",
+              "kind": "figure_number",
+              "target": "emf-only"
+            },
+            {
+              "type": "text",
+              "value": "를"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "확인합니다."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "EMF+"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "Only"
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "id": "emf-plus",
+      "image": {
+        "path": "EmfPlusOnly.emf",
+        "alt": [
+          {
+            "type": "text",
+            "value": "EMF+"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "Only"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "—"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "GDI+"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "명령"
+          }
+        ],
+        "title": null
+      },
+      "caption": [
+        {
+          "type": "text",
+          "value": "EMF+"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "Only"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "—"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "GDI+"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "명령"
+        }
+      ],
+      "source": [
+        {
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "md2hwp에서"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "생성한"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "재현용"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "그림"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 1,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "두"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "번째"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "장"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "일반"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "EMF"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "재사용"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "cross_reference",
+          "kind": "figure_number",
+          "target": "emf-only"
+        },
+        {
+          "type": "text",
+          "value": "과"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "cross_reference",
+          "kind": "figure_number",
+          "target": "emf-only-repeat"
+        },
+        {
+          "type": "text",
+          "value": "을"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "참조합니다."
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "id": "emf-only-repeat",
+      "image": {
+        "path": "EmfOnly.emf",
+        "alt": [
+          {
+            "type": "text",
+            "value": "같은"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "일반"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "EMF를"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "다시"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "내장"
+          }
+        ],
+        "title": null
+      },
+      "caption": [
+        {
+          "type": "text",
+          "value": "같은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "일반"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "EMF를"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다시"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "내장"
+        }
+      ],
+      "source": [
+        {
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "같은"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "원본"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "파일의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "반복"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "삽입"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "EMF+"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "Dual"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "재사용"
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "id": "emf-dual-repeat",
+      "image": {
+        "path": "EmfPlusDual.emf",
+        "alt": [
+          {
+            "type": "text",
+            "value": "같은"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "EMF+"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "Dual을"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "다시"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "내장"
+          }
+        ],
+        "title": null
+      },
+      "caption": [
+        {
+          "type": "text",
+          "value": "같은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "EMF+"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "Dual을"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다시"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "내장"
+        }
+      ],
+      "source": [
+        {
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "같은"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "원본"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "파일의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "반복"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "삽입"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "EMF+"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "Only"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "재사용"
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "id": "emf-plus-repeat",
+      "image": {
+        "path": "EmfPlusOnly.emf",
+        "alt": [
+          {
+            "type": "text",
+            "value": "같은"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "EMF+"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "Only를"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "다시"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "내장"
+          }
+        ],
+        "title": null
+      },
+      "caption": [
+        {
+          "type": "text",
+          "value": "같은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "EMF+"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "Only를"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다시"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "내장"
+        }
+      ],
+      "source": [
+        {
+          "prefix": "출처",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "같은"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "원본"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "파일의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "반복"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "삽입"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

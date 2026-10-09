@@ -212,7 +212,7 @@ internal sealed class PlanBuilder(
                 profile.PreserveParagraphLineBreaks
                     ? "IR line_break nodes remain native line breaks in the same paragraph."
                     : "IR line_break nodes outside verbatim blocks are previewed as separate HWP paragraphs.",
-                $"Only trusted resource-root PNG/JPG/JPEG figures are inserted; width is limited to {profile.Figure.MaxWidthMillimeters} mm by the investigation profile and aspect ratio is preserved.",
+                $"Only trusted resource-root PNG/JPG/JPEG/EMF figures are inserted; width is limited to {profile.Figure.MaxWidthMillimeters} mm by the investigation profile and aspect ratio is preserved.",
             ]);
     }
 
@@ -384,11 +384,11 @@ internal sealed class PlanBuilder(
         {
             throw JsonContract.Error(path + "/image/path", "image must resolve to an existing file inside the resource root (working directory for tagged rendering)");
         }
-        int pixelWidth, pixelHeight;
-        try { (pixelWidth, pixelHeight) = FigureDimensions.Read(imagePath); }
+        long extentWidth, extentHeight;
+        try { (extentWidth, extentHeight) = FigureDimensions.Read(imagePath); }
         catch (InvalidDataException error) { throw JsonContract.Error(path + "/image/path", error.Message); }
         var width = profile.Figure.MaxWidthMillimeters;
-        var height = width * pixelHeight / pixelWidth;
+        var height = width * extentHeight / extentWidth;
         var alt = InlineText.Read(image.GetProperty("alt"), path + "/image/alt", allowFootnotes: false, allowCrossReferences: true);
         var caption = InlineText.Read(block.GetProperty("caption"), path + "/caption", allowFootnotes: false, allowCrossReferences: true);
         var sources = PreviewSourceParagraph.ReadOptional(block, path);

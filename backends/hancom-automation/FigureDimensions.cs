@@ -2,11 +2,12 @@ namespace Md2Hwp.HancomIrPreview;
 
 internal static class FigureDimensions
 {
-    internal static (int Width, int Height) Read(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+    internal static (long Width, long Height) Read(string path) => Path.GetExtension(path).ToLowerInvariant() switch
     {
         ".png" => PngDimensions.Read(path),
         ".jpg" or ".jpeg" => ReadJpeg(path),
-        _ => throw new InvalidDataException("Figures support PNG, JPG and JPEG files only."),
+        ".emf" => EmfDimensions.Read(path),
+        _ => throw new InvalidDataException("Figures support PNG, JPG, JPEG and EMF files only."),
     };
 
     private static (int Width, int Height) ReadJpeg(string path)

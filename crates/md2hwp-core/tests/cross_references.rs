@@ -622,8 +622,15 @@ fn empty_reference_labels_still_count_source_targets_ids_inlines_and_blocks() {
 }
 
 #[test]
-fn jpeg_paths_and_figure_ids_survive_ir_roundtrip() {
-    for path in ["image.jpg", "image.jpeg", "image.JPG", "image.JPEG"] {
+fn figure_format_paths_and_ids_survive_ir_roundtrip() {
+    for path in [
+        "image.jpg",
+        "image.jpeg",
+        "image.JPG",
+        "image.JPEG",
+        "image.emf",
+        "image.EMF",
+    ] {
         let jpeg = json!({"t":"Image","c":[["jpeg",[],[]],[{"t":"Str","c":"JPEG"}],[path,""]]});
         let ir = normalize(json!([{"t":"Para","c":[jpeg]}])).unwrap();
         let Block::Figure { image, id, .. } = &ir.as_document().blocks[0] else {

@@ -18,6 +18,7 @@ coverage/
 /examples/cross-references/*.output.hwp
 /examples/tables/*.output.hwp
 /examples/korean-lorem/*.output.hwp
+/examples/emf/*.output.hwp
 /tmp/
 /tools/investigation/**/probe-logs/
 
