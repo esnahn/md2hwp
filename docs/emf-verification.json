@@ -1,0 +1,798 @@
+{
+  "date": "2026-10-09",
+  "environment": {
+    "hancom": "11.0.0.9136",
+    "os": "Windows x64",
+    "external_renderer": "Windows GDI+",
+    "font": "Malgun Gothic",
+    "libreoffice_used": false
+  },
+  "figures": 6,
+  "footnotes": 1,
+  "pairs": {
+    "debug-com-vs-debug-xml": {
+      "structure": {
+        "StructureEqual": true,
+        "EmbeddedDataEqual": true,
+        "RootParagraphsBefore": 26,
+        "RootParagraphsAfter": 26,
+        "FootnotesBefore": 1,
+        "FootnotesAfter": 1,
+        "Difference": ""
+      },
+      "pixels": {
+        "PagesBefore": 9,
+        "PagesAfter": 9,
+        "AllPagesEqual": true,
+        "Dpi": 144,
+        "Pages": [
+          {
+            "Page": "page-1.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "1d0cdda78de30c746b00d5418d2b9d17af5d5ec9d05a308c4c03853ab909d86c",
+            "PixelSHA256After": "1d0cdda78de30c746b00d5418d2b9d17af5d5ec9d05a308c4c03853ab909d86c",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-2.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "6f81629da58311c4fcb2bdd27eb6bebf7e194affbe7bd6c53f34b3736c33844a",
+            "PixelSHA256After": "6f81629da58311c4fcb2bdd27eb6bebf7e194affbe7bd6c53f34b3736c33844a",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-3.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "44b206da9a8c25fc03c37933b4816f357717cd948c373a3efb9e5be4fd02ba63",
+            "PixelSHA256After": "44b206da9a8c25fc03c37933b4816f357717cd948c373a3efb9e5be4fd02ba63",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-4.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "2d12069a742c9cffe077256f6bdeef9ff796a15ef33943a9c573ecdc6222b415",
+            "PixelSHA256After": "2d12069a742c9cffe077256f6bdeef9ff796a15ef33943a9c573ecdc6222b415",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-5.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "4d0f9331e126e0671364dd2fbf6f0cbc96ab17beb2446bdff559a9742eab1976",
+            "PixelSHA256After": "4d0f9331e126e0671364dd2fbf6f0cbc96ab17beb2446bdff559a9742eab1976",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-6.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "1abb202c4864a4a4268348019813bd1eb58364f7f3ab99962e8b6dcc21d992bf",
+            "PixelSHA256After": "1abb202c4864a4a4268348019813bd1eb58364f7f3ab99962e8b6dcc21d992bf",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-7.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "64eb59e22cae1a7575cde8198985d6111dceea0d38b4971cc904ae4fa7814e28",
+            "PixelSHA256After": "64eb59e22cae1a7575cde8198985d6111dceea0d38b4971cc904ae4fa7814e28",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-8.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "3e0eb24aa8079d64b750f5b022ef44b74c346548a1dac0280a958521484ea611",
+            "PixelSHA256After": "3e0eb24aa8079d64b750f5b022ef44b74c346548a1dac0280a958521484ea611",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-9.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "a58b14e107e95c00090eccd261a17d05db9f80b15887aa424e6248acfc0a5947",
+            "PixelSHA256After": "a58b14e107e95c00090eccd261a17d05db9f80b15887aa424e6248acfc0a5947",
+            "DifferenceBounds": null
+          }
+        ]
+      }
+    },
+    "debug-com-vs-release-xml": {
+      "structure": {
+        "StructureEqual": true,
+        "EmbeddedDataEqual": true,
+        "RootParagraphsBefore": 26,
+        "RootParagraphsAfter": 26,
+        "FootnotesBefore": 1,
+        "FootnotesAfter": 1,
+        "Difference": ""
+      },
+      "pixels": {
+        "PagesBefore": 9,
+        "PagesAfter": 9,
+        "AllPagesEqual": true,
+        "Dpi": 144,
+        "Pages": [
+          {
+            "Page": "page-1.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "1d0cdda78de30c746b00d5418d2b9d17af5d5ec9d05a308c4c03853ab909d86c",
+            "PixelSHA256After": "1d0cdda78de30c746b00d5418d2b9d17af5d5ec9d05a308c4c03853ab909d86c",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-2.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "6f81629da58311c4fcb2bdd27eb6bebf7e194affbe7bd6c53f34b3736c33844a",
+            "PixelSHA256After": "6f81629da58311c4fcb2bdd27eb6bebf7e194affbe7bd6c53f34b3736c33844a",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-3.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "44b206da9a8c25fc03c37933b4816f357717cd948c373a3efb9e5be4fd02ba63",
+            "PixelSHA256After": "44b206da9a8c25fc03c37933b4816f357717cd948c373a3efb9e5be4fd02ba63",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-4.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "2d12069a742c9cffe077256f6bdeef9ff796a15ef33943a9c573ecdc6222b415",
+            "PixelSHA256After": "2d12069a742c9cffe077256f6bdeef9ff796a15ef33943a9c573ecdc6222b415",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-5.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "4d0f9331e126e0671364dd2fbf6f0cbc96ab17beb2446bdff559a9742eab1976",
+            "PixelSHA256After": "4d0f9331e126e0671364dd2fbf6f0cbc96ab17beb2446bdff559a9742eab1976",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-6.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "1abb202c4864a4a4268348019813bd1eb58364f7f3ab99962e8b6dcc21d992bf",
+            "PixelSHA256After": "1abb202c4864a4a4268348019813bd1eb58364f7f3ab99962e8b6dcc21d992bf",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-7.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "64eb59e22cae1a7575cde8198985d6111dceea0d38b4971cc904ae4fa7814e28",
+            "PixelSHA256After": "64eb59e22cae1a7575cde8198985d6111dceea0d38b4971cc904ae4fa7814e28",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-8.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "3e0eb24aa8079d64b750f5b022ef44b74c346548a1dac0280a958521484ea611",
+            "PixelSHA256After": "3e0eb24aa8079d64b750f5b022ef44b74c346548a1dac0280a958521484ea611",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-9.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "a58b14e107e95c00090eccd261a17d05db9f80b15887aa424e6248acfc0a5947",
+            "PixelSHA256After": "a58b14e107e95c00090eccd261a17d05db9f80b15887aa424e6248acfc0a5947",
+            "DifferenceBounds": null
+          }
+        ]
+      }
+    },
+    "debug-xml-vs-release-xml": {
+      "structure": {
+        "StructureEqual": true,
+        "EmbeddedDataEqual": true,
+        "RootParagraphsBefore": 26,
+        "RootParagraphsAfter": 26,
+        "FootnotesBefore": 1,
+        "FootnotesAfter": 1,
+        "Difference": ""
+      },
+      "pixels": {
+        "PagesBefore": 9,
+        "PagesAfter": 9,
+        "AllPagesEqual": true,
+        "Dpi": 144,
+        "Pages": [
+          {
+            "Page": "page-1.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "1d0cdda78de30c746b00d5418d2b9d17af5d5ec9d05a308c4c03853ab909d86c",
+            "PixelSHA256After": "1d0cdda78de30c746b00d5418d2b9d17af5d5ec9d05a308c4c03853ab909d86c",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-2.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "6f81629da58311c4fcb2bdd27eb6bebf7e194affbe7bd6c53f34b3736c33844a",
+            "PixelSHA256After": "6f81629da58311c4fcb2bdd27eb6bebf7e194affbe7bd6c53f34b3736c33844a",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-3.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "44b206da9a8c25fc03c37933b4816f357717cd948c373a3efb9e5be4fd02ba63",
+            "PixelSHA256After": "44b206da9a8c25fc03c37933b4816f357717cd948c373a3efb9e5be4fd02ba63",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-4.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "2d12069a742c9cffe077256f6bdeef9ff796a15ef33943a9c573ecdc6222b415",
+            "PixelSHA256After": "2d12069a742c9cffe077256f6bdeef9ff796a15ef33943a9c573ecdc6222b415",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-5.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "4d0f9331e126e0671364dd2fbf6f0cbc96ab17beb2446bdff559a9742eab1976",
+            "PixelSHA256After": "4d0f9331e126e0671364dd2fbf6f0cbc96ab17beb2446bdff559a9742eab1976",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-6.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "1abb202c4864a4a4268348019813bd1eb58364f7f3ab99962e8b6dcc21d992bf",
+            "PixelSHA256After": "1abb202c4864a4a4268348019813bd1eb58364f7f3ab99962e8b6dcc21d992bf",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-7.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "64eb59e22cae1a7575cde8198985d6111dceea0d38b4971cc904ae4fa7814e28",
+            "PixelSHA256After": "64eb59e22cae1a7575cde8198985d6111dceea0d38b4971cc904ae4fa7814e28",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-8.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "3e0eb24aa8079d64b750f5b022ef44b74c346548a1dac0280a958521484ea611",
+            "PixelSHA256After": "3e0eb24aa8079d64b750f5b022ef44b74c346548a1dac0280a958521484ea611",
+            "DifferenceBounds": null
+          },
+          {
+            "Page": "page-9.png",
+            "Equal": true,
+            "SizeBefore": [
+              1246,
+              1586
+            ],
+            "SizeAfter": [
+              1246,
+              1586
+            ],
+            "PixelSHA256Before": "a58b14e107e95c00090eccd261a17d05db9f80b15887aa424e6248acfc0a5947",
+            "PixelSHA256After": "a58b14e107e95c00090eccd261a17d05db9f80b15887aa424e6248acfc0a5947",
+            "DifferenceBounds": null
+          }
+        ]
+      }
+    }
+  },
+  "modes": {
+    "debug-xml": {
+      "WallMilliseconds": 12177.746200000001,
+      "ExitCode": 0,
+      "TemplateSHA256": "E7C678D3014A82C34B565E860E42526BA6D75C688B5D3B33491BAFE64430FDE9",
+      "IRSHA256": "23DA62C532D28E9B1BA478544C186AEF80625211B1216464401B384D4897AEB5",
+      "Mode": "debug-xml",
+      "NativePictureCount": 6,
+      "PageCount": 9,
+      "Timing": {
+        "Completed": true,
+        "TotalMilliseconds": 11204.914
+      }
+    },
+    "debug-com": {
+      "WallMilliseconds": 25874.4915,
+      "ExitCode": 0,
+      "TemplateSHA256": "E7C678D3014A82C34B565E860E42526BA6D75C688B5D3B33491BAFE64430FDE9",
+      "IRSHA256": "23DA62C532D28E9B1BA478544C186AEF80625211B1216464401B384D4897AEB5",
+      "Mode": "debug-com",
+      "NativePictureCount": 6,
+      "PageCount": 9,
+      "Timing": {
+        "Completed": true,
+        "TotalMilliseconds": 24583.251
+      }
+    },
+    "release-xml": {
+      "WallMilliseconds": 13686.112500000001,
+      "ExitCode": 0,
+      "TemplateSHA256": "E7C678D3014A82C34B565E860E42526BA6D75C688B5D3B33491BAFE64430FDE9",
+      "IRSHA256": "23DA62C532D28E9B1BA478544C186AEF80625211B1216464401B384D4897AEB5",
+      "Mode": "release-xml",
+      "NativePictureCount": 6,
+      "PageCount": 9,
+      "Timing": {
+        "Completed": true,
+        "TotalMilliseconds": 11651.416
+      }
+    }
+  },
+  "native_cases": [
+    {
+      "file": "EmfOnly.emf",
+      "sha256": "563c888d11a459d103397e0422b4aa9b685e2dc965402c85d361c7975ca517b8",
+      "embedded_original_bytes_equal": true,
+      "binary_format": "EMF"
+    },
+    {
+      "file": "EmfPlusDual.emf",
+      "sha256": "90ab4f7f8b705ab0b42af0e28ff4b889f2aecbc90d33fc3f1763ca5fb6611426",
+      "embedded_original_bytes_equal": true,
+      "binary_format": "EMF"
+    },
+    {
+      "file": "EmfPlusOnly.emf",
+      "sha256": "626af2523a95b9806ae5ca84c82971560daa854f2c3e89e0b519e3ec0ed7e29c",
+      "embedded_original_bytes_equal": true,
+      "binary_format": "EMF"
+    }
+  ],
+  "external_pixels": [
+    {
+      "variant": "EmfOnly",
+      "dpi": 300,
+      "size": [
+        1677,
+        944
+      ],
+      "native_page_crop": [
+        354,
+        413,
+        1677,
+        944
+      ],
+      "different_pixels": 37188,
+      "pixels_above_32": 35334,
+      "mean_absolute_channel_error": 4.3049552520137855,
+      "regions": {
+        "lines": {
+          "mean_absolute_channel_error": 1.7302952111654286,
+          "pixels_above_32": 2721
+        },
+        "text": {
+          "mean_absolute_channel_error": 6.0106431450435185,
+          "pixels_above_32": 4882
+        },
+        "clipping": {
+          "mean_absolute_channel_error": 4.966546021213492,
+          "pixels_above_32": 5244
+        },
+        "rotation": {
+          "mean_absolute_channel_error": 1.6857555716322885,
+          "pixels_above_32": 2885
+        },
+        "alpha": {
+          "mean_absolute_channel_error": 3.5188691191007195,
+          "pixels_above_32": 3451
+        },
+        "bitmap": {
+          "mean_absolute_channel_error": 10.972071320416552,
+          "pixels_above_32": 4686
+        }
+      }
+    },
+    {
+      "variant": "EmfOnly",
+      "dpi": 600,
+      "size": [
+        3354,
+        1887
+      ],
+      "native_page_crop": [
+        709,
+        827,
+        3354,
+        1887
+      ],
+      "different_pixels": 166009,
+      "pixels_above_32": 160790,
+      "mean_absolute_channel_error": 5.076044844170699,
+      "regions": {
+        "lines": {
+          "mean_absolute_channel_error": 3.8350178203891634,
+          "pixels_above_32": 25185
+        },
+        "text": {
+          "mean_absolute_channel_error": 7.032677464624021,
+          "pixels_above_32": 20772
+        },
+        "clipping": {
+          "mean_absolute_channel_error": 4.895499673251898,
+          "pixels_above_32": 20847
+        },
+        "rotation": {
+          "mean_absolute_channel_error": 1.7901093914070496,
+          "pixels_above_32": 11039
+        },
+        "alpha": {
+          "mean_absolute_channel_error": 3.877732932019106,
+          "pixels_above_32": 14941
+        },
+        "bitmap": {
+          "mean_absolute_channel_error": 12.22145462592835,
+          "pixels_above_32": 20421
+        }
+      }
+    },
+    {
+      "variant": "EmfPlusDual",
+      "dpi": 300,
+      "size": [
+        1677,
+        944
+      ],
+      "native_page_crop": [
+        354,
+        413,
+        1677,
+        944
+      ],
+      "different_pixels": 62886,
+      "pixels_above_32": 58190,
+      "mean_absolute_channel_error": 4.77495670908166,
+      "regions": {
+        "lines": {
+          "mean_absolute_channel_error": 2.877130454774866,
+          "pixels_above_32": 11951
+        },
+        "text": {
+          "mean_absolute_channel_error": 6.698895963549273,
+          "pixels_above_32": 6195
+        },
+        "clipping": {
+          "mean_absolute_channel_error": 3.999569362757419,
+          "pixels_above_32": 6375
+        },
+        "rotation": {
+          "mean_absolute_channel_error": 1.66748126332739,
+          "pixels_above_32": 3448
+        },
+        "alpha": {
+          "mean_absolute_channel_error": 3.2544420753375976,
+          "pixels_above_32": 5296
+        },
+        "bitmap": {
+          "mean_absolute_channel_error": 12.504150057167578,
+          "pixels_above_32": 7412
+        }
+      }
+    },
+    {
+      "variant": "EmfPlusDual",
+      "dpi": 600,
+      "size": [
+        3354,
+        1887
+      ],
+      "native_page_crop": [
+        709,
+        827,
+        3354,
+        1887
+      ],
+      "different_pixels": 222866,
+      "pixels_above_32": 205533,
+      "mean_absolute_channel_error": 4.884729041363788,
+      "regions": {
+        "lines": {
+          "mean_absolute_channel_error": 3.0700669672912735,
+          "pixels_above_32": 35803
+        },
+        "text": {
+          "mean_absolute_channel_error": 6.7520450824464975,
+          "pixels_above_32": 22812
+        },
+        "clipping": {
+          "mean_absolute_channel_error": 4.106883493356122,
+          "pixels_above_32": 23074
+        },
+        "rotation": {
+          "mean_absolute_channel_error": 1.7112786509215956,
+          "pixels_above_32": 11659
+        },
+        "alpha": {
+          "mean_absolute_channel_error": 3.6641316474051155,
+          "pixels_above_32": 21583
+        },
+        "bitmap": {
+          "mean_absolute_channel_error": 12.923028353088105,
+          "pixels_above_32": 29354
+        }
+      }
+    },
+    {
+      "variant": "EmfPlusOnly",
+      "dpi": 300,
+      "size": [
+        1677,
+        944
+      ],
+      "native_page_crop": [
+        354,
+        413,
+        1677,
+        944
+      ],
+      "different_pixels": 62886,
+      "pixels_above_32": 58190,
+      "mean_absolute_channel_error": 4.77495670908166,
+      "regions": {
+        "lines": {
+          "mean_absolute_channel_error": 2.877130454774866,
+          "pixels_above_32": 11951
+        },
+        "text": {
+          "mean_absolute_channel_error": 6.698895963549273,
+          "pixels_above_32": 6195
+        },
+        "clipping": {
+          "mean_absolute_channel_error": 3.999569362757419,
+          "pixels_above_32": 6375
+        },
+        "rotation": {
+          "mean_absolute_channel_error": 1.66748126332739,
+          "pixels_above_32": 3448
+        },
+        "alpha": {
+          "mean_absolute_channel_error": 3.2544420753375976,
+          "pixels_above_32": 5296
+        },
+        "bitmap": {
+          "mean_absolute_channel_error": 12.504150057167578,
+          "pixels_above_32": 7412
+        }
+      }
+    },
+    {
+      "variant": "EmfPlusOnly",
+      "dpi": 600,
+      "size": [
+        3354,
+        1887
+      ],
+      "native_page_crop": [
+        709,
+        827,
+        3354,
+        1887
+      ],
+      "different_pixels": 222866,
+      "pixels_above_32": 205533,
+      "mean_absolute_channel_error": 4.884729041363788,
+      "regions": {
+        "lines": {
+          "mean_absolute_channel_error": 3.0700669672912735,
+          "pixels_above_32": 35803
+        },
+        "text": {
+          "mean_absolute_channel_error": 6.7520450824464975,
+          "pixels_above_32": 22812
+        },
+        "clipping": {
+          "mean_absolute_channel_error": 4.106883493356122,
+          "pixels_above_32": 23074
+        },
+        "rotation": {
+          "mean_absolute_channel_error": 1.7112786509215956,
+          "pixels_above_32": 11659
+        },
+        "alpha": {
+          "mean_absolute_channel_error": 3.6641316474051155,
+          "pixels_above_32": 21583
+        },
+        "bitmap": {
+          "mean_absolute_channel_error": 12.923028353088105,
+          "pixels_above_32": 29354
+        }
+      }
+    }
+  ],
+  "raw_artifact_directory": "artifacts\\emf-2026-10-09"
+}

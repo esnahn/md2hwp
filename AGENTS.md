@@ -44,7 +44,7 @@ Only begin:template may carry native SECDEF/COLDEF controls. Preserve those
 settings outside disposable definitions in the working document, without changing
 the source template. Do not extend this exception to other declarations.
 Generated links render as formatted labels/plain text; strip automatic hyperlinks
-only in generated content. Figures embed PNG/JPG/JPEG images; caption and source belong to the picture's native caption.
+only in generated content. Figures embed PNG/JPG/JPEG/EMF images; caption and source belong to the picture's native caption.
 The begin:figure/end:figure sample contains one picture with a
 two-paragraph native caption. Ignore sample image content/size; inherit caption options.
 Native list.bullet/list.ordered sample paragraphs own bullet and per-level numbering
@@ -354,6 +354,20 @@ JPEG file directly to embedded InsertPicture, using the template width and pixel
 aspect ratio. Hancom may re-encode or deduplicate embedded image data; do not
 claim byte-for-byte preservation. Do not transcode JPEG into PNG or add format
 fields to IR.
+
+EMF figures accept .emf case-insensitively without changing IR 0.4. Inspect the
+little-endian EMR_HEADER and record/EOF boundaries in the backend before COM;
+limit files to 64 MiB and one million records, reject invalid signatures/versions,
+byte/record counts, offsets and nonpositive physical frames. Use rclFrame deltas
+in 0.01 mm for aspect ratio, never treat rclBounds device units as pixels or fall
+back silently when the frame is invalid. Pass the original file to embedded
+InsertPicture; do not add a rasterization dependency or an IR format field.
+The bounded container reader is not a full drawing-record semantic validator.
+Hancom 2020 tests cover ordinary EMF and EMF+ Only/Dual. Compare native lossless
+300/600dpi page images with direct Windows GDI+ rendering, retaining differences
+and enlarged region strips; PDF export adds JPEG artifacts and is not the sole
+display oracle. Do not claim cross-renderer pixel equality or independent engine
+coverage merely from shared Windows rendering. See docs/emf-figures.md.
 
 Hancom 2020 11.0.0.9136 native-caption capability verification: InsertCrossReference
 succeeds inside picture, table and code-box CAPTION paragraphs; targets, cached
