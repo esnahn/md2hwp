@@ -10,6 +10,7 @@ $PSNativeCommandUseErrorActionPreference = $false
 if ($Package -and $Configuration -ne 'Release') { throw 'Deployment archives require Release configuration.' }
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 $project = Join-Path $root 'backends/hancom-automation/Md2Hwp.Backend.csproj'
+$pdfProject = Join-Path $root 'apps/hwp2pdf/Hwp2Pdf.csproj'
 $destination = Join-Path $root "target/$($Configuration.ToLowerInvariant())"
 $published = Join-Path ([IO.Path]::GetDirectoryName($project)) "bin/$Configuration/net10.0-windows/win-x64/publish"
 Push-Location $root
@@ -21,6 +22,10 @@ try {
     & (Join-Path $PSHOME 'pwsh.exe') -NoProfile -File (Join-Path $PSScriptRoot 'dotnet.ps1') publish $project --configuration $Configuration -p:PublishProfile=FrameworkDependent
     if ($LASTEXITCODE -ne 0) { throw 'Backend publish failed.' }
     Copy-Item -LiteralPath (Join-Path $published 'md2hwp-backend.exe') -Destination (Join-Path $destination 'md2hwp-backend.exe') -Force
+    & (Join-Path $PSHOME 'pwsh.exe') -NoProfile -File (Join-Path $PSScriptRoot 'dotnet.ps1') publish $pdfProject --configuration $Configuration -p:PublishProfile=FrameworkDependent
+    if ($LASTEXITCODE -ne 0) { throw 'HWP-to-PDF publish failed.' }
+    $pdfPublished = Join-Path ([IO.Path]::GetDirectoryName($pdfProject)) "bin/$Configuration/net10.0-windows/win-x64/publish"
+    Copy-Item -LiteralPath (Join-Path $pdfPublished 'hwp2pdf.exe') -Destination (Join-Path $destination 'hwp2pdf.exe') -Force
     $templateDestination = Join-Path $destination 'template.hwp'
     Copy-Item -LiteralPath (Join-Path $root 'templates/template.hwp') -Destination $templateDestination -Force
     $manifest = [IO.File]::ReadAllText((Join-Path $root 'Cargo.toml'))
@@ -40,21 +45,21 @@ try {
     foreach ($name in @('AGENTS.md', 'README-MANUSCRIPT.md')) {
         Copy-Item -LiteralPath (Join-Path $root "docs/manuscript/$name") -Destination (Join-Path $destination $name) -Force
     }
-    Write-Output "Deployment files: $destination (md2hwp.exe, md2hwp-backend.exe, template.hwp, README.md, AGENTS.md, README-MANUSCRIPT.md)"
+    Write-Output "Deployment files: $destination (md2hwp.exe, md2hwp-backend.exe, hwp2pdf.exe, template.hwp, README.md, AGENTS.md, README-MANUSCRIPT.md)"
     if ($Package) {
         $dist = [IO.Path]::GetFullPath((Join-Path $root 'target/dist'))
         $null = New-Item -ItemType Directory -Path $dist -Force
         $stage = Join-Path $dist ('.package-' + [Guid]::NewGuid().ToString('N'))
         $null = New-Item -ItemType Directory -Path $stage
         try {
-            foreach ($name in @('md2hwp.exe', 'md2hwp-backend.exe', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md')) {
+            foreach ($name in @('md2hwp.exe', 'md2hwp-backend.exe', 'hwp2pdf.exe', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md')) {
                 Copy-Item -LiteralPath (Join-Path $destination $name) -Destination $stage
             }
             # Ship the tracked default; never adopt a user's deployment template implicitly.
             Copy-Item -LiteralPath (Join-Path $root 'templates/template.hwp') -Destination $stage
             $archive = Join-Path $dist "md2hwp-v$version-windows-x64.zip"
             $temporaryArchive = Join-Path $stage 'package.zip'
-            $files = @('md2hwp.exe', 'md2hwp-backend.exe', 'template.hwp', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md') | ForEach-Object { Join-Path $stage $_ }
+            $files = @('md2hwp.exe', 'md2hwp-backend.exe', 'hwp2pdf.exe', 'template.hwp', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md') | ForEach-Object { Join-Path $stage $_ }
             Compress-Archive -LiteralPath $files -DestinationPath $temporaryArchive
             Move-Item -LiteralPath $temporaryArchive -Destination $archive -Force
             Write-Output "Package: $archive"

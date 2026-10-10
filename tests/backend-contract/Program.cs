@@ -545,3 +545,5 @@ ObjectSourceTests.Run();
 
 FigureDimensionsTests.Run();
 EmfDimensionsTests.Run();
+
+PdfExportTests.Run();
