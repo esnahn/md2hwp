@@ -1,8 +1,8 @@
-# md2hwp v0.4.0 (개발 중)
+# md2hwp v0.4.0
 
 Markdown 원고를 한글(HWP) 템플릿의 서식에 맞춰 변환합니다. Windows x64·한글이 필요하며, 현재 IR 버전은 0.4입니다. HWPX·RST 직접 입력은 지원하지 않습니다.
 
-최신 정식 배포 파일과 변경 사항은 [v0.3.0 릴리스](https://github.com/esnahn/md2hwp/releases/tag/v0.3.0)에서 확인할 수 있습니다.
+최신 정식 배포 파일과 변경 사항은 [v0.4.0 릴리스](https://github.com/esnahn/md2hwp/releases/tag/v0.4.0)에서 확인할 수 있습니다.
 
 ## 시작하기
 
@@ -133,7 +133,7 @@ Debug와 Release는 XML 구성 방식으로 생성합니다. 개발용 성능 �
 
 - [설치·실행 옵션](docs/usage.md) · [템플릿 편집·태그](docs/templates.md)
 - [표](docs/tables.md) · [번호 상호참조](docs/cross-references.md) · [메타데이터](docs/yaml-variables.md) · [날짜](docs/date-metadata.md)
-- [빌드·검증](docs/development.md) · [통합 예제](examples/all-features-twice/) · [v0.3.0 릴리스 노트](docs/release-v0.3.0.md)
+- [빌드·검증](docs/development.md) · [통합 예제](examples/all-features-twice/) · [v0.4.0 릴리스 노트](docs/release-v0.4.0.md)
 
 저장·재열기 검증만으로 잘림·겹침이나 각주 표시 번호를 보장하지 않으므로 생성된 문서의 배치도 확인하십시오.
 
