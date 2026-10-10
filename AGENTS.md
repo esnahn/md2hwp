@@ -13,6 +13,12 @@ were removed by this cleanup; do not claim they still exist or have passed.
 
 Rust application: apps/md2hwp. Shared semantic core: crates/md2hwp-core.
 C# backend: backends/hancom-automation/Md2Hwp.Backend.csproj.
+Standalone PDF CLI: apps/hwp2pdf/Hwp2Pdf.csproj. Publish its referenced backend
+assembly inside hwp2pdf.exe; no template/Pandoc or separate worker is needed.
+Use PrintToPDFEx through Action.Execute with GraphicQuality=100, Device=5,
+full-document Range=6 and 100% scaling. Publish only after PDF completion,
+source hash and normal COM cleanup checks; preserve old output on failure.
+PDF envelope checks do not establish visual correctness or original-image preservation.
 Template: templates/template.hwp. Build outputs: target/, bin/, obj/ (ignored).
 Use target/debug and target/release as the primary paths for current development
 builds and execution. target/dist is for versioned deployment archives; do not
@@ -20,7 +26,7 @@ redirect ordinary builds there merely to preserve an older release.
 The JSON fixtures still tracked are included directly by Rust test compilation.
 Builds include a deployment README.md with usable versioned documentation links.
 Create release ZIPs with tools/development/build.ps1 -Configuration Release -Package;
-include both executables, the tracked default template, README.md and the manuscript guides.
+include md2hwp.exe, md2hwp-backend.exe, hwp2pdf.exe, the tracked default template, README.md and the manuscript guides.
 Maintain docs/manuscript/AGENTS.md and its concise human counterpart
 docs/manuscript/README-MANUSCRIPT.md together; ship both at the package root.
 Never ship the repository-root development AGENTS.md. Always replace

@@ -16,6 +16,20 @@ Markdown 원고를 한글(HWP) 템플릿의 서식에 맞춰 변환합니다. Wi
 
 기본 출력은 원고 옆의 `원고.ir.json`과 `원고.output.hwp`입니다. HWP는 생성·재열기 검증 성공 후 교체하며, 실패하면 기존 결과를 보존합니다. 원고와 원본 템플릿은 변경하지 않습니다.
 
+## HWP를 PDF로 변환
+
+`hwp2pdf.exe`는 기존 HWP를 PDF로 변환하는 별도 실행 파일입니다.
+
+```powershell
+.\hwp2pdf.exe 원고.hwp
+.\hwp2pdf.exe 원고.hwp --output 결과.pdf
+```
+
+기본 출력은 원본 옆의 `원고.pdf`입니다. 권장 설정인 `PrintToPDFEx`와
+`GraphicQuality=100`을 사용하며, 완료 확인 후 기존 PDF를 교체합니다.
+한글·.NET 10 x64·한글 보안 모듈이 필요하며 템플릿·Pandoc은 필요하지 않습니다.
+[실행 방법과 검증 범위](docs/hwp2pdf.md)를 참고하십시오.
+
 ## 원고 문법
 
 간략한 작성 방법과 예시는 [원고 작성 안내](docs/manuscript/README-MANUSCRIPT.md)를 참고하십시오.

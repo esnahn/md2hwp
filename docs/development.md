@@ -10,20 +10,23 @@ pwsh -NoProfile -File tools/development/build.ps1
 cargo test --workspace
 ```
 
-Release 빌드 결과는 `target/release/`의 다음 여섯 파일입니다.
+Release 빌드 결과는 `target/release/`의 다음 일곱 파일입니다.
 `-Configuration Debug`를 주면 `target/debug/`에 모입니다.
 개발·실행에는 이 두 폴더를 기본으로 사용합니다. `target/dist/`는 버전별 배포 파일과 ZIP의 보관용입니다.
 
 - `md2hwp.exe`
 - `md2hwp-backend.exe`
+- `hwp2pdf.exe`
 - `template.hwp`
 - `README.md`
 - `AGENTS.md`
 - `README-MANUSCRIPT.md`
 
-C# 단독 프로젝트는 `backends/hancom-automation/Md2Hwp.Backend.csproj`입니다.
+C# 백엔드는 `backends/hancom-automation/Md2Hwp.Backend.csproj`, PDF CLI는 `apps/hwp2pdf/Hwp2Pdf.csproj`입니다.
+PDF CLI는 백엔드의 COM 세션·보안 검사 코드를 재사용하고, 게시 시 필요한 관리 어셈블리를 EXE 안에 묶습니다.
+`hwp2pdf.exe` 실행에는 별도 백엔드 EXE나 DLL 파일이 필요하지 않습니다.
 `templates/template.hwp`를 게시 폴더와 `target/debug` 또는 `target/release`에 복사합니다. 빌드 폴더의 템플릿은 매번 강제 교체합니다. 기본 템플릿은 `templates/template.hwp`에서 편집하고, 별도 사용자 템플릿은 `target/` 밖에 두어 `--template`으로 지정하십시오.
-빌드 결과는 Git에서 제외합니다. 배포할 때 위 여섯 파일을 같은 폴더에 복사합니다. 동봉 README의 원고 작성 안내 링크는 같은 폴더의 `README-MANUSCRIPT.md`로, 나머지 문서·예제 링크는 GitHub의 해당 버전으로 연결합니다.
+빌드 결과는 Git에서 제외합니다. 배포할 때 위 일곱 파일을 같은 폴더에 복사합니다. 동봉 README의 원고 작성 안내 링크는 같은 폴더의 `README-MANUSCRIPT.md`로, 나머지 문서·예제 링크는 GitHub의 해당 버전으로 연결합니다.
 
 원고 작성 지침은 `docs/manuscript/AGENTS.md`, 같은 규칙의 사람용 요약은 `docs/manuscript/README-MANUSCRIPT.md`에서 관리하며 두 문서를 함께 갱신합니다. 빌드는 두 파일을 배포 폴더 최상위에 복사합니다. 저장소 루트의 개발용 `AGENTS.md`는 배포하지 않습니다.
 
@@ -33,7 +36,7 @@ C# 단독 프로젝트는 `backends/hancom-automation/Md2Hwp.Backend.csproj`입�
 pwsh -NoProfile -File tools/development/build.ps1 -Configuration Release -Package
 ```
 
-`target/dist/md2hwp-v<버전>-windows-x64.zip`에 실행 파일 두 개, 추적 기본 템플릿, README와 원고 작성 문서 두 개를 넣고 SHA-256을 출력합니다.
+`target/dist/md2hwp-v<버전>-windows-x64.zip`에 실행 파일 세 개, 추적 기본 템플릿, README와 원고 작성 문서 두 개를 넣고 SHA-256을 출력합니다.
 패키지는 사용자 편집본 대신 `templates/template.hwp`를 사용합니다. 기존 배포 ZIP은 새 ZIP 생성에 성공한 뒤 교체합니다.
 GitHub Release에는 실행용 ZIP만 첨부하고, 체크섬은 본문 끝에 표시합니다. 소스는 GitHub 자동 다운로드를 사용하며 릴리스 노트·빌드 매니페스트는 별도 첨부하지 않습니다.
 
