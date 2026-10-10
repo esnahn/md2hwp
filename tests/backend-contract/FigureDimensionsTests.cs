@@ -13,7 +13,7 @@ internal static class FigureDimensionsTests
         var resources = Path.Combine(root.FullName,"examples","jpeg");
         foreach (var name in new[] { "image.jpg", "image.jpeg" })
             Check(FigureDimensions.Read(Path.Combine(resources,name)) == (480,320), "JPEG dimensions/aspect ratio lost.");
-        Check(FigureDimensions.Read(Path.Combine(root.FullName,"examples","all-features-twice","image.png")) is { Width: > 0, Height: > 0 }, "PNG support regressed.");
+        Check(FigureDimensions.Read(Path.Combine(root.FullName,"examples","all-features","image.png")) is { Width: > 0, Height: > 0 }, "PNG support regressed.");
         var source = new TemplateSource(new XElement("P"), "slot", "", "");
         var profile = InvestigationTemplateProfile.FromTaggedTemplate(typeof(IrPreviewPlan).Assembly.Location, [], "reset", 142, 6, 0,
             new ProfileCaptionSelector("caption", "[", "]", "slot"),source,source,
@@ -48,7 +48,7 @@ internal static class FigureDimensionsTests
             var zero = Frame(0xc0); zero[7]=0;zero[8]=0;Reject(zero);
             var precision = Frame(0xc0); precision[6]=12;Reject(precision);
             Reject(Frame(0xc3));
-            Reject(File.ReadAllBytes(Path.Combine(root.FullName,"examples","all-features-twice","image.png")));
+            Reject(File.ReadAllBytes(Path.Combine(root.FullName,"examples","all-features","image.png")));
         }
         finally { File.Delete(temporary); }
         Console.WriteLine("PNG/JPG/JPEG signatures, sequential/progressive headers, resource plans, aspect ratios and malformed input contracts passed.");

@@ -133,7 +133,7 @@ Debug와 Release는 XML 구성 방식으로 생성합니다. 개발용 성능 �
 
 - [설치·실행 옵션](docs/usage.md) · [템플릿 편집·태그](docs/templates.md)
 - [표](docs/tables.md) · [번호 상호참조](docs/cross-references.md) · [메타데이터](docs/yaml-variables.md) · [날짜](docs/date-metadata.md)
-- [빌드·검증](docs/development.md) · [통합 예제](examples/all-features-twice/) · [v0.4.0 릴리스 노트](docs/release-v0.4.0.md)
+- [빌드·검증](docs/development.md) · [통합 예제](examples/all-features/) · [v0.4.0 릴리스 노트](docs/release-v0.4.0.md)
 
 저장·재열기 검증만으로 잘림·겹침이나 각주 표시 번호를 보장하지 않으므로 생성된 문서의 배치도 확인하십시오.
 

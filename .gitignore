@@ -14,11 +14,8 @@ coverage/
 /reference/*
 !/reference/README.md
 /artifacts/
-/examples/all-features-twice/*.output.hwp
-/examples/cross-references/*.output.hwp
-/examples/tables/*.output.hwp
-/examples/korean-lorem/*.output.hwp
-/examples/emf/*.output.hwp
+/examples/**/*.output.hwp
+/examples/**/*.output.pdf
 /tmp/
 /tools/investigation/**/probe-logs/
 

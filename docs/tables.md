@@ -177,9 +177,9 @@ Rust는 표의 직사각형 구조와 모든 셀·캡션·출처의 내용 및 �
 시각적인 잘림이나 겹침 검사를 대신하지 않습니다. 생성·검증에 실패하면 기존 결과
 HWP를 보존합니다.
 
-여러 표를 두 장에서 반복하는 검증 원고와 예상 IR은
-[`examples/all-features-twice/`](../examples/all-features-twice/)에 있습니다.
-`Table:`, `table:`, `:`, `표:`의 위·아래 캡션, 출처 유무, 정렬과 빈 셀을 확인합니다.
+표 구성을 짧게 모은 전체 기능 검증 원고와 예상 IR은
+[`examples/all-features/`](../examples/all-features/)에 있습니다.
+위·아래 캡션, 캡션과 출처 각각의 생략, 머리행 전용 표, 정렬과 빈 셀을 확인합니다.
 
 캡션·출처 생략과 셀 안 각주를 포함한 짧은 검증 원고는
 [`examples/tables/tables.md`](../examples/tables/tables.md)입니다.

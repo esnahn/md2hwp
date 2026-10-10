@@ -95,15 +95,14 @@ try {
 
 ## 기능 검증 원고
 
-[`examples/all-features-twice/`](../examples/all-features-twice/)에는 검증 원고
-`all-features.md`, 예상 IR `all-features.ir.json`, 그림 `image.png`를 함께 보관합니다.
-제목 1~6단계, 본문 강조와 줄바꿈, 링크, 중첩 목록, 출처가 있는/없는 박스·그림·표를
-두 장에서 반복합니다. 각주는 본문·제목·목록·표 셀·강조 및 링크 표시문에 넣고,
-여러 문단·강제 줄바꿈·같은 정의의 반복 사용을 포함합니다. 헤딩·그림 번호 상호참조는
-장 안팎의 앞뒤 대상, 한글 ID와 URI 이스케이프, 빈 표시문·참조형 링크, 강조·목록·표 셀·각주를 확인합니다.
-박스는 제목과 본문, 제목 없는 본문, 제목만 있는 구성을 포함합니다.
-표는 캡션·출처 유무, 위/아래 캡션, 정렬·서식·빈 셀을 포함합니다.
-각 장에 2단계 제목을 세 개씩 두어 장 표지의 절 목록도 확인합니다.
+[`examples/all-features/`](../examples/all-features/)에는 짧은 검증 원고
+`all-features.md`, 예상 IR `all-features.ir.json`, PNG/JPG/JPEG/EMF 리소스를 함께 보관합니다.
+AURI 편집양식에 수록된 세계유산 공간관리 보고서의 논의를 요약·재구성하며,
+같은 기능을 두 번 반복하는 기존 원고를 대체합니다. 장 간 참조·번호 재시작을 위해
+내용이 다른 두 장을 두고, 장마다 여러 절과 한 절의 여러 하위 제목으로 each.child를 확인합니다.
+제목 1~6단계, 강조·줄바꿈·링크·중첩 목록, 제목 있는/없는/제목만 있는 글상자,
+그림 6종과 표, 다중 하단 설명, 각주와 제목·그림·표 번호 참조를 포함합니다.
+각주 위치·참조 경계·출처 및 캡션 생략 등의 상세 목록은 해당 폴더 README에 있습니다.
 
 YAML에는 제목·부제·저자 목록·날짜·발행처·사용자 문자열과 장 시작 번호 3을 지정합니다.
 메타데이터 출력은 해당 `meta` 태그를 둔 템플릿에서 확인하며, `date-meta`의 날짜 포맷과
@@ -116,7 +115,7 @@ YAML에는 제목·부제·저자 목록·날짜·발행처·사용자 문자열
 저장소 루트에서 빌드한 프로그램으로 실행합니다.
 
 ```powershell
-.\target\release\md2hwp.exe .\examples\all-features-twice\all-features.md
+.\target\release\md2hwp.exe .\examples\all-features\all-features.md
 ```
 
 원고 옆의 IR을 갱신하고 `all-features.output.hwp`를 생성합니다.
@@ -124,7 +123,7 @@ IR은 Git에 포함하며, 생성된 HWP는 Git에서 제외합니다.
 IR 변환만 확인하려면 다음 명령을 사용합니다.
 
 ```powershell
-.\target\release\md2hwp.exe md2ir .\examples\all-features-twice\all-features.md --force
+.\target\release\md2hwp.exe md2ir .\examples\all-features\all-features.md --force
 ```
 
 대규모 본문용 원고와 IR은 [`examples/korean-lorem/`](../examples/korean-lorem/)에 있습니다.
@@ -134,8 +133,8 @@ Ipsum 본문 11,155어절을 5장·20절로 나누었으며, 작성 당시 최�
 현재 지원 문법을 추가했습니다. 빈도와 템플릿 조건은 해당 폴더의 README에 설명하며,
 이 대규모 원고는 한글 변환·저장·재열기 검증을 통과했습니다. 최초 111쪽의 시각 문제를
 확인한 뒤 강조 문법과 표 머리행 고립을 수정했으며, 보정된 112쪽 출력의 검증도 기록했습니다. 문단 스타일 조회를 선택 블록으로 바꾼 비교 실행은 779.527 → 646.964초였으며,
-이전과 112쪽 PNG가 모두 동일했습니다. 호출 수·시간·단축 후보는
-[대규모 문서 성능 측정](render-performance.md)에 정리했습니다.
+이전과 112쪽 PNG가 모두 동일했습니다. 이후 호출 수·시간·단축 결과는
+[성능 검증 기록](performance/README.md)에 정리했습니다.
 
 [README로 돌아가기](../README.md)
 

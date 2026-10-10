@@ -80,4 +80,4 @@ IR 0.3은 거부하므로 Markdown에서 다시 생성하십시오.
 빌드는 Debug/Release 템플릿을 `templates/template.hwp`로 매번 강제 교체합니다.
 기본 템플릿은 추적 파일에서 편집하고, 별도 사용자 템플릿은 `target/` 밖에 두십시오.
 
-검증 예제: [여러 하단 문단 원고](../examples/all-features-twice/object-sources.md).
+검증 예제: [여러 하단 문단 원고](../examples/all-features/object-sources.md).

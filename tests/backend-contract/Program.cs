@@ -342,9 +342,9 @@ var footnoteProfile = InvestigationTemplateProfile.FromTaggedTemplate(
     new ProfileCaptionSelector("fixture-caption", "[", "]caption", "caption"), footnoteSource, footnoteSource,
     new TemplateListPrototype("bullet", 0, new XElement("BULLET")), new TemplateListPrototype("ordered", 0, new XElement("NUMBERING")));
 var fixtureResourceRoot = new DirectoryInfo(Directory.GetCurrentDirectory());
-while (!File.Exists(Path.Combine(fixtureResourceRoot.FullName, "examples", "all-features-twice", "image.png")))
+while (!File.Exists(Path.Combine(fixtureResourceRoot.FullName, "examples", "all-features", "image.png")))
     fixtureResourceRoot = fixtureResourceRoot.Parent ?? throw new Exception("Cannot find tracked PNG contract fixture.");
-var fixtureIrPath = Path.Combine(fixtureResourceRoot.FullName, "examples", "all-features-twice", "contract.ir.json");
+var fixtureIrPath = Path.Combine(fixtureResourceRoot.FullName, "examples", "all-features", "contract.ir.json");
 static IrPreviewPlan ReadContractBlocks(string block, string irPath, string root, InvestigationTemplateProfile profile)
 {
     using var document = JsonDocument.Parse(block);
