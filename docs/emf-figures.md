@@ -102,3 +102,11 @@ Rust workspace 테스트·Clippy와 Debug·Release 백엔드 계약 검사를 �
 원시 HWP·XML·PDF·BMP·PNG·차이·확대 비교·실행 로그는 ignored
 `artifacts/emf-2026-10-09/`에 있습니다. 입력·경계 계약과 크기 계산 검사는
 [백엔드 검사](../tests/backend-contract/EmfDimensionsTests.cs)에 유지합니다.
+
+
+## PostScript 출력 추가 검토
+
+Microsoft PS Class Driver에서 일반 EMF와 EMF+의 실제 PS 파일을 출력하고,
+별도 PS 해석기로 전체 페이지와 서체를 확인했습니다. 벡터·글자 명령과 비트맵이
+혼합되며 일부 글자는 래스터화됩니다. 시험한 이미지 압축은 Flate이고 JPEG는 없었습니다.
+세부 조건·실측 수치·페이지 이미지는 [PostScript 검토](emf-postscript-review.md)를 참조하십시오.
