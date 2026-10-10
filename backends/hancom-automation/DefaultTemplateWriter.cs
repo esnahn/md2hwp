@@ -281,7 +281,7 @@ internal static partial class HancomPreviewWriter
         footnote.Element("PARALIST")!.ReplaceNodes(footnoteBody,
             TextParagraph("footnote.next", TaggedTemplateBinding.Tag("footnote.next")));
         roots.Add(Paragraph("body", new XElement("CHAR", "각주 서식 샘플"), footnote));
-        roots.Add(TextParagraph("body", "헤딩을 여러 문단으로 구성하려면 해당 headingN 선언을 begin:headingN … slot:headingN … end:headingN 범위로 바꾸세요. 각 이름을 {{ 및 md2hwp: 및 }}로 감싸고, 경계와 제목 슬롯은 각각 독립 문단에 둡니다. N은 1~6이며 같은 수준에 두 방식을 함께 쓰지 않습니다. 블록에 표·글상자·묶음 도형·쪽 나눔과 머리말·감추기·새 번호 제어를 함께 둘 수 있습니다. 제목 슬롯은 표 셀·글상자·머리말·꼬리말 안의 독립 문단에도 놓을 수 있고, 여러 개 두면 같은 제목으로 채웁니다. 절 목록은 begin:each.child:heading2 … slot:heading2 … end:each.child:heading2 범위로 반복하고, 안에 heading3 반복을 중첩할 수 있습니다. 같은 문단 안의 begin:once … end:once 범위는 해당 수준의 첫 헤딩에서만 포함하며, 중첩하거나 제목 슬롯을 감싸지 않습니다."));
+        roots.Add(TextParagraph("body", "헤딩을 여러 문단으로 구성하려면 해당 headingN 선언을 begin:headingN … slot:headingN … end:headingN 범위로 바꾸세요. 각 이름을 {{ 및 md2hwp: 및 }}로 감싸고, 경계와 제목 슬롯은 각각 독립 문단에 둡니다. N은 1~6이며 같은 수준에 두 방식을 함께 쓰지 않습니다. 블록에 표·글상자·묶음 도형·쪽 나눔과 머리말·감추기·새 번호 제어를 함께 둘 수 있습니다. 제목 슬롯은 표 셀·글상자·머리말·꼬리말 안의 독립 문단에도 놓을 수 있고, 여러 개 두면 같은 제목으로 채웁니다. 절 목록은 begin:each.child:heading2 … slot:heading2 … end:each.child:heading2 범위로 반복하고, 안에 heading3 반복을 중첩할 수 있습니다. begin:once … end:once 범위는 해당 수준의 첫 헤딩에만, begin:except.once … end:except.once 범위는 두 번째 이후 헤딩에만 적용합니다. 같은 컨테이너의 문단 중간에도 태그를 둘 수 있고, 서로 다른 문단에 두면 사이의 내용과 문단 경계 및 끝 태그 문단의 쪽 나눔을 함께 처리합니다. 같은 문단의 쪽 나눔 속성은 바꾸지 않습니다. 중첩하거나 제목 슬롯을 범위 안에 넣지 않습니다."));
         roots.AddRange(new[] { Declaration("list.max-depth:6"),
             Declaration("list.indent-hwp:1000") });
         foreach (var kind in new[] { "bullet", "ordered" })

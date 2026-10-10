@@ -68,8 +68,9 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             if (range.SelectMany(p => p.Descendants()).Any(e => e.Name.LocalName is "PICTURE" or "OLE" or "VIDEO"))
                 throw new InvalidDataException($"{role} embedded pictures, OLE and video are not supported; tables, drawing text and grouped shapes are supported.");
             var checkedRange = range.Select(p => new XElement(p)).ToArray();
-            TemplateOnceRanges.Apply(checkedRange, first: true);
+            checkedRange = TemplateOnceRanges.Apply(checkedRange, first: true);
             var slots = TemplateHeadingEach.Validate(checkedRange, level);
+            TemplateHeadingEach.Validate(TemplateOnceRanges.Apply(range.Select(p => new XElement(p)), first: false), level);
             var prototype = range.Select(p => new XElement(p)).ToArray();
             if ((string?)begin[0].Attribute("PageBreak") == "true") SetPageBreak(prototype[0]);
             if ((string?)end[0].Attribute("PageBreak") == "true") pageBreakAfter.Add(role);
@@ -105,7 +106,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
                 continue;
             }
             var instance = sample.Select(p => new XElement(p)).ToArray();
-            TemplateOnceRanges.Apply(instance, usedRoles.Add(operation.ParagraphStyle));
+            instance = TemplateOnceRanges.Apply(instance, usedRoles.Add(operation.ParagraphStyle));
             var block = instance.Select(p => ImportParagraph(p, source, result)).ToArray();
             if ((string?)generated.Attribute("PageBreak") == "true") SetPageBreak(block[0]);
             block = TemplateHeadingEach.Expand(block, int.Parse(operation.ParagraphStyle[7..]), index, plan,

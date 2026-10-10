@@ -90,11 +90,11 @@ Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔�
 .\md2hwp-backend.exe --version
 ```
 
-v0.4.0의 첫 명령 출력은 다음과 같습니다.
+v0.4.1의 첫 명령 출력은 다음과 같습니다.
 
 ```text
-md2hwp 0.4.0
-md2hwp-backend 0.4.0
+md2hwp 0.4.1
+md2hwp-backend 0.4.1
 ```
 
 `--worker`를 생략하면 md2hwp.exe 옆의 백엔드를 확인합니다. `--worker`와 `--dotnet`은

@@ -49,6 +49,15 @@ heading and its level), including begin/end/slot and each.child ranges.
 Only begin:template may carry native SECDEF/COLDEF controls. Preserve those
 settings outside disposable definitions in the working document, without changing
 the source template. Do not extend this exception to other declarations.
+Heading-block once ranges apply only to the first use of that heading role;
+except.once ranges apply only to subsequent uses. Support inline and cross-paragraph
+content within one container, with tags permitted mid-paragraph. Only cross-paragraph ranges own
+the ending paragraph's page/column breaks; same-paragraph ranges keep those flags.
+Omitted boundaries merge into the ending paragraph
+using its paragraph formatting, preserving runs/controls and the earlier paragraph's
+break flags. Marker-only preceding paragraphs do not add blank paragraphs. Reject
+nesting, mismatched tags, enclosed template declarations and cross-container ranges.
+Keep section settings in place under the existing begin:template contract.
 Generated links render as formatted labels/plain text; strip automatic hyperlinks
 only in generated content. Figures embed PNG/JPG/JPEG/EMF images; caption and source belong to the picture's native caption.
 The begin:figure/end:figure sample contains one picture with a
