@@ -40,6 +40,11 @@ PDF 경로에 SaveAs를 호출하면 기본 품질로 다시 저장될 수 있�
 
 이 권장 설정을 사용하는 별도 실행 파일은 [hwp2pdf](hwp2pdf.md)입니다.
 
+PNG·JPG 입력은 **문서에 최종 삽입할 크기를 기준으로 500dpi로 저장**하는 것을 권장합니다.
+한글 2020의 위 출력 설정에서 500dpi 입력은 픽셀 크기를 유지하고 510dpi 이상은
+약 500dpi로 축소됐습니다. [경계 시험](hwp2pdf-quality-matrix.md#해상도-경계)과
+[입력 그림 준비 기준](hwp2pdf.md#입력-그림-권장-해상도)을 참고하십시오.
+
 ## 두 경로와 기존 시험의 범위
 
 | 경로 | 설정 위치 | 자동화에서 확인한 진입점 |
@@ -168,11 +173,9 @@ GetDefault의 GraphicQuality는 계속 0을 반환했으므로 그 반환값만�
 충족하지 않습니다. 화면상의 매우 높음 옵션과 정확히 같은 조건이라고
 확정하는 검증은 남아 있습니다.
 
-[시험 PDF](../artifacts/pdf-quality-2026-10-09/direct-api-100.pdf),
-[전체 페이지](../artifacts/pdf-quality-2026-10-09/quality100-contact.png),
-[직접 출력 분석](../artifacts/pdf-quality-2026-10-09/direct-analysis.json),
-[SaveAs 재저장 분석](../artifacts/pdf-quality-2026-10-09/quality-analysis.json)에
-출력, 이미지 필터/해상도/본문/픽셀 검사와 호출별 차이를 보존했습니다.
+시험 PDF·전체 페이지 이미지·직접 출력 및 SaveAs 재저장 분석은 로컬 조사 자료로
+보관합니다. Git에는 이 문서의 출력·이미지 필터/해상도/본문/픽셀 검사와 호출별 차이
+요약을 기록하며 원시 파일은 포함하지 않습니다.
 시험 HWP의 해시는 변환 전후 일치했습니다. 사용자 원고/템플릿을 열거나
 수정하지 않았으며 보안 모듈 등록 및 프린터 설정을 변경하지 않았습니다.
 시험 종료 시 한글 프로세스가 남지 않은 것을 확인했습니다.
@@ -217,7 +220,7 @@ FileHeader의 실제 압축 플래그까지 확인했으며, 같은 그림 설�
 모든 이미지 형식·한글 버전의 원본 보존을 보장하지 않습니다.
 
 상세 해시, 픽셀 비교, 삽입 직후/저장 후 대조 및 컨테이너 압축 대조는
-[그림 압축 분석 JSON](../artifacts/pdf-quality-2026-10-09/raster-compression/hwp-picture-analysis.json)에,
+로컬 그림 압축 분석 JSON에,
 실행 옵션과 설정 복원 결과는 같은 폴더의 exports.json 및 settings-restored.json에
 보존했습니다. 시험 스크립트와 자료는 ignored artifacts에 있으며 제품 구성 요소가 아닙니다.
 
@@ -243,7 +246,7 @@ PDFの画像ストリームはFlate無損失圧縮でも、圧縮前の画像処
 
 3ページすべてをPopplerでレンダリングして確認しました.本文の
 「본문 화질 검증 ABC123」は全ページから抽出できました.
-詳細は [PDF画像分析](../artifacts/pdf-quality-2026-10-09/raster-compression/pdf-original-quality-analysis.json)、
+詳細は ローカルPDF画像分析JSON、
 全ページの検討画像は同じフォルダーのpdf-reviewed-contact.pngに保存しました.
 
 
