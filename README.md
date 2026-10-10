@@ -1,8 +1,9 @@
-# md2hwp v0.4.0
+# md2hwp v0.4.1
 
 Markdown 원고를 한글(HWP) 템플릿의 서식에 맞춰 변환합니다. Windows x64·한글이 필요하며, 현재 IR 버전은 0.4입니다. HWPX·RST 직접 입력은 지원하지 않습니다.
 
-최신 정식 배포 파일과 변경 사항은 [v0.4.0 릴리스](https://github.com/esnahn/md2hwp/releases/tag/v0.4.0)에서 확인할 수 있습니다.
+배포 파일은 [v0.4.1 릴리스](https://github.com/esnahn/md2hwp/releases/tag/v0.4.1)에서 확인할 수 있습니다.
+변경 사항은 [릴리스 노트](docs/release-v0.4.1.md)를 참고하십시오.
 
 ## 시작하기
 
@@ -70,6 +71,10 @@ title: 문서 제목
 
 태그는 모두 `{{md2hwp:…}}` 형태입니다. [템플릿 상세](docs/templates.md)를 참고하십시오.
 
+헤딩 템플릿의 `once` 범위는 첫 사용에만, `except.once` 범위는 두 번째 이후에만
+적용합니다. 기본 템플릿은 Heading1 앞의 문단 경계와 쪽 나눔을 `except.once`로
+감싸 첫 장 앞 빈 쪽을 없애고, 두 번째 장부터 강제 쪽 나눔을 유지합니다.
+
 ### 그림
 
 `![그림 설명](image.png)`를 독립 문단에 작성합니다. PNG·JPG·JPEG·EMF를 지원하며 설명은 그림 캡션으로 출력합니다.
@@ -133,7 +138,7 @@ Debug와 Release는 XML 구성 방식으로 생성합니다. 개발용 성능 �
 
 - [설치·실행 옵션](docs/usage.md) · [템플릿 편집·태그](docs/templates.md)
 - [표](docs/tables.md) · [번호 상호참조](docs/cross-references.md) · [메타데이터](docs/yaml-variables.md) · [날짜](docs/date-metadata.md)
-- [빌드·검증](docs/development.md) · [통합 예제](examples/all-features/) · [v0.4.0 릴리스 노트](docs/release-v0.4.0.md)
+- [빌드·검증](docs/development.md) · [통합 예제](examples/all-features/) · [v0.4.1 릴리스 노트](docs/release-v0.4.1.md)
 
 저장·재열기 검증만으로 잘림·겹침이나 각주 표시 번호를 보장하지 않으므로 생성된 문서의 배치도 확인하십시오.
 
