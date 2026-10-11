@@ -27,6 +27,12 @@ The JSON fixtures still tracked are included directly by Rust test compilation.
 Builds include a deployment README.md with usable versioned documentation links.
 Create release ZIPs with tools/development/build.ps1 -Configuration Release -Package;
 include md2hwp.exe, md2hwp-backend.exe, hwp2pdf.exe, the tracked default template, README.md and the manuscript guides.
+Include LICENSE, THIRD-PARTY-NOTICES.txt and licenses/ in deployment
+folders and executable ZIPs. Original project code is AGPL-3.0-only; preserve
+third-party licenses. Regenerate notices with tools/development/update-third-party-notices.ps1
+after dependency changes; builds check them. Link the exact matching release-tag
+Corresponding Source next to binary downloads. Confirm third-party material
+permissions before publication.
 Maintain docs/manuscript/AGENTS.md and its concise human counterpart
 docs/manuscript/README-MANUSCRIPT.md together; ship both at the package root.
 Never ship the repository-root development AGENTS.md. Always replace

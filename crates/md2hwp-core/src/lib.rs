@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Euisoon Ahn
 #![forbid(unsafe_code)]
 //! Backend-neutral core for `md2hwp`.
 

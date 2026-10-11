@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Euisoon Ahn
 using System.Reflection;
 using Md2Hwp.HancomIrPreview;
 

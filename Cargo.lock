@@ -581,7 +581,7 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
 name = "md2hwp"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "md2hwp-core",
  "serde_json",
@@ -593,7 +593,7 @@ dependencies = [
 
 [[package]]
 name = "md2hwp-core"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "chrono",
  "icu_normalizer",
@@ -1157,7 +1157,6 @@ dependencies = [
  "rustls-pki-types",
  "ureq-proto",
  "utf8-zero",
- "webpki-root-certs",
 ]
 
 [[package]]
@@ -1276,15 +1275,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ef64dbcc55df09c7e5a46182d181c2cfa3e925f3da937ea764728b4bbb9dcbf"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "webpki-root-certs"
-version = "1.0.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b96554aa2acc8ccdb7e1c9a58a7a68dd5d13bccc69cd124cb09406db612a1c9b"
-dependencies = [
- "rustls-pki-types",
 ]
 
 [[package]]

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Euisoon Ahn
 using System.Reflection;
 using System.Text.Json;
 
@@ -10,6 +12,11 @@ internal static class Program
     {
         try
         {
+            if (args is ["--help"] or ["-h"])
+            {
+                Console.WriteLine(CommandLine.Usage);
+                return 0;
+            }
             if (args is ["--version"])
             {
                 var version = typeof(Program).Assembly
@@ -150,7 +157,7 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
         .Replace("[--verbose]", "[--verbose] [--legacy-com]", StringComparison.Ordinal) +
         "\n--legacy-com: original COM insertion (comparison baseline). Default: XML composition."
 #endif
-        ;
+        + LicenseNotice.Text;
     private const string BaseUsage = """
         usage:
           md2hwp-backend init-template [[--output] <template.hwp>]

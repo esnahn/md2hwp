@@ -13,7 +13,7 @@ internal sealed record PdfExportOptions(string SourcePath, string OutputPath)
                hwp2pdf --version
         Default output: source.pdf beside the input HWP.
         Requires Windows x64, Hancom HWP, .NET 10 x64 and the registered Hancom security module.
-        """;
+        """ + LicenseNotice.Text;
 
     internal static PdfExportOptions Parse(string[] args)
     {

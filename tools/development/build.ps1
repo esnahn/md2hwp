@@ -1,4 +1,5 @@
 #requires -Version 7.4
+# SPDX-License-Identifier: AGPL-3.0-only
 [CmdletBinding()]
 param(
     [ValidateSet('Debug', 'Release')][string]$Configuration = 'Release',
@@ -15,6 +16,8 @@ $destination = Join-Path $root "target/$($Configuration.ToLowerInvariant())"
 $published = Join-Path ([IO.Path]::GetDirectoryName($project)) "bin/$Configuration/net10.0-windows/win-x64/publish"
 Push-Location $root
 try {
+    & (Join-Path $PSHOME 'pwsh.exe') -NoProfile -File (Join-Path $PSScriptRoot 'update-third-party-notices.ps1') -Check
+    if ($LASTEXITCODE -ne 0) { throw 'Third-party notices need regeneration and review.' }
     $cargoArgs = @('build', '-p', 'md2hwp', '--target-dir', (Join-Path $root 'target'))
     if ($Configuration -eq 'Release') { $cargoArgs += '--release' }
     & cargo @cargoArgs
@@ -45,21 +48,28 @@ try {
     foreach ($name in @('AGENTS.md', 'README-MANUSCRIPT.md')) {
         Copy-Item -LiteralPath (Join-Path $root "docs/manuscript/$name") -Destination (Join-Path $destination $name) -Force
     }
-    Write-Output "Deployment files: $destination (md2hwp.exe, md2hwp-backend.exe, hwp2pdf.exe, template.hwp, README.md, AGENTS.md, README-MANUSCRIPT.md)"
+    foreach ($name in @('LICENSE', 'THIRD-PARTY-NOTICES.txt')) {
+        Copy-Item -LiteralPath (Join-Path $root $name) -Destination (Join-Path $destination $name) -Force
+    }
+    $licenseDestination = Join-Path $destination 'licenses'
+    $null = New-Item -ItemType Directory -Path $licenseDestination -Force
+    Get-ChildItem -LiteralPath (Join-Path $root 'licenses') | Copy-Item -Destination $licenseDestination -Recurse -Force
+    Write-Output "Deployment files: $destination (executables, template, guides, project license and third-party notices)"
     if ($Package) {
         $dist = [IO.Path]::GetFullPath((Join-Path $root 'target/dist'))
         $null = New-Item -ItemType Directory -Path $dist -Force
         $stage = Join-Path $dist ('.package-' + [Guid]::NewGuid().ToString('N'))
         $null = New-Item -ItemType Directory -Path $stage
         try {
-            foreach ($name in @('md2hwp.exe', 'md2hwp-backend.exe', 'hwp2pdf.exe', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md')) {
+            foreach ($name in @('md2hwp.exe', 'md2hwp-backend.exe', 'hwp2pdf.exe', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt')) {
                 Copy-Item -LiteralPath (Join-Path $destination $name) -Destination $stage
             }
             # Ship the tracked default; never adopt a user's deployment template implicitly.
             Copy-Item -LiteralPath (Join-Path $root 'templates/template.hwp') -Destination $stage
+            Copy-Item -LiteralPath (Join-Path $root 'licenses') -Destination $stage -Recurse
             $archive = Join-Path $dist "md2hwp-v$version-windows-x64.zip"
             $temporaryArchive = Join-Path $stage 'package.zip'
-            $files = @('md2hwp.exe', 'md2hwp-backend.exe', 'hwp2pdf.exe', 'template.hwp', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md') | ForEach-Object { Join-Path $stage $_ }
+            $files = @('md2hwp.exe', 'md2hwp-backend.exe', 'hwp2pdf.exe', 'template.hwp', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt', 'licenses') | ForEach-Object { Join-Path $stage $_ }
             Compress-Archive -LiteralPath $files -DestinationPath $temporaryArchive
             Move-Item -LiteralPath $temporaryArchive -Destination $archive -Force
             Write-Output "Package: $archive"

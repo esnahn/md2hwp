@@ -1,9 +1,29 @@
-# md2hwp v0.4.1
+# md2hwp v0.4.2
 
 Markdown 원고를 한글(HWP) 템플릿의 서식에 맞춰 변환합니다. Windows x64·한글이 필요하며, 현재 IR 버전은 0.4입니다. HWPX·RST 직접 입력은 지원하지 않습니다.
 
-배포 파일은 [v0.4.1 릴리스](https://github.com/esnahn/md2hwp/releases/tag/v0.4.1)에서 확인할 수 있습니다.
-변경 사항은 [릴리스 노트](docs/release-v0.4.1.md)를 참고하십시오.
+배포 파일은 [v0.4.2 릴리스](https://github.com/esnahn/md2hwp/releases/tag/v0.4.2)에서 확인할 수 있습니다.
+변경 사항은 [릴리스 노트](docs/release-v0.4.2.md)를 참고하십시오.
+
+## 라이선스
+
+md2hwp는 **AGPL-3.0-only**로 제공합니다.
+[전문](LICENSE)을 확인하십시오. 라이선스 조건에 따라
+수정·재배포할 수 있으며 보증은 제공하지 않습니다. 사용자 원고의 권리는 작성자에게 있습니다.
+
+외부 라이브러리의 저작권·라이선스는 [제3자 고지](THIRD-PARTY-NOTICES.txt)와
+`licenses/`에 보존합니다. 제3자 자료는 각 원저작자의 조건을 따르며,
+프로젝트의 AGPL 선언이 해당 자료의 권리를 변경하지 않습니다.
+
+실행 파일을 배포할 때는 라이선스·고지를 함께 제공하고, 실행 파일과 정확히 대응하는
+소스의 무료 다운로드 링크를 같은 배포 페이지에 표시하십시오. GitHub Release의
+동일 태그 자동 소스 다운로드를 사용하며, 이전 태그나 이동하는 브랜치 링크로 대신하지 않습니다.
+이 릴리스의 대응 소스: [v0.4.2 소스 다운로드](https://github.com/esnahn/md2hwp/archive/refs/tags/v0.4.2.zip).
+수정한 프로그램을 네트워크 서비스로 제공하는 경우 AGPL 제13조도 적용될 수 있습니다.
+
+Pandoc은 `setup-pandoc`이 따로 다운로드하는 GPL-2.0-or-later 프로그램이며 실행용 ZIP에 포함하지 않습니다.
+[Pandoc 저작권·라이선스](https://github.com/jgm/pandoc/blob/main/COPYRIGHT)를 참고하십시오.
+한글·보안 모듈·서체·.NET 런타임도 별도 제품으로, 각 제공자의 조건을 따릅니다.
 
 ## 시작하기
 
@@ -138,7 +158,7 @@ Debug와 Release는 XML 구성 방식으로 생성합니다. 개발용 성능 �
 
 - [설치·실행 옵션](docs/usage.md) · [템플릿 편집·태그](docs/templates.md)
 - [표](docs/tables.md) · [번호 상호참조](docs/cross-references.md) · [메타데이터](docs/yaml-variables.md) · [날짜](docs/date-metadata.md)
-- [빌드·검증](docs/development.md) · [통합 예제](examples/all-features/) · [v0.4.1 릴리스 노트](docs/release-v0.4.1.md)
+- [빌드·검증](docs/development.md) · [통합 예제](examples/all-features/) · [v0.4.2 릴리스 노트](docs/release-v0.4.2.md)
 
 저장·재열기 검증만으로 잘림·겹침이나 각주 표시 번호를 보장하지 않으므로 생성된 문서의 배치도 확인하십시오.
 

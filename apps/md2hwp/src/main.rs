@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Euisoon Ahn
 #![forbid(unsafe_code)]
 //! User-facing `md2hwp` command-line application.
 
@@ -56,6 +58,10 @@ fn child_exit_code(exit_code: Option<i32>) -> i32 {
 }
 
 fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
+    if arguments.len() == 1 && matches!(arguments[0].to_str(), Some("--help" | "-h")) {
+        println!("{}", usage());
+        return Ok(());
+    }
     if arguments.iter().any(|argument| argument == "--version") {
         println!("md2hwp {}", env!("CARGO_PKG_VERSION"));
         return hancom::run_version(arguments).map_err(AppError::from);
@@ -484,12 +490,15 @@ fn usage() -> String {
     {
         base.replace("[--verbose]", "[--verbose] [--legacy-com]")
             + "\n--legacy-com: original COM insertion (comparison baseline). Default: XML composition."
+            + LICENSE_NOTICE
     }
     #[cfg(not(debug_assertions))]
     {
-        base.to_owned()
+        base.to_owned() + LICENSE_NOTICE
     }
 }
+
+const LICENSE_NOTICE: &str = "\nCopyright (C) 2026 Euisoon Ahn. AGPL-3.0-only.\nYou may redistribute and modify this software under that license. No warranty.\nSee LICENSE and THIRD-PARTY-NOTICES.txt beside the executable.";
 
 #[cfg(test)]
 mod tests {

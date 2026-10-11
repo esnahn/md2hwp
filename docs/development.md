@@ -10,7 +10,7 @@ pwsh -NoProfile -File tools/development/build.ps1
 cargo test --workspace
 ```
 
-Release 빌드 결과는 `target/release/`의 다음 일곱 파일입니다.
+Release 빌드 결과는 `target/release/`의 다음 파일과 라이선스 폴더입니다.
 `-Configuration Debug`를 주면 `target/debug/`에 모입니다.
 개발·실행에는 이 두 폴더를 기본으로 사용합니다. `target/dist/`는 버전별 배포 파일과 ZIP의 보관용입니다.
 
@@ -21,12 +21,15 @@ Release 빌드 결과는 `target/release/`의 다음 일곱 파일입니다.
 - `README.md`
 - `AGENTS.md`
 - `README-MANUSCRIPT.md`
+- `LICENSE`
+- `THIRD-PARTY-NOTICES.txt`
+- `licenses/`
 
 C# 백엔드는 `backends/hancom-automation/Md2Hwp.Backend.csproj`, PDF CLI는 `apps/hwp2pdf/Hwp2Pdf.csproj`입니다.
 PDF CLI는 백엔드의 COM 세션·보안 검사 코드를 재사용하고, 게시 시 필요한 관리 어셈블리를 EXE 안에 묶습니다.
 `hwp2pdf.exe` 실행에는 별도 백엔드 EXE나 DLL 파일이 필요하지 않습니다.
 `templates/template.hwp`를 게시 폴더와 `target/debug` 또는 `target/release`에 복사합니다. 빌드 폴더의 템플릿은 매번 강제 교체합니다. 기본 템플릿은 `templates/template.hwp`에서 편집하고, 별도 사용자 템플릿은 `target/` 밖에 두어 `--template`으로 지정하십시오.
-빌드 결과는 Git에서 제외합니다. 배포할 때 위 일곱 파일을 같은 폴더에 복사합니다. 동봉 README의 원고 작성 안내 링크는 같은 폴더의 `README-MANUSCRIPT.md`로, 나머지 문서·예제 링크는 GitHub의 해당 버전으로 연결합니다.
+빌드 결과는 Git에서 제외합니다. 배포할 때 위 파일과 라이선스 폴더를 함께 복사합니다. 동봉 README의 원고 작성 안내 링크는 같은 폴더의 `README-MANUSCRIPT.md`로, 나머지 문서·예제 링크는 GitHub의 해당 버전으로 연결합니다.
 
 원고 작성 지침은 `docs/manuscript/AGENTS.md`, 같은 규칙의 사람용 요약은 `docs/manuscript/README-MANUSCRIPT.md`에서 관리하며 두 문서를 함께 갱신합니다. 빌드는 두 파일을 배포 폴더 최상위에 복사합니다. 저장소 루트의 개발용 `AGENTS.md`는 배포하지 않습니다.
 
@@ -36,9 +39,26 @@ PDF CLI는 백엔드의 COM 세션·보안 검사 코드를 재사용하고, 게
 pwsh -NoProfile -File tools/development/build.ps1 -Configuration Release -Package
 ```
 
-`target/dist/md2hwp-v<버전>-windows-x64.zip`에 실행 파일 세 개, 추적 기본 템플릿, README와 원고 작성 문서 두 개를 넣고 SHA-256을 출력합니다.
+`target/dist/md2hwp-v<버전>-windows-x64.zip`에 실행 파일 세 개, 추적 기본 템플릿, README와 원고 작성 문서 두 개, 프로젝트 라이선스·제3자 고지 및 `licenses/`를 넣고 SHA-256을 출력합니다.
 패키지는 사용자 편집본 대신 `templates/template.hwp`를 사용합니다. 기존 배포 ZIP은 새 ZIP 생성에 성공한 뒤 교체합니다.
 GitHub Release에는 실행용 ZIP만 첨부하고, 체크섬은 본문 끝에 표시합니다. 소스는 GitHub 자동 다운로드를 사용하며 릴리스 노트·빌드 매니페스트는 별도 첨부하지 않습니다.
+
+AGPL 실행 파일에는 정확히 대응하는 소스를 제공해야 합니다. 배포 페이지에 동일 태그의
+무료 소스 다운로드 링크를 표시하고, 태그가 실제 빌드 소스·잠금 파일·스크립트·필수 입력을
+포함하는지 확인하십시오. 라이선스 적용 전의 기존 v0.4.1 태그는 이후 수정한 빌드의 대응
+소스로 사용할 수 없습니다. v0.4.2는 변경된 라이선스와 고지를 포함한 새 릴리스입니다.
+제3자 자료는 공개 배포 전에 권한을 확인하십시오.
+
+의존성을 변경하면 로컬 Cargo 캐시를 준비한 뒤 고지를 갱신하고 검토합니다.
+
+```powershell
+pwsh -NoProfile -File tools/development/update-third-party-notices.ps1
+pwsh -NoProfile -File tools/development/update-third-party-notices.ps1 -Check
+```
+
+빌드는 고지가 현재 잠금 버전과 일치하는지 확인합니다. 알려지지 않은 라이선스 표현이나
+고지 누락은 명시적으로 실패합니다. Rust 도구 체인이나 .NET 호스트 버전을 변경할 때는
+`licenses/`의 해당 원본 라이선스·고지도 실제 버전에 맞게 갱신해야 합니다.
 
 추가 계약 검사:
 
