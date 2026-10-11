@@ -62,6 +62,15 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
         println!("{}", usage());
         return Ok(());
     }
+    if arguments.first().is_some_and(|a| a == "validate") {
+        if arguments.len() == 2 && matches!(arguments[1].to_str(), Some("--help" | "-h")) {
+            println!(
+                "usage: md2hwp validate <source.md> [--pandoc <pandoc.exe>] [--require-meta <key>]\nStrict input validation only; no IR/HWP output or Hancom invocation."
+            );
+            return Ok(());
+        }
+        return validate_manuscript(&arguments[1..]);
+    }
     if arguments.iter().any(|argument| argument == "--version") {
         println!("md2hwp {}", env!("CARGO_PKG_VERSION"));
         return hancom::run_version(arguments).map_err(AppError::from);
@@ -148,6 +157,174 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
     }
     println!("{}", options.output.display());
     Ok(())
+}
+
+struct ValidateOptions {
+    input: PathBuf,
+    pandoc: PathBuf,
+    required_metadata: Vec<String>,
+}
+
+impl ValidateOptions {
+    fn parse(arguments: &[std::ffi::OsString]) -> Result<Self, String> {
+        let mut input = None;
+        let mut pandoc = None;
+        let mut required_metadata = Vec::new();
+        let mut args = arguments.iter();
+        while let Some(argument) = args.next() {
+            match argument.to_str() {
+                Some("--pandoc" | "--input" | "--require-meta") => {
+                    let value = args.next().ok_or_else(|| {
+                        format!("missing value for {}", argument.to_string_lossy())
+                    })?;
+                    match argument.to_str().unwrap() {
+                        "--pandoc" => {
+                            if pandoc.replace(PathBuf::from(value)).is_some() {
+                                return Err("duplicate --pandoc".into());
+                            }
+                        }
+                        "--input" => {
+                            if input.replace(PathBuf::from(value)).is_some() {
+                                return Err("specify one input manuscript".into());
+                            }
+                        }
+                        _ => {
+                            let key = value
+                                .to_str()
+                                .filter(|s| !s.is_empty() && !s.chars().any(char::is_whitespace))
+                                .ok_or_else(|| {
+                                    "--require-meta expects a nonempty metadata key".to_owned()
+                                })?;
+                            required_metadata.push(key.to_owned());
+                        }
+                    }
+                }
+                Some(s) if s.starts_with('-') => {
+                    return Err(format!("unsupported validate option: {s}"));
+                }
+                _ => {
+                    if input.replace(PathBuf::from(argument)).is_some() {
+                        return Err("specify one input manuscript".into());
+                    }
+                }
+            }
+        }
+        let input = input.ok_or_else(|| {
+            "usage: md2hwp validate <source.md> [--pandoc <pandoc.exe>] [--require-meta <key>]"
+                .to_owned()
+        })?;
+        if !input
+            .extension()
+            .is_some_and(|s| s.eq_ignore_ascii_case("md"))
+        {
+            return Err("validate requires a Markdown (.md) manuscript".into());
+        }
+        Ok(Self {
+            input,
+            pandoc: pandoc.unwrap_or_else(default_pandoc_path),
+            required_metadata,
+        })
+    }
+}
+
+fn validate_manuscript(arguments: &[std::ffi::OsString]) -> Result<(), AppError> {
+    use md2hwp_core::authoring::{check_document, check_pandoc, check_source};
+    let options = ValidateOptions::parse(arguments)?;
+    let source = fs::read(&options.input)
+        .map_err(|e| format!("could not read {}: {e}", options.input.display()))?;
+    let source_text = std::str::from_utf8(&source)
+        .map_err(|e| format!("source is not UTF-8 at byte {}", e.valid_up_to()))?;
+    let mut issues = check_source(source_text);
+    verify_pandoc(&options.pandoc)?;
+    let json = invoke_pandoc(&options.pandoc, &source)?;
+    let limits = ValidationLimits::default();
+    let document = read_pandoc_json(&json, &limits).map_err(|e| e.to_string())?;
+    issues.extend(check_pandoc(&document));
+    let rules = load_builtin_rules().map_err(|e| e.to_string())?;
+    let mut errors = 0;
+    match normalize_pandoc(document, &rules, "commonmark", &limits) {
+        Ok(ir) => {
+            issues.extend(check_document(ir.as_document()));
+            for key in &options.required_metadata {
+                if !ir.as_document().metadata.0.contains_key(key) {
+                    eprintln!(
+                        "{}: /metadata: error [required_metadata]: missing '{key}'",
+                        options.input.display()
+                    );
+                    errors += 1;
+                }
+            }
+            errors += check_resources(ir.as_document(), &options.input)?;
+        }
+        Err(error) => {
+            eprintln!("{}: error: {error}", options.input.display());
+            errors += 1;
+        }
+    }
+    let warnings = issues.iter().filter(|d| d.warning).count();
+    for issue in issues {
+        let severity = if issue.warning {
+            "warning"
+        } else {
+            errors += 1;
+            "error"
+        };
+        eprintln!(
+            "{}: {}: {severity} [{}]: {}",
+            options.input.display(),
+            issue.location,
+            issue.code,
+            issue.message
+        );
+    }
+    if errors > 0 {
+        return Err(
+            format!("strict validation failed: {errors} error(s), {warnings} warning(s)").into(),
+        );
+    }
+    println!(
+        "{}: strict input validation passed ({warnings} warning(s))",
+        options.input.display()
+    );
+    Ok(())
+}
+
+fn check_resources(document: &md2hwp_core::Document, input: &Path) -> Result<usize, AppError> {
+    let root = input
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    let root = root.canonicalize().map_err(|e| e.to_string())?;
+    let mut errors = 0;
+    for (index, block) in document.blocks.iter().enumerate() {
+        if let Block::Figure { image, .. } = block {
+            let path = Path::new(&image.path);
+            let extension = path
+                .extension()
+                .and_then(|s| s.to_str())
+                .unwrap_or_default()
+                .to_ascii_lowercase();
+            let resolved = root.join(path).canonicalize();
+            let message = if !matches!(extension.as_str(), "png" | "jpg" | "jpeg" | "emf") {
+                Some("image extension must be PNG/JPG/JPEG/EMF")
+            } else if path.is_absolute() || matches!(&resolved, Ok(p) if !p.starts_with(&root)) {
+                Some("use a relative image path within the manuscript directory")
+            } else if !matches!(&resolved, Ok(p) if p.is_file() && fs::File::open(p).is_ok()) {
+                Some("image file does not exist or cannot be read")
+            } else {
+                None
+            };
+            if let Some(message) = message {
+                eprintln!(
+                    "{}: /blocks/{index}/image: error [image_resource]: {message}: {}",
+                    input.display(),
+                    image.path
+                );
+                errors += 1;
+            }
+        }
+    }
+    Ok(errors)
 }
 
 struct ManuscriptOptions {
@@ -485,7 +662,7 @@ fn default_pandoc_path() -> PathBuf {
 }
 
 fn usage() -> String {
-    let base = "usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp md2ir [--input] <source.md|source.json> [[--output] <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp --version [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]";
+    let base = "usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp md2ir [--input] <source.md|source.json> [[--output] <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp validate <source.md> [--pandoc <pandoc.exe>] [--require-meta <key>]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp --version [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]";
     #[cfg(debug_assertions)]
     {
         base.replace("[--verbose]", "[--verbose] [--legacy-com]")
@@ -791,5 +968,74 @@ mod tests {
     fn application_errors_use_the_failure_exit_code() {
         let error = AppError::from("application failed".to_owned());
         assert_eq!(error.exit_code, FAILURE_EXIT_CODE);
+    }
+
+    #[test]
+    fn validate_options_are_read_only_and_support_required_metadata() {
+        let args = [
+            "--require-meta",
+            "title",
+            "source.md",
+            "--pandoc",
+            "custom.exe",
+            "--require-meta",
+            "publisher",
+        ]
+        .map(Into::into);
+        let options = ValidateOptions::parse(&args).unwrap();
+        assert_eq!(options.input, PathBuf::from("source.md"));
+        assert_eq!(options.pandoc, PathBuf::from("custom.exe"));
+        assert_eq!(options.required_metadata, vec!["title", "publisher"]);
+        for args in [
+            vec!["source.md", "--output", "result.json"],
+            vec!["source.md", "other.md"],
+            vec!["source.md", "--force"],
+            vec!["source.json"],
+        ] {
+            assert!(
+                ValidateOptions::parse(&args.into_iter().map(Into::into).collect::<Vec<_>>())
+                    .is_err()
+            );
+        }
+    }
+
+    #[test]
+    fn check_resources_rejects_missing_and_outside_files() {
+        let root = tempfile::tempdir().unwrap();
+        let manuscripts = root.path().join("manuscripts");
+        fs::create_dir(&manuscripts).unwrap();
+        fs::write(manuscripts.join("present.PNG"), b"resource fixture").unwrap();
+        fs::write(root.path().join("outside.png"), b"outside fixture").unwrap();
+        let document = |path: &str| md2hwp_core::Document {
+            schema: md2hwp_core::ir::SCHEMA_NAME.into(),
+            ir_version: md2hwp_core::ir::IR_VERSION.into(),
+            metadata: Default::default(),
+            blocks: vec![Block::Figure {
+                id: None,
+                image: md2hwp_core::ir::ImageRef {
+                    path: path.into(),
+                    alt: vec![],
+                    title: None,
+                },
+                caption: vec![],
+                source: None,
+            }],
+        };
+        let input = manuscripts.join("source.md");
+        assert_eq!(
+            check_resources(&document("present.PNG"), &input).ok(),
+            Some(0)
+        );
+        for path in ["missing.png", "../outside.png", "present.svg"] {
+            assert_eq!(check_resources(&document(path), &input).ok(), Some(1));
+        }
+        assert_eq!(
+            check_resources(
+                &document(manuscripts.join("present.PNG").to_str().unwrap()),
+                &input
+            )
+            .ok(),
+            Some(1)
+        );
     }
 }

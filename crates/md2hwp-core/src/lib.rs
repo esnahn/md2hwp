@@ -4,6 +4,7 @@
 //! Backend-neutral core for `md2hwp`.
 
 pub mod ast2ir_rules;
+pub mod authoring;
 pub mod ir;
 pub mod ir_io;
 pub mod metadata;

@@ -55,6 +55,14 @@ Pandoc은 `setup-pandoc`이 따로 다운로드하는 GPL-2.0-or-later 프로그
 
 간략한 작성 방법과 예시는 [원고 작성 안내](docs/manuscript/README-MANUSCRIPT.md)를 참고하십시오.
 
+변환 전에 `md2hwp.exe validate 원고.md --require-meta title`로 엄격한 작성 규칙을 검사할 수 있습니다.
+Pandoc은 필요하지만 한글·백엔드를 실행하거나 IR/HWP를 쓰지 않습니다.
+개체에 연결되지 않은 `주:`·`출처:`·표 캡션, 잘못된 접두어, 중복/미정의 각주,
+닫히지 않은 코드 울타리, 표 칸 수와 기존 AST/IR 계약을 검사합니다.
+필수 정보는 `--require-meta <키>`를 반복 지정하며 오류는 종료 코드 1입니다.
+일반 변환의 문단 처리 방식은 유지합니다.
+검사 범위와 템플릿·시각 검증의 차이는 [엄격한 원고 검사](docs/manuscript/AGENTS.md#엄격한-원고-검사)를 참고하십시오.
+
 ### 본문
 
 CommonMark를 기본으로 YAML·각주·속성·독립 그림·파이프 표 확장을 지원합니다.
