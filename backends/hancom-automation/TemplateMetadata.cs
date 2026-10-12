@@ -12,6 +12,33 @@ internal static class TemplateMetadata
     private static readonly Regex Tokens = new(@"\{\{md2hwp:meta:([^{}]+)\}\}", RegexOptions.CultureInvariant);
     private sealed record Atom(XElement Node, char Character);
 
+    internal sealed record Inspection(XDocument Document, string[] Keys, bool RequiresRecognizedDate);
+
+    internal static Inspection Inspect(XDocument source)
+    {
+        var keys = new SortedSet<string>(StringComparer.Ordinal);
+        var requiresDate = false;
+        var document = Transform(source, Prefix, Tokens, match => {
+            var name = match.Groups[1].Value;
+            var formatAt = name.IndexOf(":fmt:", StringComparison.Ordinal);
+            var key = formatAt < 0 ? name : name[..formatAt];
+            if (key is not ("title" or "subtitle" or "author" or "date" or "date-meta" or "publisher") &&
+                !(key.StartsWith("md2hwp-", StringComparison.Ordinal) && key.Length > 7))
+                throw new InvalidDataException($"Unsupported metadata key: {key}.");
+            if (key.Any(char.IsControl) || !key.IsNormalized(NormalizationForm.FormC))
+                throw new InvalidDataException("Invalid metadata key.");
+            if (formatAt >= 0)
+            {
+                if (key != "date-meta") throw new InvalidDataException("fmt is supported only for date-meta.");
+                _ = FormatDate("2000-01-01", name[(formatAt + 5)..]);
+            }
+            requiresDate |= key == "date-meta";
+            keys.Add(key == "date-meta" ? "date" : key);
+            return "MD2HWP_METADATA_VALIDATION";
+        });
+        return new(document, keys.ToArray(), requiresDate);
+    }
+
     internal static Dictionary<string, string> Read(JsonElement metadata)
     {
         if (metadata.ValueKind != JsonValueKind.Object) throw new InvalidDataException("/metadata: expected object.");

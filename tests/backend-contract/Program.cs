@@ -7,6 +7,19 @@ static void Reject(Action operation) {
     try { operation(); } catch (InvalidDataException) { return; }
     throw new Exception("Expected rejection.");
 }
+var metadataInspectionInput = XDocument.Parse("<HWPML><P><TEXT><CHAR>{{md2hwp:meta:ti</CHAR></TEXT><TEXT><CHAR>tle}} {{md2hwp:meta:date-meta:fmt:%Y년 %-m월}} {{md2hwp:meta:title}}</CHAR></TEXT></P></HWPML>");
+var metadataInspectionOriginal = metadataInspectionInput.ToString();
+var metadataInspection = TemplateMetadata.Inspect(metadataInspectionInput);
+Check(metadataInspection.Keys.SequenceEqual(new[] { "date", "title" }) && metadataInspection.RequiresRecognizedDate,
+    "Template validation must report unique YAML keys and derived date requirement.");
+Check(metadataInspectionInput.ToString() == metadataInspectionOriginal, "Template inspection mutated source XML.");
+foreach (var token in new[] { "unknown", "title:fmt:%Y", "date-meta:fmt:%Q", "date-meta:fmt:" })
+    Reject(() => TemplateMetadata.Inspect(XDocument.Parse($"<P><TEXT><CHAR>{{{{md2hwp:meta:{token}}}}}</CHAR></TEXT></P>")));
+Reject(() => TemplateMetadata.Inspect(XDocument.Parse("<P><TEXT><CHAR>{{md2hwp:meta:ti</CHAR><TAB/><CHAR>tle}}</CHAR></TEXT></P>")));
+Check(TemplateValidation.Parse([]) == Path.Combine(AppContext.BaseDirectory, "template.hwp"), "Validation default must be beside backend.");
+Check(TemplateValidation.Parse(["--template", "custom.hwp"]) == "custom.hwp", "Explicit template path changed.");
+try { TemplateValidation.Parse(["a.hwp", "--template", "b.hwp"]); throw new Exception("Duplicate template accepted."); }
+catch (ArgumentException) { }
 var sectionFixture = XDocument.Parse("<HWPML><BODY><SECTION><P Style='0' PageBreak='false' ColumnBreak='false'><TEXT CharShape='1'><COLDEF/><SECDEF><MASTERPAGE Type='Even'><PARALIST><P><TEXT><LINE/><CHAR/></TEXT></P></PARALIST></MASTERPAGE></SECDEF><CHAR>{{md2hwp:begin:template}}</CHAR></TEXT></P><P><TEXT><CHAR>{{md2hwp:ir-version:0.4}}</CHAR></TEXT></P></SECTION></BODY></HWPML>");
 var originalSectionFixture = sectionFixture.ToString();
 var retainedSection = new XElement(sectionFixture.Descendants("SECDEF").Single());

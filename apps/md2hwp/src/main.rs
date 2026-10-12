@@ -88,10 +88,9 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
         }
         return pandoc_setup::install().map_err(AppError::from);
     }
-    if arguments
-        .first()
-        .is_some_and(|a| a == "check-runtime" || a == "ir2hwp" || a == "init-template")
-    {
+    if arguments.first().is_some_and(|a| {
+        a == "check-runtime" || a == "ir2hwp" || a == "init-template" || a == "validate-template"
+    }) {
         return hancom::run(arguments).map_err(AppError::from);
     }
     let options = Options::parse(arguments)?;
@@ -662,7 +661,7 @@ fn default_pandoc_path() -> PathBuf {
 }
 
 fn usage() -> String {
-    let base = "usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp md2ir [--input] <source.md|source.json> [[--output] <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp validate <source.md> [--pandoc <pandoc.exe>] [--require-meta <key>]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp --version [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]";
+    let base = "usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp md2ir [--input] <source.md|source.json> [[--output] <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp validate <source.md> [--pandoc <pandoc.exe>] [--require-meta <key>]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp validate-template [[--template] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp --version [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]";
     #[cfg(debug_assertions)]
     {
         base.replace("[--verbose]", "[--verbose] [--legacy-com]")

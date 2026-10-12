@@ -25,6 +25,15 @@ internal static class Program
                 Console.WriteLine($"md2hwp-backend {version.Split('+')[0]}");
                 return 0;
             }
+            if (args.Length > 0 && args[0] == "validate-template")
+            {
+                if (args is [_, "--help"] or [_, "-h"])
+                    Console.WriteLine(TemplateValidation.Usage);
+                else
+                    Console.WriteLine(JsonSerializer.Serialize(HancomPreviewWriter.ValidateTemplateFile(
+                        TemplateValidation.Parse(args[1..])), JsonOutput.Options));
+                return 0;
+            }
             if (args.Length > 0 && args[0] == "init-template")
             {
                 var output = args.Length switch
@@ -161,6 +170,7 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
     private const string BaseUsage = """
         usage:
           md2hwp-backend init-template [[--output] <template.hwp>]
+          md2hwp-backend validate-template [[--template] <template.hwp>]
           md2hwp-backend <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--visible] [--verbose]
           md2hwp-backend ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--visible] [--verbose]
           md2hwp-backend --version

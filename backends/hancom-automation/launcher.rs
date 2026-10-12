@@ -174,7 +174,8 @@ pub fn run_with_resource_root(
     let mode = args.next().unwrap_or_default();
     let check = mode == "check-runtime";
     let init = mode == "init-template";
-    if !check && !init && mode != "ir2hwp" {
+    let validate = mode == "validate-template";
+    if !check && !init && !validate && mode != "ir2hwp" {
         return Err(usage());
     }
     let (mut dotnet, mut worker, mut ir, mut template, mut output) = (None, None, None, None, None);
@@ -182,15 +183,27 @@ pub fn run_with_resource_root(
     #[cfg(debug_assertions)]
     let mut legacy_com = false;
     while let Some(key) = args.next() {
+        if validate && (key == "--help" || key == "-h") {
+            println!(
+                "usage: md2hwp validate-template [[--template] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]"
+            );
+            return Ok(());
+        }
+        if validate && !key.to_string_lossy().starts_with('-') {
+            if template.replace(PathBuf::from(key)).is_some() {
+                return Err("duplicate template argument".into());
+            }
+            continue;
+        }
         #[cfg(debug_assertions)]
-        if key == "--legacy-com" && !check && !init {
+        if key == "--legacy-com" && !check && !init && !validate {
             if legacy_com {
                 return Err("duplicate --legacy-com".into());
             }
             legacy_com = true;
             continue;
         }
-        if key == "--verbose" && !check && !init {
+        if key == "--verbose" && !check && !init && !validate {
             if verbose {
                 return Err("duplicate --verbose".into());
             }
@@ -206,9 +219,9 @@ pub fn run_with_resource_root(
         let slot = match key.to_str() {
             Some("--dotnet") => &mut dotnet,
             Some("--worker") if !check => &mut worker,
-            Some("--ir") if !check && !init => &mut ir,
+            Some("--ir") if !check && !init && !validate => &mut ir,
             Some("--template") if !check && !init => &mut template,
-            Some("--output") if !check => &mut output,
+            Some("--output") if !check && !validate => &mut output,
             _ => return Err(usage()),
         };
         if slot.is_some() {
@@ -221,6 +234,19 @@ pub fn run_with_resource_root(
         return Ok(());
     }
     let worker = adjacent_default(worker, "md2hwp-backend.exe")?;
+    if validate {
+        let template = adjacent_default(template, "template.hwp")?;
+        return launch_worker(
+            worker,
+            dotnet,
+            vec![
+                "validate-template".into(),
+                "--template".into(),
+                template.into_os_string(),
+            ],
+            None,
+        );
+    }
     if init {
         let output = output.unwrap_or_else(|| PathBuf::from("template.hwp"));
         if output.exists() {
@@ -340,7 +366,7 @@ fn adjacent_default(explicit: Option<PathBuf>, name: &str) -> Result<PathBuf, St
 }
 
 fn usage() -> String {
-    let base = "usage: md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp";
+    let base = "usage: md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp validate-template [[--template] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp";
     #[cfg(debug_assertions)]
     {
         base.replace("[--verbose]", "[--verbose] [--legacy-com]")
@@ -355,6 +381,17 @@ fn usage() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn template_validation_rejects_duplicate_paths_and_output_options() {
+        for args in [
+            vec!["validate-template", "a.hwp", "--template", "b.hwp"],
+            vec!["validate-template", "--output", "a.hwp"],
+            vec!["validate-template", "--ir", "a.json"],
+        ] {
+            assert!(run(args.into_iter().map(OsString::from).collect()).is_err());
+        }
+    }
+
     #[test]
     fn help_advertises_legacy_only_in_debug() {
         assert_eq!(usage().contains("--legacy-com"), cfg!(debug_assertions));
