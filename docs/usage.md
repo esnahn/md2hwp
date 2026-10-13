@@ -90,11 +90,11 @@ Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔�
 .\md2hwp-backend.exe --version
 ```
 
-v0.4.1의 첫 명령 출력은 다음과 같습니다.
+v0.4.3의 첫 명령 출력은 다음과 같습니다.
 
 ```text
-md2hwp 0.4.1
-md2hwp-backend 0.4.1
+md2hwp 0.4.3
+md2hwp-backend 0.4.3
 ```
 
 `--worker`를 생략하면 md2hwp.exe 옆의 백엔드를 확인합니다. `--worker`와 `--dotnet`은
@@ -126,3 +126,20 @@ md2hwp-backend 0.4.1
 IR 0.2 입력은 원고에서 다시 생성하고, 기존 템플릿은 새 선언을 직접 채택하거나 별도 파일로 재생성하십시오. 사용자 템플릿은 자동 갱신하지 않습니다.
 
 [README로 돌아가기](../README.md)
+
+## 변환 전 검사
+
+```powershell
+.\md2hwp.exe validate 원고.md --require-meta title
+.\md2hwp.exe validate-template
+.\md2hwp.exe validate-template 내템플릿.hwp
+.\md2hwp-backend.exe validate-template --template 내템플릿.hwp
+```
+
+`validate`는 Pandoc을 사용해 원고의 엄격한 작성 규칙과 AST/IR 계약을 검사합니다.
+한글 없이 실행하며 파일을 생성하지 않습니다. `--require-meta`를 반복해 필요한 YAML 키를 지정할 수 있습니다.
+
+`validate-template`은 한글로 템플릿 XML을 한 번 읽어 IR 버전, 선언, 슬롯과 원형 구조를 검사합니다.
+경로 생략 시 해당 EXE 옆 `template.hwp`를 사용합니다. 원본은 저장하지 않으며 첫 오류에서 실패합니다.
+결과의 `RequiredMetadata`는 원고에 필요한 YAML 키이고, `RequiresRecognizedDate`는 인식 가능한 `date`가 필요한지를 뜻합니다.
+Rust 명령에는 `--worker`와 `--dotnet`도 지정할 수 있습니다.
