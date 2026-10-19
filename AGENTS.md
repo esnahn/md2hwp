@@ -160,11 +160,10 @@ Coalesce adjacent identical-format runs before HWPML import. Heading references
 require no native outline settings; do not call GetHeadingString for references.
 Page and other reference roles remain reserved and unsupported.
 Manuscript input remains Markdown or Pandoc JSON; direct HWPX and RST manuscript
-input are deferred. The unreleased development feature supports HWPX templates and
-HWPX output through the existing extension-based CLI; it adds no format option,
-keeps IR 0.4 and the existing HWP/template defaults, and is absent from the
-published v0.4.3 binaries. hwp2pdf remains HWP-input-only; do not claim HWPX-to-PDF
-support. HWPX output must be saved, reopened and pass final strict validation before
+input are deferred. Since v0.4.4, HWPX templates and HWPX output are supported
+through the existing extension-based CLI; this adds no format option and keeps
+IR 0.4 and the existing HWP/template defaults. hwp2pdf remains HWP-input-only;
+do not claim HWPX-to-PDF support. HWPX output must be saved, reopened and pass final strict validation before
 replacing an existing output.
 
 ## Tables

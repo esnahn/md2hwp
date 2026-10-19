@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <Version>0.4.3</Version>
+    <Version>0.4.4</Version>
     <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
     <Copyright>Copyright (C) 2026 Euisoon Ahn</Copyright>
     <TargetFramework>net10.0-windows</TargetFramework>

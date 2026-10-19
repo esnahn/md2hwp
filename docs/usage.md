@@ -93,11 +93,11 @@ Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔�
 .\md2hwp-backend.exe --version
 ```
 
-v0.4.3의 첫 명령 출력은 다음과 같습니다.
+v0.4.4의 첫 명령 출력은 다음과 같습니다.
 
 ```text
-md2hwp 0.4.3
-md2hwp-backend 0.4.3
+md2hwp 0.4.4
+md2hwp-backend 0.4.4
 ```
 
 `--worker`를 생략하면 md2hwp.exe 옆의 백엔드를 확인합니다. `--worker`와 `--dotnet`은
@@ -121,11 +121,11 @@ md2hwp-backend 0.4.3
 `md2hwp-backend.exe`를 찾습니다. 옵션 방식의 이미지 기준 폴더는 작업 폴더입니다.
 현재 IR `0.4`, 정규화 규칙과 스키마는 실행 파일에 포함됩니다.
 
-개발 버전에서는 `--template`에 `.hwp` 또는 `.hwpx` 템플릿을 지정할 수 있습니다.
-출력과 템플릿 확장자는 서로 독립적으로 지정합니다. 기본값은 계속 `template.hwp`와
-`원고.output.hwp`이며 새 `--format` 옵션은 없습니다. HWPX 템플릿·출력 기능은
-미출시 개발 기능으로, 공개된 v0.4.3 실행 파일에는 포함되지 않습니다.
+v0.4.4부터 `--template`에 `.hwp` 또는 `.hwpx` 템플릿을 지정할 수 있습니다.
+출력과 템플릿 확장자로 네이티브 형식을 각각 선택합니다. 기본값은 계속 `template.hwp`와
+`원고.output.hwp`이며 새 `--format` 옵션은 없습니다.
 원고 입력은 Markdown 또는 Pandoc JSON이며, HWPX 파일을 원고로 직접 읽지는 않습니다.
+`hwp2pdf.exe`도 HWP 입력만 지원합니다.
 상세한 예와 범위는 [HWPX 안내](hwpx.md)를 참고하십시오.
 
 입력 IR과 템플릿의 IR 버전은 프로그램의 현재 IR 버전과 정확히 같아야 합니다.
@@ -152,6 +152,6 @@ IR 0.2 입력은 원고에서 다시 생성하고, 기존 템플릿은 새 선�
 
 `validate-template`은 한글로 템플릿 XML을 한 번 읽어 IR 버전, 선언, 슬롯과 원형 구조를 검사합니다.
 경로 생략 시 해당 EXE 옆 `template.hwp`를 사용합니다. 원본은 저장하지 않으며 첫 오류에서 실패합니다.
-개발 버전은 명시한 `.hwpx` 템플릿도 검사합니다.
+명시한 `.hwpx` 템플릿도 검사합니다.
 결과의 `RequiredMetadata`는 원고에 필요한 YAML 키이고, `RequiresRecognizedDate`는 인식 가능한 `date`가 필요한지를 뜻합니다.
 Rust 명령에는 `--worker`와 `--dotnet`도 지정할 수 있습니다.
