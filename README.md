@@ -1,6 +1,8 @@
 # md2hwp v0.4.3
 
-Markdown 원고를 한글(HWP) 템플릿의 서식에 맞춰 변환합니다. Windows x64·한글이 필요하며, 현재 IR 버전은 0.4입니다. HWPX·RST 직접 입력은 지원하지 않습니다.
+Markdown 원고를 한글 템플릿의 서식에 맞춰 변환합니다. Windows x64·한글이 필요하며, 현재 IR 버전은 0.4입니다. 원고는 Markdown 또는 Pandoc JSON으로 입력하며, HWPX·RST 원고 직접 입력은 지원하지 않습니다.
+
+> **미출시 개발 기능:** HWPX 템플릿과 HWPX 출력은 개발 버전에서 지원합니다. 공개된 v0.4.3 실행 파일에는 포함되지 않습니다. [HWPX 사용 범위](docs/hwpx.md)를 참고하십시오.
 
 배포 파일은 [v0.4.3 릴리스](https://github.com/esnahn/md2hwp/releases/tag/v0.4.3)에서 확인할 수 있습니다.
 변경 사항은 [릴리스 노트](docs/release-v0.4.3.md)를 참고하십시오.
@@ -159,16 +161,16 @@ EMF는 원본 파일을 내장하고 물리적 프레임의 비율로 크기를 
 
 박스·표·그림의 템플릿 범위에서 샘플 개체 앞뒤에 빈 문단을 넣으면, 생성된 개체의 앞뒤에 서식과 쪽·단 나눔을 보존하여 복제합니다. [범위 작성 규칙](docs/templates.md)을 참고하십시오.
 
-템플릿만 검사하려면 `md2hwp validate-template [template.hwp]`를 실행합니다. 경로를 생략하면 EXE 옆의 `template.hwp`를 검사하며, `--template`, `--worker`, `--dotnet`도 지정할 수 있습니다. 백엔드에서도 `md2hwp-backend validate-template [template.hwp]`로 실행할 수 있습니다.
+템플릿만 검사하려면 `md2hwp validate-template [template.hwp]`를 실행합니다. 경로를 생략하면 EXE 옆의 `template.hwp`를 검사하며, `--template`, `--worker`, `--dotnet`도 지정할 수 있습니다. 개발 버전은 명시한 `.hwpx` 템플릿도 검사합니다. 백엔드에서도 `md2hwp-backend validate-template [template.hwp]`로 실행할 수 있습니다.
 
 한글과 등록된 보안 모듈이 필요하며, 실행 전 한글 문서를 닫아야 합니다. 원고·Pandoc 없이 템플릿 XML을 한 번 읽어 IR 버전, 선언, 슬롯과 원형 구조를 검사합니다. 원본은 저장하지 않으며 첫 오류에서 실패합니다. 성공 결과의 `RequiredMetadata`는 원고 YAML에 필요한 키입니다. `RequiresRecognizedDate: true`이면 `date-meta` 생성을 위해 인식 가능한 `date`도 필요합니다. 실제 원고 값, 표 폭, 제목 넘침 등 문서 생성·시각 검증이 필요한 조건은 이 검사만으로 보장하지 않습니다.
 
-개발할 때 기본 서식은 `templates/template.hwp`에서 편집합니다. 빌드는 `target/debug`·`target/release`의 템플릿을 매번 이 파일로 교체합니다. 실행용 배포본에서는 EXE 옆의 `template.hwp`를 사용합니다. 새 파일은 `md2hwp init-template 새템플릿.hwp`로 만듭니다. 이전 IR은 다시 생성하고, 기존 사용자 템플릿의 새 선언은 직접 반영하거나 별도 파일로 재생성해야 합니다.
+개발할 때 기본 서식은 `templates/template.hwp`에서 편집합니다. 빌드는 `target/debug`·`target/release`의 템플릿을 매번 이 파일로 교체합니다. 실행용 배포본에서는 EXE 옆의 `template.hwp`를 사용합니다. 새 파일은 `md2hwp init-template 새템플릿.hwp`로 만들며, 개발 버전에서는 `.hwpx` 확장자로 HWPX 템플릿도 만들 수 있습니다. 이전 IR은 다시 생성하고, 기존 사용자 템플릿의 새 선언은 직접 반영하거나 별도 파일로 재생성해야 합니다. HWPX 템플릿·출력의 범위와 실행 예는 [HWPX 안내](docs/hwpx.md)에 있습니다.
 
 Debug와 Release는 XML 구성 방식으로 생성합니다. 개발용 성능 비교는
 [빌드·검증 안내](docs/development.md#생성-방식-비교)를 참고하십시오.
 
-- [설치·실행 옵션](docs/usage.md) · [템플릿 편집·태그](docs/templates.md)
+- [설치·실행 옵션](docs/usage.md) · [템플릿 편집·태그](docs/templates.md) · [HWPX 템플릿·출력](docs/hwpx.md)
 - [표](docs/tables.md) · [번호 상호참조](docs/cross-references.md) · [메타데이터](docs/yaml-variables.md) · [날짜](docs/date-metadata.md)
 - [빌드·검증](docs/development.md) · [통합 예제](examples/all-features/) · [v0.4.3 릴리스 노트](docs/release-v0.4.3.md)
 

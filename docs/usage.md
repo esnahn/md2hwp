@@ -61,19 +61,22 @@ IR 0.4의 YAML 메타데이터와 템플릿 태그는 [메타데이터 문서](y
 .\md2hwp.exe 원고.md
 .\md2hwp.exe 원고.md 결과.hwp
 .\md2hwp.exe 원고.md --output 결과.hwp --template 내템플릿.hwp
+.\md2hwp.exe 원고.md --output 결과.hwpx --template 내템플릿.hwpx
 .\md2hwp-backend.exe 원고.ir.json
 .\md2hwp-backend.exe 원고.ir.json --output 결과.hwp --template 내템플릿.hwp
+.\md2hwp-backend.exe 원고.ir.json --output 결과.hwpx --template 내템플릿.hwpx
 ```
 
 첫 명령은 원고 옆에 `원고.ir.json`, `원고.output.hwp`를 생성합니다.
-백엔드는 기존 IR에서 HWP만 생성합니다. 두 번째 인자는 선택적인 HWP 출력 경로입니다.
-검증된 IR은 교체하며, HWP는 생성·재열기 검증 성공 후 기존 결과를 교체합니다.
+출력 경로의 `.hwp` 또는 `.hwpx` 확장자가 저장 형식을 정합니다. 백엔드는 기존 IR에서
+지정한 형식의 문서를 생성합니다. 두 번째 인자는 선택적인 출력 경로입니다.
+검증된 IR은 교체하며, 출력 문서는 생성·재열기 검증 성공 후 기존 결과를 교체합니다.
 서식 보존 검사는 저장 중 바뀔 수 있는 문단·글자 모양의 내부 번호 대신 실제 설정을 비교합니다.
 한글이 병합하는 동일 서식의 텍스트 조각과 명세 기본값 `TextFlow="BothSides"`의 생략도
 동등하게 비교합니다. 실제 문자·공백·줄바꿈·탭·서식·개체 크기 변경은 계속 오류로 처리합니다.
 작업 문서의 박스 원형 보존 검사에도 같은 비교를 적용합니다. 한글이 다시 계산하는 박스 표의
 양수 높이는 비교에서 제외하며, 너비·셀 높이·위치·내용·서식은 계속 검증합니다.
-실패한 HWP 생성은 이전 HWP를 보존합니다. 원고와 템플릿은 덮어쓰지 않습니다.
+문서 생성이 실패하면 이전 결과를 보존합니다. 원고와 템플릿은 덮어쓰지 않습니다.
 간편 실행의 이미지 경로는 원고/IR 폴더 안에서 해석합니다.
 간편 실행은 출력 경로를 위치 인자 또는 `--output`으로 받습니다. 두 방식을 중복 지정할 수는 없습니다.
 Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔드는 `--template`을 받습니다.
@@ -118,6 +121,13 @@ md2hwp-backend 0.4.3
 `md2hwp-backend.exe`를 찾습니다. 옵션 방식의 이미지 기준 폴더는 작업 폴더입니다.
 현재 IR `0.4`, 정규화 규칙과 스키마는 실행 파일에 포함됩니다.
 
+개발 버전에서는 `--template`에 `.hwp` 또는 `.hwpx` 템플릿을 지정할 수 있습니다.
+출력과 템플릿 확장자는 서로 독립적으로 지정합니다. 기본값은 계속 `template.hwp`와
+`원고.output.hwp`이며 새 `--format` 옵션은 없습니다. HWPX 템플릿·출력 기능은
+미출시 개발 기능으로, 공개된 v0.4.3 실행 파일에는 포함되지 않습니다.
+원고 입력은 Markdown 또는 Pandoc JSON이며, HWPX 파일을 원고로 직접 읽지는 않습니다.
+상세한 예와 범위는 [HWPX 안내](hwpx.md)를 참고하십시오.
+
 입력 IR과 템플릿의 IR 버전은 프로그램의 현재 IR 버전과 정확히 같아야 합니다.
 변환 규칙과 템플릿에는 별도의 계약 버전을 두지 않습니다.
 
@@ -133,6 +143,7 @@ IR 0.2 입력은 원고에서 다시 생성하고, 기존 템플릿은 새 선�
 .\md2hwp.exe validate 원고.md --require-meta title
 .\md2hwp.exe validate-template
 .\md2hwp.exe validate-template 내템플릿.hwp
+.\md2hwp.exe validate-template 내템플릿.hwpx
 .\md2hwp-backend.exe validate-template --template 내템플릿.hwp
 ```
 
@@ -141,5 +152,6 @@ IR 0.2 입력은 원고에서 다시 생성하고, 기존 템플릿은 새 선�
 
 `validate-template`은 한글로 템플릿 XML을 한 번 읽어 IR 버전, 선언, 슬롯과 원형 구조를 검사합니다.
 경로 생략 시 해당 EXE 옆 `template.hwp`를 사용합니다. 원본은 저장하지 않으며 첫 오류에서 실패합니다.
+개발 버전은 명시한 `.hwpx` 템플릿도 검사합니다.
 결과의 `RequiredMetadata`는 원고에 필요한 YAML 키이고, `RequiresRecognizedDate`는 인식 가능한 `date`가 필요한지를 뜻합니다.
 Rust 명령에는 `--worker`와 `--dotnet`도 지정할 수 있습니다.

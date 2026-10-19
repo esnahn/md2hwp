@@ -159,7 +159,13 @@ begin/end FieldId and unique field InstId; do not require global FieldId uniquen
 Coalesce adjacent identical-format runs before HWPML import. Heading references
 require no native outline settings; do not call GetHeadingString for references.
 Page and other reference roles remain reserved and unsupported.
-HWPX and RST input are deferred.
+Manuscript input remains Markdown or Pandoc JSON; direct HWPX and RST manuscript
+input are deferred. The unreleased development feature supports HWPX templates and
+HWPX output through the existing extension-based CLI; it adds no format option,
+keeps IR 0.4 and the existing HWP/template defaults, and is absent from the
+published v0.4.3 binaries. hwp2pdf remains HWP-input-only; do not claim HWPX-to-PDF
+support. HWPX output must be saved, reopened and pass final strict validation before
+replacing an existing output.
 
 ## Tables
 
@@ -323,6 +329,17 @@ composed expected XML. Do not weaken structural or stacking-order comparisons to
 make the faster path pass. Performance and Debug/Release equivalence evidence is
 recorded in docs/performance/2026-10-09-direct-xml.md; current three-way generation
 evidence and profiles are in docs/performance/2026-10-09-generation-modes.md.
+
+HWP/HWPX template and output extensions select native Open/SaveAs formats; defaults
+remain template.hwp and source.output.hwp. Normalize an HWPX template into a
+disposable HWP working file only after comparing source/reopened structure, styles
+and embedded bytes. Save final HWPX separately, reopen and verify against the same
+independent expected XML before publication. Only final HWPX verification may
+canonicalize RENDERINGINFO matrix coefficients through the observed Hancom 2020
+float32 storage and five-decimal HWPML export representation. Do not apply this
+normalization to HWP checks or unrelated geometry, content, fields or formats.
+HWPX may reorder/deduplicate embedded image IDs: compare references by exact
+decoded resource content, preserving surrounding structure and final byte checks.
 
 Use documented COM only, not UI clicks/keystrokes. Process one document at a time.
 Never modify source templates or manuscripts. Replace generated HWP only after
