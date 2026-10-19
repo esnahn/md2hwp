@@ -8,7 +8,7 @@ internal sealed record TemplateValidationResult(string Template, string IrVersio
 
 internal static class TemplateValidation
 {
-    internal const string Usage = "usage: md2hwp-backend validate-template [[--template] <template.hwp>]";
+    internal const string Usage = "usage: md2hwp-backend validate-template [[--template] <template.hwp|template.hwpx>]";
 
     internal static string Parse(string[] args) => args switch
     {

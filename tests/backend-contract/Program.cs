@@ -561,3 +561,4 @@ FigureDimensionsTests.Run();
 EmfDimensionsTests.Run();
 
 PdfExportTests.Run();
+NativeDocumentFormatTests.Run();

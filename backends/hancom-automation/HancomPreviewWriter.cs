@@ -200,7 +200,7 @@ internal static partial class HancomPreviewWriter
 
     private static void Open(dynamic hwp, string path, bool visible)
     {
-        if (!(bool)hwp.Open(path, "HWP", OpenOptions))
+        if (!(bool)hwp.Open(path, NativeDocumentFormat.FromPath(path), OpenOptions))
         {
             throw new InvalidOperationException($"Hancom could not open: {path}");
         }
@@ -218,10 +218,7 @@ internal static partial class HancomPreviewWriter
     private static string ValidateNewHwpPath(string path, string label)
     {
         var fullPath = Path.GetFullPath(path);
-        if (!string.Equals(Path.GetExtension(fullPath), ".hwp", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new ArgumentException($"{label} must preserve the HWP format: {fullPath}");
-        }
+        _ = NativeDocumentFormat.FromPath(fullPath);
         if (File.Exists(fullPath) || Directory.Exists(fullPath))
         {
             throw new IOException($"{label} path already exists: {fullPath}");
@@ -1420,12 +1417,9 @@ internal static partial class HancomPreviewWriter
         var fullPath = Path.GetFullPath(path);
         if (!File.Exists(fullPath))
         {
-            throw new FileNotFoundException($"Missing HWP template: {fullPath}. Use --template to select another file.", fullPath);
+            throw new FileNotFoundException($"Missing HWP/HWPX template: {fullPath}. Use --template to select another file.", fullPath);
         }
-        if (!string.Equals(Path.GetExtension(fullPath), ".hwp", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new ArgumentException("The investigation preview currently supports HWP input only.");
-        }
+        _ = NativeDocumentFormat.FromPath(fullPath);
         return fullPath;
     }
 

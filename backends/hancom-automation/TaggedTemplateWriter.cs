@@ -25,15 +25,30 @@ internal static partial class HancomPreviewWriter
         EnsureInteractiveContext(); EnsureNoExistingHwpProcess();
         var module = SecurityModuleRegistration.ReadAndValidate(repositoryRoot);
         var temporary = Path.Combine(Path.GetDirectoryName(output)!, $".tagged-render-{Guid.NewGuid():N}.hwp");
+        var publication = NativeDocumentFormat.FromPath(output) == "HWP"
+            ? temporary : NativeDocumentFormat.TemporaryPath(output, "tagged-render");
         try
         {
-            File.Copy(source, temporary, false);
+            if (NativeDocumentFormat.FromPath(source) == "HWP") File.Copy(source, temporary, false);
             WithHwp(module, hwp =>
             {
 #if DEBUG
                 var prepareTiming = RenderProfile.Measure("phase.prepare");
 #endif
-                Open(hwp, temporary, visible);
+                // Always work in native HWP, even when the source template is HWPX.
+                // The source is opened without modification and immediately saved
+                // to a disposable working document before rendering begins.
+                if (NativeDocumentFormat.FromPath(source) == "HWPX")
+                {
+                    Open(hwp, source, visible);
+                    var originalTemplate = HwpMarkup.ReadDocument((object)hwp);
+                    if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
+                        throw new InvalidOperationException("Could not create the working template copy.");
+                    CloseDocument(hwp);
+                    Open(hwp, temporary, visible);
+                    RequireFigureDocument(originalTemplate, HwpMarkup.ReadDocument((object)hwp));
+                }
+                else Open(hwp, temporary, visible);
                 var preparedMetadata = TemplateMetadata.Prepare(HwpMarkup.ReadDocument((object)hwp), metadata);
                 XDocument document = TemplateHeadingNumbers.Prepare(TaggedTemplateBinding.PreserveBeginSectionSettings(preparedMetadata.Document));
                 var footnotes = NativeFootnotes.Bind(document);
@@ -259,17 +274,32 @@ internal static partial class HancomPreviewWriter
                 var nativeSaved = HwpMarkup.ReadDocument((object)hwp);
                 RequireFigureDocument(attached, nativeSaved, headings.Layout, reportLayout: true, boxes: boxes.Layout, footnotes: footnotes, references: references.Layout, tables: tables.Layout);
                 NativeTablePagination.VerifyReopened((object)hwp, tableStarts);
+                if (publication != temporary)
+                {
+                    if (!IndicatesSuccess(hwp.SaveAs(publication, "HWPX", "")))
+                        throw new InvalidOperationException("Could not save the rendered HWPX document.");
+                    CloseDocument(hwp); Open(hwp, publication, visible);
+                    var hwpxSaved = HwpMarkup.ReadDocument((object)hwp);
+                    RequireFigureDocument(attached, hwpxSaved, headings.Layout, reportLayout: true,
+                        boxes: boxes.Layout, footnotes: footnotes, references: references.Layout, tables: tables.Layout,
+                        nativeHwpxSerialization: true);
+                    NativeTablePagination.VerifyReopened((object)hwp, tableStarts);
+                }
                 return true;
             });
             if (HashFile(source) != hash) throw new InvalidOperationException("Source template changed.");
-            PublishRenderedOutput(temporary, output);
+            PublishRenderedOutput(publication, output);
             timing?.Complete();
 #if DEBUG
             profileTiming?.Complete();
 #endif
             return new(output, IrContract.Version, true, true);
         }
-        finally { if (File.Exists(temporary)) File.Delete(temporary); }
+        finally
+        {
+            if (File.Exists(temporary)) File.Delete(temporary);
+            if (publication != temporary && File.Exists(publication)) File.Delete(publication);
+        }
     }
 
     private static XDocument CreateDirectPictureResources(dynamic hwp, XDocument template,
@@ -360,10 +390,17 @@ internal static partial class HancomPreviewWriter
         RequireFigureDocument(document, HwpMarkup.ReadDocument((object)hwp), headings, boxes: boxes, footnotes: footnotes, tables: tables);
     }
 
-    private static void RequireFigureDocument(XDocument expected, XDocument actual, TemplateHeadingBlocks? headings = null, bool reportLayout = false, TemplateBoxParagraphs? boxes = null, NativeFootnotes? footnotes = null, NativeCrossReferences? references = null, TemplateTables? tables = null)
+    private static void RequireFigureDocument(XDocument expected, XDocument actual, TemplateHeadingBlocks? headings = null, bool reportLayout = false, TemplateBoxParagraphs? boxes = null, NativeFootnotes? footnotes = null, NativeCrossReferences? references = null, TemplateTables? tables = null, bool nativeHwpxSerialization = false)
     {
         expected = new XDocument(expected);
         actual = new XDocument(actual);
+        if (nativeHwpxSerialization)
+        {
+            NormalizeHwpxMatrixPrecisionInPlace(expected);
+            NormalizeHwpxMatrixPrecisionInPlace(actual);
+            NormalizeHwpxImageIdentitiesInPlace(expected);
+            NormalizeHwpxImageIdentitiesInPlace(actual);
+        }
         headings?.NormalizeTitleLayout(expected, actual, reportLayout);
         boxes?.NormalizeLayout(expected, actual);
         tables?.NormalizeLayout(expected, actual);
@@ -391,6 +428,75 @@ internal static partial class HancomPreviewWriter
             if (saved is null || !Convert.FromBase64String(original.Value).SequenceEqual(Convert.FromBase64String(saved.Value)))
                 throw new InvalidOperationException($"Native caption import changed embedded image {id}.");
         }
+    }
+
+    internal static XDocument NormalizeHwpxImageIdentities(XDocument document)
+    {
+        var copy = new XDocument(document);
+        NormalizeHwpxImageIdentitiesInPlace(copy);
+        return copy;
+    }
+
+    private static void NormalizeHwpxImageIdentitiesInPlace(XDocument document)
+    {
+        // HWPX reorders/deduplicates embedded resources. Compare the resource
+        // each image actually references, retaining exact decoded-byte checks.
+        var resources = document.Descendants("BINDATA").ToDictionary(
+            data => (string?)data.Attribute("Id") ?? throw new InvalidOperationException("Missing embedded resource identity."),
+            data => data, StringComparer.Ordinal);
+        var identities = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var image in document.Descendants().Where(element => element.Name.LocalName is "IMAGE" or "IMAGEBRUSH"))
+        {
+            var reference = image.Attribute("BinItem") ?? throw new InvalidOperationException("Missing embedded image reference.");
+            if (!resources.TryGetValue(reference.Value, out var resource))
+                throw new InvalidOperationException("Missing embedded image data.");
+            if (!identities.ContainsKey(reference.Value))
+                identities.Add(reference.Value, "image-" + Convert.ToHexString(
+                    System.Security.Cryptography.SHA256.HashData(Convert.FromBase64String(resource.Value))));
+        }
+        foreach (var reference in document.Descendants().Attributes("BinItem"))
+            if (identities.TryGetValue(reference.Value, out var identity)) reference.Value = identity;
+        foreach (var item in document.Descendants("BINITEM"))
+            if (item.Attribute("BinData") is { } reference && identities.TryGetValue(reference.Value, out var identity))
+                reference.Value = identity;
+        foreach (var (original, identity) in identities) resources[original].SetAttributeValue("Id", identity);
+        foreach (var group in identities.Values.Distinct(StringComparer.Ordinal))
+        {
+            var copies = resources.Values.Where(data => (string?)data.Attribute("Id") == group).ToArray();
+            var bytes = Convert.FromBase64String(copies[0].Value);
+            foreach (var duplicate in copies.Skip(1))
+            {
+                if (!bytes.SequenceEqual(Convert.FromBase64String(duplicate.Value)))
+                    throw new InvalidOperationException("Conflicting embedded resource identities.");
+                duplicate.Remove();
+            }
+        }
+    }
+
+    internal static XDocument NormalizeHwpxMatrixPrecision(XDocument document)
+    {
+        var copy = new XDocument(document);
+        NormalizeHwpxMatrixPrecisionInPlace(copy);
+        return copy;
+    }
+
+    private static void NormalizeHwpxMatrixPrecisionInPlace(XDocument document)
+    {
+        // Hancom 2020 serializes these HWPX coefficients as float32. Its HWPML
+        // export then prints five decimal places. Compare that exact storage /
+        // export representation only for the final HWPX serialization check.
+        foreach (var matrix in document.Descendants("RENDERINGINFO").Elements()
+                     .Where(element => element.Name.LocalName is "TRANSMATRIX" or "SCAMATRIX" or "ROTMATRIX"))
+            for (var index = 1; index <= 6; index++)
+            {
+                var coefficient = matrix.Attribute("E" + index);
+                if (coefficient is null) continue;
+                if (!float.TryParse(coefficient.Value, System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out var value) || !float.IsFinite(value))
+                    throw new InvalidOperationException("HWPX transform coefficients must be finite numbers.");
+                coefficient.Value = Math.Round((double)value, 5, MidpointRounding.ToEven)
+                    .ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture);
+            }
     }
 
     internal static XDocument NormalizeFigureMatrices(XDocument document)
@@ -424,8 +530,7 @@ internal static partial class HancomPreviewWriter
     internal static string ValidateRenderedOutput(string outputPath, params string[] protectedPaths)
     {
         var output = Path.GetFullPath(outputPath);
-        if (!string.Equals(Path.GetExtension(output), ".hwp", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("Rendered document must preserve HWP format.");
+        _ = NativeDocumentFormat.FromPath(output);
         if (Directory.Exists(output)) throw new IOException($"Output is a directory: {output}");
         static string Identity(string path)
         {

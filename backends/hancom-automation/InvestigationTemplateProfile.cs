@@ -138,16 +138,31 @@ internal sealed class InvestigationTemplateProfile
     internal static InvestigationTemplateProfile FromTaggedTemplate(
         string templatePath, IReadOnlyList<ProfileStyle> styles, string reset,
         double width, int maxDepth, int indent, ProfileCaptionSelector caption,
-        TemplateSource boxSource, TemplateSource figureSource, TemplateListPrototype bullet, TemplateListPrototype ordered) =>
-        new("ir-" + IrContract.Version, templatePath,
-            Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(templatePath))),
-            new FileInfo(templatePath).Length, styles, reset,
+        TemplateSource boxSource, TemplateSource figureSource, TemplateListPrototype bullet, TemplateListPrototype ordered)
+    {
+        var fingerprint = ReadTemplateFingerprint(templatePath);
+        return new("ir-" + IrContract.Version, templatePath,
+            fingerprint.Sha256, fingerprint.Bytes, styles, reset,
             new(width), new(maxDepth, indent) { Bullet = bullet, Ordered = ordered },
             new("unique_text_marker", "{{md2hwp:content}}"),
             new("code.anchor", "code", 1, "code.source", 1,
                 "{{md2hwp:slot:code.content}}", boxSource.PrototypeText),
             caption)
         { PreserveParagraphLineBreaks = true, BoxSource = boxSource, FigureSource = figureSource };
+    }
+
+    internal static (string Sha256, long Bytes) ReadTemplateFingerprint(string templatePath)
+    {
+        // A reopened HWPX may retain Hancom's write handle even after SaveAs
+        // completes. Read without taking exclusive ownership or changing bytes.
+        using var stream = new FileStream(templatePath, FileMode.Open, FileAccess.Read,
+            FileShare.ReadWrite | FileShare.Delete);
+        var length = stream.Length;
+        var hash = Convert.ToHexString(SHA256.HashData(stream));
+        if (stream.Length != length)
+            throw new IOException("Template length changed while its fingerprint was read.");
+        return (hash, length);
+    }
 
     public void ValidateTemplate(string templatePath)
     {
@@ -156,17 +171,14 @@ internal sealed class InvestigationTemplateProfile
         {
             throw new FileNotFoundException("Template file does not exist.", templatePath);
         }
-        if (!string.Equals(file.Extension, ".hwp", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidDataException($"Profile {Id} requires an HWP template: {templatePath}");
-        }
-        if (file.Length != TemplateBytes)
+        _ = NativeDocumentFormat.FromPath(templatePath);
+        var fingerprint = ReadTemplateFingerprint(templatePath);
+        if (fingerprint.Bytes != TemplateBytes)
         {
             throw new InvalidDataException(
-                $"Template byte length does not match profile {Id}: expected {TemplateBytes}, got {file.Length}.");
+                $"Template byte length does not match profile {Id}: expected {TemplateBytes}, got {fingerprint.Bytes}.");
         }
-        using var stream = file.OpenRead();
-        var hash = Convert.ToHexString(SHA256.HashData(stream));
+        var hash = fingerprint.Sha256;
         if (!string.Equals(hash, TemplateSha256, StringComparison.Ordinal))
         {
             throw new InvalidDataException(

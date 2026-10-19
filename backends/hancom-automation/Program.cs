@@ -41,7 +41,7 @@ internal static class Program
                     1 => "template.hwp",
                     2 when !args[1].StartsWith("--", StringComparison.Ordinal) => args[1],
                     3 when args[1] == "--output" && !args[2].StartsWith("--", StringComparison.Ordinal) => args[2],
-                    _ => throw new ArgumentException("usage: md2hwp-backend init-template [[--output] <template.hwp>]"),
+                    _ => throw new ArgumentException("usage: md2hwp-backend init-template [[--output] <template.hwp|template.hwpx>]"),
                 };
                 Console.WriteLine(JsonSerializer.Serialize(HancomPreviewWriter.CreateDefaultTemplate(output), JsonOutput.Options));
                 return 0;
@@ -169,11 +169,12 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
         + LicenseNotice.Text;
     private const string BaseUsage = """
         usage:
-          md2hwp-backend init-template [[--output] <template.hwp>]
-          md2hwp-backend validate-template [[--template] <template.hwp>]
-          md2hwp-backend <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--visible] [--verbose]
-          md2hwp-backend ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--visible] [--verbose]
+          md2hwp-backend init-template [[--output] <template.hwp|template.hwpx>]
+          md2hwp-backend validate-template [[--template] <template.hwp|template.hwpx>]
+          md2hwp-backend <source.ir.json> [[--output] <source.output.hwp|source.output.hwpx>] [--template <template.hwp|template.hwpx>] [--visible] [--verbose]
+          md2hwp-backend ir2hwp --ir <source.ir.json> --output <source.output.hwp|source.output.hwpx> [--template <template.hwp|template.hwpx>] [--visible] [--verbose]
           md2hwp-backend --version
         Default template: template.hwp beside the executable.
+        Output and template formats follow their .hwp or .hwpx extensions. Default output: HWP.
         """;
 }

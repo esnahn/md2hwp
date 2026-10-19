@@ -13,7 +13,7 @@ internal static partial class HancomPreviewWriter
         EnsureInteractiveContext();
         EnsureNoExistingHwpProcess();
         var module = SecurityModuleRegistration.ReadAndValidate(Directory.GetCurrentDirectory());
-        var temporary = Path.Combine(Path.GetDirectoryName(output)!, $".md2hwp-template-{Guid.NewGuid():N}.hwp");
+        var temporary = NativeDocumentFormat.TemporaryPath(output, "md2hwp-template");
         try
         {
             WithHwp(module, hwp =>
@@ -126,7 +126,7 @@ internal static partial class HancomPreviewWriter
                 imported = hwp.SetTextFile(xml, "HWPML2X", "");
                 if (imported is not int applied || applied != 1)
                     throw new InvalidOperationException("Could not import the adjusted source styles.");
-                if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
+                if (!IndicatesSuccess(hwp.SaveAs(temporary, NativeDocumentFormat.FromPath(temporary), "")))
                     throw new InvalidOperationException("Could not save the default template.");
                 CloseDocument(hwp);
                 Open(hwp, temporary, false);
