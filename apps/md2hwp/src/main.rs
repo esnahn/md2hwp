@@ -367,6 +367,9 @@ fn manuscript_options(arguments: &[std::ffi::OsString]) -> Result<ManuscriptOpti
                 .filter(|v| !v.to_string_lossy().starts_with("--"))
                 .ok_or_else(usage)?;
             let path = std::path::absolute(Path::new(value)).map_err(|e| e.to_string())?;
+            if option == Some("--template") && !hancom::has_document_extension(&path) {
+                return Err("Template must have .hwp or .hwpx extension".into());
+            }
             if option == Some("--output") {
                 if output.replace(path).is_some() {
                     return Err("Duplicate output argument".into());
@@ -386,11 +389,8 @@ fn manuscript_options(arguments: &[std::ffi::OsString]) -> Result<ManuscriptOpti
         }
     }
     let output = output.unwrap_or_else(|| input.with_extension("output.hwp"));
-    if !output
-        .extension()
-        .is_some_and(|e| e.eq_ignore_ascii_case("hwp"))
-    {
-        return Err("Output must have .hwp extension".into());
+    if !hancom::has_document_extension(&output) {
+        return Err("Output must have .hwp or .hwpx extension".into());
     }
     Ok(ManuscriptOptions {
         input,
@@ -661,7 +661,7 @@ fn default_pandoc_path() -> PathBuf {
 }
 
 fn usage() -> String {
-    let base = "usage: md2hwp <source.md> [[--output] <source.output.hwp>] [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp md2ir [--input] <source.md|source.json> [[--output] <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp validate <source.md> [--pandoc <pandoc.exe>] [--require-meta <key>]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp validate-template [[--template] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp --version [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]";
+    let base = "usage: md2hwp <source.md> [[--output] <source.output.hwp|source.output.hwpx>] [--template <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp md2ir [--input] <source.md|source.json> [[--output] <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp|source.output.hwpx> [--template <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp validate <source.md> [--pandoc <pandoc.exe>] [--require-meta <key>]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp validate-template [[--template] <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp --version [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]";
     #[cfg(debug_assertions)]
     {
         base.replace("[--verbose]", "[--verbose] [--legacy-com]")
@@ -762,23 +762,68 @@ mod tests {
     }
 
     #[test]
+    fn shorthand_accepts_hwpx_outputs_and_templates() {
+        for extension in ["hwpx", "HWPX"] {
+            let output = format!("출력/result.{extension}");
+            let template = format!("양식/template.{extension}");
+            for arguments in [
+                vec![
+                    "source.md",
+                    output.as_str(),
+                    "--template",
+                    template.as_str(),
+                ],
+                vec![
+                    "source.md",
+                    "--output",
+                    output.as_str(),
+                    "--template",
+                    template.as_str(),
+                ],
+            ] {
+                let options =
+                    manuscript_options(&arguments.into_iter().map(Into::into).collect::<Vec<_>>())
+                        .unwrap();
+                assert_eq!(options.output, std::path::absolute(&output).unwrap());
+                assert_eq!(
+                    options.protected,
+                    vec![std::path::absolute(&template).unwrap()]
+                );
+                assert_eq!(options.ir, std::path::absolute("source.ir.json").unwrap());
+            }
+        }
+        for arguments in [
+            vec!["source.md", "result.hwpx.zip"],
+            vec!["source.md", "--output", "result"],
+            vec!["source.md", "--template", "template.xml"],
+        ] {
+            assert!(
+                manuscript_options(&arguments.into_iter().map(Into::into).collect::<Vec<_>>())
+                    .is_err()
+            );
+        }
+    }
+
+    #[test]
     fn shorthand_protects_explicit_template_before_writing_ir() {
-        let root = tempfile::tempdir().unwrap();
-        let source = root.path().join("source.md");
-        let template = root.path().join("custom.hwp");
-        fs::write(&source, "manuscript").unwrap();
-        fs::write(&template, "preserve template").unwrap();
-        assert!(
-            convert_manuscript(vec![
-                source.clone().into_os_string(),
-                template.clone().into_os_string(),
-                "--template".into(),
-                template.clone().into_os_string()
-            ])
-            .is_err()
-        );
-        assert_eq!(fs::read_to_string(template).unwrap(), "preserve template");
-        assert!(!source.with_extension("ir.json").exists());
+        for extension in ["hwp", "hwpx", "HWPX"] {
+            let root = tempfile::tempdir().unwrap();
+            let source = root.path().join("source.md");
+            let template = root.path().join(format!("custom.{extension}"));
+            fs::write(&source, "manuscript").unwrap();
+            fs::write(&template, "preserve template").unwrap();
+            assert!(
+                convert_manuscript(vec![
+                    source.clone().into_os_string(),
+                    template.clone().into_os_string(),
+                    "--template".into(),
+                    template.clone().into_os_string()
+                ])
+                .is_err()
+            );
+            assert_eq!(fs::read_to_string(template).unwrap(), "preserve template");
+            assert!(!source.with_extension("ir.json").exists());
+        }
     }
 
     #[test]

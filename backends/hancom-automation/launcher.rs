@@ -1,6 +1,12 @@
 //! Repository investigation launcher; the C# worker remains a separate process.
 use std::{env, ffi::OsString, fs, path::PathBuf, process::Command};
 
+pub(crate) fn has_document_extension(path: &std::path::Path) -> bool {
+    path.extension().is_some_and(|extension| {
+        extension.eq_ignore_ascii_case("hwp") || extension.eq_ignore_ascii_case("hwpx")
+    })
+}
+
 const INSTALL: &str = ".NET 10 런타임(x64)이 필요합니다.\n공식 페이지에서 콘솔 앱용 .NET Runtime → Windows → x64를 설치한 뒤 다시 실행하세요.\nhttps://dotnet.microsoft.com/ko-kr/download/dotnet/10.0\nSDK는 필요하지 않습니다. 설치 위치가 별도라면 --dotnet <dotnet.exe>를 지정하세요.";
 
 fn compatible_runtime(list: &str) -> bool {
@@ -185,7 +191,7 @@ pub fn run_with_resource_root(
     while let Some(key) = args.next() {
         if validate && (key == "--help" || key == "-h") {
             println!(
-                "usage: md2hwp validate-template [[--template] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]"
+                "usage: md2hwp validate-template [[--template] <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]"
             );
             return Ok(());
         }
@@ -236,6 +242,9 @@ pub fn run_with_resource_root(
     let worker = adjacent_default(worker, "md2hwp-backend.exe")?;
     if validate {
         let template = adjacent_default(template, "template.hwp")?;
+        if !has_document_extension(&template) {
+            return Err("Template must have .hwp or .hwpx extension.".into());
+        }
         return launch_worker(
             worker,
             dotnet,
@@ -252,11 +261,8 @@ pub fn run_with_resource_root(
         if output.exists() {
             return Err(format!("Template already exists: {}", output.display()));
         }
-        if !output
-            .extension()
-            .is_some_and(|e| e.eq_ignore_ascii_case("hwp"))
-        {
-            return Err("Template output must be .hwp".into());
+        if !has_document_extension(&output) {
+            return Err("Template output must be .hwp or .hwpx".into());
         }
         return launch_worker(
             worker,
@@ -278,11 +284,8 @@ pub fn run_with_resource_root(
         }
     }
     for path in [&template, &output] {
-        if !path
-            .extension()
-            .is_some_and(|e| e.eq_ignore_ascii_case("hwp"))
-        {
-            return Err("The tagged investigation requires HWP input and output.".into());
+        if !has_document_extension(path) {
+            return Err("Template and output must have .hwp or .hwpx extension.".into());
         }
     }
     if output.exists() {
@@ -366,7 +369,7 @@ fn adjacent_default(explicit: Option<PathBuf>, name: &str) -> Result<PathBuf, St
 }
 
 fn usage() -> String {
-    let base = "usage: md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp validate-template [[--template] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp";
+    let base = "usage: md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp|source.output.hwpx> [--template <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp validate-template [[--template] <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp";
     #[cfg(debug_assertions)]
     {
         base.replace("[--verbose]", "[--verbose] [--legacy-com]")
@@ -381,6 +384,23 @@ fn usage() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn document_extensions_support_hwp_and_hwpx_only() {
+        for name in ["template.hwp", "template.HWP", "결과.hwpx", "결과.HWPX"] {
+            assert!(has_document_extension(std::path::Path::new(name)), "{name}");
+        }
+        for name in [
+            "template",
+            "template.xml",
+            "template.hwpx.zip",
+            "template.hwpx.",
+        ] {
+            assert!(
+                !has_document_extension(std::path::Path::new(name)),
+                "{name}"
+            );
+        }
+    }
     #[test]
     fn template_validation_rejects_duplicate_paths_and_output_options() {
         for args in [
@@ -445,16 +465,18 @@ mod tests {
     #[test]
     #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
     fn template_creation_rejects_unsafe_targets_before_starting_worker() {
-        let directory = tempfile::tempdir().unwrap();
-        let output = directory.path().join("edited.hwp");
-        fs::write(&output, b"user template").unwrap();
-        let error = run(vec![
-            "init-template".into(),
-            output.clone().into_os_string(),
-        ])
-        .unwrap_err();
-        assert!(error.contains("already exists"), "{error}");
-        assert_eq!(fs::read(output).unwrap(), b"user template");
+        for extension in ["hwp", "hwpx", "HWPX"] {
+            let directory = tempfile::tempdir().unwrap();
+            let output = directory.path().join(format!("edited.{extension}"));
+            fs::write(&output, b"user template").unwrap();
+            let error = run(vec![
+                "init-template".into(),
+                output.clone().into_os_string(),
+            ])
+            .unwrap_err();
+            assert!(error.contains("already exists"), "{error}");
+            assert_eq!(fs::read(output).unwrap(), b"user template");
+        }
         for arguments in [
             vec!["init-template", "first.hwp", "second.hwp"],
             vec!["init-template", "first.hwp", "--output", "second.hwp"],
