@@ -29,6 +29,8 @@ Pandoc은 `setup-pandoc`이 따로 다운로드하는 GPL-2.0-or-later 프로그
 
 ## 시작하기
 
+`md2hwp`는 간략 사용법만 표시합니다. `md2hwp --help` 또는 `md2hwp -h`는 기본 변환 옵션과 명령별 한 줄 사용법을 표시합니다. `md2hwp md2ir --help`처럼 명령 뒤에 `--help`를 붙이면 해당 명령의 사용법·옵션·기본값만 확인할 수 있습니다. 도움말은 Pandoc·한글·.NET을 실행하지 않습니다.
+
 한글, .NET 10 x64 런타임, 한글 보안 모듈을 준비하고 실행 중인 한글을 닫습니다. [설치 안내](docs/usage.md)를 참고하십시오. `md2hwp.exe`, `md2hwp-backend.exe`, `template.hwp`는 같은 폴더에 둡니다.
 
 ```powershell

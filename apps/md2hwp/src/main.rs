@@ -16,6 +16,7 @@ use md2hwp_core::{
 };
 
 const FAILURE_EXIT_CODE: i32 = 1;
+mod help;
 mod pandoc_setup;
 
 #[path = "../../../backends/hancom-automation/launcher.rs"]
@@ -58,17 +59,27 @@ fn child_exit_code(exit_code: Option<i32>) -> i32 {
 }
 
 fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
-    if arguments.len() == 1 && matches!(arguments[0].to_str(), Some("--help" | "-h")) {
+    if arguments.is_empty() {
         println!("{}", usage());
         return Ok(());
     }
-    if arguments.first().is_some_and(|a| a == "validate") {
-        if arguments.len() == 2 && matches!(arguments[1].to_str(), Some("--help" | "-h")) {
-            println!(
-                "usage: md2hwp validate <source.md> [--pandoc <pandoc.exe>] [--require-meta <key>]\nStrict input validation only; no IR/HWP output or Hancom invocation."
-            );
+    if arguments.len() == 1 && matches!(arguments[0].to_str(), Some("--help" | "-h")) {
+        println!("{}", full_usage());
+        return Ok(());
+    }
+    if arguments.len() == 2 && matches!(arguments[1].to_str(), Some("--help" | "-h")) {
+        if let Some(text) = arguments[0].to_str().and_then(help::command) {
+            println!("{text}");
             return Ok(());
         }
+        return Err(format!(
+            "Unknown command: {}\n{}",
+            arguments[0].to_string_lossy(),
+            usage()
+        )
+        .into());
+    }
+    if arguments.first().is_some_and(|a| a == "validate") {
         return validate_manuscript(&arguments[1..]);
     }
     if arguments.iter().any(|argument| argument == "--version") {
@@ -208,10 +219,7 @@ impl ValidateOptions {
                 }
             }
         }
-        let input = input.ok_or_else(|| {
-            "usage: md2hwp validate <source.md> [--pandoc <pandoc.exe>] [--require-meta <key>]"
-                .to_owned()
-        })?;
+        let input = input.ok_or_else(|| help::command_brief("validate").unwrap_or_else(usage))?;
         if !input
             .extension()
             .is_some_and(|s| s.eq_ignore_ascii_case("md"))
@@ -661,17 +669,11 @@ fn default_pandoc_path() -> PathBuf {
 }
 
 fn usage() -> String {
-    let base = "usage: md2hwp <source.md> [[--output] <source.output.hwp|source.output.hwpx>] [--template <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp md2ir [--input] <source.md|source.json> [[--output] <source.ir.json>] [--from <commonmark|pandoc-json>] [--pandoc <pandoc.exe>] [--force]\n       md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp|source.output.hwpx> [--template <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp validate <source.md> [--pandoc <pandoc.exe>] [--require-meta <key>]\n       md2hwp setup-pandoc\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp validate-template [[--template] <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp --version [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]";
-    #[cfg(debug_assertions)]
-    {
-        base.replace("[--verbose]", "[--verbose] [--legacy-com]")
-            + "\n--legacy-com: original COM insertion (comparison baseline). Default: XML composition."
-            + LICENSE_NOTICE
-    }
-    #[cfg(not(debug_assertions))]
-    {
-        base.to_owned() + LICENSE_NOTICE
-    }
+    help::brief()
+}
+
+fn full_usage() -> String {
+    help::full()
 }
 
 const LICENSE_NOTICE: &str = "\nCopyright (C) 2026 Euisoon Ahn. AGPL-3.0-only.\nYou may redistribute and modify this software under that license. No warranty.\nSee LICENSE and THIRD-PARTY-NOTICES.txt beside the executable.";
@@ -840,7 +842,53 @@ mod tests {
 
     #[test]
     fn help_advertises_legacy_only_in_debug() {
-        assert_eq!(usage().contains("--legacy-com"), cfg!(debug_assertions));
+        assert_eq!(
+            full_usage().contains("--legacy-com"),
+            cfg!(debug_assertions)
+        );
+        assert!(!usage().contains("--legacy-com"));
+        assert!(!usage().contains("md2ir"));
+        assert!(usage().contains("--help"));
+        assert_eq!(
+            full_usage().lines().next(),
+            Some("md2hwp <source.md> [OPTIONS]")
+        );
+        assert!(!usage().contains("{hwp|hwpx}"));
+        assert!(full_usage().contains("\n\nCopyright"));
+        assert!(full_usage().contains("md2ir"));
+        for args in [vec![], arguments(&["-h"]), arguments(&["--help"])] {
+            assert!(run(args).is_ok());
+        }
+        assert!(run(arguments(&["--help-all"])).is_err());
+    }
+
+    #[test]
+    fn command_help_is_local_and_scoped() {
+        for name in [
+            "md2ir",
+            "ir2hwp",
+            "validate",
+            "setup-pandoc",
+            "check-runtime",
+            "validate-template",
+            "init-template",
+        ] {
+            let text = help::command(name).unwrap();
+            assert!(text.starts_with(&format!("md2hwp {name}")));
+            assert!(text.contains("Options:"));
+            assert!(!text.contains("Subcommands:"));
+            for flag in ["--help", "-h"] {
+                assert!(run(arguments(&[name, flag])).is_ok());
+            }
+        }
+        assert!(!help::command("check-runtime").unwrap().contains("--worker"));
+        assert!(help::command("validate").unwrap().contains("--input FILE"));
+        assert!(help::command("md2ir").unwrap().contains("--from FORMAT"));
+        assert_eq!(
+            help::command("ir2hwp").unwrap().contains("--legacy-com"),
+            cfg!(debug_assertions)
+        );
+        assert!(run(arguments(&["unknown-command", "--help"])).is_err());
     }
 
     #[test]

@@ -178,6 +178,9 @@ pub fn run_with_resource_root(
     }
     let mut args = arguments.into_iter();
     let mode = args.next().unwrap_or_default();
+    let usage = || {
+        super::help::command_brief(mode.to_str().unwrap_or_default()).unwrap_or_else(super::usage)
+    };
     let check = mode == "check-runtime";
     let init = mode == "init-template";
     let validate = mode == "validate-template";
@@ -191,7 +194,7 @@ pub fn run_with_resource_root(
     while let Some(key) = args.next() {
         if validate && (key == "--help" || key == "-h") {
             println!(
-                "usage: md2hwp validate-template [[--template] <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]"
+                "usage: md2hwp validate-template [[--template] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\nThe Hancom backend also accepts .hwpx template paths."
             );
             return Ok(());
         }
@@ -368,19 +371,6 @@ fn adjacent_default(explicit: Option<PathBuf>, name: &str) -> Result<PathBuf, St
         .join(name))
 }
 
-fn usage() -> String {
-    let base = "usage: md2hwp ir2hwp --ir <source.ir.json> --output <source.output.hwp|source.output.hwpx> [--template <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>] [--verbose]\n       md2hwp check-runtime [--dotnet <dotnet.exe>]\n       md2hwp validate-template [[--template] <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\n       md2hwp init-template [[--output] <template.hwp|template.hwpx>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\nDefaults beside md2hwp.exe: md2hwp-backend.exe, template.hwp";
-    #[cfg(debug_assertions)]
-    {
-        base.replace("[--verbose]", "[--verbose] [--legacy-com]")
-            + "\n--legacy-com: original COM insertion (comparison baseline). Default: XML composition."
-    }
-    #[cfg(not(debug_assertions))]
-    {
-        base.to_owned()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -413,8 +403,11 @@ mod tests {
     }
 
     #[test]
-    fn help_advertises_legacy_only_in_debug() {
-        assert_eq!(usage().contains("--legacy-com"), cfg!(debug_assertions));
+    fn missing_render_arguments_show_only_the_command_usage() {
+        let text = super::super::help::command_brief("ir2hwp").unwrap();
+        assert!(text.contains("md2hwp ir2hwp --help"));
+        assert!(!text.contains("check-runtime"));
+        assert!(!text.contains("--legacy-com"));
     }
 
     #[test]
