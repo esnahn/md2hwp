@@ -355,7 +355,15 @@ Code table ZOrders are freshly allocated above all source orders (including mast
 pages), with raw payload/seal updates. This differs from Hancom's allocation order;
 retain that distinction in comparison evidence. Current long TreatAsChar boxes clip
 in both backends; do not claim cross-page layout safety from structural validation.
-Figures, manuscript tables, footnotes and cross references remain unsupported; reject them explicitly.
+Figures embed original PNG/JPG/JPEG/EMF bytes with fresh native geometry and picture
+numbering category, template-owned captions/sources and chapter NEWNUM restarts.
+The pinned HWP5 border_x/border_y arrays are consecutive storage chunks of
+interleaved (x,y) pairs, not separate Cartesian axes; verify Hancom page images.
+Require exact embedded resource IDs/extensions/bytes after serialization, and
+unchanged source images before publishing. Hancom may re-encode/deduplicate JPEGs;
+do not claim cross-backend JPEG pixel equality. Picture and code ZOrders share
+one allocation sequence. Manuscript tables, footnotes and cross references remain
+unsupported; reject them explicitly.
 Freshly allocate cloned native identities, preserving raw identity payloads and
 valid provenance seals, then fix cross-paragraph field and connector references.
 Never interpret manuscript/metadata literals as template tags or private markers.
@@ -365,6 +373,7 @@ comparison evidence is in docs/rhwp-generation-2026-10-20.md.
 Heading-block comparison evidence is in docs/rhwp-headings-2026-10-21.md.
 List generation evidence and remaining limits are in docs/rhwp-lists-2026-10-21.md.
 Code-box generation evidence and clipping limits are in docs/rhwp-code-2026-10-21.md.
+Figure generation evidence is in docs/rhwp-figures-2026-10-21.md.
 
 In the Hancom backend, HWP/HWPX template and output extensions select native Open/SaveAs formats; defaults
 remain template.hwp and source.output.hwp. Normalize an HWPX template into a
