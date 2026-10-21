@@ -208,7 +208,7 @@ exists. Require a one-paragraph native CAPTION with slot:table.caption and one T
 AUTONUM; num:heading1 is optional there. Omit the native caption when manuscript
 caption is absent. Preserve caption options and native Table numbering/restart controls;
 do not add chapter-dependent table counter restarts. Ignore prototype dimensions,
-copy its formats, and rebuild rows/columns from IR. Default table prototypes disable
+copy its formats, and rebuild rows/columns from IR. init-template table prototypes disable
 TreatAsChar so Cell page breaks and RepeatHeader work across pages. Default alignment preserves
 template paragraph alignment; explicit manuscript alignment overrides it.
 
@@ -362,8 +362,24 @@ interleaved (x,y) pairs, not separate Cartesian axes; verify Hancom page images.
 Require exact embedded resource IDs/extensions/bytes after serialization, and
 unchanged source images before publishing. Hancom may re-encode/deduplicate JPEGs;
 do not claim cross-backend JPEG pixel equality. Picture and code ZOrders share
-one allocation sequence. Manuscript tables, footnotes and cross references remain
-unsupported; reject them explicitly.
+one allocation sequence. Manuscript tables rebuild the three-row/two-column
+prototype with template header/body/source formats and borders, native captions,
+header flags, repeat-header/page-break options and optional merged source rows.
+Use the safe md2hwp-font-measurement facade for Windows GDI widths; necessary
+unsafe FFI is confined to that crate, while the rhwp executable forbids unsafe.
+Require installed TTF/OTF faces and reject substitution/HFT. Match native HWPML
+word-breaking policy: native ParaShape attr1 bit7=0 keeps non-Latin words,
+bit7=1 permits breaks; do not copy upstream HWPX lexical interpretation.
+Convert paragraph margins from URC only once. Use Cell::set_header, preserve
+native text-area-width offsets and update modeled/raw common attrs and seals.
+Validate generated widths against actual preceding section/column settings;
+retain native Table numbering starts/restarts without adding chapter restarts.
+The tracked template currently uses TreatAsChar tables and can clip long tables;
+init-template creates non-TreatAsChar tables. Verify long tables with a separate
+template; do not change the tracked template implicitly. The COM-free renderer
+has not ported Hancom's orphan-header pagination correction. Pixel equality
+with a clipped baseline does not establish page-break safety.
+Footnotes and cross references remain unsupported; reject them explicitly.
 Freshly allocate cloned native identities, preserving raw identity payloads and
 valid provenance seals, then fix cross-paragraph field and connector references.
 Never interpret manuscript/metadata literals as template tags or private markers.
@@ -374,6 +390,7 @@ Heading-block comparison evidence is in docs/rhwp-headings-2026-10-21.md.
 List generation evidence and remaining limits are in docs/rhwp-lists-2026-10-21.md.
 Code-box generation evidence and clipping limits are in docs/rhwp-code-2026-10-21.md.
 Figure generation evidence is in docs/rhwp-figures-2026-10-21.md.
+Table generation evidence is in docs/rhwp-tables-2026-10-21.md.
 
 In the Hancom backend, HWP/HWPX template and output extensions select native Open/SaveAs formats; defaults
 remain template.hwp and source.output.hwp. Normalize an HWPX template into a
