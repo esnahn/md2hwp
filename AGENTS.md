@@ -341,8 +341,12 @@ Build it explicitly with build.ps1 -Rhwp; do not add it to release archives yet.
 The renderer supports paragraphs, plain/numbered heading samples, native heading
 blocks with multiple title slots, once/except.once, nested each.child and template
 heading counters. Metadata is supported in root static paragraphs and heading
-blocks, including their native containers. Manuscript lists, code, figures, tables,
-footnotes and cross references remain unsupported; reject them explicitly.
+blocks, including their native containers. Manuscript lists use body formatting
+and template-native marker definitions, depth indentation and independent ordered
+segments/restarts. Continuations with UseInstWidth=false use the exact URC/HWPUNIT
+formula; reject UseInstWidth=true continuations until actual marker-font measurement
+is implemented. Never approximate their alignment or silently add COM. Manuscript
+code, figures, tables, footnotes and cross references remain unsupported; reject them explicitly.
 Freshly allocate cloned native identities, preserving raw identity payloads and
 valid provenance seals, then fix cross-paragraph field and connector references.
 Never interpret manuscript/metadata literals as template tags or private markers.
@@ -350,6 +354,7 @@ Clear obsolete sample line-layout caches
 only on changed paragraphs, preserving unchanged static layout. Native generation
 comparison evidence is in docs/rhwp-generation-2026-10-20.md.
 Heading-block comparison evidence is in docs/rhwp-headings-2026-10-21.md.
+List generation evidence and remaining limits are in docs/rhwp-lists-2026-10-21.md.
 
 In the Hancom backend, HWP/HWPX template and output extensions select native Open/SaveAs formats; defaults
 remain template.hwp and source.output.hwp. Normalize an HWPX template into a
