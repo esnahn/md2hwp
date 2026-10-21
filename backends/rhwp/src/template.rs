@@ -28,7 +28,7 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
             Block::Paragraph { inlines } | Block::Heading { inlines, .. } => {
                 check_inlines(inlines)?;
             }
-            Block::VerbatimBlock { .. } => return Err(unsupported("verbatim blocks")),
+            Block::VerbatimBlock { .. } => {}
             Block::List { .. } => {}
             Block::Table { .. } => return Err(unsupported("tables")),
             Block::Figure { .. } => return Err(unsupported("figures")),
@@ -100,6 +100,9 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
     let mut lists = crate::lists::Lists::read(&roots[begin + 1..end], &document.doc_info)?;
     let plan = crate::heading_plan::HeadingPlan::new(ir)?;
     let samples: Vec<_> = sample_indices.iter().map(|&i| roots[i].clone()).collect();
+    let code =
+        crate::code::Prototype::read(&roots[begin + 1..end], &samples[0], &document.doc_info)?;
+    let mut code_orders = crate::model_tools::CodeOrders::new(&document)?;
     let mut output = roots[..begin].to_vec();
     if !roots[begin].controls.is_empty() {
         let mut retained = roots[begin].clone();
@@ -117,6 +120,17 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
     let mut break_before_next = false;
     let mut identity = crate::model_tools::identity_seed(&document)?;
     for (operation, block) in input.blocks.iter().enumerate() {
+        if let Block::VerbatimBlock { lines, source } = block {
+            let mut paragraphs = code.render(lines, source.as_deref(), &mut document.doc_info)?;
+            if break_before_next {
+                crate::headings::page_break(&mut paragraphs[0]);
+            }
+            break_before_next = false;
+            code_orders.assign(&mut paragraphs)?;
+            crate::model_tools::refresh_block_identities(&mut paragraphs, &mut identity)?;
+            output.extend(paragraphs);
+            continue;
+        }
         if let Block::List {
             kind, start, items, ..
         } = block
@@ -166,7 +180,7 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
         output.push(paragraph);
     }
     let mut terminal = match input.blocks.last() {
-        Some(Block::Paragraph { .. } | Block::List { .. }) => {
+        Some(Block::Paragraph { .. } | Block::List { .. } | Block::VerbatimBlock { .. }) => {
             crate::headings::empty_sample(&samples[0], &tag("body"))?
         }
         Some(Block::Heading { level, .. }) => headings.empty_tail(*level)?,

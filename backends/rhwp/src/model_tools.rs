@@ -8,6 +8,94 @@ use rhwp::model::raw_provenance::record_digest;
 use rhwp::model::shape::{Caption, ShapeObject};
 use std::collections::{BTreeMap, BTreeSet};
 
+/// Allocate generated code tables after every source object, without changing
+/// static stacking. This deliberately does not emulate Hancom insertion order.
+pub(crate) struct CodeOrders {
+    next: i64,
+}
+
+impl CodeOrders {
+    pub(crate) fn new(document: &rhwp::model::document::Document) -> Result<Self, String> {
+        fn maximum(value: &serde_json::Value, highest: &mut Option<i32>) {
+            match value {
+                serde_json::Value::Object(fields) => {
+                    for (name, value) in fields {
+                        if name == "z_order"
+                            && let Some(order) = value.as_i64().and_then(|n| i32::try_from(n).ok())
+                        {
+                            *highest = Some(highest.map_or(order, |old| old.max(order)));
+                        }
+                        maximum(value, highest);
+                    }
+                }
+                serde_json::Value::Array(values) => {
+                    for value in values {
+                        maximum(value, highest);
+                    }
+                }
+                _ => {}
+            }
+        }
+        let mut highest = None;
+        for section in &document.sections {
+            maximum(
+                &serde_json::to_value(&section.paragraphs).map_err(|e| e.to_string())?,
+                &mut highest,
+            );
+            maximum(
+                &serde_json::to_value(&section.section_def).map_err(|e| e.to_string())?,
+                &mut highest,
+            );
+        }
+        Ok(Self {
+            next: highest.map_or(0, |order| i64::from(order) + 1),
+        })
+    }
+
+    pub(crate) fn assign(&mut self, generated: &mut [Paragraph]) -> Result<(), String> {
+        fn assign_paragraph(paragraph: &mut Paragraph, next: &mut i64) -> Result<(), String> {
+            for control in &mut paragraph.controls {
+                if let Control::Table(table) = control {
+                    let order = i32::try_from(*next)
+                        .map_err(|_| "Native code table ZOrder space exhausted".to_string())?;
+                    let valid_seal = table
+                        .raw_ctrl_seal
+                        .is_some_and(|seal| seal == record_digest(&table.common));
+                    if !table.raw_ctrl_data.is_empty() {
+                        table
+                            .raw_ctrl_data
+                            .get_mut(20..24)
+                            .ok_or("Truncated native table ZOrder payload")?
+                            .copy_from_slice(&order.to_le_bytes());
+                    }
+                    table.common.z_order = order;
+                    if valid_seal {
+                        table.raw_ctrl_seal = Some(record_digest(&table.common));
+                    }
+                    *next += 1;
+                }
+            }
+            map_nested_containers(paragraph, &mut |paragraphs| {
+                for paragraph in paragraphs {
+                    assign_paragraph(paragraph, next)?;
+                }
+                Ok(())
+            })
+        }
+
+        // Keep both the allocation cursor and detached clones unchanged on
+        // overflow or malformed retained common-object data.
+        let mut assigned = generated.to_vec();
+        let mut next = self.next;
+        for paragraph in &mut assigned {
+            assign_paragraph(paragraph, &mut next)?;
+        }
+        generated.clone_from_slice(&assigned);
+        self.next = next;
+        Ok(())
+    }
+}
+
 pub(crate) struct IdentityAllocator {
     used: BTreeSet<u32>,
     next: u64,
@@ -405,6 +493,125 @@ mod tests {
     use super::*;
     use rhwp::model::shape::{GroupShape, RectangleShape, TextBox};
     use rhwp::model::table::{Cell, Table};
+
+    #[test]
+    fn code_orders_preserve_static_objects_and_reserve_master_page_orders() {
+        use rhwp::model::header_footer::MasterPage;
+        let core = rhwp::DocumentCore::new_empty();
+        let mut document = core.document().clone();
+        document.sections.push(Default::default());
+        let table_paragraph = |order| {
+            let mut table = Table::default();
+            table.common.z_order = order;
+            Paragraph {
+                controls: vec![Control::Table(Box::new(table))],
+                ..Default::default()
+            }
+        };
+        document.sections[0].paragraphs = vec![table_paragraph(3)];
+        document.sections[0]
+            .section_def
+            .master_pages
+            .push(MasterPage {
+                paragraphs: vec![table_paragraph(40)],
+                ..Default::default()
+            });
+        let snapshot = |document: &rhwp::model::document::Document| {
+            serde_json::to_value((
+                &document.sections[0].paragraphs,
+                &document.sections[0].section_def,
+            ))
+            .unwrap()
+        };
+        let before = snapshot(&document);
+        let mut orders = CodeOrders::new(&document).unwrap();
+        let mut generated = [table_paragraph(3), table_paragraph(3)];
+        orders.assign(&mut generated[..1]).unwrap();
+        orders.assign(&mut generated[1..]).unwrap();
+        for (paragraph, expected) in generated.iter().zip([41, 42]) {
+            let Control::Table(table) = &paragraph.controls[0] else {
+                panic!()
+            };
+            assert_eq!(table.common.z_order, expected);
+        }
+        assert_eq!(snapshot(&document), before);
+    }
+
+    #[test]
+    fn code_orders_patch_raw_bytes_and_preserve_provenance_validity() {
+        let core = rhwp::DocumentCore::new_empty();
+        let mut orders = CodeOrders::new(core.document()).unwrap();
+        let mut generated = Vec::new();
+        let mut old_seals = Vec::new();
+        for stale in [false, true] {
+            let mut table = Table::default();
+            table.common.z_order = 17;
+            table.raw_ctrl_data = vec![0xa5; 40];
+            table.raw_ctrl_data[20..24].copy_from_slice(&17i32.to_le_bytes());
+            table.raw_ctrl_seal = Some(record_digest(&table.common));
+            old_seals.push(table.raw_ctrl_seal);
+            if stale {
+                table.common.width = 123;
+            }
+            generated.push(Paragraph {
+                controls: vec![Control::Table(Box::new(table))],
+                ..Default::default()
+            });
+        }
+        orders.assign(&mut generated).unwrap();
+        for (index, paragraph) in generated.iter().enumerate() {
+            let Control::Table(table) = &paragraph.controls[0] else {
+                panic!()
+            };
+            assert_eq!(table.common.z_order, index as i32);
+            assert_eq!(&table.raw_ctrl_data[20..24], &(index as i32).to_le_bytes());
+            assert!(table.raw_ctrl_data[..20].iter().all(|b| *b == 0xa5));
+            assert!(table.raw_ctrl_data[24..].iter().all(|b| *b == 0xa5));
+            if index == 0 {
+                assert_eq!(table.raw_ctrl_seal, Some(record_digest(&table.common)));
+            } else {
+                assert_eq!(table.raw_ctrl_seal, old_seals[index]);
+                assert_ne!(table.raw_ctrl_seal, Some(record_digest(&table.common)));
+            }
+        }
+    }
+
+    #[test]
+    fn code_orders_reject_overflow_and_truncated_payload_without_partial_changes() {
+        let mut table = Table::default();
+        table.common.z_order = 13;
+        let mut generated = vec![
+            Paragraph {
+                controls: vec![Control::Table(Box::new(table.clone()))],
+                ..Default::default()
+            };
+            2
+        ];
+        let before = serde_json::to_value(&generated).unwrap();
+        let mut orders = CodeOrders {
+            next: i64::from(i32::MAX),
+        };
+        assert!(
+            orders
+                .assign(&mut generated)
+                .unwrap_err()
+                .contains("exhausted")
+        );
+        assert_eq!(orders.next, i64::from(i32::MAX));
+        assert_eq!(serde_json::to_value(&generated).unwrap(), before);
+        table.raw_ctrl_data = vec![0; 23];
+        generated[1].controls = vec![Control::Table(Box::new(table))];
+        let before = serde_json::to_value(&generated).unwrap();
+        orders.next = 0;
+        assert!(
+            orders
+                .assign(&mut generated)
+                .unwrap_err()
+                .contains("Truncated")
+        );
+        assert_eq!(orders.next, 0);
+        assert_eq!(serde_json::to_value(&generated).unwrap(), before);
+    }
 
     #[test]
     fn reserves_static_master_page_and_mismatched_retained_identities() {

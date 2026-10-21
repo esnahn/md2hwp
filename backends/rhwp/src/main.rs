@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Euisoon Ahn
 #![forbid(unsafe_code)]
 
+mod code;
 mod conditional_ranges;
 mod heading_plan;
 mod headings;
@@ -19,7 +20,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const USAGE: &str = "usage: md2hwp-rhwp <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp --version\nExperimental HWP-only backend: paragraphs, heading blocks, lists and metadata.\nDefault template: template.hwp beside this EXE. HWPX requires md2hwp-backend.exe.";
+const USAGE: &str = "usage: md2hwp-rhwp <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp --version\nExperimental HWP-only backend: paragraphs, heading blocks, lists, code boxes and metadata.\nDefault template: template.hwp beside this EXE. HWPX requires md2hwp-backend.exe.";
 
 #[derive(Debug)]
 struct Options {
