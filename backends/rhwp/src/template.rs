@@ -15,7 +15,7 @@ use rhwp::model::paragraph::Paragraph;
 
 const PREFIX: &str = "{{md2hwp:";
 
-fn tag(name: &str) -> String {
+pub(crate) fn tag(name: &str) -> String {
     format!("{PREFIX}{name}}}}}")
 }
 
@@ -39,14 +39,6 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
         return Err(unsupported("templates with multiple sections"));
     }
     let roots = &document.sections[0].paragraphs;
-    if roots
-        .iter()
-        .any(|p| p.text.contains(&format!("{PREFIX}begin:heading")))
-    {
-        return Err(unsupported(
-            "heading blocks (once/except/each.child and native title objects); use a separate template with six plain heading samples",
-        ));
-    }
     let single = |name: &str| -> Result<usize, String> {
         let needle = tag(name);
         let found: Vec<_> = roots
@@ -80,10 +72,7 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
     let version = single("ir-version:0.4")
         .map_err(|_| "Template IR must be exactly 0.4; regenerate or explicitly adopt the current declarations".to_string())?;
     let body = single("body")?;
-    let mut sample_indices = vec![body];
-    for level in 1..=6 {
-        sample_indices.push(single(&format!("heading{level}"))?);
-    }
+    let sample_indices = [body];
     for &index in sample_indices.iter().chain(std::iter::once(&version)) {
         if index <= begin || index >= end {
             return Err(
@@ -104,7 +93,11 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
     {
         return Err("begin:template may carry only native section/column controls".into());
     }
-    validate_definitions(&roots[begin + 1..end])?;
+    let (mut headings, definitions) =
+        crate::headings::Samples::read(&roots[begin + 1..end], &document.doc_info)?;
+    headings.prepare(ir)?;
+    validate_definitions(&definitions)?;
+    let plan = crate::heading_plan::HeadingPlan::new(ir)?;
     let samples: Vec<_> = sample_indices.iter().map(|&i| roots[i].clone()).collect();
     let mut output = roots[..begin].to_vec();
     if !roots[begin].controls.is_empty() {
@@ -120,17 +113,29 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
         replace_metadata(paragraph, &input.metadata)?;
         reject_control_tags(paragraph)?;
     }
-    for block in &input.blocks {
+    let mut break_before_next = false;
+    let mut identity = crate::model_tools::identity_seed(&document)?;
+    for (operation, block) in input.blocks.iter().enumerate() {
+        if let Block::Heading { level, .. } = block {
+            let (mut paragraphs, after) =
+                headings.expand(*level, operation, ir, &plan, &mut document.doc_info)?;
+            if break_before_next {
+                crate::headings::page_break(&mut paragraphs[0]);
+            }
+            crate::model_tools::refresh_block_identities(&mut paragraphs, &mut identity)?;
+            output.extend(paragraphs);
+            break_before_next = after;
+            continue;
+        }
         let (sample, name, inlines) = match block {
             Block::Paragraph { inlines } => (&samples[0], "body".to_string(), inlines),
-            Block::Heading { level, inlines, .. } => (
-                &samples[usize::from(*level)],
-                format!("heading{level}"),
-                inlines,
-            ),
             _ => unreachable!("unsupported blocks were checked before composition"),
         };
         let mut paragraph = sample.clone();
+        if break_before_next {
+            crate::headings::page_break(&mut paragraph);
+        }
+        break_before_next = false;
         let base = paragraph
             .char_shape_id_at(0)
             .ok_or("Template sample has no character format")?;
@@ -145,7 +150,15 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
         )?;
         output.push(paragraph);
     }
-    output.push(roots[content + 1].clone());
+    let mut terminal = match input.blocks.last() {
+        Some(Block::Paragraph { .. }) => crate::headings::empty_sample(&samples[0], &tag("body"))?,
+        Some(Block::Heading { level, .. }) => headings.empty_tail(*level)?,
+        _ => roots[content + 1].clone(),
+    };
+    if break_before_next {
+        crate::headings::page_break(&mut terminal);
+    }
+    output.push(terminal);
     let section = &mut document.sections[0];
     section.paragraphs = output;
     section.raw_stream = None;
@@ -400,7 +413,7 @@ fn collect_texts<'a>(value: &'a serde_json::Value, texts: &mut Vec<&'a str>) {
     }
 }
 
-fn require_plain(p: &Paragraph) -> Result<(), String> {
+pub(crate) fn require_plain(p: &Paragraph) -> Result<(), String> {
     if !p.controls.is_empty()
         || !p.field_ranges.is_empty()
         || !p.range_tags.is_empty()
@@ -428,13 +441,13 @@ fn check_inlines(inlines: &[Inline]) -> Result<(), String> {
 }
 
 #[derive(Debug)]
-struct Span {
+pub(crate) struct Span {
     text: String,
     bold: bool,
     italic: bool,
 }
 
-fn flatten(inlines: &[Inline], bold: bool, italic: bool, out: &mut Vec<Span>) {
+pub(crate) fn flatten(inlines: &[Inline], bold: bool, italic: bool, out: &mut Vec<Span>) {
     for inline in inlines {
         let text = match inline {
             Inline::Text { value } => value.clone(),
@@ -458,7 +471,7 @@ fn flatten(inlines: &[Inline], bold: bool, italic: bool, out: &mut Vec<Span>) {
     }
 }
 
-fn replace_rich(
+pub(crate) fn replace_rich(
     p: &mut Paragraph,
     needle: &str,
     spans: &[Span],
@@ -501,7 +514,7 @@ fn replace_rich(
 
 /// Upstream editing methods take scalar-character offsets and maintain their
 /// corresponding UTF-16 HWP positions, including supplementary Unicode scalars.
-fn replace(p: &mut Paragraph, needle: &str, value: &str) -> Result<usize, String> {
+pub(crate) fn replace(p: &mut Paragraph, needle: &str, value: &str) -> Result<usize, String> {
     let byte = p
         .text
         .find(needle)
@@ -525,7 +538,7 @@ fn replace(p: &mut Paragraph, needle: &str, value: &str) -> Result<usize, String
     Ok(start)
 }
 
-fn replace_metadata(p: &mut Paragraph, metadata: &Metadata) -> Result<(), String> {
+pub(crate) fn replace_metadata(p: &mut Paragraph, metadata: &Metadata) -> Result<(), String> {
     let mut replacements = Vec::new();
     let mut cursor = 0;
     while let Some(relative) = p.text[cursor..].find(PREFIX) {
@@ -585,7 +598,7 @@ fn replace_metadata(p: &mut Paragraph, metadata: &Metadata) -> Result<(), String
 /// both contain an uncomposed paragraph. Untouched static paragraphs retain all
 /// original rows and provenance. This mirrors upstream replace_line_segs' cache
 /// reset while keeping the public dirty flag set until actual composition.
-fn discard_stale_layout(p: &mut Paragraph) {
+pub(crate) fn discard_stale_layout(p: &mut Paragraph) {
     p.line_segs.clear();
     p.layout_space_metrics.clear();
     p.layout_only_fill_lines = 0;

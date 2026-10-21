@@ -2,6 +2,10 @@
 // Copyright (C) 2026 Euisoon Ahn
 #![forbid(unsafe_code)]
 
+mod conditional_ranges;
+mod heading_plan;
+mod headings;
+mod model_tools;
 mod template;
 
 use md2hwp_core::{ValidationLimits, read_ir};
@@ -14,7 +18,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const USAGE: &str = "usage: md2hwp-rhwp <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp --version\nExperimental HWP-only backend: paragraphs, plain headings and metadata.\nDefault template: template.hwp beside this EXE. HWPX requires md2hwp-backend.exe.";
+const USAGE: &str = "usage: md2hwp-rhwp <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp --version\nExperimental HWP-only backend: paragraphs, heading blocks and metadata.\nDefault template: template.hwp beside this EXE. HWPX requires md2hwp-backend.exe.";
 
 #[derive(Debug)]
 struct Options {
