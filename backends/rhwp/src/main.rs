@@ -4,15 +4,18 @@
 
 mod code;
 mod conditional_ranges;
+mod figures;
 mod heading_plan;
 mod headings;
+mod image_resource;
 mod lists;
 mod model_tools;
 mod template;
 
-use md2hwp_core::{ValidationLimits, read_ir};
+use md2hwp_core::{ValidationLimits, ir::Block, read_ir};
 use rhwp::{DocumentCore, serializer::hwpx::roundtrip::diff_documents};
 use std::{
+    collections::BTreeMap,
     env,
     ffi::OsString,
     fs,
@@ -20,7 +23,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const USAGE: &str = "usage: md2hwp-rhwp <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp --version\nExperimental HWP-only backend: paragraphs, heading blocks, lists, code boxes and metadata.\nDefault template: template.hwp beside this EXE. HWPX requires md2hwp-backend.exe.";
+const USAGE: &str = "usage: md2hwp-rhwp <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp --version\nExperimental HWP-only backend: paragraphs, heading blocks, lists, code boxes, figures and metadata.\nFigures accept PNG, JPG, JPEG and EMF; shorthand resources stay within the IR directory, ir2hwp resources within the working directory.\nDefault template: template.hwp beside this EXE. HWPX requires md2hwp-backend.exe.";
 
 #[derive(Debug)]
 struct Options {
@@ -28,6 +31,7 @@ struct Options {
     output: PathBuf,
     template: PathBuf,
     verbose: bool,
+    explicit: bool,
 }
 
 fn hwp_path(path: &Path, role: &str) -> Result<(), String> {
@@ -107,6 +111,7 @@ fn parse(args: Vec<OsString>, adjacent: &Path) -> Result<Options, String> {
         output,
         template,
         verbose,
+        explicit,
     })
 }
 
@@ -144,6 +149,26 @@ fn run(options: Options) -> Result<(), String> {
     let limits = ValidationLimits::default();
     let ir_bytes = read_bounded(&input, limits.max_json_bytes as u64)?;
     let ir = read_ir(&ir_bytes, &limits).map_err(|e| e.to_string())?;
+    let base = input.parent().ok_or("Source IR has no parent directory")?;
+    let root = if options.explicit {
+        env::current_dir().map_err(|e| e.to_string())?
+    } else {
+        base.to_path_buf()
+    };
+    let mut resources = BTreeMap::new();
+    let mut image_paths = Vec::new();
+    for (index, block) in ir.as_document().blocks.iter().enumerate() {
+        if let Block::Figure { image, .. } = block {
+            let resource = if options.explicit {
+                image_resource::Resource::read_with_root(base, &root, &image.path)?
+            } else {
+                image_resource::Resource::read(base, &image.path)?
+            };
+            image_paths.push(fs::canonicalize(base.join(&image.path)).map_err(|e| e.to_string())?);
+            resources.insert(index, resource);
+        }
+    }
+    protect_image_sources(&output, &image_paths)?;
     let template_bytes = read_bounded(&template_path, 64 * 1024 * 1024)?;
     if !template_bytes.starts_with(&[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) {
         return Err(
@@ -152,7 +177,7 @@ fn run(options: Options) -> Result<(), String> {
     }
     let mut doc = DocumentCore::from_bytes(&template_bytes)
         .map_err(|e| format!("Could not read HWP template: {e:?}"))?;
-    template::render(&ir, &mut doc)?;
+    template::render(&ir, &mut doc, &resources)?;
     let expected = doc.document().clone();
     let serialized = doc
         .export_hwp_with_adapter_snapshot_with_report()
@@ -179,6 +204,7 @@ fn run(options: Options) -> Result<(), String> {
     }
     let reopened = DocumentCore::from_bytes(&saved)
         .map_err(|e| format!("Saved HWP could not be reopened: {e:?}"))?;
+    verify_embedded_bytes(&expected, reopened.document())?;
     let diff = diff_documents(&expected, reopened.document());
     if !diff.is_empty() {
         return Err(format!(
@@ -193,6 +219,10 @@ fn run(options: Options) -> Result<(), String> {
             "Source IR or template changed during generation; output was not replaced".into(),
         );
     }
+    for resource in resources.values() {
+        resource.verify_unchanged()?;
+    }
+    protect_image_sources(&output, &image_paths)?;
     temporary
         .persist(&output)
         .map_err(|e| format!("Could not publish {}: {}", output.display(), e.error))?;
@@ -200,6 +230,34 @@ fn run(options: Options) -> Result<(), String> {
         eprintln!("rhwp: saved and reopened HWP; model comparison passed");
     }
     println!("{}", output.display());
+    Ok(())
+}
+
+fn protect_image_sources(output: &Path, image_paths: &[PathBuf]) -> Result<(), String> {
+    if output.exists() {
+        let output = fs::canonicalize(output).map_err(|e| e.to_string())?;
+        if image_paths.contains(&output) {
+            return Err("Output must not replace a source image".into());
+        }
+    }
+    Ok(())
+}
+
+fn verify_embedded_bytes(
+    expected: &rhwp::model::document::Document,
+    actual: &rhwp::model::document::Document,
+) -> Result<(), String> {
+    if expected.bin_data_content.len() != actual.bin_data_content.len()
+        || expected.bin_data_content.iter().any(|source| {
+            !actual.bin_data_content.iter().any(|saved| {
+                saved.id == source.id
+                    && saved.extension == source.extension
+                    && saved.data.load() == source.data.load()
+            })
+        })
+    {
+        return Err("Saved HWP changed embedded resource identities or original bytes".into());
+    }
     Ok(())
 }
 
@@ -246,6 +304,7 @@ mod tests {
         let a = options(&["source.ir.json"]).unwrap();
         assert_eq!(a.output, PathBuf::from("source.output.hwp"));
         assert_eq!(a.template, PathBuf::from("deploy/template.hwp"));
+        assert!(!a.explicit);
         let a = options(&[
             "ir2hwp",
             "--output",
@@ -257,6 +316,8 @@ mod tests {
         ])
         .unwrap();
         assert_eq!(a.input, PathBuf::from("in.json"));
+        assert!(a.explicit);
+        assert!(!options(&["--ir", "in.json"]).unwrap().explicit);
     }
     #[test]
     fn hwpx_and_duplicate_arguments_are_rejected() {
@@ -269,5 +330,15 @@ mod tests {
             assert!(options(&args).is_err());
         }
         assert!(options(&["a.json", "a.HWP"]).is_ok());
+    }
+
+    #[test]
+    fn output_cannot_replace_a_source_image() {
+        let root = tempfile::tempdir().unwrap();
+        let image = root.path().join("image.png");
+        fs::write(&image, b"image bytes").unwrap();
+        let protected = vec![fs::canonicalize(&image).unwrap()];
+        assert!(protect_image_sources(&image, &protected).is_err());
+        assert!(protect_image_sources(&root.path().join("result.hwp"), &protected).is_ok());
     }
 }

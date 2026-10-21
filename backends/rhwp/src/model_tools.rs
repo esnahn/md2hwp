@@ -8,13 +8,13 @@ use rhwp::model::raw_provenance::record_digest;
 use rhwp::model::shape::{Caption, ShapeObject};
 use std::collections::{BTreeMap, BTreeSet};
 
-/// Allocate generated code tables after every source object, without changing
+/// Allocate generated tables and pictures after every source object, without changing
 /// static stacking. This deliberately does not emulate Hancom insertion order.
-pub(crate) struct CodeOrders {
+pub(crate) struct ObjectOrders {
     next: i64,
 }
 
-impl CodeOrders {
+impl ObjectOrders {
     pub(crate) fn new(document: &rhwp::model::document::Document) -> Result<Self, String> {
         fn maximum(value: &serde_json::Value, highest: &mut Option<i32>) {
             match value {
@@ -57,7 +57,7 @@ impl CodeOrders {
             for control in &mut paragraph.controls {
                 if let Control::Table(table) = control {
                     let order = i32::try_from(*next)
-                        .map_err(|_| "Native code table ZOrder space exhausted".to_string())?;
+                        .map_err(|_| "Native object ZOrder space exhausted".to_string())?;
                     let valid_seal = table
                         .raw_ctrl_seal
                         .is_some_and(|seal| seal == record_digest(&table.common));
@@ -72,6 +72,10 @@ impl CodeOrders {
                     if valid_seal {
                         table.raw_ctrl_seal = Some(record_digest(&table.common));
                     }
+                    *next += 1;
+                } else if let Control::Picture(picture) = control {
+                    picture.common.z_order = i32::try_from(*next)
+                        .map_err(|_| "Native object ZOrder space exhausted".to_string())?;
                     *next += 1;
                 }
             }
@@ -495,7 +499,7 @@ mod tests {
     use rhwp::model::table::{Cell, Table};
 
     #[test]
-    fn code_orders_preserve_static_objects_and_reserve_master_page_orders() {
+    fn object_orders_preserve_static_objects_and_reserve_master_page_orders() {
         use rhwp::model::header_footer::MasterPage;
         let core = rhwp::DocumentCore::new_empty();
         let mut document = core.document().clone();
@@ -524,7 +528,7 @@ mod tests {
             .unwrap()
         };
         let before = snapshot(&document);
-        let mut orders = CodeOrders::new(&document).unwrap();
+        let mut orders = ObjectOrders::new(&document).unwrap();
         let mut generated = [table_paragraph(3), table_paragraph(3)];
         orders.assign(&mut generated[..1]).unwrap();
         orders.assign(&mut generated[1..]).unwrap();
@@ -538,9 +542,9 @@ mod tests {
     }
 
     #[test]
-    fn code_orders_patch_raw_bytes_and_preserve_provenance_validity() {
+    fn object_orders_patch_raw_bytes_and_preserve_provenance_validity() {
         let core = rhwp::DocumentCore::new_empty();
-        let mut orders = CodeOrders::new(core.document()).unwrap();
+        let mut orders = ObjectOrders::new(core.document()).unwrap();
         let mut generated = Vec::new();
         let mut old_seals = Vec::new();
         for stale in [false, true] {
@@ -577,7 +581,87 @@ mod tests {
     }
 
     #[test]
-    fn code_orders_reject_overflow_and_truncated_payload_without_partial_changes() {
+    fn object_orders_share_one_sequence_across_pictures_tables_and_captions() {
+        use rhwp::model::{image::Picture, shape::Caption};
+        let mut document = rhwp::DocumentCore::new_empty().document().clone();
+        document.sections.push(Default::default());
+        let mut source = Picture::default();
+        source.common.z_order = 70;
+        document.sections[0].paragraphs = vec![Paragraph {
+            controls: vec![Control::Picture(Box::new(source))],
+            ..Default::default()
+        }];
+        let picture = Picture {
+            caption: Some(Caption {
+                paragraphs: vec![Paragraph {
+                    controls: vec![Control::Table(Box::default())],
+                    ..Default::default()
+                }],
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let mut generated = vec![Paragraph {
+            controls: vec![
+                Control::Picture(Box::new(picture)),
+                Control::Table(Box::default()),
+            ],
+            ..Default::default()
+        }];
+        let mut orders = ObjectOrders::new(&document).unwrap();
+        orders.assign(&mut generated).unwrap();
+        let Control::Picture(picture) = &generated[0].controls[0] else {
+            panic!()
+        };
+        let Control::Table(table) = &generated[0].controls[1] else {
+            panic!()
+        };
+        let Control::Table(nested) = &picture.caption.as_ref().unwrap().paragraphs[0].controls[0]
+        else {
+            panic!()
+        };
+        assert_eq!(
+            (
+                picture.common.z_order,
+                table.common.z_order,
+                nested.common.z_order
+            ),
+            (71, 72, 73)
+        );
+        assert_eq!(orders.next, 74);
+        let Control::Picture(source) = &document.sections[0].paragraphs[0].controls[0] else {
+            panic!()
+        };
+        assert_eq!(source.common.z_order, 70);
+    }
+
+    #[test]
+    fn object_orders_roll_back_picture_assignment_when_a_later_table_fails() {
+        let table = Table {
+            raw_ctrl_data: vec![0; 23],
+            ..Default::default()
+        };
+        let mut generated = vec![Paragraph {
+            controls: vec![
+                Control::Picture(Box::default()),
+                Control::Table(Box::new(table)),
+            ],
+            ..Default::default()
+        }];
+        let before = serde_json::to_value(&generated).unwrap();
+        let mut orders = ObjectOrders { next: 91 };
+        assert!(
+            orders
+                .assign(&mut generated)
+                .unwrap_err()
+                .contains("Truncated")
+        );
+        assert_eq!(serde_json::to_value(&generated).unwrap(), before);
+        assert_eq!(orders.next, 91);
+    }
+
+    #[test]
+    fn object_orders_reject_overflow_and_truncated_payload_without_partial_changes() {
         let mut table = Table::default();
         table.common.z_order = 13;
         let mut generated = vec![
@@ -588,7 +672,7 @@ mod tests {
             2
         ];
         let before = serde_json::to_value(&generated).unwrap();
-        let mut orders = CodeOrders {
+        let mut orders = ObjectOrders {
             next: i64::from(i32::MAX),
         };
         assert!(

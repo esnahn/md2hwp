@@ -21,7 +21,11 @@ pub(crate) fn tag(name: &str) -> String {
 
 /// Compose into a private clone and publish only a complete supported document.
 /// `set_document` also invalidates the upstream layout and pagination caches.
-pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), String> {
+pub fn render(
+    ir: &ValidatedDocument,
+    core: &mut DocumentCore,
+    resources: &BTreeMap<usize, crate::image_resource::Resource>,
+) -> Result<(), String> {
     let input = ir.as_document();
     for block in &input.blocks {
         match block {
@@ -31,14 +35,25 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
             Block::VerbatimBlock { .. } => {}
             Block::List { .. } => {}
             Block::Table { .. } => return Err(unsupported("tables")),
-            Block::Figure { .. } => return Err(unsupported("figures")),
+            Block::Figure {
+                image,
+                caption,
+                source,
+                ..
+            } => {
+                check_inlines(&image.alt)?;
+                check_inlines(caption)?;
+                for paragraph in source.iter().flatten() {
+                    check_inlines(&paragraph.inlines)?;
+                }
+            }
         }
     }
     let mut document = core.document().clone();
     if document.sections.len() != 1 {
         return Err(unsupported("templates with multiple sections"));
     }
-    let roots = &document.sections[0].paragraphs;
+    let roots = document.sections[0].paragraphs.clone();
     let single = |name: &str| -> Result<usize, String> {
         let needle = tag(name);
         let found: Vec<_> = roots
@@ -102,7 +117,8 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
     let samples: Vec<_> = sample_indices.iter().map(|&i| roots[i].clone()).collect();
     let code =
         crate::code::Prototype::read(&roots[begin + 1..end], &samples[0], &document.doc_info)?;
-    let mut code_orders = crate::model_tools::CodeOrders::new(&document)?;
+    let figures = crate::figures::Prototype::read(&roots[begin + 1..end], &document.doc_info)?;
+    let mut object_orders = crate::model_tools::ObjectOrders::new(&document)?;
     let mut output = roots[..begin].to_vec();
     if !roots[begin].controls.is_empty() {
         let mut retained = roots[begin].clone();
@@ -119,14 +135,43 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
     }
     let mut break_before_next = false;
     let mut identity = crate::model_tools::identity_seed(&document)?;
+    let mut chapter = None;
+    let mut figure_number = 0_u32;
     for (operation, block) in input.blocks.iter().enumerate() {
+        if let Block::Figure {
+            caption, source, ..
+        } = block
+        {
+            figure_number = figure_number
+                .checked_add(1)
+                .ok_or("Figure numbering overflow")?;
+            let resource = resources
+                .get(&operation)
+                .ok_or("Missing preloaded figure resource")?;
+            let mut paragraphs = figures.render(
+                caption,
+                source.as_deref(),
+                chapter,
+                figure_number,
+                resource,
+                &mut document,
+            )?;
+            if break_before_next {
+                crate::headings::page_break(&mut paragraphs[0]);
+            }
+            break_before_next = false;
+            object_orders.assign(&mut paragraphs)?;
+            crate::model_tools::refresh_block_identities(&mut paragraphs, &mut identity)?;
+            output.extend(paragraphs);
+            continue;
+        }
         if let Block::VerbatimBlock { lines, source } = block {
             let mut paragraphs = code.render(lines, source.as_deref(), &mut document.doc_info)?;
             if break_before_next {
                 crate::headings::page_break(&mut paragraphs[0]);
             }
             break_before_next = false;
-            code_orders.assign(&mut paragraphs)?;
+            object_orders.assign(&mut paragraphs)?;
             crate::model_tools::refresh_block_identities(&mut paragraphs, &mut identity)?;
             output.extend(paragraphs);
             continue;
@@ -146,6 +191,14 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
             continue;
         }
         if let Block::Heading { level, .. } = block {
+            if *level == 1 {
+                chapter = Some(
+                    plan.context(operation)
+                        .ok_or("Missing heading context")?
+                        .numbers[0],
+                );
+                figure_number = 0;
+            }
             let (mut paragraphs, after) =
                 headings.expand(*level, operation, ir, &plan, &mut document.doc_info)?;
             if break_before_next {
@@ -808,7 +861,8 @@ mod tests {
                     lines: vec!["x".into()],
                     source: None
                 }]),
-                &mut core
+                &mut core,
+                &BTreeMap::new()
             )
             .is_err()
         );
@@ -818,7 +872,7 @@ mod tests {
             .insert(2, paragraph(&tag("body")));
         let before = format!("{:?}", core.document());
         assert!(
-            render(&ir(vec![]), &mut core)
+            render(&ir(vec![]), &mut core, &BTreeMap::new())
                 .unwrap_err()
                 .contains("exactly one")
         );
