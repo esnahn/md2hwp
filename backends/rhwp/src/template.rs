@@ -29,7 +29,7 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
                 check_inlines(inlines)?;
             }
             Block::VerbatimBlock { .. } => return Err(unsupported("verbatim blocks")),
-            Block::List { .. } => return Err(unsupported("lists")),
+            Block::List { .. } => {}
             Block::Table { .. } => return Err(unsupported("tables")),
             Block::Figure { .. } => return Err(unsupported("figures")),
         }
@@ -97,6 +97,7 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
         crate::headings::Samples::read(&roots[begin + 1..end], &document.doc_info)?;
     headings.prepare(ir)?;
     validate_definitions(&definitions)?;
+    let mut lists = crate::lists::Lists::read(&roots[begin + 1..end], &document.doc_info)?;
     let plan = crate::heading_plan::HeadingPlan::new(ir)?;
     let samples: Vec<_> = sample_indices.iter().map(|&i| roots[i].clone()).collect();
     let mut output = roots[..begin].to_vec();
@@ -116,6 +117,20 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
     let mut break_before_next = false;
     let mut identity = crate::model_tools::identity_seed(&document)?;
     for (operation, block) in input.blocks.iter().enumerate() {
+        if let Block::List {
+            kind, start, items, ..
+        } = block
+        {
+            let mut paragraphs =
+                lists.render(kind, *start, items, &samples[0], &mut document.doc_info)?;
+            if break_before_next {
+                crate::headings::page_break(&mut paragraphs[0]);
+            }
+            break_before_next = false;
+            crate::model_tools::refresh_block_identities(&mut paragraphs, &mut identity)?;
+            output.extend(paragraphs);
+            continue;
+        }
         if let Block::Heading { level, .. } = block {
             let (mut paragraphs, after) =
                 headings.expand(*level, operation, ir, &plan, &mut document.doc_info)?;
@@ -151,7 +166,9 @@ pub fn render(ir: &ValidatedDocument, core: &mut DocumentCore) -> Result<(), Str
         output.push(paragraph);
     }
     let mut terminal = match input.blocks.last() {
-        Some(Block::Paragraph { .. }) => crate::headings::empty_sample(&samples[0], &tag("body"))?,
+        Some(Block::Paragraph { .. } | Block::List { .. }) => {
+            crate::headings::empty_sample(&samples[0], &tag("body"))?
+        }
         Some(Block::Heading { level, .. }) => headings.empty_tail(*level)?,
         _ => roots[content + 1].clone(),
     };
@@ -426,7 +443,7 @@ pub(crate) fn require_plain(p: &Paragraph) -> Result<(), String> {
     Ok(())
 }
 
-fn check_inlines(inlines: &[Inline]) -> Result<(), String> {
+pub(crate) fn check_inlines(inlines: &[Inline]) -> Result<(), String> {
     for inline in inlines {
         match inline {
             Inline::Text { .. } | Inline::Space | Inline::LineBreak => {}
