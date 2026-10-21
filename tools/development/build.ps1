@@ -31,6 +31,7 @@ try {
     Copy-Item -LiteralPath (Join-Path $pdfPublished 'hwp2pdf.exe') -Destination (Join-Path $destination 'hwp2pdf.exe') -Force
     $templateDestination = Join-Path $destination 'template.hwp'
     Copy-Item -LiteralPath (Join-Path $root 'templates/template.hwp') -Destination $templateDestination -Force
+    Copy-Item -LiteralPath (Join-Path $root 'tools/completions/md2hwp-completion.ps1') -Destination $destination -Force
     $manifest = [IO.File]::ReadAllText((Join-Path $root 'Cargo.toml'))
     $versionMatch = [regex]::Match($manifest, '(?m)^version\s*=\s*"([0-9]+\.[0-9]+\.[0-9]+)"\s*$')
     if (-not $versionMatch.Success) { throw 'Cannot determine package version from Cargo.toml.' }
@@ -61,7 +62,7 @@ try {
         $stage = Join-Path $dist ('.package-' + [Guid]::NewGuid().ToString('N'))
         $null = New-Item -ItemType Directory -Path $stage
         try {
-            foreach ($name in @('md2hwp.exe', 'md2hwp-backend.exe', 'hwp2pdf.exe', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt')) {
+            foreach ($name in @('md2hwp.exe', 'md2hwp-backend.exe', 'hwp2pdf.exe', 'md2hwp-completion.ps1', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt')) {
                 Copy-Item -LiteralPath (Join-Path $destination $name) -Destination $stage
             }
             # Ship the tracked default; never adopt a user's deployment template implicitly.
@@ -69,7 +70,7 @@ try {
             Copy-Item -LiteralPath (Join-Path $root 'licenses') -Destination $stage -Recurse
             $archive = Join-Path $dist "md2hwp-v$version-windows-x64.zip"
             $temporaryArchive = Join-Path $stage 'package.zip'
-            $files = @('md2hwp.exe', 'md2hwp-backend.exe', 'hwp2pdf.exe', 'template.hwp', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt', 'licenses') | ForEach-Object { Join-Path $stage $_ }
+            $files = @('md2hwp.exe', 'md2hwp-backend.exe', 'hwp2pdf.exe', 'md2hwp-completion.ps1', 'template.hwp', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt', 'licenses') | ForEach-Object { Join-Path $stage $_ }
             Compress-Archive -LiteralPath $files -DestinationPath $temporaryArchive
             Move-Item -LiteralPath $temporaryArchive -Destination $archive -Force
             Write-Output "Package: $archive"

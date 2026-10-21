@@ -33,6 +33,9 @@ third-party licenses. Regenerate notices with tools/development/update-third-par
 after dependency changes; builds check them. Link the exact matching release-tag
 Corresponding Source next to binary downloads. Confirm third-party material
 permissions before publication.
+Ship tools/completions/md2hwp-completion.ps1 at the deployment/package root.
+Keep its static command/options map aligned with the CLI. It must register only
+within the current PowerShell session, never edit user profiles or execute a backend.
 Maintain docs/manuscript/AGENTS.md and its concise human counterpart
 docs/manuscript/README-MANUSCRIPT.md together; ship both at the package root.
 Never ship the repository-root development AGENTS.md. Always replace

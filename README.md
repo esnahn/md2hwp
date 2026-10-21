@@ -42,6 +42,34 @@ Pandoc은 `setup-pandoc`이 따로 다운로드하는 GPL-2.0-or-later 프로그
 
 기본 출력은 원고 옆의 `원고.ir.json`과 `원고.output.hwp`입니다. HWP/HWPX는 생성·재열기 검증 성공 후 교체하며, 실패하면 기존 결과를 보존합니다. 원고와 원본 템플릿은 변경하지 않습니다.
 
+## PowerShell 자동완성
+
+배포 폴더에 동봉된 `md2hwp-completion.ps1`을 현재 세션에서 불러옵니다.
+Windows PowerShell 5.1과 PowerShell 7에서 사용할 수 있습니다.
+
+```powershell
+. .\md2hwp-completion.ps1
+```
+
+`md2hwp v` 뒤에서 Tab을 누르면 `validate`·`validate-template`을 완성합니다.
+명령별 옵션, `--from` 값, 파일 경로도 완성합니다.
+Windows PowerShell 5.1에서는 `--`만 입력하면 셸이 자동완성을 호출하지 않으므로
+`--t`처럼 옵션의 첫 글자까지 입력하십시오. PowerShell 7은 `--`부터 완성합니다.
+`md2hwp`, `md2hwp.exe`, `./md2hwp.exe` 또는 전체 실행 파일 경로를 사용할 수 있습니다.
+자동완성은 md2hwp·Pandoc·한글·.NET을 실행하지 않습니다.
+
+매번 불러오려면 `$PROFILE` 파일에 아래 한 줄을 추가하십시오. 경로는 실제 배포 위치로
+고쳐야 합니다. 프로그램과 빌드 스크립트는 사용자 프로필을 수정하지 않습니다.
+
+```powershell
+. 'C:\Tools\md2hwp\md2hwp-completion.ps1'
+```
+
+개발 저장소에서는 `tools/completions/md2hwp-completion.ps1`이 원본입니다.
+빌드할 때 Debug·Release 폴더에 복사하며, 배포 ZIP에도 포함합니다.
+명령이나 옵션을 추가할 때 이 스크립트도 갱신해야 합니다. Debug 전용 `--legacy-com`은
+배포용 자동완성 목록에 포함하지 않습니다.
+
 ## HWP를 PDF로 변환
 
 `hwp2pdf.exe`는 기존 HWP를 PDF로 변환하는 별도 실행 파일입니다.
