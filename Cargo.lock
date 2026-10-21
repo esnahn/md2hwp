@@ -1210,13 +1210,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "md2hwp-font-measurement"
+version = "0.4.4"
+
+[[package]]
 name = "md2hwp-rhwp"
 version = "0.4.4"
 dependencies = [
  "md2hwp-core",
+ "md2hwp-font-measurement",
  "rhwp",
  "serde_json",
  "tempfile",
+ "unicode-segmentation",
 ]
 
 [[package]]

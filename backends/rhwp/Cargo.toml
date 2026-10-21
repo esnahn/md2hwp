@@ -8,6 +8,8 @@ publish = false
 
 [dependencies]
 md2hwp-core = { path = "../../crates/md2hwp-core" }
+md2hwp-font-measurement = { path = "../../crates/md2hwp-font-measurement" }
+unicode-segmentation = "1.13.3"
 rhwp = { git = "https://github.com/edwardkim/rhwp", rev = "1a76570e833917d15817415a53c09ad61ab3203f", default-features = false }
 serde_json = "1.0.140"
 tempfile = "3"
