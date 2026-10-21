@@ -26,6 +26,52 @@ pub(crate) fn calculate(
     info: &DocInfo,
     width_hwp_units: i32,
 ) -> Result<Vec<i32>, String> {
+    calculate_inner(
+        header,
+        rows,
+        header_sample,
+        body_sample,
+        prototype,
+        info,
+        width_hwp_units,
+        None,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn calculate_with_references(
+    header: &[Vec<Inline>],
+    rows: &[Vec<Vec<Inline>>],
+    header_sample: &Cell,
+    body_sample: &Cell,
+    prototype: &Table,
+    info: &DocInfo,
+    width_hwp_units: i32,
+    references: &crate::object_references::Plan,
+) -> Result<Vec<i32>, String> {
+    calculate_inner(
+        header,
+        rows,
+        header_sample,
+        body_sample,
+        prototype,
+        info,
+        width_hwp_units,
+        Some(references),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn calculate_inner(
+    header: &[Vec<Inline>],
+    rows: &[Vec<Vec<Inline>>],
+    header_sample: &Cell,
+    body_sample: &Cell,
+    prototype: &Table,
+    info: &DocInfo,
+    width_hwp_units: i32,
+    references: Option<&crate::object_references::Plan>,
+) -> Result<Vec<i32>, String> {
     if header.is_empty() || width_hwp_units <= 0 || rows.iter().any(|r| r.len() != header.len()) {
         return Err(
             "Table width and column count must be positive; rows must be rectangular".into(),
@@ -37,6 +83,7 @@ pub(crate) fn calculate(
         native: Measurement::new()?,
         info,
         widths: HashMap::new(),
+        references,
     };
     let mut minimum = vec![1.0f64; header.len()];
     let mut preferred = vec![1.0f64; header.len()];
@@ -117,6 +164,7 @@ struct TextMeasurement<'a> {
     native: Measurement,
     info: &'a DocInfo,
     widths: HashMap<(FontKey, String), f64>,
+    references: Option<&'a crate::object_references::Plan>,
 }
 
 #[derive(Default)]
@@ -191,10 +239,36 @@ impl TextMeasurement<'_> {
                     bounds.word = 0.0;
                     bounds.word_gap = 0.0;
                 }
-                Inline::CrossReference { .. } => {
-                    return Err(
-                        "rhwp table automatic widths do not support cross references".into(),
-                    );
+                Inline::CrossReference { kind, .. } => {
+                    let references = self.references.ok_or(
+                        "Table reference width measurement requires native reference prototypes",
+                    )?;
+                    let fragments = references.reserved_fragments(kind)?;
+                    let mut width = 0.0;
+                    let mut gap = 0.0;
+                    for (text, char_shape_id) in fragments {
+                        let shape = self
+                            .info
+                            .char_shapes
+                            .get(char_shape_id as usize)
+                            .ok_or(
+                                "Table reference prototype refers to an absent character format",
+                            )?
+                            .clone();
+                        for element in text.graphemes(true) {
+                            let key = self.font(&shape, language(element), strong, emphasis)?;
+                            let advance = self.width(&key, element)?;
+                            width += gap + advance;
+                            gap = advance * f64::from(key.spacing) / 100.0;
+                        }
+                    }
+                    // Native reference wording (including spaces) reserves one
+                    // indivisible run, as the Hancom backend's ReserveNative does.
+                    bounds.line += bounds.previous_gap + width;
+                    bounds.minimum = bounds.minimum.max(bounds.word + bounds.word_gap + width);
+                    bounds.previous_gap = gap;
+                    bounds.word = 0.0;
+                    bounds.word_gap = 0.0;
                 }
             }
         }

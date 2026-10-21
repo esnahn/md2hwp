@@ -448,6 +448,114 @@ fn resize_cell(cell: &mut Cell, width: u32) {
     cell.width = width;
 }
 
+/// Apply measured widths after symbolic references have been resolved. This is
+/// restricted to generated rectangular tables and their optional final source row.
+/// Native identities, formatting, captions and stored heights remain untouched.
+pub(crate) fn resize_generated(table: &mut Table, widths: &[i32]) -> Result<(), String> {
+    let columns = usize::from(table.col_count);
+    let rows = usize::from(table.row_count);
+    let grid_size = rows
+        .checked_mul(columns)
+        .ok_or("Generated table grid overflow")?;
+    if columns == 0
+        || columns > i16::MAX as usize
+        || rows == 0
+        || grid_size > rhwp::model::table::MAX_TABLE_GRID_CELLS
+        || widths.len() != columns
+        || widths.iter().any(|width| *width <= 0)
+        || table.row_sizes.len() != rows
+        || table.cell_grid.len() != grid_size
+    {
+        return Err(
+            "Generated table requires positive widths and a complete rectangular grid".into(),
+        );
+    }
+    let total = widths.iter().map(|width| i64::from(*width)).sum::<i64>();
+    let total = u32::try_from(total)
+        .ok()
+        .filter(|width| *width <= i32::MAX as u32)
+        .ok_or("Generated table total width exceeds native HWPUNIT limits")?;
+    if !table.raw_ctrl_data.is_empty() && table.raw_ctrl_data.len() < 36 {
+        return Err("Truncated table native object header".into());
+    }
+    let mut target_widths = Vec::with_capacity(table.cells.len());
+    let mut index = 0;
+    for row in 0..rows {
+        let merged_source = row + 1 == rows
+            && table
+                .cells
+                .get(index)
+                .is_some_and(|cell| cell.col == 0 && usize::from(cell.col_span) == columns);
+        let count = if merged_source { 1 } else { columns };
+        if table.row_sizes[row] != count as i16 {
+            return Err("Generated table row sizes do not match the rectangular grid".into());
+        }
+        for (column, column_width) in widths.iter().take(count).enumerate() {
+            let cell = table
+                .cells
+                .get(index)
+                .ok_or("Generated table has missing cells")?;
+            let span = if merged_source { columns } else { 1 };
+            if usize::from(cell.row) != row
+                || usize::from(cell.col) != column
+                || cell.row_span != 1
+                || usize::from(cell.col_span) != span
+                || cell.paragraphs.is_empty()
+                || table.cell_grid[row * columns + column..row * columns + column + span]
+                    .iter()
+                    .any(|entry| *entry != Some(index))
+            {
+                return Err(
+                    "Generated table cells do not form the expected rectangular rows/source row"
+                        .into(),
+                );
+            }
+            let width = if merged_source {
+                total
+            } else {
+                *column_width as u32
+            };
+            // The upstream facade clamps retained u16 text-area widths. Reject
+            // overflow instead, so a deferred resize cannot erase its offset.
+            if cell.raw_list_extra.len() == 1 {
+                return Err("Truncated generated cell native text-area width".into());
+            }
+            if cell.raw_list_extra.len() >= 2 {
+                let old = u16::from_le_bytes([cell.raw_list_extra[0], cell.raw_list_extra[1]]);
+                let updated = i64::from(old) + i64::from(width) - i64::from(cell.width);
+                u16::try_from(updated)
+                    .map_err(|_| "Generated cell native text-area width overflow")?;
+            }
+            target_widths.push(width);
+            index += 1;
+        }
+    }
+    if index != table.cells.len() {
+        return Err("Generated table contains cells outside its rectangular grid".into());
+    }
+    let mut resized = table.clone();
+    for (cell, width) in resized.cells.iter_mut().zip(target_widths) {
+        if cell.width != width {
+            resize_cell(cell, width);
+            for paragraph in &mut cell.paragraphs {
+                crate::template::discard_stale_layout(paragraph);
+            }
+        }
+    }
+    let valid = resized
+        .raw_ctrl_seal
+        .is_some_and(|seal| seal == record_digest(&resized.common));
+    resized.common.width = total;
+    if !resized.raw_ctrl_data.is_empty() {
+        resized.raw_ctrl_data[12..16].copy_from_slice(&total.to_le_bytes());
+    }
+    if valid {
+        resized.raw_ctrl_seal = Some(record_digest(&resized.common));
+    }
+    *table = resized;
+    Ok(())
+}
+
 fn patch_common(table: &mut Table, width: u32, height: u32) -> Result<(), String> {
     let valid = table
         .raw_ctrl_seal
@@ -705,6 +813,150 @@ mod tests {
             panic!()
         };
         t
+    }
+
+    fn generated_resize_fixture() -> Table {
+        let (roots, mut info) = fixture();
+        let prototype = Prototype::read(&roots, &info).unwrap();
+        let width = prototype.width_hwp_units();
+        let output = prototype
+            .render(
+                &[TableAlignment::Default, TableAlignment::Center],
+                &[text("header left"), text("header right")],
+                &[vec![text("resolved 4.12"), text("body right")]],
+                Some(&text("caption")),
+                Some(&[SourceParagraph {
+                    prefix: "출처".into(),
+                    inlines: text("source"),
+                }]),
+                Some(4),
+                3,
+                &[1000, width - 1000],
+                &mut info,
+            )
+            .unwrap();
+        let mut table = output_table(&output).clone();
+        table.common.instance_id = 12345;
+        table.common.height = 6789;
+        table.raw_ctrl_data[16..20].copy_from_slice(&6789_u32.to_le_bytes());
+        table.raw_ctrl_seal = Some(record_digest(&table.common));
+        for cell in &mut table.cells {
+            cell.height = 987;
+            for paragraph in &mut cell.paragraphs {
+                paragraph.line_segs = vec![rhwp::model::paragraph::LineSeg {
+                    line_height: 1200,
+                    ..Default::default()
+                }];
+                paragraph.source_line_seg_vertical_pos = Some(vec![456]);
+            }
+        }
+        table
+    }
+
+    #[test]
+    fn deferred_resize_changes_widths_preserving_native_identity_content_and_heights() {
+        let mut table = generated_resize_fixture();
+        let before = table.clone();
+        resize_generated(&mut table, &[700, 900]).unwrap();
+        assert_eq!(table.common.width, 1600);
+        assert_eq!(table.common.height, 6789);
+        assert_eq!(table.common.instance_id, 12345);
+        assert_eq!(&table.raw_ctrl_data[12..16], &1600_u32.to_le_bytes());
+        assert_eq!(&table.raw_ctrl_data[16..20], &6789_u32.to_le_bytes());
+        assert_eq!(table.raw_ctrl_seal, Some(record_digest(&table.common)));
+        assert_eq!(
+            serde_json::to_value(&table.caption).unwrap(),
+            serde_json::to_value(&before.caption).unwrap()
+        );
+        for (index, cell) in table.cells.iter().enumerate() {
+            let width = [700, 900, 700, 900, 1600][index];
+            assert_eq!(cell.width, width);
+            assert_eq!(cell.height, 987);
+            assert_eq!(
+                u16::from_le_bytes(cell.raw_list_extra[..2].try_into().unwrap()),
+                width as u16 + 30
+            );
+            assert_eq!(
+                cell.raw_list_extra[2..],
+                before.cells[index].raw_list_extra[2..]
+            );
+            assert_eq!(
+                cell.paragraphs[0].text,
+                before.cells[index].paragraphs[0].text
+            );
+            assert_eq!(
+                cell.paragraphs[0].char_offsets,
+                before.cells[index].paragraphs[0].char_offsets
+            );
+            assert!(cell.paragraphs[0].line_segs.is_empty());
+            assert!(cell.paragraphs[0].source_line_seg_vertical_pos.is_none());
+            assert!(cell.paragraphs[0].stored_text_partition_is_dirty());
+        }
+        // An independently edited full model catches accidental changes to any
+        // non-width attributes, native payload bytes, formats or generated IDs.
+        let mut expected = before;
+        expected.common.width = 1600;
+        expected.raw_ctrl_data[12..16].copy_from_slice(&1600_u32.to_le_bytes());
+        for (index, cell) in expected.cells.iter_mut().enumerate() {
+            cell.width = [700, 900, 700, 900, 1600][index];
+            cell.raw_list_extra[..2].copy_from_slice(&((cell.width + 30) as u16).to_le_bytes());
+            cell.paragraphs[0].line_segs.clear();
+        }
+        assert_eq!(
+            serde_json::to_value(&table).unwrap(),
+            serde_json::to_value(&expected).unwrap()
+        );
+    }
+
+    #[test]
+    fn unchanged_column_and_merged_source_keep_their_stored_layout() {
+        let mut table = generated_resize_fixture();
+        let total = table.common.width as i32;
+        let before = serde_json::to_value(&table).unwrap();
+        resize_generated(&mut table, &[1000, total - 1000]).unwrap();
+        assert_eq!(serde_json::to_value(&table).unwrap(), before);
+        let source_cache = table.cells[4].paragraphs[0]
+            .source_line_seg_vertical_pos
+            .clone();
+        resize_generated(&mut table, &[700, total - 700]).unwrap();
+        assert!(table.cells[0].paragraphs[0].line_segs.is_empty());
+        assert_eq!(table.cells[4].paragraphs[0].line_segs.len(), 1);
+        assert_eq!(
+            table.cells[4].paragraphs[0].source_line_seg_vertical_pos,
+            source_cache
+        );
+    }
+
+    #[test]
+    fn malformed_deferred_grid_or_native_width_fails_atomically() {
+        let baseline = generated_resize_fixture();
+        for invalid in 0..8 {
+            let mut table = baseline.clone();
+            let mut widths = vec![700, 900];
+            match invalid {
+                0 => widths = vec![1600],
+                1 => widths[0] = 0,
+                2 => widths = vec![i32::MAX, i32::MAX],
+                3 => table.cells[1].col = 0,
+                4 => table.cells[0].row_span = 2,
+                5 => table.row_sizes[1] = 1,
+                6 => table.raw_ctrl_data.truncate(15),
+                7 => table.cells[0].raw_list_extra[..2].copy_from_slice(&0_u16.to_le_bytes()),
+                _ => unreachable!(),
+            }
+            let before = serde_json::to_value(&table).unwrap();
+            let seal = table.raw_ctrl_seal;
+            assert!(
+                resize_generated(&mut table, &widths).is_err(),
+                "case {invalid}"
+            );
+            assert_eq!(
+                serde_json::to_value(&table).unwrap(),
+                before,
+                "case {invalid}"
+            );
+            assert_eq!(table.raw_ctrl_seal, seal);
+        }
     }
 
     #[test]

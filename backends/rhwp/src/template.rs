@@ -39,8 +39,12 @@ pub fn render(
     {
         return Err("Template requires exactly one plain root {{md2hwp:body}}".into());
     }
+    let heading_references = crate::heading_references::Samples::read(original_roots)?;
+    let prepared_headings = heading_references.prepare(ir)?;
+    let (mut references, prepared_references) =
+        crate::object_references::Plan::prepare(&prepared_headings, original_roots)?;
     let note_sample = crate::footnotes::Sample::read(original_roots, &document.doc_info)?;
-    let (notes, prepared) = crate::note_plan::Plan::prepare(ir, original_roots)?;
+    let (notes, prepared) = crate::note_plan::Plan::prepare(&prepared_references, original_roots)?;
     let ir = &prepared;
     let input = ir.as_document();
     for block in &input.blocks {
@@ -167,8 +171,10 @@ pub fn render(
     let mut chapter = None;
     let mut figure_number = 0_u32;
     let mut generated_tables = BTreeSet::new();
+    let mut table_operations = BTreeMap::new();
     for (operation, block) in input.blocks.iter().enumerate() {
         if let Block::Table {
+            id,
             columns,
             header,
             rows,
@@ -189,15 +195,25 @@ pub fn render(
                         .collect()
                 })
                 .collect();
-            let widths = crate::table_widths::calculate(
-                &measurement_header,
-                &measurement_rows,
-                tables.header_sample(),
-                tables.body_sample(),
-                tables.table(),
-                &document.doc_info,
-                tables.width_hwp_units(),
-            )?;
+            let widths = if references.has_references() {
+                // Counter resolution precedes final measurement. These private
+                // widths exist only while composing the unpublished object graph.
+                let count = header.len();
+                let width = tables.width_hwp_units();
+                let mut widths = vec![width / count as i32; count];
+                widths[count - 1] += width % count as i32;
+                widths
+            } else {
+                crate::table_widths::calculate(
+                    &measurement_header,
+                    &measurement_rows,
+                    tables.header_sample(),
+                    tables.body_sample(),
+                    tables.table(),
+                    &document.doc_info,
+                    tables.width_hwp_units(),
+                )?
+            };
             let mut paragraphs = tables.render(
                 columns,
                 header,
@@ -219,6 +235,10 @@ pub fn render(
                 for control in &p.controls {
                     if let Control::Table(table) = control {
                         generated_tables.insert(table.common.instance_id);
+                        table_operations.insert(table.common.instance_id, operation);
+                        if let Some(id) = id {
+                            references.bind(id, table.common.instance_id)?;
+                        }
                     }
                 }
             }
@@ -226,7 +246,10 @@ pub fn render(
             continue;
         }
         if let Block::Figure {
-            caption, source, ..
+            id,
+            caption,
+            source,
+            ..
         } = block
         {
             figure_number = figure_number
@@ -249,6 +272,20 @@ pub fn render(
             break_before_next = false;
             object_orders.assign(&mut paragraphs)?;
             crate::model_tools::refresh_block_identities(&mut paragraphs, &mut identity)?;
+            if let Some(id) = id {
+                let objects: Vec<_> = paragraphs
+                    .iter()
+                    .flat_map(|p| &p.controls)
+                    .filter_map(|c| match c {
+                        Control::Picture(p) => Some(p.common.instance_id),
+                        _ => None,
+                    })
+                    .collect();
+                if objects.len() != 1 {
+                    return Err("Generated figure lost its unique native identity".into());
+                }
+                references.bind(id, objects[0])?;
+            }
             output.extend(paragraphs);
             continue;
         }
@@ -345,6 +382,71 @@ pub fn render(
     crate::footnotes::assign_numbers(&mut document, &generated_notes)?;
     crate::table_layout::require_fits(&document.sections[0].paragraphs, &generated_tables)?;
     crate::table_layout::recalculate_numbers(&mut document, &generated_tables)?;
+    if references.has_references() {
+        crate::table_layout::recalculate_picture_numbers(&mut document)?;
+    }
+    references.resolve(&document)?;
+    if references.has_references() {
+        let mut widths = BTreeMap::new();
+        for (id, operation) in &table_operations {
+            let Block::Table { header, rows, .. } = &input.blocks[*operation] else {
+                unreachable!()
+            };
+            let header: Vec<_> = header
+                .iter()
+                .map(|cell| references.measurement_inlines(&notes.measurement_inlines(cell)))
+                .collect::<Result<_, _>>()?;
+            let rows: Vec<Vec<_>> = rows
+                .iter()
+                .map(|row| {
+                    row.iter()
+                        .map(|cell| {
+                            references.measurement_inlines(&notes.measurement_inlines(cell))
+                        })
+                        .collect()
+                })
+                .collect::<Result<_, _>>()?;
+            widths.insert(
+                *id,
+                crate::table_widths::calculate_with_references(
+                    &header,
+                    &rows,
+                    tables.header_sample(),
+                    tables.body_sample(),
+                    tables.table(),
+                    &document.doc_info,
+                    tables.width_hwp_units(),
+                    &references,
+                )?,
+            );
+        }
+        fn resize(
+            paragraphs: &mut [Paragraph],
+            widths: &BTreeMap<u32, Vec<i32>>,
+            info: &DocInfo,
+        ) -> Result<(), String> {
+            for paragraph in paragraphs {
+                for control in &mut paragraph.controls {
+                    if let Control::Table(table) = control
+                        && let Some(widths) = widths.get(&table.common.instance_id)
+                    {
+                        crate::tables::resize_generated(table, widths)?;
+                        crate::code::compose_empty_cell_lines(table, info)?;
+                    }
+                }
+                crate::model_tools::map_nested_containers(paragraph, &mut |ps| {
+                    resize(ps, widths, info)
+                })?;
+            }
+            Ok(())
+        }
+        resize(
+            &mut document.sections[0].paragraphs,
+            &widths,
+            &document.doc_info,
+        )?;
+    }
+    references.apply(&mut document.sections[0].paragraphs, &mut identity)?;
     core.set_document(document);
     Ok(generated_notes)
 }

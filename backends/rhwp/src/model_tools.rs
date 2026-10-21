@@ -110,7 +110,7 @@ fn alias(id: u32) -> u32 {
 }
 
 impl IdentityAllocator {
-    fn id(&mut self) -> Result<u32, String> {
+    pub(crate) fn id(&mut self) -> Result<u32, String> {
         while self.next <= u64::from(u32::MAX) {
             let id = self.next as u32;
             self.next += 1;

@@ -143,6 +143,36 @@ fn available_width(page: &PageDef, columns: Option<&ColumnDef>) -> Result<u32, S
 }
 
 /// Match Hancom's body Table AUTONUM pass, including existing native counters.
+pub(crate) fn recalculate_picture_numbers(document: &mut Document) -> Result<(), String> {
+    let mut next = u32::from(document.doc_properties.picture_start_num);
+    for section in &mut document.sections {
+        if section.section_def.picture_num > 0 {
+            next = u32::from(section.section_def.picture_num);
+        }
+        walk(&mut section.paragraphs, &mut |control| {
+            match control {
+                Control::SectionDef(definition) if definition.picture_num > 0 => {
+                    next = u32::from(definition.picture_num)
+                }
+                Control::NewNumber(number) if number.number_type == AutoNumberType::Picture => {
+                    next = u32::from(number.number)
+                }
+                Control::AutoNumber(number) if number.number_type == AutoNumberType::Picture => {
+                    let value = u16::try_from(next)
+                        .map_err(|_| "Native Picture numbering exceeds the supported u16 range")?;
+                    number.number = value;
+                    number.assigned_number = value;
+                    next += 1;
+                }
+                _ => {}
+            }
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+
+/// Match Hancom's body Table AUTONUM pass, including existing native counters.
 /// Static Table AUTONUMs also change: leaving their stored values stale makes
 /// parser-computed numbers disagree with the independently composed model.
 pub(crate) fn recalculate_numbers(
@@ -190,6 +220,41 @@ mod tests {
         shape::Caption,
         table::{Cell, Table},
     };
+
+    #[test]
+    fn picture_reference_counters_follow_document_start_and_native_restarts() {
+        let mut doc = rhwp::DocumentCore::new_empty().document().clone();
+        doc.doc_properties.picture_start_num = 7;
+        let number = || {
+            Control::AutoNumber(AutoNumber {
+                number_type: AutoNumberType::Picture,
+                number: 99,
+                ..Default::default()
+            })
+        };
+        doc.sections = vec![Section {
+            paragraphs: vec![root(vec![
+                number(),
+                Control::NewNumber(NewNumber {
+                    number_type: AutoNumberType::Picture,
+                    number: 1,
+                }),
+                number(),
+                number(),
+            ])],
+            ..Default::default()
+        }];
+        recalculate_picture_numbers(&mut doc).unwrap();
+        let values: Vec<_> = doc.sections[0].paragraphs[0]
+            .controls
+            .iter()
+            .filter_map(|c| match c {
+                Control::AutoNumber(n) => Some((n.number, n.assigned_number)),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(values, [(7, 7), (1, 1), (2, 2)]);
+    }
 
     fn root(controls: Vec<Control>) -> Paragraph {
         Paragraph {
