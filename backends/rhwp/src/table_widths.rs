@@ -170,10 +170,30 @@ impl TextMeasurement<'_> {
                 Inline::Link { inlines, .. } => {
                     self.walk(inlines, format, strong, emphasis, bounds)?
                 }
-                Inline::Footnote { .. } | Inline::CrossReference { .. } => {
+                Inline::Footnote { .. } => {
+                    // Match the existing native backend's conservative note
+                    // reference reservation, never the private adapter marker.
+                    let mut shape = format.shape.clone();
+                    shape.base_size = (f64::from(shape.base_size) * 0.7)
+                        .round_ties_even()
+                        .max(1.0) as i32;
+                    let mut width = 0.0;
+                    let mut gap = 0.0;
+                    for element in "999)".graphemes(true) {
+                        let key = self.font(&shape, language(element), false, false)?;
+                        let advance = self.width(&key, element)?;
+                        width += gap + advance;
+                        gap = advance * f64::from(key.spacing) / 100.0;
+                    }
+                    bounds.line += bounds.previous_gap + width;
+                    bounds.minimum = bounds.minimum.max(bounds.word + bounds.word_gap + width);
+                    bounds.previous_gap = gap;
+                    bounds.word = 0.0;
+                    bounds.word_gap = 0.0;
+                }
+                Inline::CrossReference { .. } => {
                     return Err(
-                        "rhwp table automatic widths do not support footnotes or cross references"
-                            .into(),
+                        "rhwp table automatic widths do not support cross references".into(),
                     );
                 }
             }

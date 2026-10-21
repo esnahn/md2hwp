@@ -5,11 +5,15 @@
 mod code;
 mod conditional_ranges;
 mod figures;
+mod footnotes;
 mod heading_plan;
 mod headings;
 mod image_resource;
 mod lists;
 mod model_tools;
+mod note_insert;
+mod note_plan;
+mod note_storage;
 mod table_layout;
 mod table_widths;
 mod tables;
@@ -26,7 +30,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const USAGE: &str = "usage: md2hwp-rhwp <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp --version\nExperimental HWP-only backend: paragraphs, heading blocks, lists, code boxes, figures, tables and metadata.\nFigures accept PNG, JPG, JPEG and EMF; shorthand resources stay within the IR directory, ir2hwp resources within the working directory.\nTables require installed Windows TrueType/OpenType fonts.\nDefault template: template.hwp beside this EXE. HWPX requires md2hwp-backend.exe.";
+const USAGE: &str = "usage: md2hwp-rhwp <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp --version\nExperimental HWP-only backend: paragraphs, heading blocks, lists, code boxes, figures, tables, footnotes and metadata.\nFigures accept PNG, JPG, JPEG and EMF; shorthand resources stay within the IR directory, ir2hwp resources within the working directory.\nTables require installed Windows TrueType/OpenType fonts.\nDefault template: template.hwp beside this EXE. HWPX requires md2hwp-backend.exe.";
 
 #[derive(Debug)]
 struct Options {
@@ -180,7 +184,8 @@ fn run(options: Options) -> Result<(), String> {
     }
     let mut doc = DocumentCore::from_bytes(&template_bytes)
         .map_err(|e| format!("Could not read HWP template: {e:?}"))?;
-    template::render(&ir, &mut doc, &resources)?;
+    note_storage::restore_source_autonums(doc.document_mut())?;
+    let generated_notes = template::render(&ir, &mut doc, &resources)?;
     let expected = doc.document().clone();
     let serialized = doc
         .export_hwp_with_adapter_snapshot_with_report()
@@ -208,7 +213,10 @@ fn run(options: Options) -> Result<(), String> {
     let reopened = DocumentCore::from_bytes(&saved)
         .map_err(|e| format!("Saved HWP could not be reopened: {e:?}"))?;
     verify_embedded_bytes(&expected, reopened.document())?;
-    let diff = diff_documents(&expected, reopened.document());
+    note_storage::verify_stored(&expected, reopened.document(), &generated_notes)?;
+    let mut reader_expected = expected;
+    note_storage::expected_reader_numbers(&mut reader_expected)?;
+    let diff = diff_documents(&reader_expected, reopened.document());
     if !diff.is_empty() {
         return Err(format!(
             "Saved HWP differs from the composed document: {:?}",

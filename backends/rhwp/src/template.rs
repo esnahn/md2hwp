@@ -25,7 +25,23 @@ pub fn render(
     ir: &ValidatedDocument,
     core: &mut DocumentCore,
     resources: &BTreeMap<usize, crate::image_resource::Resource>,
-) -> Result<(), String> {
+) -> Result<BTreeSet<u32>, String> {
+    let mut document = core.document().clone();
+    if document.sections.len() != 1 {
+        return Err(unsupported("templates with multiple sections"));
+    }
+    let original_roots = &document.sections[0].paragraphs;
+    if original_roots
+        .iter()
+        .filter(|p| p.text == tag("body"))
+        .count()
+        != 1
+    {
+        return Err("Template requires exactly one plain root {{md2hwp:body}}".into());
+    }
+    let note_sample = crate::footnotes::Sample::read(original_roots, &document.doc_info)?;
+    let (notes, prepared) = crate::note_plan::Plan::prepare(ir, original_roots)?;
+    let ir = &prepared;
     let input = ir.as_document();
     for block in &input.blocks {
         match block {
@@ -65,11 +81,7 @@ pub fn render(
             }
         }
     }
-    let mut document = core.document().clone();
-    if document.sections.len() != 1 {
-        return Err(unsupported("templates with multiple sections"));
-    }
-    let roots = document.sections[0].paragraphs.clone();
+    let roots = note_sample.lower_sample(original_roots);
     let single = |name: &str| -> Result<usize, String> {
         let needle = tag(name);
         let found: Vec<_> = roots
@@ -165,9 +177,21 @@ pub fn render(
             ..
         } = block
         {
+            let measurement_header: Vec<_> = header
+                .iter()
+                .map(|cell| notes.measurement_inlines(cell))
+                .collect();
+            let measurement_rows: Vec<_> = rows
+                .iter()
+                .map(|row| {
+                    row.iter()
+                        .map(|cell| notes.measurement_inlines(cell))
+                        .collect()
+                })
+                .collect();
             let widths = crate::table_widths::calculate(
-                header,
-                rows,
+                &measurement_header,
+                &measurement_rows,
                 tables.header_sample(),
                 tables.body_sample(),
                 tables.table(),
@@ -306,14 +330,23 @@ pub fn render(
         crate::headings::page_break(&mut terminal);
     }
     output.push(terminal);
+    let note_shape = document.sections[0].section_def.footnote_shape.clone();
+    let generated_notes = notes.apply(
+        &mut output,
+        &note_sample,
+        &mut document.doc_info,
+        &note_shape,
+        &mut identity,
+    )?;
     let section = &mut document.sections[0];
     section.paragraphs = output;
     section.raw_stream = None;
     section.raw_provenance = None;
+    crate::footnotes::assign_numbers(&mut document, &generated_notes)?;
     crate::table_layout::require_fits(&document.sections[0].paragraphs, &generated_tables)?;
     crate::table_layout::recalculate_numbers(&mut document, &generated_tables)?;
     core.set_document(document);
-    Ok(())
+    Ok(generated_notes)
 }
 
 fn unsupported(feature: &str) -> String {
