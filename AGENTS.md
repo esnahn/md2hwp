@@ -345,8 +345,17 @@ blocks, including their native containers. Manuscript lists use body formatting
 and template-native marker definitions, depth indentation and independent ordered
 segments/restarts. Continuations with UseInstWidth=false use the exact URC/HWPUNIT
 formula; reject UseInstWidth=true continuations until actual marker-font measurement
-is implemented. Never approximate their alignment or silently add COM. Manuscript
-code, figures, tables, footnotes and cross references remain unsupported; reject them explicitly.
+is implemented. Never approximate their alignment or silently add COM. Code boxes
+clone the native single-cell TreatAsChar table, independent anchor format, optional
+title and caption source paragraphs. Preserve all raw lines and prototype spacing.
+Empty generated cell paragraphs compose the pinned reader's derived line representation
+from template formats, keeping their stored partitions dirty; never derive expected
+content or geometry from exported/reopened bytes or relax model comparison.
+Code table ZOrders are freshly allocated above all source orders (including master
+pages), with raw payload/seal updates. This differs from Hancom's allocation order;
+retain that distinction in comparison evidence. Current long TreatAsChar boxes clip
+in both backends; do not claim cross-page layout safety from structural validation.
+Figures, manuscript tables, footnotes and cross references remain unsupported; reject them explicitly.
 Freshly allocate cloned native identities, preserving raw identity payloads and
 valid provenance seals, then fix cross-paragraph field and connector references.
 Never interpret manuscript/metadata literals as template tags or private markers.
@@ -355,6 +364,7 @@ only on changed paragraphs, preserving unchanged static layout. Native generatio
 comparison evidence is in docs/rhwp-generation-2026-10-20.md.
 Heading-block comparison evidence is in docs/rhwp-headings-2026-10-21.md.
 List generation evidence and remaining limits are in docs/rhwp-lists-2026-10-21.md.
+Code-box generation evidence and clipping limits are in docs/rhwp-code-2026-10-21.md.
 
 In the Hancom backend, HWP/HWPX template and output extensions select native Open/SaveAs formats; defaults
 remain template.hwp and source.output.hwp. Normalize an HWPX template into a
