@@ -379,7 +379,34 @@ init-template creates non-TreatAsChar tables. Verify long tables with a separate
 template; do not change the tracked template implicitly. The COM-free renderer
 has not ported Hancom's orphan-header pagination correction. Pixel equality
 with a clipped baseline does not establish page-break safety.
-Footnotes and cross references remain unsupported; reject them explicitly.
+Footnotes support body/title/list paragraphs and table cells, including rich link
+labels, repeated heading-title/each.child copies and multiple body paragraphs.
+Keep IR 0.4 and the existing footnote/footnote.next sample declarations. Capture
+the plain root or native footnote sample before removing disposable definitions;
+preserve native AUTONUM, TAB data, complete paragraph/character formatting and
+continuation affixes. Reject duplicate/mixed/misplaced samples and unsupported
+controls or breaks. Flatten only the disposable native sample anchor.
+Use collision-free adapter-private markers and insert native eight-unit footnote
+gaps without literal placeholders, preserving Unicode, rich runs, other controls,
+fields and native character offsets. Every cloned occurrence gets a fresh native
+identity. Width measurement must see the actual reference, never marker text.
+Check actual generated container contexts: reject notes in native captions,
+headers, footers, master pages, comments and other notes, including heading slots
+copied there. Object-source notes and nested footnotes remain forbidden by IR.
+Preserve source SECDEF note options and document/section numbering settings.
+Assign generated note header numbers and first-body Footnote AUTONUMs from the
+effective document, section and native NEWNUM counters; preserve continuation
+affixes and static notes. Plain samples derive new header number formats and
+decorations from SECDEF; native samples retain their complete header format.
+The pinned reader overwrites AUTONUM number/assigned_number while parsing and
+does not implement native OnPage/OnSection layout numbering. Restore source stored
+AUTONUM values from retained native records before cloning samples. Verify every
+serialized AUTONUM payload and generated FOOTNOTE header against the independently
+composed model before deriving reader cache fields on a verification-only clone.
+Preserve continuation AUTONUM stored values exactly; never normalize them to make
+a structural comparison pass. Rendered numbers still require visual verification;
+the current live evidence covers continuous numbering from 1 and 7, not OnPage resets.
+Cross references remain unsupported; reject them explicitly.
 Freshly allocate cloned native identities, preserving raw identity payloads and
 valid provenance seals, then fix cross-paragraph field and connector references.
 Never interpret manuscript/metadata literals as template tags or private markers.
@@ -391,6 +418,7 @@ List generation evidence and remaining limits are in docs/rhwp-lists-2026-10-21.
 Code-box generation evidence and clipping limits are in docs/rhwp-code-2026-10-21.md.
 Figure generation evidence is in docs/rhwp-figures-2026-10-21.md.
 Table generation evidence is in docs/rhwp-tables-2026-10-21.md.
+Footnote generation evidence and verification limits are in docs/rhwp-footnotes-2026-10-22.md.
 
 In the Hancom backend, HWP/HWPX template and output extensions select native Open/SaveAs formats; defaults
 remain template.hwp and source.output.hwp. Normalize an HWPX template into a
