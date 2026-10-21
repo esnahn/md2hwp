@@ -93,9 +93,8 @@ HWP 기능을 옮긴 후 rhwp 실행 경로의 .NET/한글 의존을 제거할 �
 
 ```powershell
 pwsh -NoProfile -File tools/development/build.ps1 -Configuration Debug -Rhwp
-.\target\debug\md2hwp.exe init-template 평문제목템플릿.hwp
-.\target\debug\md2hwp.exe 원고.md --worker .\target\debug\md2hwp-rhwp.exe --template 평문제목템플릿.hwp
-.\target\debug\md2hwp-rhwp.exe 원고.ir.json --template 평문제목템플릿.hwp
+.\target\debug\md2hwp.exe 원고.md --worker .\target\debug\md2hwp-rhwp.exe
+.\target\debug\md2hwp-rhwp.exe 원고.ir.json
 ```
 
 `-Rhwp`는 별도 네이티브 실행 파일을 추가 빌드한다. 기본 백엔드와 배포 ZIP 구성은
@@ -105,11 +104,14 @@ pwsh -NoProfile -File tools/development/build.ps1 -Configuration Debug -Rhwp
 `init-template`은 아직 기존 한글 백엔드의 기능이므로 템플릿을 새로 만들 때에는
 한글과 .NET이 필요하다. 이미 만들어진 HWP 템플릿을 읽어 생성하는 rhwp 경로와 구분한다.
 
-현재 지원 범위는 일반 문단, 단일 문단 heading1–heading6 샘플, Text/Space/LineBreak,
-Strong/Emph/Link 표시 문구, 루트 정적 문단의 meta와 date-meta fmt 치환이다.
-형식이 완전한 기존 init-template 결과를 별도 파일로 생성하여 시험한다.
-HWPX, 복합 제목 블록, 목록·코드·그림·표·각주·상호참조의 생성, 개체 내부 메타데이터는
-명시적 미지원 오류다. 현재 AURI 기본 템플릿의 복합 제목 블록도 아직 사용할 수 없다.
+현재 지원 범위는 일반 문단, heading1–heading6의 평문·번호 문단 및 복합 제목 블록,
+Text/Space/LineBreak, Strong/Emph/Link 표시 문구이다. 제목 블록에서는 표·글상자·머리말·
+꼬리말의 여러 제목 슬롯, once/except.once, 중첩 each.child, own/ancestor 번호 태그와
+쪽 나눔을 처리한다. 루트 정적 문단과 제목 블록 내부에서 meta 및 date-meta fmt를
+치환한다. 기본 템플릿으로 제목·본문 원고를 생성한 비교 결과는
+[제목 블록 시험](rhwp-headings-2026-10-21.md)에 기록한다.
+HWPX와 원고의 목록·코드·그림·표·각주·상호참조 생성은 명시적 미지원 오류다.
+제목 블록의 그림·OLE·구역 정의와 일부 필드가 포함된 조건부 문단 합치기도 거부한다.
 이 단계의 선언 검사는 기존 validate-template의 모든 native 구조 검사를 대체하지 않는다.
 
 저장은 임시 파일에 수행한 뒤 rhwp 재열기와 모델 비교를 통과해야 결과를 교체한다.
