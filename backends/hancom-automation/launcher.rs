@@ -1,4 +1,4 @@
-//! Repository investigation launcher; the C# worker remains a separate process.
+//! Backend launcher; each worker runs in a separate process.
 use std::{env, ffi::OsString, fs, path::PathBuf, process::Command};
 
 pub(crate) fn has_document_extension(path: &std::path::Path) -> bool {
@@ -330,6 +330,21 @@ fn launch_worker(
     arguments: Vec<OsString>,
     resource_root: Option<&std::path::Path>,
 ) -> Result<(), String> {
+    let mut command = worker_command(worker, dotnet)?;
+    if let Some(root) = resource_root {
+        command.current_dir(root);
+    }
+    let status = command
+        .args(arguments)
+        .status()
+        .map_err(|e| format!("Could not start backend worker: {e}"))?;
+    if !status.success() {
+        return Err(format!("Backend worker failed: {status}"));
+    }
+    Ok(())
+}
+
+fn worker_command(worker: PathBuf, dotnet: Option<PathBuf>) -> Result<Command, String> {
     if !worker
         .extension()
         .is_some_and(|e| e.eq_ignore_ascii_case("exe"))
@@ -337,27 +352,27 @@ fn launch_worker(
     {
         return Err("Worker must be a published Windows x64 EXE.".into());
     }
+    let native = worker
+        .file_name()
+        .is_some_and(|name| name.eq_ignore_ascii_case("md2hwp-rhwp.exe"));
+    if native && dotnet.is_some() {
+        return Err("--dotnet cannot be used with the native md2hwp-rhwp.exe worker.".into());
+    }
+    let mut command = Command::new(fs::canonicalize(worker).map_err(|e| e.to_string())?);
+    if native {
+        return Ok(command);
+    }
     let dotnet = resolve_runtime(dotnet)?;
     let runtime_root = dotnet
         .parent()
         .ok_or("dotnet.exe has no parent directory")?;
-    let mut command = Command::new(fs::canonicalize(worker).map_err(|e| e.to_string())?);
-    if let Some(root) = resource_root {
-        command.current_dir(root);
-    }
-    let status = command
-        .args(arguments)
+    command
         // The published apphost searches environment variables only: use the checked runtime.
         .env("DOTNET_ROOT_X64", runtime_root)
         .env("DOTNET_ROOT", runtime_root)
         .env("DOTNET_ROLL_FORWARD", "LatestPatch")
-        .env("DOTNET_ROLL_FORWARD_TO_PRERELEASE", "0")
-        .status()
-        .map_err(|e| format!("Could not start Hancom worker: {e}"))?;
-    if !status.success() {
-        return Err(format!("Hancom worker failed: {status}"));
-    }
-    Ok(())
+        .env("DOTNET_ROLL_FORWARD_TO_PRERELEASE", "0");
+    Ok(command)
 }
 
 fn adjacent_default(explicit: Option<PathBuf>, name: &str) -> Result<PathBuf, String> {
@@ -374,6 +389,58 @@ fn adjacent_default(explicit: Option<PathBuf>, name: &str) -> Result<PathBuf, St
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn x64_pe_fixture() -> Vec<u8> {
+        let mut pe = vec![0; 134];
+        pe[..2].copy_from_slice(b"MZ");
+        pe[0x3c..0x40].copy_from_slice(&128u32.to_le_bytes());
+        pe[128..].copy_from_slice(b"PE\0\0\x64\x86");
+        pe
+    }
+
+    #[test]
+    fn native_worker_needs_no_runtime_and_rejects_dotnet_override() {
+        let directory = tempfile::tempdir().unwrap();
+        for name in ["md2hwp-rhwp.exe", "MD2HWP-RHWP.EXE"] {
+            let worker = directory.path().join(name);
+            fs::write(&worker, x64_pe_fixture()).unwrap();
+            let command = worker_command(worker.clone(), None).unwrap();
+            assert_eq!(command.get_program(), fs::canonicalize(&worker).unwrap());
+            assert_eq!(command.get_envs().count(), 0);
+            let error = worker_command(worker, Some(directory.path().join("missing-dotnet.exe")))
+                .unwrap_err();
+            assert!(error.contains("--dotnet cannot be used"), "{error}");
+        }
+    }
+
+    #[test]
+    fn other_workers_keep_runtime_and_published_exe_requirements() {
+        let directory = tempfile::tempdir().unwrap();
+        for name in [
+            "md2hwp-backend.exe",
+            "custom.exe",
+            "custom-md2hwp-rhwp.exe",
+            "md2hwp-rhwp.dll",
+        ] {
+            let worker = directory.path().join(name);
+            fs::write(&worker, x64_pe_fixture()).unwrap();
+            let error = worker_command(worker, Some(directory.path().join("missing-dotnet.exe")))
+                .unwrap_err();
+            if name.ends_with(".dll") {
+                assert!(error.contains("published Windows x64 EXE"), "{error}");
+            } else {
+                assert!(error.contains(INSTALL), "{error}");
+            }
+        }
+        let worker = directory.path().join("md2hwp-rhwp.exe");
+        fs::write(&worker, b"invalid executable").unwrap();
+        assert!(
+            worker_command(worker, None)
+                .unwrap_err()
+                .contains("published Windows x64 EXE")
+        );
+    }
+
     #[test]
     fn document_extensions_support_hwp_and_hwpx_only() {
         for name in ["template.hwp", "template.HWP", "결과.hwpx", "결과.HWPX"] {
@@ -512,10 +579,7 @@ mod tests {
     }
     #[test]
     fn rejects_wrong_architecture_and_malformed_hosts() {
-        let mut pe = vec![0; 134];
-        pe[..2].copy_from_slice(b"MZ");
-        pe[0x3c..0x40].copy_from_slice(&128u32.to_le_bytes());
-        pe[128..].copy_from_slice(b"PE\0\0\x64\x86");
+        let mut pe = x64_pe_fixture();
         assert!(is_x64_pe(&pe));
         pe[132..].copy_from_slice(&0x14cu16.to_le_bytes());
         assert!(!is_x64_pe(&pe));

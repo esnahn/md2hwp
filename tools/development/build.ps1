@@ -3,7 +3,8 @@
 [CmdletBinding()]
 param(
     [ValidateSet('Debug', 'Release')][string]$Configuration = 'Release',
-    [switch]$Package
+    [switch]$Package,
+    [switch]$Rhwp
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -19,6 +20,7 @@ try {
     & (Join-Path $PSHOME 'pwsh.exe') -NoProfile -File (Join-Path $PSScriptRoot 'update-third-party-notices.ps1') -Check
     if ($LASTEXITCODE -ne 0) { throw 'Third-party notices need regeneration and review.' }
     $cargoArgs = @('build', '-p', 'md2hwp', '--target-dir', (Join-Path $root 'target'))
+    if ($Rhwp) { $cargoArgs += @('-p', 'md2hwp-rhwp') }
     if ($Configuration -eq 'Release') { $cargoArgs += '--release' }
     & cargo @cargoArgs
     if ($LASTEXITCODE -ne 0) { throw 'Rust build failed.' }
