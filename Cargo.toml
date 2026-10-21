@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "apps/md2hwp",
+    "backends/rhwp",
     "crates/md2hwp-core",
 ]
 resolver = "3"
@@ -10,3 +11,7 @@ version = "0.4.4"
 edition = "2024"
 rust-version = "1.98"
 license = "AGPL-3.0-only"
+
+# Preserve rhwp's deterministic PDF fixes; Cargo only applies root patches.
+[patch.crates-io]
+svg2pdf = { path = "dependencies/vendor/svg2pdf" }

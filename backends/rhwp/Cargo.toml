@@ -1,0 +1,13 @@
+[package]
+name = "md2hwp-rhwp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+md2hwp-core = { path = "../../crates/md2hwp-core" }
+rhwp = { git = "https://github.com/edwardkim/rhwp", rev = "1a76570e833917d15817415a53c09ad61ab3203f", default-features = false }
+serde_json = "1.0.140"
+tempfile = "3"
