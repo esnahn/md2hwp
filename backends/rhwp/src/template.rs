@@ -4,7 +4,7 @@
 //! the caller's model is changed; template and manuscript text are never parsed
 //! recursively after substitution.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use md2hwp_core::ir::{Block, Inline, Metadata, MetadataValue};
 use md2hwp_core::validate::ValidatedDocument;
@@ -34,7 +34,23 @@ pub fn render(
             }
             Block::VerbatimBlock { .. } => {}
             Block::List { .. } => {}
-            Block::Table { .. } => return Err(unsupported("tables")),
+            Block::Table {
+                header,
+                rows,
+                caption,
+                source,
+                ..
+            } => {
+                for cell in header.iter().chain(rows.iter().flatten()) {
+                    check_inlines(cell)?;
+                }
+                if let Some(caption) = caption {
+                    check_inlines(caption)?;
+                }
+                for paragraph in source.iter().flatten() {
+                    check_inlines(&paragraph.inlines)?;
+                }
+            }
             Block::Figure {
                 image,
                 caption,
@@ -118,6 +134,7 @@ pub fn render(
     let code =
         crate::code::Prototype::read(&roots[begin + 1..end], &samples[0], &document.doc_info)?;
     let figures = crate::figures::Prototype::read(&roots[begin + 1..end], &document.doc_info)?;
+    let tables = crate::tables::Prototype::read(&roots, &document.doc_info)?;
     let mut object_orders = crate::model_tools::ObjectOrders::new(&document)?;
     let mut output = roots[..begin].to_vec();
     if !roots[begin].controls.is_empty() {
@@ -137,7 +154,53 @@ pub fn render(
     let mut identity = crate::model_tools::identity_seed(&document)?;
     let mut chapter = None;
     let mut figure_number = 0_u32;
+    let mut generated_tables = BTreeSet::new();
     for (operation, block) in input.blocks.iter().enumerate() {
+        if let Block::Table {
+            columns,
+            header,
+            rows,
+            caption,
+            source,
+            ..
+        } = block
+        {
+            let widths = crate::table_widths::calculate(
+                header,
+                rows,
+                tables.header_sample(),
+                tables.body_sample(),
+                tables.table(),
+                &document.doc_info,
+                tables.width_hwp_units(),
+            )?;
+            let mut paragraphs = tables.render(
+                columns,
+                header,
+                rows,
+                caption.as_deref(),
+                source.as_deref(),
+                chapter,
+                1,
+                &widths,
+                &mut document.doc_info,
+            )?;
+            if break_before_next {
+                crate::headings::page_break(&mut paragraphs[0]);
+            }
+            break_before_next = false;
+            object_orders.assign(&mut paragraphs)?;
+            crate::model_tools::refresh_block_identities(&mut paragraphs, &mut identity)?;
+            for p in &paragraphs {
+                for control in &p.controls {
+                    if let Control::Table(table) = control {
+                        generated_tables.insert(table.common.instance_id);
+                    }
+                }
+            }
+            output.extend(paragraphs);
+            continue;
+        }
         if let Block::Figure {
             caption, source, ..
         } = block
@@ -247,6 +310,8 @@ pub fn render(
     section.paragraphs = output;
     section.raw_stream = None;
     section.raw_provenance = None;
+    crate::table_layout::require_fits(&document.sections[0].paragraphs, &generated_tables)?;
+    crate::table_layout::recalculate_numbers(&mut document, &generated_tables)?;
     core.set_document(document);
     Ok(())
 }

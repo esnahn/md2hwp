@@ -232,7 +232,7 @@ impl Prototype {
 /// Keep the partition dirty: this record is not an authoritative rendered cache.
 /// Matches rhwp 1a76570e's document_core/commands/document.rs
 /// reflow_zero_height_paragraphs path (MIT; see third-party notices).
-fn compose_empty_cell_lines(
+pub(crate) fn compose_empty_cell_lines(
     table: &mut rhwp::model::table::Table,
     info: &DocInfo,
 ) -> Result<(), String> {
