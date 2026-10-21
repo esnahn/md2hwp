@@ -406,7 +406,30 @@ composed model before deriving reader cache fields on a verification-only clone.
 Preserve continuation AUTONUM stored values exactly; never normalize them to make
 a structural comparison pass. Rendered numbers still require visual verification;
 the current live evidence covers continuous numbering from 1 and 7, not OnPage resets.
-Cross references remain unsupported; reject them explicitly.
+Heading/figure/table number references use the existing IR 0.4 and template
+declarations. Require all six ref.headingN.number prototypes; resolve fixed heading
+text from manuscript counters, including ID-less headings and skipped parents,
+before notes and width measurement. Preserve source styling, ignore prototype
+character formatting and do not add native outline fields or hyperlinks. Fixed
+heading references do not update after manual HWP heading edits.
+Figure/table references retain native Crossref fields, properties=2, number display
+and hyperlink=0. Commands use the target's exact raw common-object ID, not a modeled
+identity alias: ?#ID;1;1;0;0 for figures and ?#ID;0;1;0;0 for tables. Resolve target
+native counters after composition, including forward references and existing
+restarts; referenced tables require native numbered captions. Preserve local
+field pairing, unique generated identities, cache text and surrounding formats.
+Support references in body/headings/lists, all note paragraphs, rich cells,
+object captions and all source paragraphs. Figure alt targets must be validated
+without requiring rendered native fields. Keep manuscript/metadata/verbatim literals
+opaque. Defer measured table widths until the reference graph is stable. Match
+Hancom's conservative native-reference reservation using each template fragment's
+own formatting with chapter=999 and number=999, applying source Strong/Emph;
+treat the entire expanded reference as indivisible. Do not measure actual short
+native cache numbers or private markers instead. Provisional equal widths must not
+reach publication. Resize only generated cell widths
+and native text-area widths, preserving IDs, heights, captions, styles and native
+payload/seals; clear only changed paragraph layout caches and recompose empty cells.
+Keep independent expected-model save/reopen validation of native fields and targets.
 Freshly allocate cloned native identities, preserving raw identity payloads and
 valid provenance seals, then fix cross-paragraph field and connector references.
 Never interpret manuscript/metadata literals as template tags or private markers.
@@ -419,6 +442,7 @@ Code-box generation evidence and clipping limits are in docs/rhwp-code-2026-10-2
 Figure generation evidence is in docs/rhwp-figures-2026-10-21.md.
 Table generation evidence is in docs/rhwp-tables-2026-10-21.md.
 Footnote generation evidence and verification limits are in docs/rhwp-footnotes-2026-10-22.md.
+Reference implementation and verification scope are in docs/rhwp-references-2026-10-22.md.
 
 In the Hancom backend, HWP/HWPX template and output extensions select native Open/SaveAs formats; defaults
 remain template.hwp and source.output.hwp. Normalize an HWPX template into a
