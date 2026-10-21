@@ -332,7 +332,18 @@ make the faster path pass. Performance and Debug/Release equivalence evidence is
 recorded in docs/performance/2026-10-09-direct-xml.md; current three-way generation
 evidence and profiles are in docs/performance/2026-10-09-generation-modes.md.
 
-HWP/HWPX template and output extensions select native Open/SaveAs formats; defaults
+The experimental rhwp backend, md2hwp-rhwp.exe, supports HWP templates and HWP output
+only. Reject HWPX template/output paths explicitly before generation; direct users
+to the existing Hancom backend without automatic fallback. HWPX roundtrip findings
+are investigation evidence, not blockers requiring rhwp HWPX implementation.
+Keep IR 0.4 and existing template syntax. See docs/rhwp-backend-strategy.md.
+Build it explicitly with build.ps1 -Rhwp; do not add it to release archives yet.
+The initial renderer supports plain paragraphs/headings and root metadata only;
+reject unsupported features explicitly. Clear obsolete sample line-layout caches
+only on changed paragraphs, preserving unchanged static layout. Native generation
+comparison evidence is in docs/rhwp-generation-2026-10-20.md.
+
+In the Hancom backend, HWP/HWPX template and output extensions select native Open/SaveAs formats; defaults
 remain template.hwp and source.output.hwp. Normalize an HWPX template into a
 disposable HWP working file only after comparing source/reopened structure, styles
 and embedded bytes. Save final HWPX separately, reopen and verify against the same

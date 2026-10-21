@@ -7,6 +7,8 @@ v0.4.4부터 HWPX 템플릿과 HWPX 출력을 지원합니다. 확장자로 형�
 배포 파일은 [v0.4.4 릴리스](https://github.com/esnahn/md2hwp/releases/tag/v0.4.4)에서 확인할 수 있습니다.
 변경 사항은 [릴리스 노트](docs/release-v0.4.4.md)를 참고하십시오.
 
+개발 브랜치에서는 HWP 전용 `md2hwp-rhwp.exe`를 시험 중입니다. 일반 문단·단일 문단 제목·메타데이터부터 구현하며, 복합 제목 블록을 사용하는 현재 기본 템플릿은 아직 지원하지 않습니다. 기존 한글 백엔드가 기본값이며, [개발 범위와 사용 방법](docs/rhwp-backend-strategy.md)을 참고하십시오.
+
 ## 라이선스
 
 md2hwp는 **AGPL-3.0-only**로 제공합니다.
