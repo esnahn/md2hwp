@@ -370,6 +370,13 @@ retain that distinction in comparison evidence. Current long TreatAsChar boxes c
 in both backends; do not claim cross-page layout safety from structural validation.
 Figures embed original PNG/JPG/JPEG/EMF bytes with fresh native geometry and picture
 numbering category, template-owned captions/sources and chapter NEWNUM restarts.
+Reuse an embedded resource only when declaration/content extensions and complete
+decoded file bytes match and the storage mapping is unique. Bound lazy reads by
+the validated source length. Preserve existing declarations, raw data, compression
+and provenance; skip linked/OLE, failed and ambiguous candidates. Picture image
+references use the 1-based BinData declaration index, never its storage ID.
+Resource sharing must not share picture identities, geometry, captions or numbers.
+Do not merge by decoded pixels or relax any source-path or saved-byte checks.
 The pinned HWP5 border_x/border_y arrays are consecutive storage chunks of
 interleaved (x,y) pairs, not separate Cartesian axes; verify Hancom page images.
 Require exact embedded resource IDs/extensions/bytes after serialization, and
