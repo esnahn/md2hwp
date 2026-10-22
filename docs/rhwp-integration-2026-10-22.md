@@ -178,3 +178,85 @@ continuation과 셀별 cut을 읽어 반복 머리행 및 내용이 아직 시�
 `pagination.ir.json`, `hancom-pagination.hwp`, `rhwp-pagination-after.hwp`,
 `hancom-pagination-pages/`, `rhwp-pagination-after-pages/`,
 `rhwp-pagination-after-positions.json`, `pagination-pixels.json`.
+
+## 4. 대규모 원고의 성능과 출력
+
+기존 `examples/korean-lorem/large-5x.ir.json`을 수정하지 않고 두 Release
+백엔드에 직접 입력했다. IR에는 제목 59개, 그림 29개, 표 39개, 코드 박스 14개,
+각주 66개와 번호 상호참조 36개가 있다. 각주·참조 수는 IR을 재귀적으로 센 값이며,
+템플릿 복제로 생기는 실제 표시 개수의 집계는 아니다.
+
+`tools/development/build.ps1 -Configuration Release -Rhwp`로 빌드했다.
+첫 rhwp 최적화 의존성 빌드 시간은 아래 측정에 포함하지 않았다. 다른 빌드와
+테스트를 마친 뒤 같은 워크스테이션에서 한컴, rhwp 순서로 각각 한 번 실행했다.
+동시 변환은 하지 않았다. 외부 Stopwatch로 프로세스 시작부터 최종 종료까지
+측정했으며 IR 읽기·검증, 생성, 직렬화, 저장·재열기 검증과 프로세스 시작 비용을
+포함한다. Markdown→IR 변환, 빌드와 이후 페이지 이미지 출력은 제외한다.
+
+| Release 백엔드 | 프로세스 전체 시간 | 최종 strict 검증 | 한글 페이지 수 | HWP 바이트 |
+| --- | ---: | --- | ---: | ---: |
+| 한컴 | 135.194초 | 통과 | 106 | 4,973,056 |
+| rhwp | 7.819초 | 통과 | 106 | 110,928,384 |
+
+이번 한 번의 실행에서는 rhwp가 약 **17.3배 빠르고 소요 시간이 94.2% 적었다**.
+한컴의 별도 `MD2HWP_TIMING=1` 내부 렌더링 시간은 130.395초였다. 이 값은
+프로세스 전체 측정과 범위가 다르므로 rhwp 전체 시간과 직접 대조하지 않는다.
+콜드 시작을 통제하거나 반복 실행의 중앙값을 구한 결과는 아니며, 다른 원고나
+시스템에 같은 배율을 보장하지 않는다. 이번에는 세부 액션 계측을 추가하지 않았다.
+
+파일 크기는 별도 개선이 필요하다. rhwp는 같은 원본 PNG를 29번 삽입하면서
+같은 바이트를 서로 다른 BinData 스트림 29개에 저장했다. raw CFB를 직접 읽어
+각 스트림이 원본 `examples/korean-lorem/image.png`의 3,790,382바이트 및
+SHA-256과 모두 같음을 확인했다. 여기에 저장 크기 113바이트인 원형 리소스 한 개가 남아
+전체 BinData 스트림은 30개이고, 서로 다른 내용은 두 종류다. 한컴 결과는
+PNG 리소스 한 개를 공유한다. 이 차이가 약 5MB와 111MB의 주원인이다.
+
+코드에서도 그림마다 `Resource::read` 후 `figures::embed`가 새 storage ID를
+할당하고 `NoCompress`로 원본을 복제한다. 현재 중복 제거는 없다. 다음 우선
+작업은 **원본 바이트가 정확히 같은 그림 리소스의 공유**다. 서로 다른 PNG/JPEG를
+디코딩 픽셀만으로 합치는 것은 원본 바이트 보존과 다른 동작이므로 대상이 아니다.
+이 기록에서는 생성 코드를 추가로 바꾸거나 재측정하지 않았으며, 약 17.3배 수치는
+이 큰 파일을 쓰고 다시 읽는 비용까지 포함한다.
+
+두 결과를 같은 한글 2020에서 300dpi PNG로 출력했다. `large-pixels.json`의
+106개 페이지 모두 차이 픽셀은 0이다. rhwp 결과의 30쪽과 마지막 106쪽을 직접
+열어 코드 박스, 표, 출처, 마지막 각주 등의 표시도 확인했다. 한글로 렌더링한
+HWP 결과의 비교이며 rhwp 자체 페이지 렌더러와 한글의 시각적 동등성을 검증한
+것은 아니다. 이번 추적 템플릿의 `TreatAsChar=true` 긴 표·상자 잘림 제한은
+유지된다. 양쪽에서 같은 잘림이 생길 수 있으므로 픽셀 일치를 조판 안전성으로
+해석하지 않는다.
+
+원고와 템플릿은 두 측정 전후에 같은 SHA-256을 유지했다.
+
+| 파일 | SHA-256 |
+| --- | --- |
+| 입력 IR | `C2641AE63A170275AB44D2C638301D3B1499462484EDFD741E2B9EC96B290ACB` |
+| 템플릿 | `20BC2EC532692D09CD2A40A67DDBBC24190FD87033EFADEB884FA48D31FE6B81` |
+| 한컴 Release EXE | `54D332D9E73E8AECFBAE5A21D8F0EF6D4833014907DBEDA7660D5D0B31A2FCB3` |
+| rhwp Release EXE | `3573BCB7BC2E8BF6A92B81EDBFAD40320EED48C80B62855DECEF370669EE1E4E` |
+| 한컴 출력 HWP | `8365F5202B0C486FF069E9B2B8E9E0EA2F6D41450E10EC42B83FB3198CF796FF` |
+| rhwp 출력 HWP | `23DC9F4B7B1C5202CC0A9B1BD704C2A362521F266E33C122498717832585DFB6` |
+
+재현할 때는 이미지 리소스 경로의 기준을 맞추어 원고 폴더에서 실행한다.
+아래는 저장소 루트에서 실행하는 생성 명령이며, 앞서 한글·보안 모듈과 .NET을
+준비하고 실행 중인 한글 문서를 모두 닫아야 한다. 전체 시간은 각 명령을
+별도 Stopwatch로 감싸 측정할 수 있다.
+
+```powershell
+New-Item -ItemType Directory -Force artifacts/rhwp-integration | Out-Null
+Push-Location examples/korean-lorem
+try {
+    ../../target/release/md2hwp-backend.exe ir2hwp --ir large-5x.ir.json --output ../../artifacts/rhwp-integration/hancom-large.hwp --template ../../templates/template.hwp
+    ../../target/release/md2hwp-rhwp.exe ir2hwp --ir large-5x.ir.json --output ../../artifacts/rhwp-integration/rhwp-large.hwp --template ../../templates/template.hwp
+} finally {
+    Pop-Location
+}
+```
+
+원시 증거: `benchmark.ps1`, `hancom-large-timing.json`, `rhwp-large-timing.json`,
+각 백엔드의 `*-large.stdout.log`·`*-large.stderr.log`, `*-large.hwp`,
+`*-large-pages/`, `large-pixels.json`. 실행 기록 JSON에는 측정 시각, 입력·템플릿·
+실행 파일·결과 해시와 측정 범위를 함께 저장했다. 생성 코드는 `1c8501e`, 표 보정의
+검증 기록은 `0d8524e`, 앞선 전체 기능·OnPage 검증은 `f7fb83e`에 있다.
+파일 크기·리소스 중복 근거는 `large-resource-comparison.json`과 CFB 분석 스크립트,
+요약은 `large-summary.json`에 별도로 보관했다.
