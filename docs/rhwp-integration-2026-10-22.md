@@ -8,8 +8,8 @@
 각 백엔드의 최종 strict 구조 검증 통과와 페이지 픽셀 비교를 구분한다.
 strict 통과는 각 백엔드가 독립적으로 구성한 예상 구조를 저장·재열기 결과와
 대조했다는 뜻이며, 두 백엔드의 XML이나 저장 바이트가 같다는 뜻은 아니다.
-이번 기록을 정리하면서 코드를 변경하거나 Rust·.NET 테스트를 재실행하지
-않았다. 특정 입력의 일치 결과를 모든 원고의 페이지 나눔·넘침 안전성이나
+1·2절은 당시 코드 변경 없이 검증한 결과이며, 3절에는 이후 표 머리행 고립을
+보정한 구현과 그 결과를 기록했다. 특정 입력의 일치 결과를 모든 원고의 페이지 나눔·넘침 안전성이나
 HWPX 지원으로 확대하지 않는다.
 
 생성 HWP, 내보낸 XML, 페이지 PNG, 해시와 픽셀 분석 JSON, 임시 분석 스크립트는
@@ -104,3 +104,77 @@ XML을 읽었으므로 한컴 처리의 어느 단계에서 리소스가 바뀌�
 원시 증거: `onpage-template.ps1`, `onpage-template.hwp`,
 `hancom-onpage.hwp`, `rhwp-onpage.hwp`, `hancom-onpage-pages/`,
 `rhwp-onpage-pages/`, `onpage-pixels.json`.
+
+## 3. 표 머리행 고립 보정
+
+`tests/fixtures/rhwp-table-pagination.md`는 기존 `layout-issues.md` 원고에
+`title`과 `md2hwp-heading1-start: 3` 메타데이터를 추가한 회귀 입력이다.
+추적 템플릿의 별도 작업본 `paged-tracked-template.hwp`를 사용했다.
+이 작업본은 `slot:table.header`를 포함하는 TABLE의
+`SHAPEOBJECT/POSITION`에서 `TreatAsChar`만 `false`로 바꾸었다.
+추적 기본 템플릿을 변경하거나 사용자의 배포 템플릿에 이를 채택하지 않았다.
+
+보정 전 결과를 한글에서 열어 native 셀 위치를 확인했을 때 rhwp 결과의
+원래 머리행은 2쪽, 첫 본문행은 3쪽에 있었다. 한컴 결과는 두 행이 모두
+3쪽이었다. 반복된 머리행을 원래 머리행으로 오인하지 않고 실제 셀의 위치를
+대조했다.
+
+| 결과 | 원래 머리행 | 첫 본문행 |
+| --- | ---: | ---: |
+| 보정 전 rhwp | 2쪽 | 3쪽 |
+| 한컴 | 3쪽 | 3쪽 |
+| 보정 후 rhwp | 3쪽 | 3쪽 |
+
+`backends/rhwp/src/pagination.rs`에 보정을 추가했다. 대상은 이번 원고에서
+생성한 표 중 IR의 본문 `rows`가 비어 있지 않고 native `TreatAsChar=false`인
+표다. 정적 템플릿 표, 코드 상자, 글자처럼 취급하는 표와 본문 없는 표는
+대상에서 제외한다. 본문 없는 머리행·출처 2행 표를 잘못 포함하지 않도록
+전체 native 행 수와 별개로 IR의 본문 존재 여부를 전달한다.
+
+표를 원고 순서대로 확인하면서 rhwp 자체 `page-items`의 원래 머리행과 첫
+본문행이 처음 시작하는 쪽·단을 비교한다. 행 조각의 `startRow`/`endRow`,
+continuation과 셀별 cut을 읽어 반복 머리행 및 내용이 아직 시작하지 않은
+빈 분할 영역을 구별한다. 두 행이 다른 쪽·단에서 시작하면 해당 생성 표의
+앵커 문단에 쪽 나눔을 넣고 단 나눔 플래그를 지운다. 다시 조판한 뒤 그 표를
+재판정하고, 뒤따르는 표도 바뀐 배치를 기준으로 차례로 확인한다.
+
+위치가 없거나 중복·모호하고, 행 조각의 연속성이나 초기 cut을 해석할 수
+없으면 실패한다. 이미 쪽 나눔이 있는데도 고립되어 있거나 한 번 보정한 뒤에도
+두 행이 함께 시작하지 않으면 실패하며 반복해서 빈 쪽을 추가하지 않는다.
+저장·재열기한 문서에도 같은 위치 검증을 적용한다. 기존의 독립 예상 구조
+대조, 내장 리소스 원본 바이트 검증, 입력 불변 확인은 유지하며, 이 검증을
+모두 마치기 전에는 임시 출력을 기존 출력에 게시하지 않는다.
+
+새 회귀 입력의 한컴 결과 `hancom-pagination.hwp`와 보정 후 rhwp 결과
+`rhwp-pagination-after.hwp`는 모두 strict 구조 검증을 통과했다. 한글에서
+렌더링한 결과는 각각 3쪽이며 `pagination-pixels.json`의 모든 페이지 차이는
+0픽셀이다. 보정 후 native 위치 기록에서도 머리행과 첫 본문행이 모두
+3쪽으로 확인되었다. 3쪽 페이지 이미지를 직접 열어 표 마지막 행과 출처까지
+표시되는 것을 확인했다.
+
+| 페이지 | 보정 후 두 백엔드의 차이 픽셀 |
+| --- | ---: |
+| 1쪽 | 0 |
+| 2쪽 | 0 |
+| 3쪽 | 0 |
+
+이 보정은 rhwp 자체 조판의 표 머리행 고립을 대상으로 한다. 자체 조판의
+전체 배치가 한글 native 배치와 항상 일치한다는 보장은 아니며, 이 입력의
+픽셀 일치는 별도의 실제 한글 렌더링 증거다. `TreatAsChar=true`인 긴 표·상자의
+클리핑은 해결하지 않았다. 별도 기본 템플릿의 기존 긴 표 시험도 새 코드로 다시
+생성했다. 56번 마지막 행과 두 출처 문단을 포함하는 4쪽 모두 기존 한컴 기준과
+픽셀이 같았다(`long-tables-pixels.json`). 이 결과는 표 전체를 한 쪽에 묶는
+보정이 아님을 확인하는 회귀 증거다. 최종 Rust workspace 테스트 255개(rhwp 140개
+포함), Clippy, rustfmt와 고정 SDK의 C# 계약 테스트가 통과했다. Debug·Release를
+모두 `tools/development/build.ps1 -Rhwp`로 빌드했고 배포 템플릿은 원본과 같은
+해시를 유지했다. 빌드 중의 incremental hard-link 경고는 파일 복사로 대체됐으며
+컴파일이나 검증 실패가 아니었다.
+
+첫 두 단계의 검증은 `f7fb83e`, 표 보정과 회귀 원고는 `1c8501e`에 기록했다.
+
+원시 증거: `paged-tracked-template.ps1`, `paged-tracked-template.hwp`,
+`rhwp-layout-positions.json`, `hancom-layout-positions.json`,
+`rhwp-layout-tracked-page-items.json`, `rhwp-layout-tracked-table-fragments.json`,
+`pagination.ir.json`, `hancom-pagination.hwp`, `rhwp-pagination-after.hwp`,
+`hancom-pagination-pages/`, `rhwp-pagination-after-pages/`,
+`rhwp-pagination-after-positions.json`, `pagination-pixels.json`.

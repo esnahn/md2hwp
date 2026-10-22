@@ -389,9 +389,16 @@ Validate generated widths against actual preceding section/column settings;
 retain native Table numbering starts/restarts without adding chapter restarts.
 The tracked template currently uses TreatAsChar tables and can clip long tables;
 init-template creates non-TreatAsChar tables. Verify long tables with a separate
-template; do not change the tracked template implicitly. The COM-free renderer
-has not ported Hancom's orphan-header pagination correction. Pixel equality
-with a clipped baseline does not establish page-break safety.
+template; do not change the tracked template implicitly. For generated floating
+tables with actual IR body rows, compare original header/first-body start pages
+and columns through rhwp's own page-items. Correct an orphan by adding an anchor
+page break and clearing its column break, repaginate, then reread later tables.
+Reject ambiguous/missing positions or a split persisting after one correction;
+verify again after reopen without weakening the independent model comparison.
+Exclude static/inline tables and header-only tables even when they have a source
+row. This is rhwp layout evidence, not a general Hancom pagination guarantee;
+see docs/rhwp-integration-2026-10-22.md. Pixel equality with a clipped baseline
+does not establish page-break safety.
 Footnotes support body/title/list paragraphs and table cells, including rich link
 labels, repeated heading-title/each.child copies and multiple body paragraphs.
 Keep IR 0.4 and the existing footnote/footnote.next sample declarations. Capture
