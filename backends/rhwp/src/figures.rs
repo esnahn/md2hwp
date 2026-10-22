@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2026 Euisoon Ahn
-//! Native pictures use new resources and geometry, with template-owned captions.
+//! Native pictures share exact image resources, with independent geometry and captions.
 
 use md2hwp_core::ir::{Inline, SourceParagraph};
 use rhwp::model::{
-    bin_data::{BinData, BinDataCompression, BinDataContent, BinDataType},
+    bin_data::{BinData, BinDataCompression, BinDataContent, BinDataStatus, BinDataType},
     control::{AutoNumberType, Control, NewNumber},
     document::{DocInfo, Document},
     image::{CropInfo, Picture},
@@ -370,6 +370,42 @@ fn embed(
     resource: &crate::image_resource::Resource,
     document: &mut Document,
 ) -> Result<u16, String> {
+    for (index, entry) in document.doc_info.bin_data_list.iter().enumerate() {
+        if entry.data_type != BinDataType::Embedding
+            || entry.extension.as_deref() != Some(resource.extension.as_str())
+            || matches!(entry.status, BinDataStatus::Error | BinDataStatus::Ignored)
+            || document
+                .doc_info
+                .bin_data_list
+                .iter()
+                .filter(|other| other.storage_id == entry.storage_id)
+                .count()
+                != 1
+        {
+            continue;
+        }
+        let mut contents = document
+            .bin_data_content
+            .iter()
+            .filter(|content| content.id == entry.storage_id);
+        let Some(content) = contents.next() else {
+            continue;
+        };
+        if contents.next().is_some() || content.extension != resource.extension {
+            continue;
+        }
+        // Compare complete decoded file bytes, not pixels or stored deflate
+        // bytes. Bound lazy decompression by the validated resource's size.
+        if content
+            .data
+            .load_limited(resource.bytes.len())
+            .is_some_and(|bytes| bytes == resource.bytes)
+        {
+            // Pictures reference the 1-based declaration index, NOT storage_id.
+            // Leave the reused declaration, compression and provenance intact.
+            return u16::try_from(index + 1).map_err(|_| "Too many embedded resources".into());
+        }
+    }
     let position = u16::try_from(document.doc_info.bin_data_list.len() + 1)
         .map_err(|_| "Too many embedded resources")?;
     let maximum = document
@@ -481,6 +517,74 @@ mod tests {
             panic!()
         };
         p
+    }
+
+    #[test]
+    fn shares_exact_embedding_by_logical_index_without_changing_template_resources() {
+        let bytes = resource("png");
+        let mut document = Document::default();
+        document.doc_info.bin_data_list = vec![
+            BinData::default(),
+            BinData {
+                attr: 0x11,
+                data_type: BinDataType::Embedding,
+                compression: BinDataCompression::Compress,
+                storage_id: u16::MAX,
+                extension: Some("png".into()),
+                raw_data: Some(vec![9, 8, 7]),
+                ..Default::default()
+            },
+        ];
+        document.bin_data_content.push(BinDataContent {
+            id: u16::MAX,
+            data: bytes.bytes.clone().into(),
+            extension: "png".into(),
+        });
+        let before = format!("{document:?}");
+        assert_eq!(embed(&bytes, &mut document).unwrap(), 2);
+        assert_eq!(format!("{document:?}"), before);
+        let mut different = resource("png");
+        different.bytes[10] ^= 1;
+        assert!(embed(&different, &mut document).is_err());
+        assert_eq!(format!("{document:?}"), before);
+    }
+
+    #[test]
+    fn does_not_share_different_bytes_formats_or_ambiguous_storage() {
+        let bytes = resource("png");
+        let mut document = Document::default();
+        assert_eq!(embed(&bytes, &mut document).unwrap(), 1);
+        assert_eq!(embed(&bytes, &mut document).unwrap(), 1);
+        let mut other = resource("png");
+        other.bytes[10] ^= 1;
+        assert_eq!(embed(&other, &mut document).unwrap(), 2);
+        other.extension = "jpeg".into();
+        assert_eq!(embed(&other, &mut document).unwrap(), 3);
+
+        for ambiguous in 0..5 {
+            let mut document = Document::default();
+            embed(&bytes, &mut document).unwrap();
+            match ambiguous {
+                0 => document.doc_info.bin_data_list[0].data_type = BinDataType::Storage,
+                1 => document.bin_data_content.clear(),
+                2 => document.bin_data_content[0].extension = "jpg".into(),
+                3 => document
+                    .bin_data_content
+                    .push(document.bin_data_content[0].clone()),
+                4 => document
+                    .doc_info
+                    .bin_data_list
+                    .push(document.doc_info.bin_data_list[0].clone()),
+                _ => unreachable!(),
+            }
+            let count = document.doc_info.bin_data_list.len();
+            let existing = format!("{:?}", document.doc_info.bin_data_list);
+            assert_eq!(embed(&bytes, &mut document).unwrap() as usize, count + 1);
+            assert_eq!(
+                format!("{:?}", &document.doc_info.bin_data_list[..count]),
+                existing
+            );
+        }
     }
 
     #[test]
@@ -695,6 +799,7 @@ mod tests {
             "all-features/image.png",
             "jpeg/image.jpg",
             "emf/EmfOnly.emf",
+            "all-features/image.png",
         ] {
             resources.insert(
                 blocks.len(),
@@ -735,6 +840,36 @@ mod tests {
         .unwrap();
         crate::template::render(&ir, &mut core, &resources).unwrap();
         let expected = core.document().clone();
+        let pictures: Vec<_> = expected.sections[0]
+            .paragraphs
+            .iter()
+            .flat_map(|p| &p.controls)
+            .filter_map(|control| match control {
+                Control::Picture(picture) => Some(picture),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(pictures.len(), 4);
+        assert_eq!(
+            pictures[0].image_attr.bin_data_id,
+            pictures[3].image_attr.bin_data_id
+        );
+        assert_ne!(
+            pictures[0].common.instance_id,
+            pictures[3].common.instance_id
+        );
+        let number = |picture: &Picture| {
+            picture.caption.as_ref().unwrap().paragraphs[0]
+                .controls
+                .iter()
+                .find_map(|control| match control {
+                    Control::AutoNumber(number) => Some(number.number),
+                    _ => None,
+                })
+                .unwrap()
+        };
+        assert_eq!(number(pictures[0]), 1);
+        assert_eq!(number(pictures[3]), 4);
         let result = core.export_hwp_with_adapter_snapshot_with_report().unwrap();
         assert!(result.content_loss().is_empty());
         let reopened = rhwp::DocumentCore::from_bytes(result.bytes()).unwrap();
