@@ -17,6 +17,7 @@ mod note_insert;
 mod note_plan;
 mod note_storage;
 mod object_references;
+mod pagination;
 mod reference_insert;
 mod table_layout;
 mod table_widths;
@@ -189,7 +190,7 @@ fn run(options: Options) -> Result<(), String> {
     let mut doc = DocumentCore::from_bytes(&template_bytes)
         .map_err(|e| format!("Could not read HWP template: {e:?}"))?;
     note_storage::restore_source_autonums(doc.document_mut())?;
-    let generated_notes = template::render(&ir, &mut doc, &resources)?;
+    let (generated_notes, pagination) = template::render(&ir, &mut doc, &resources)?;
     let expected = doc.document().clone();
     let serialized = doc
         .export_hwp_with_adapter_snapshot_with_report()
@@ -214,7 +215,7 @@ fn run(options: Options) -> Result<(), String> {
     if saved != serialized.bytes() {
         return Err("Saved HWP bytes differ from serialized document".into());
     }
-    let reopened = DocumentCore::from_bytes(&saved)
+    let mut reopened = DocumentCore::from_bytes(&saved)
         .map_err(|e| format!("Saved HWP could not be reopened: {e:?}"))?;
     verify_embedded_bytes(&expected, reopened.document())?;
     note_storage::verify_stored(&expected, reopened.document(), &generated_notes)?;
@@ -227,6 +228,7 @@ fn run(options: Options) -> Result<(), String> {
             diff.differences.iter().take(5).collect::<Vec<_>>()
         ));
     }
+    pagination.verify(&mut reopened)?;
     if read_bounded(&input, limits.max_json_bytes as u64)? != ir_bytes
         || read_bounded(&template_path, 64 * 1024 * 1024)? != template_bytes
     {

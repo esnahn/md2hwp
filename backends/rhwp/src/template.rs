@@ -25,7 +25,7 @@ pub fn render(
     ir: &ValidatedDocument,
     core: &mut DocumentCore,
     resources: &BTreeMap<usize, crate::image_resource::Resource>,
-) -> Result<BTreeSet<u32>, String> {
+) -> Result<(BTreeSet<u32>, crate::pagination::Plan), String> {
     let mut document = core.document().clone();
     if document.sections.len() != 1 {
         return Err(unsupported("templates with multiple sections"));
@@ -171,6 +171,7 @@ pub fn render(
     let mut chapter = None;
     let mut figure_number = 0_u32;
     let mut generated_tables = BTreeSet::new();
+    let mut tables_with_body = BTreeSet::new();
     let mut table_operations = BTreeMap::new();
     for (operation, block) in input.blocks.iter().enumerate() {
         if let Block::Table {
@@ -235,6 +236,9 @@ pub fn render(
                 for control in &p.controls {
                     if let Control::Table(table) = control {
                         generated_tables.insert(table.common.instance_id);
+                        if !rows.is_empty() {
+                            tables_with_body.insert(table.common.instance_id);
+                        }
                         table_operations.insert(table.common.instance_id, operation);
                         if let Some(id) = id {
                             references.bind(id, table.common.instance_id)?;
@@ -448,8 +452,10 @@ pub fn render(
         )?;
     }
     references.apply(&mut document.sections[0].paragraphs, &mut identity)?;
+    let pagination = crate::pagination::Plan::resolve(&document, &tables_with_body)?;
     core.set_document(document);
-    Ok(generated_notes)
+    pagination.correct(core)?;
+    Ok((generated_notes, pagination))
 }
 
 fn unsupported(feature: &str) -> String {
@@ -1001,6 +1007,58 @@ mod tests {
             &ValidationLimits::default(),
         )
         .unwrap()
+    }
+
+    #[test]
+    fn table_with_header_and_source_but_no_body_has_no_pagination_anchor() {
+        use md2hwp_core::ir::{SourceParagraph, TableAlignment};
+        let mut core =
+            DocumentCore::from_bytes(include_bytes!("../../../templates/template.hwp")).unwrap();
+        let mut document = core.document().clone();
+        // Exercise the paginated table path, independently of the tracked
+        // template's inline-table exclusion.
+        for paragraph in &mut document.sections[0].paragraphs {
+            for control in &mut paragraph.controls {
+                if let Control::Table(table) = control
+                    && table.cells.iter().any(|cell| {
+                        cell.paragraphs
+                            .iter()
+                            .any(|paragraph| paragraph.text.contains(&tag("slot:table.header")))
+                    })
+                {
+                    table.common.treat_as_char = false;
+                }
+            }
+        }
+        core.set_document(document);
+        let text = |value: &str| {
+            vec![Inline::Text {
+                value: value.into(),
+            }]
+        };
+        let mut input = ir(vec![Block::Table {
+            id: None,
+            columns: vec![TableAlignment::Default, TableAlignment::Default],
+            header: vec![text("항목"), text("값")],
+            rows: vec![],
+            caption: None,
+            source: Some(vec![SourceParagraph {
+                prefix: "출처".into(),
+                inlines: text("자료"),
+            }]),
+        }])
+        .as_document()
+        .clone();
+        input
+            .metadata
+            .0
+            .insert("title".into(), MetadataValue::Text("머리행과 출처".into()));
+        let input = validate(input, &ValidationLimits::default()).unwrap();
+        let (_, pagination) = render(&input, &mut core, &BTreeMap::new()).unwrap();
+        assert_eq!(pagination, crate::pagination::Plan::default());
+        assert!(core.document().sections[0].paragraphs.iter().flat_map(|p| &p.controls).any(|control| {
+            matches!(control, Control::Table(table) if table.row_count == 2 && table.col_count == 2 && table.cells.last().is_some_and(|cell| cell.col_span == 2))
+        }));
     }
 
     #[test]
