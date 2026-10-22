@@ -40,6 +40,12 @@ internal static class ListContinuationTests
         head.SetAttributeValue("WidthAdjust", "-100");
         Check(NativeListContinuations.CalculateMargin(7200, -200, 750, 1000, head) == 8700,
             "Nested margins, first-line indentation or absolute marker offsets were lost.");
+        head.SetAttributeValue("TextOffset", "0"); head.SetAttributeValue("WidthAdjust", "0");
+        Check(NativeListContinuations.CalculateMargin(0, 0, 2396.5, 1000, head) == 4792 &&
+            NativeListContinuations.CalculateMargin(0, 0, 2397.5, 1000, head) == 4796,
+            "Fractional marker widths encoded character-relative URC instead of fixed HWPUNIT.");
+        try { NativeListContinuations.CalculateMargin(1, 0, 1000, 1000, head); throw new Exception("Relative-character margins were accepted."); }
+        catch (InvalidDataException) { }
         Console.WriteLine("List continuations retain parent/nested item identity, numbering, emphasis and native margin units.");
     }
     private static void Check(bool value, string message) { if (!value) throw new Exception(message); }

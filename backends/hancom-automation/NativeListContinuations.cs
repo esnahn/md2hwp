@@ -38,10 +38,14 @@ internal sealed class NativeListContinuations(XDocument document, IrPreviewPlan 
 
     internal static int CalculateMargin(int left, int indent, double width, int height, XElement head)
     {
+        if ((left & 1) != 0 || (indent & 1) != 0)
+            throw new InvalidDataException("List continuation alignment requires fixed HWPUNIT paragraph margins; relative character units are unsupported.");
         var offset = (double?)head.Attribute("TextOffset") ?? 50;
         if ((string?)head.Attribute("TextOffsetType") != "hwpunit") offset = height * offset / 100;
-        // Paragraph margins use URC (1/14400 inch); marker metrics use HWPUNIT.
-        return checked(left + indent + (int)Math.Round(2 * (width + offset + ((int?)head.Attribute("WidthAdjust") ?? 0))));
+        // URC's low bit selects the unit (HWPURC_MAKE in ParameterSetTable).
+        // Round HWPUNIT first, then encode a fixed length; an odd URC is a
+        // relative character length, not fractional physical precision.
+        return checked(left + indent + 2 * (int)Math.Round(width + offset + ((int?)head.Attribute("WidthAdjust") ?? 0)));
     }
 
     internal void Apply(dynamic hwp, PreviewListMarker marker)
