@@ -23,6 +23,7 @@ mod table_layout;
 mod table_widths;
 mod tables;
 mod template;
+mod template_init;
 mod template_metadata;
 mod template_validation;
 
@@ -37,7 +38,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const USAGE: &str = "usage: md2hwp-rhwp <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp validate-template [[--template] <template.hwp>]\n       md2hwp-rhwp --version\nExperimental HWP-only backend: paragraphs, heading blocks, lists, code boxes, figures, tables, footnotes, number references and metadata.\nFigures accept PNG, JPG, JPEG and EMF; shorthand resources stay within the IR directory, ir2hwp resources within the working directory.\nTables require installed Windows TrueType/OpenType fonts.\nDefault template: template.hwp beside this EXE. HWPX requires md2hwp-backend.exe.";
+const USAGE: &str = "usage: md2hwp-rhwp <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp init-template [[--output] <template.hwp>]\n       md2hwp-rhwp validate-template [[--template] <template.hwp>]\n       md2hwp-rhwp --version\nExperimental HWP-only backend: paragraphs, heading blocks, lists, code boxes, figures, tables, footnotes, number references and metadata.\nFigures accept PNG, JPG, JPEG and EMF; shorthand resources stay within the IR directory, ir2hwp resources within the working directory.\nTables require installed Windows TrueType/OpenType fonts.\nDefault template: template.hwp beside this EXE. HWPX requires md2hwp-backend.exe.";
 
 #[derive(Debug)]
 struct Options {
@@ -285,6 +286,8 @@ fn open_hwp_template(bytes: &[u8]) -> Result<DocumentCore, String> {
     Ok(doc)
 }
 
+const INIT_USAGE: &str = "usage: md2hwp-rhwp init-template [[--output] <template.hwp>]";
+
 const VALIDATE_USAGE: &str = "usage: md2hwp-rhwp validate-template [[--template] <template.hwp>]";
 
 fn command_path(
@@ -329,6 +332,67 @@ fn validate_template_file(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
+fn init_template_file(path: &Path) -> Result<(), String> {
+    let output = std::path::absolute(path).map_err(|e| e.to_string())?;
+    if output.try_exists().map_err(|e| e.to_string())? {
+        return Err(format!(
+            "Template path already exists: {}",
+            output.display()
+        ));
+    }
+    let document = template_init::create()?;
+    template_validation::inspect(&document)?;
+    let mut core = DocumentCore::new_empty();
+    core.set_document(document);
+    let expected = core.document().clone();
+    let serialized = core
+        .export_hwp_with_adapter_snapshot_with_report()
+        .map_err(|e| format!("Template serialization failed: {e:?}"))?;
+    if !serialized.content_loss().is_empty() {
+        return Err(format!(
+            "Template serialization reported content loss: {}",
+            serialized.content_loss().to_json()
+        ));
+    }
+    let mut temporary = tempfile::Builder::new()
+        .prefix(".md2hwp-template-")
+        .suffix(".hwp")
+        .tempfile_in(output.parent().ok_or("Template output has no parent")?)
+        .map_err(|e| e.to_string())?;
+    temporary
+        .write_all(serialized.bytes())
+        .map_err(|e| e.to_string())?;
+    temporary.as_file().sync_all().map_err(|e| e.to_string())?;
+    let bytes = fs::read(temporary.path()).map_err(|e| e.to_string())?;
+    if bytes != serialized.bytes() {
+        return Err("Saved template bytes differ from serialized document".into());
+    }
+    let mut reopened = DocumentCore::from_bytes(&bytes)
+        .map_err(|e| format!("Saved template could not be reopened: {e:?}"))?;
+    verify_embedded_bytes(&expected, reopened.document())?;
+    // Restore only the known native note counters before comparing the independent model.
+    note_storage::restore_source_autonums(reopened.document_mut())?;
+    let diff = diff_documents(&expected, reopened.document());
+    if !diff.is_empty() {
+        return Err(format!(
+            "Saved template differs from the authored model: {:?}",
+            diff.differences.iter().take(5).collect::<Vec<_>>()
+        ));
+    }
+    template_validation::inspect(reopened.document())?;
+    temporary
+        .persist_noclobber(&output)
+        .map_err(|e| format!("Could not publish {}: {}", output.display(), e.error))?;
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&serde_json::json!({
+            "Output": output, "IrVersion": md2hwp_core::ir::IR_VERSION, "Reopened": true
+        }))
+        .map_err(|e| e.to_string())?
+    );
+    Ok(())
+}
+
 fn main() {
     let args: Vec<_> = env::args_os().skip(1).collect();
     if args.len() == 1 && args[0] == "--version" {
@@ -347,6 +411,19 @@ fn main() {
         .map_err(|e| e.to_string())
         .and_then(|exe| {
             let adjacent = exe.parent().ok_or("Executable has no parent directory")?;
+            if args.first().is_some_and(|a| a == "init-template") {
+                if args.len() == 2 && (args[1] == "--help" || args[1] == "-h") {
+                    println!("{INIT_USAGE}");
+                    return Ok(());
+                }
+                let path = command_path(
+                    &args[1..],
+                    "--output",
+                    PathBuf::from("template.hwp"),
+                    INIT_USAGE,
+                )?;
+                return init_template_file(&path);
+            }
             if args.first().is_some_and(|a| a == "validate-template") {
                 if args.len() == 2 && (args[1] == "--help" || args[1] == "-h") {
                     println!("{VALIDATE_USAGE}");
@@ -383,6 +460,35 @@ mod tests {
             .err()
             .unwrap();
         assert!(error.contains("renamed HWPX"));
+    }
+
+    #[test]
+    fn authored_template_reopens_and_refuses_existing_output() {
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("template.hwp");
+        init_template_file(&output).unwrap();
+        let before = fs::read(&output).unwrap();
+        assert!(before.starts_with(&[0xd0, 0xcf, 0x11, 0xe0]));
+        let mut core = DocumentCore::from_bytes(&before).unwrap();
+        note_storage::restore_source_autonums(core.document_mut()).unwrap();
+        template_validation::inspect(core.document()).unwrap();
+        let picture = core.document().sections[0]
+            .paragraphs
+            .iter()
+            .flat_map(|p| &p.controls)
+            .find_map(|c| match c {
+                rhwp::model::control::Control::Picture(p) => Some(p),
+                _ => None,
+            })
+            .unwrap();
+        assert!(matches!(
+            picture.common.numbering_type,
+            rhwp::model::shape::ObjectNumberingType::Picture
+        ));
+        assert!(picture.common.treat_as_char);
+        assert_eq!(core.document().doc_info.char_shapes[0].border_fill_id, 4);
+        assert!(init_template_file(&output).is_err());
+        assert_eq!(fs::read(&output).unwrap(), before);
     }
 
     #[test]
