@@ -418,7 +418,9 @@ serialized AUTONUM payload and generated FOOTNOTE header against the independent
 composed model before deriving reader cache fields on a verification-only clone.
 Preserve continuation AUTONUM stored values exactly; never normalize them to make
 a structural comparison pass. Rendered numbers still require visual verification;
-the current live evidence covers continuous numbering from 1 and 7, not OnPage resets.
+Live Hancom page-image evidence covers continuous numbering from 1 and 7 and
+OnPage resets (page 2: 1–9, page 3: 1). This does not establish rhwp's own note
+layout/display-number calculation; see docs/rhwp-integration-2026-10-22.md.
 Heading/figure/table number references use the existing IR 0.4 and template
 declarations. Require all six ref.headingN.number prototypes; resolve fixed heading
 text from manuscript counters, including ID-less headings and skipped parents,
