@@ -343,9 +343,22 @@ blocks with multiple title slots, once/except.once, nested each.child and templa
 heading counters. Metadata is supported in root static paragraphs and heading
 blocks, including their native containers. Manuscript lists use body formatting
 and template-native marker definitions, depth indentation and independent ordered
-segments/restarts. Continuations with UseInstWidth=false use the exact URC/HWPUNIT
-formula; reject UseInstWidth=true continuations until actual marker-font measurement
-is implemented. Never approximate their alignment or silently add COM. Code boxes
+segments/restarts. Continuations with UseInstWidth=false retain the exact URC/HWPUNIT
+formula. Defer UseInstWidth=true continuations until native document composition,
+then resolve actual numbering-ID counters/history, starts/restarts and per-level
+marker formats before measuring the complete displayed marker in its native character
+format. Support ^1 through ^7 and ^n/^N with an explicit number-format/range whitelist.
+Use the safe Windows GDI facade at four-times logical scale, requiring installed
+TTF/OTF faces and complete marker glyph coverage. Reject image/private-use bullets,
+unsupported numbering formats/ranges, missing or supplementary marker glyphs, HFT
+and font substitution explicitly. Keep this marker-only validation separate from
+ordinary manuscript Unicode, including emoji. Compute continuation left in URC as
+left + indent + 2 * ties-to-even(marker HWPUNIT width + offset + width adjustment).
+URC bit 0 selects fixed HWPUNIT (0) or relative character units (1), not fractional
+physical precision; reject odd left/indent inputs and encode fixed lengths only
+after rounding HWPUNIT. Keep C# and Rust continuation calculations consistent.
+Use the native absolute/relative text offset and no table 1% width allowance.
+Never approximate alignment or silently add COM. Code boxes
 clone the native single-cell TreatAsChar table, independent anchor format, optional
 title and caption source paragraphs. Preserve all raw lines and prototype spacing.
 Empty generated cell paragraphs compose the pinned reader's derived line representation
@@ -437,7 +450,9 @@ Clear obsolete sample line-layout caches
 only on changed paragraphs, preserving unchanged static layout. Native generation
 comparison evidence is in docs/rhwp-generation-2026-10-20.md.
 Heading-block comparison evidence is in docs/rhwp-headings-2026-10-21.md.
-List generation evidence and remaining limits are in docs/rhwp-lists-2026-10-21.md.
+List generation evidence and remaining limits are in docs/rhwp-lists-2026-10-21.md;
+current marker-width implementation and verification scope are in
+docs/rhwp-list-widths-2026-10-22.md. Preserve historical reports as dated evidence.
 Code-box generation evidence and clipping limits are in docs/rhwp-code-2026-10-21.md.
 Figure generation evidence is in docs/rhwp-figures-2026-10-21.md.
 Table generation evidence is in docs/rhwp-tables-2026-10-21.md.
