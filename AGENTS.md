@@ -338,6 +338,19 @@ to the existing Hancom backend without automatic fallback. HWPX roundtrip findin
 are investigation evidence, not blockers requiring rhwp HWPX implementation.
 Keep IR 0.4 and existing template syntax. See docs/rhwp-backend-strategy.md.
 Build it explicitly with build.ps1 -Rhwp; do not add it to release archives yet.
+The rhwp worker also implements HWP-only validate-template and init-template without
+COM/.NET. Strict inspection traverses metadata and all unused prototypes/conditional
+branches before lowering; do not replace it with an empty-manuscript render. Keep
+its result JSON field names and path defaults aligned with the Hancom worker.
+Default-template creation authors neutral native models, never copies a report or
+upstream blank-document fixture. Include all three PAGE_BORDER_FILL records with
+valid one-based border references; Hancom 2020 rejects the incomplete section.
+Author native nonzero column spacing, TTF font flags and the character border's
+transparent brush/dormant Solid diagonal so native XML/CharShape actions retain
+formats exactly instead of materializing missing defaults.
+Reopen, compare the independently authored model and inspect before publishing;
+init-template must refuse existing output paths, including publication races.
+See docs/rhwp-template-tools-2026-10-22.md for live verification and scope.
 The renderer supports paragraphs, plain/numbered heading samples, native heading
 blocks with multiple title slots, once/except.once, nested each.child and template
 heading counters. Metadata is supported in root static paragraphs and heading

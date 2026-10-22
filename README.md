@@ -9,6 +9,8 @@ v0.4.4부터 HWPX 템플릿과 HWPX 출력을 지원합니다. 확장자로 형�
 
 개발 브랜치에서는 HWP 전용 `md2hwp-rhwp.exe`를 시험 중입니다. 일반 문단·제목 블록·메타데이터·중첩 목록·코드 박스·PNG/JPEG/EMF 그림·표·각주·번호 상호참조를 지원하며, 현재 기본 템플릿의 장 표지와 절 목록을 사용할 수 있습니다. 각주는 본문·제목·목록·표 셀에서 지원하며, native 캡션·머리말·꼬리말·바탕쪽에는 넣을 수 없습니다. 여러 문단 목록 항목은 native 번호·글머리표의 실제 폭을 측정해 후속 문단을 정렬합니다. 표의 자동 열 폭과 목록 표식 실측에는 Windows에 설치된 TTF/OTF 글꼴이 필요하며, 지원하지 않는 번호 형식·표식 글리프는 명시적으로 거부합니다. 기존 한글 백엔드가 기본값이며, [개발 범위와 사용 방법](docs/rhwp-backend-strategy.md), [각주 시험](docs/rhwp-footnotes-2026-10-22.md), [상호참조 구현과 검증 범위](docs/rhwp-references-2026-10-22.md), [목록 표식 실측 범위](docs/rhwp-list-widths-2026-10-22.md), [통합 비교·성능](docs/rhwp-integration-2026-10-22.md)를 참고하십시오.
 
+`md2hwp validate-template --worker md2hwp-rhwp.exe`와 `md2hwp init-template 새템플릿.hwp --worker md2hwp-rhwp.exe`도 한글·.NET 없이 실행할 수 있습니다. 생성되는 템플릿은 기존 보고서 서식을 복사하지 않은 기본 서식이며, 기존 파일은 덮어쓰지 않습니다. rhwp 템플릿 검사는 선언·원형·서식 참조를 검사하며 실제 한글 페이지 배치까지 판정하지 않습니다.
+
 ## 라이선스
 
 md2hwp는 **AGPL-3.0-only**로 제공합니다.

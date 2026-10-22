@@ -170,7 +170,32 @@ OnPage 템플릿으로 양쪽 3쪽이 일치했고, 2쪽의 1–9 뒤 3쪽에서
 서식에 따른 보수적 참조 예약 폭과 인접 필드 경계 보존을 적용한 결과다.
 HWPX는 계속 명시적 미지원 오류다.
 제목 블록의 그림·OLE·구역 정의와 일부 필드가 포함된 조건부 문단 합치기도 거부한다.
-이 단계의 선언 검사는 기존 validate-template의 모든 native 구조 검사를 대체하지 않는다.
+별도 `validate-template`은 원고의 사용 여부와 관계없이 모든 선언과 원형을 검사한다.
+검사 범위와 한글 백엔드 대조 결과는 [템플릿 도구 검증](rhwp-template-tools-2026-10-22.md)에 있다.
 
 저장은 임시 파일에 수행한 뒤 rhwp 재열기와 모델 비교를 통과해야 결과를 교체한다.
 이 검사는 한글의 실제 페이지 배치와 시각적 동등성을 보장하지 않는다.
+
+## 한글 없이 템플릿 검사·생성
+
+```powershell
+.\target\debug\md2hwp.exe validate-template templates/template.hwp --worker .\target\debug\md2hwp-rhwp.exe
+.\target\debug\md2hwp.exe init-template 내템플릿.hwp --worker .\target\debug\md2hwp-rhwp.exe
+.\target\debug\md2hwp-rhwp.exe validate-template 내템플릿.hwp
+.\target\debug\md2hwp-rhwp.exe init-template 별도템플릿.hwp
+```
+
+경로는 생략할 수 있으며, 직접 실행에서도 `--template`·`--output`을
+쓸 수 있다. 검사 경로의 기본값은 EXE 폴더의 `template.hwp`, 생성 경로의 기본값은
+현재 작업 폴더의 `template.hwp`이다. 생성은 기존 경로를 덮어쓰지 않는다.
+두 명령 모두 HWP만 지원하며 HWPX 경로는 한글 백엔드 사용을 안내하고 거부한다.
+
+검사는 전체 문서의 메타데이터 문법·필수 키를 먼저 수집하고 모든 제목·목록·박스·
+그림·표·각주·참조 원형, 선언 범위와 서식 참조를 확인한다. 빈 원고를 렌더링하는
+검사가 아니므로 미사용 원형과 조건 분기도 검사한다. 원본은 변경하지 않는다.
+출력 JSON 필드는 한글 백엔드와 같다. 실제 페이지 배치·글자 잘림은 별도 확인해야 한다.
+
+생성은 명시적인 A4·함초롬바탕 10pt 기본 모델에서 시작하며, 기존 HWP 템플릿이나
+upstream의 빈 문서 파일을 복사하지 않는다. 각 역할의 별도 편집 가능한 스타일과
+현재 IR 0.4의 모든 필수 선언·native 표·그림 캡션·각주 샘플을 만든다.
+임시 저장·재열기·독립 모델 대조·엄격한 템플릿 검사를 통과한 뒤 새 경로에 게시한다.
