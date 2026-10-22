@@ -15,6 +15,11 @@ use rhwp::model::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 
+type ReferenceSamples = (
+    BTreeMap<&'static str, String>,
+    BTreeMap<&'static str, Paragraph>,
+);
+
 struct Reference {
     target: String,
     required: bool,
@@ -37,10 +42,11 @@ impl Plan {
     pub(crate) fn has_references(&self) -> bool {
         !self.references.is_empty()
     }
-    pub(crate) fn prepare(
-        ir: &ValidatedDocument,
-        roots: &[Paragraph],
-    ) -> Result<(Self, ValidatedDocument), String> {
+    pub(crate) fn read_samples(roots: &[Paragraph]) -> Result<(), String> {
+        Self::samples(roots).map(|_| ())
+    }
+
+    fn samples(roots: &[Paragraph]) -> Result<ReferenceSamples, String> {
         let mut samples = BTreeMap::new();
         let mut prototypes = BTreeMap::new();
         let find = |token: &str| -> Result<usize, String> {
@@ -91,6 +97,14 @@ impl Plan {
             samples.insert(kind, text);
             prototypes.insert(kind, roots[first + 1].clone());
         }
+        Ok((samples, prototypes))
+    }
+
+    pub(crate) fn prepare(
+        ir: &ValidatedDocument,
+        roots: &[Paragraph],
+    ) -> Result<(Self, ValidatedDocument), String> {
+        let (samples, prototypes) = Self::samples(roots)?;
         let mut literal = serde_json::to_string(ir.as_document()).map_err(|e| e.to_string())?;
         literal.push_str(&serde_json::to_string(roots).map_err(|e| e.to_string())?);
         fn visible(value: &serde_json::Value, out: &mut String) {

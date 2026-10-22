@@ -462,7 +462,7 @@ fn unsupported(feature: &str) -> String {
     format!("rhwp generation does not yet support {feature}; use the Hancom backend")
 }
 
-fn validate_definitions(roots: &[Paragraph]) -> Result<(), String> {
+pub(crate) fn validate_definitions(roots: &[Paragraph]) -> Result<(), String> {
     let value = serde_json::to_value(roots).map_err(|e| e.to_string())?;
     if count_model_kind(&value, "SectionDef") != 0 || count_model_kind(&value, "ColumnDef") != 0 {
         return Err("Only begin:template may carry native section/column controls".into());
@@ -813,9 +813,9 @@ pub(crate) fn replace(p: &mut Paragraph, needle: &str, value: &str) -> Result<us
     let start = p.text[..byte].chars().count();
     let end = start + needle.chars().count();
     let offsets = &p.char_offsets;
-    for pair in offsets[start..end].windows(2) {
-        // Plain ASCII tags cannot span native controls, tabs or field markers.
-        if pair[1] != pair[0] + 1 {
+    for (pair, ch) in offsets[start..end].windows(2).zip(needle.chars()) {
+        // UTF-16 positions must be contiguous, including supplementary scalars.
+        if pair[1] != pair[0] + ch.len_utf16() as u32 {
             return Err("Template tag crosses a native control".into());
         }
     }
@@ -846,7 +846,6 @@ pub(crate) fn replace_metadata(p: &mut Paragraph, metadata: &Metadata) -> Result
         let (key, format) = match key.split_once(":fmt:") {
             Some(("date-meta", format)) => ("date-meta", Some(format)),
             Some(_) => return Err("fmt is supported only for date-meta".into()),
-            None if key.contains(':') => return Err("Malformed metadata tag".into()),
             None => (key, None),
         };
         let value = match metadata.0.get(key) {
@@ -872,7 +871,8 @@ pub(crate) fn replace_metadata(p: &mut Paragraph, metadata: &Metadata) -> Result
         let end = start + length;
         if p.char_offsets[start..end]
             .windows(2)
-            .any(|pair| pair[1] != pair[0] + 1)
+            .zip(p.text.chars().skip(start))
+            .any(|(pair, ch)| pair[1] != pair[0] + ch.len_utf16() as u32)
         {
             return Err("Metadata tag crosses a native control".into());
         }
@@ -898,7 +898,7 @@ pub(crate) fn discard_stale_layout(p: &mut Paragraph) {
     p.invalidate_layout_inputs();
 }
 
-fn format_date(iso: &str, format: &str) -> Result<String, String> {
+pub(crate) fn format_date(iso: &str, format: &str) -> Result<String, String> {
     // The core owns date interpretation. Here accept only its exact derived ISO
     // representation, without reparsing the original display date or using today.
     if iso.len() != 10 || md2hwp_core::metadata::normalize_date(iso).as_deref() != Some(iso) {
@@ -1136,6 +1136,17 @@ mod tests {
                 .contains("exactly one")
         );
         assert_eq!(format!("{:?}", core.document()), before);
+    }
+
+    #[test]
+    fn custom_metadata_keys_allow_colons_and_supplementary_unicode() {
+        let mut p = paragraph("앞 {{md2hwp:meta:md2hwp-😀:detail}} 뒤");
+        let mut metadata = Metadata::default();
+        metadata
+            .0
+            .insert("md2hwp-😀:detail".into(), MetadataValue::Text("값".into()));
+        replace_metadata(&mut p, &metadata).unwrap();
+        assert_eq!(p.text, "앞 값 뒤");
     }
 
     #[test]

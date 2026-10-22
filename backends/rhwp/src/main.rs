@@ -23,6 +23,8 @@ mod table_layout;
 mod table_widths;
 mod tables;
 mod template;
+mod template_metadata;
+mod template_validation;
 
 use md2hwp_core::{ValidationLimits, ir::Block, read_ir};
 use rhwp::{DocumentCore, serializer::hwpx::roundtrip::diff_documents};
@@ -35,7 +37,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const USAGE: &str = "usage: md2hwp-rhwp <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp --version\nExperimental HWP-only backend: paragraphs, heading blocks, lists, code boxes, figures, tables, footnotes, number references and metadata.\nFigures accept PNG, JPG, JPEG and EMF; shorthand resources stay within the IR directory, ir2hwp resources within the working directory.\nTables require installed Windows TrueType/OpenType fonts.\nDefault template: template.hwp beside this EXE. HWPX requires md2hwp-backend.exe.";
+const USAGE: &str = "usage: md2hwp-rhwp <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp validate-template [[--template] <template.hwp>]\n       md2hwp-rhwp --version\nExperimental HWP-only backend: paragraphs, heading blocks, lists, code boxes, figures, tables, footnotes, number references and metadata.\nFigures accept PNG, JPG, JPEG and EMF; shorthand resources stay within the IR directory, ir2hwp resources within the working directory.\nTables require installed Windows TrueType/OpenType fonts.\nDefault template: template.hwp beside this EXE. HWPX requires md2hwp-backend.exe.";
 
 #[derive(Debug)]
 struct Options {
@@ -182,14 +184,7 @@ fn run(options: Options) -> Result<(), String> {
     }
     protect_image_sources(&output, &image_paths)?;
     let template_bytes = read_bounded(&template_path, 64 * 1024 * 1024)?;
-    if !template_bytes.starts_with(&[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) {
-        return Err(
-            "Template must be an HWP compound document; renamed HWPX is not supported".into(),
-        );
-    }
-    let mut doc = DocumentCore::from_bytes(&template_bytes)
-        .map_err(|e| format!("Could not read HWP template: {e:?}"))?;
-    note_storage::restore_source_autonums(doc.document_mut())?;
+    let mut doc = open_hwp_template(&template_bytes)?;
     let (generated_notes, pagination) = template::render(&ir, &mut doc, &resources)?;
     let expected = doc.document().clone();
     let serialized = doc
@@ -278,6 +273,62 @@ fn verify_embedded_bytes(
     Ok(())
 }
 
+fn open_hwp_template(bytes: &[u8]) -> Result<DocumentCore, String> {
+    if !bytes.starts_with(&[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) {
+        return Err(
+            "Template must be an HWP compound document; renamed HWPX is not supported".into(),
+        );
+    }
+    let mut doc = DocumentCore::from_bytes(bytes)
+        .map_err(|e| format!("Could not read HWP template: {e:?}"))?;
+    note_storage::restore_source_autonums(doc.document_mut())?;
+    Ok(doc)
+}
+
+const VALIDATE_USAGE: &str = "usage: md2hwp-rhwp validate-template [[--template] <template.hwp>]";
+
+fn command_path(
+    args: &[OsString],
+    option: &str,
+    default: PathBuf,
+    usage: &str,
+) -> Result<PathBuf, String> {
+    let path = match args {
+        [] => default,
+        [path] if !path.to_string_lossy().starts_with('-') => PathBuf::from(path),
+        [flag, path] if flag == option && !path.to_string_lossy().starts_with('-') => {
+            PathBuf::from(path)
+        }
+        _ => return Err(usage.into()),
+    };
+    hwp_path(&path, "Template")?;
+    Ok(path)
+}
+
+fn validate_template_file(path: &Path) -> Result<(), String> {
+    let path = fs::canonicalize(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    let bytes = read_bounded(&path, 64 * 1024 * 1024)?;
+    let result = (|| {
+        let core = open_hwp_template(&bytes)?;
+        template_validation::inspect(core.document())
+    })();
+    if read_bounded(&path, 64 * 1024 * 1024)? != bytes {
+        return Err("Template changed during validation".into());
+    }
+    let inspection = result?;
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&serde_json::json!({
+            "Template": path, "IrVersion": md2hwp_core::ir::IR_VERSION,
+            "RequiredMetadata": inspection.required_metadata,
+            "RequiresRecognizedDate": inspection.requires_recognized_date,
+            "SourceUnchanged": true
+        }))
+        .map_err(|e| e.to_string())?
+    );
+    Ok(())
+}
+
 fn main() {
     let args: Vec<_> = env::args_os().skip(1).collect();
     if args.len() == 1 && args[0] == "--version" {
@@ -295,12 +346,22 @@ fn main() {
     let result = env::current_exe()
         .map_err(|e| e.to_string())
         .and_then(|exe| {
-            parse(
-                args,
-                exe.parent().ok_or("Executable has no parent directory")?,
-            )
-        })
-        .and_then(run);
+            let adjacent = exe.parent().ok_or("Executable has no parent directory")?;
+            if args.first().is_some_and(|a| a == "validate-template") {
+                if args.len() == 2 && (args[1] == "--help" || args[1] == "-h") {
+                    println!("{VALIDATE_USAGE}");
+                    return Ok(());
+                }
+                let path = command_path(
+                    &args[1..],
+                    "--template",
+                    adjacent.join("template.hwp"),
+                    VALIDATE_USAGE,
+                )?;
+                return validate_template_file(&path);
+            }
+            parse(args, adjacent).and_then(run)
+        });
     if let Err(error) = result {
         eprintln!("md2hwp-rhwp: {error}");
         std::process::exit(1);
@@ -316,6 +377,48 @@ mod tests {
             Path::new("deploy"),
         )
     }
+    #[test]
+    fn renamed_hwpx_and_other_template_formats_are_rejected() {
+        let error = open_hwp_template(b"PK\x03\x04not an HWP compound document")
+            .err()
+            .unwrap();
+        assert!(error.contains("renamed HWPX"));
+    }
+
+    #[test]
+    fn template_command_paths_preserve_native_cli_contract() {
+        let default = PathBuf::from("deploy/template.hwp");
+        for args in [vec![], vec!["custom.hwp"], vec!["--template", "custom.hwp"]] {
+            let args: Vec<_> = args.into_iter().map(OsString::from).collect();
+            let actual =
+                command_path(&args, "--template", default.clone(), VALIDATE_USAGE).unwrap();
+            assert_eq!(
+                actual,
+                if args.is_empty() {
+                    default.clone()
+                } else {
+                    PathBuf::from("custom.hwp")
+                }
+            );
+        }
+        for args in [
+            vec!["custom.hwpx"],
+            vec!["--template"],
+            vec!["--other", "a.hwp"],
+            vec!["a.hwp", "b.hwp"],
+        ] {
+            assert!(
+                command_path(
+                    &args.into_iter().map(OsString::from).collect::<Vec<_>>(),
+                    "--template",
+                    default.clone(),
+                    VALIDATE_USAGE
+                )
+                .is_err()
+            );
+        }
+    }
+
     #[test]
     fn defaults_and_explicit_mode() {
         let a = options(&["source.ir.json"]).unwrap();
