@@ -379,6 +379,7 @@ pub fn render(
     section.paragraphs = output;
     section.raw_stream = None;
     section.raw_provenance = None;
+    lists.resolve_continuations(&mut document)?;
     crate::footnotes::assign_numbers(&mut document, &generated_notes)?;
     crate::table_layout::require_fits(&document.sections[0].paragraphs, &generated_tables)?;
     crate::table_layout::recalculate_numbers(&mut document, &generated_tables)?;

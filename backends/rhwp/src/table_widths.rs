@@ -14,6 +14,43 @@ use unicode_segmentation::UnicodeSegmentation;
 
 const LOGICAL_SCALE: f64 = 4.0;
 
+/// Measures a native list marker in HWPUNIT, without cell margins or the
+/// table-width allowance. Character spacing belongs between graphemes only.
+pub(crate) fn measure_marker(
+    info: &DocInfo,
+    char_shape_id: u32,
+    text: &str,
+) -> Result<f64, String> {
+    if text.chars().all(char::is_whitespace) {
+        return Err("Native list marker must contain non-whitespace text".into());
+    }
+    let shape = info
+        .char_shapes
+        .get(char_shape_id as usize)
+        .ok_or("Native list marker refers to an absent character format")?;
+    let mut measurement = TextMeasurement {
+        native: Measurement::new()?,
+        info,
+        widths: HashMap::new(),
+        references: None,
+    };
+    let mut width = 0.0;
+    let mut previous_gap = 0.0;
+    for element in text.graphemes(true) {
+        let key = measurement.font(shape, language(element), false, false)?;
+        measurement
+            .native
+            .require_glyphs(&key.spec, if element == "\t" { "    " } else { element })?;
+        let advance = measurement.width(&key, element)?;
+        width += previous_gap + advance;
+        previous_gap = advance * f64::from(key.spacing) / 100.0;
+    }
+    if !width.is_finite() || width <= 0.0 {
+        return Err("Native list marker has no positive measured width".into());
+    }
+    Ok(width)
+}
+
 // Keep the manuscript inputs and independently owned native sample references
 // explicit at the rendering boundary.
 #[allow(clippy::too_many_arguments)]
@@ -441,6 +478,69 @@ fn distribute(minimum: &[f64], preferred: &[f64], total: i32) -> Result<Vec<i32>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn markers_reject_missing_text_and_character_formats() {
+        let info = DocInfo::default();
+        for text in ["", " \t\r\n", "\u{2003}\u{3000}"] {
+            assert!(
+                measure_marker(&info, 0, text)
+                    .unwrap_err()
+                    .contains("non-whitespace")
+            );
+        }
+        assert!(
+            measure_marker(&info, 0, "1.")
+                .unwrap_err()
+                .contains("absent character format")
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn marker_spacing_is_between_graphemes_without_a_trailing_gap_or_allowance() {
+        use rhwp::model::style::Font;
+        let mut shape = CharShape {
+            base_size: 1000,
+            ..Default::default()
+        };
+        shape.ratios.fill(75);
+        shape.relative_sizes.fill(80);
+        shape.spacings.fill(20);
+        let info = DocInfo {
+            char_shapes: vec![shape],
+            font_faces: vec![
+                vec![Font {
+                    name: "Arial".into(),
+                    alt_type: 1,
+                    ..Default::default()
+                }];
+                7
+            ],
+            ..Default::default()
+        };
+        // A combining accent is one grapheme: its internal codepoints must
+        // neither acquire character spacing nor split the language font.
+        let first = measure_marker(&info, 0, "a\u{301}").unwrap();
+        let second = measure_marker(&info, 0, ")").unwrap();
+        let combined = measure_marker(&info, 0, "a\u{301})").unwrap();
+        assert!((combined - (first * 1.2 + second)).abs() < 1e-9);
+
+        let mut invalid = info.clone();
+        invalid.font_faces[1][0].name = "md2hwp missing font 934173".into();
+        assert!(
+            measure_marker(&invalid, 0, "1.")
+                .unwrap_err()
+                .contains("unavailable to Windows")
+        );
+        invalid.font_faces[1][0].alt_type = 0;
+        assert!(
+            measure_marker(&invalid, 0, "1.")
+                .unwrap_err()
+                .contains("TrueType/OpenType")
+        );
+    }
+
     #[test]
     fn constrained_distribution_preserves_minimums_and_total() {
         assert_eq!(

@@ -10,6 +10,7 @@ mod heading_plan;
 mod heading_references;
 mod headings;
 mod image_resource;
+mod list_markers;
 mod lists;
 mod model_tools;
 mod note_insert;

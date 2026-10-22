@@ -9,6 +9,7 @@ use rhwp::model::{
     raw_provenance::{record_digest, record_raw_permitted},
     style::{Bullet, HeadType, Numbering, NumberingHead, ParaShape},
 };
+use std::collections::{BTreeMap, BTreeSet};
 
 pub(crate) struct Lists {
     max_depth: usize,
@@ -16,6 +17,7 @@ pub(crate) struct Lists {
     bullet: Bullet,
     ordered: Numbering,
     bullet_id: Option<u16>,
+    pending: BTreeMap<u16, u16>,
 }
 
 impl Lists {
@@ -132,6 +134,7 @@ impl Lists {
             bullet,
             ordered,
             bullet_id: None,
+            pending: BTreeMap::new(),
         })
     }
 
@@ -182,6 +185,8 @@ impl Lists {
                 .ok_or("List number overflow")?;
             let mut first = true;
             let mut continuation_left = None;
+            let mut measured_first = None;
+            let mut needs_width = false;
             for block in &item.blocks {
                 match block {
                     ListItemBlock::List {
@@ -191,6 +196,7 @@ impl Lists {
                         active = None;
                     }
                     ListItemBlock::Paragraph { inlines } => {
+                        let was_first = first;
                         crate::template::check_inlines(inlines)?;
                         let mut paragraph = body_paragraph(body, inlines, info)?;
                         let shape_index = usize::from(body.para_shape_id);
@@ -227,8 +233,13 @@ impl Lists {
                                 .count()
                                 > 1
                             {
-                                continuation_left =
-                                    Some(self.continuation_margin(kind, depth, &shape, info)?);
+                                let head = self.marker_head(kind, depth)?;
+                                needs_width = head.attr & (1 << 2) != 0;
+                                continuation_left = Some(if needs_width {
+                                    shape.margin_left
+                                } else {
+                                    self.continuation_margin(kind, depth, &shape, info)?
+                                });
                             }
                             first = false;
                         } else {
@@ -241,6 +252,18 @@ impl Lists {
                             active = None;
                         }
                         paragraph.para_shape_id = append_shape(info, shape)?;
+                        if needs_width {
+                            if was_first {
+                                measured_first = Some(paragraph.para_shape_id);
+                            } else {
+                                self.pending.insert(
+                                    paragraph.para_shape_id,
+                                    measured_first.ok_or(
+                                        "Missing native marker paragraph for deferred continuation",
+                                    )?,
+                                );
+                            }
+                        }
                         output.push(paragraph);
                     }
                 }
@@ -310,7 +333,21 @@ impl Lists {
         shape: &ParaShape,
         info: &DocInfo,
     ) -> Result<i32, String> {
-        let head = if *kind == ListKind::Bullet {
+        let head = self.marker_head(kind, depth)?;
+        if head.attr & (1 << 2) != 0 {
+            return Err("Native marker width must be resolved after document composition".into());
+        }
+        let height = f64::from(
+            info.char_shapes
+                .get(head.char_shape_id as usize)
+                .ok_or("Missing marker character format")?
+                .base_size,
+        );
+        continuation_offset(shape, &head, height, height)
+    }
+
+    fn marker_head(&self, kind: &ListKind, depth: usize) -> Result<NumberingHead, String> {
+        Ok(if *kind == ListKind::Bullet {
             if self.bullet.image_bullet != 0 {
                 return Err(
                     "Image bullet continuation measurement is unsupported; use the Hancom backend"
@@ -326,26 +363,100 @@ impl Lists {
             }
         } else {
             self.ordered.heads[depth]
-        };
-        if head.attr & (1 << 2) != 0 {
-            return Err("List continuations with UseInstWidth=true require native marker font measurement; use the Hancom backend or explicitly set the template list marker UseInstWidth=false".into());
-        }
-        let height = f64::from(
-            info.char_shapes
-                .get(head.char_shape_id as usize)
-                .ok_or("Missing marker character format")?
-                .base_size,
-        );
-        let offset = if head.attr & (1 << 4) != 0 {
-            f64::from(head.text_distance)
-        } else {
-            height * f64::from(head.text_distance) / 100.0
-        };
-        // Margins are URC; width/offset/adjust are HWPUNIT. Match .NET's ties-to-even rounding.
-        let distance = (2.0 * (height + offset + f64::from(head.width_adjust))).round_ties_even();
-        let margin = i64::from(shape.margin_left) + i64::from(shape.indent) + distance as i64;
-        i32::try_from(margin).map_err(|_| "List continuation indentation overflow".into())
+        })
     }
+
+    pub(crate) fn resolve_continuations(
+        &self,
+        document: &mut rhwp::model::document::Document,
+    ) -> Result<(), String> {
+        if self.pending.is_empty() {
+            return Ok(());
+        }
+        let wanted: BTreeSet<_> = self.pending.values().copied().collect();
+        let displays = crate::list_markers::resolve(document, &wanted)?;
+        let mut updates = BTreeMap::new();
+        for (continuation, first) in &self.pending {
+            let shape = document
+                .doc_info
+                .para_shapes
+                .get(*first as usize)
+                .ok_or("Missing first native list paragraph format")?
+                .clone();
+            let kind = match shape.head_type {
+                HeadType::Bullet => ListKind::Bullet,
+                HeadType::Number => ListKind::Ordered,
+                _ => return Err("Deferred list marker lost its native type".into()),
+            };
+            let head = self.marker_head(&kind, shape.para_level as usize)?;
+            let height = f64::from(
+                document
+                    .doc_info
+                    .char_shapes
+                    .get(head.char_shape_id as usize)
+                    .ok_or("Missing marker character format")?
+                    .base_size,
+            );
+            let width = crate::table_widths::measure_marker(
+                &document.doc_info,
+                head.char_shape_id,
+                displays
+                    .get(first)
+                    .ok_or("Missing generated native marker display")?,
+            )?;
+            let left = continuation_offset(&shape, &head, width, height)?;
+            let mut target = copy_shape(&document.doc_info, *continuation as usize)?;
+            target.margin_left = left;
+            target.indent = 0;
+            updates.insert(*continuation, append_shape(&mut document.doc_info, target)?);
+        }
+        fn apply(paragraphs: &mut [Paragraph], updates: &BTreeMap<u16, u16>) -> Result<(), String> {
+            for p in paragraphs {
+                if let Some(shape) = updates.get(&p.para_shape_id) {
+                    p.para_shape_id = *shape;
+                    crate::template::discard_stale_layout(p);
+                }
+                crate::model_tools::map_nested_containers(p, &mut |children| {
+                    apply(children, updates)
+                })?;
+            }
+            Ok(())
+        }
+        for section in &mut document.sections {
+            apply(&mut section.paragraphs, &updates)?;
+        }
+        Ok(())
+    }
+}
+
+fn continuation_offset(
+    shape: &ParaShape,
+    head: &NumberingHead,
+    width: f64,
+    height: f64,
+) -> Result<i32, String> {
+    if shape.margin_left & 1 != 0 || shape.indent & 1 != 0 {
+        return Err("List continuation alignment requires fixed HWPUNIT paragraph margins; relative character units are unsupported".into());
+    }
+    if !width.is_finite() || width <= 0.0 || !height.is_finite() || height <= 0.0 {
+        return Err("Invalid native list marker dimensions".into());
+    }
+    let offset = if head.attr & (1 << 4) != 0 {
+        f64::from(head.text_distance)
+    } else {
+        height * f64::from(head.text_distance) / 100.0
+    };
+    // URC bit 0 selects the unit. Round physical HWPUNIT first, then shift
+    // left once; rounding after the shift can accidentally encode character units.
+    let distance = 2.0 * (width + offset + f64::from(head.width_adjust)).round_ties_even();
+    if distance < i64::MIN as f64 || distance >= i64::MAX as f64 {
+        return Err("List continuation indentation overflow".into());
+    }
+    let margin = i64::from(shape.margin_left)
+        .checked_add(i64::from(shape.indent))
+        .and_then(|value| value.checked_add(distance as i64))
+        .ok_or("List continuation indentation overflow")?;
+    i32::try_from(margin).map_err(|_| "List continuation indentation overflow".into())
 }
 
 fn valid_character(info: &DocInfo, id: u32) -> Result<(), String> {
@@ -673,7 +784,7 @@ mod tests {
     }
 
     #[test]
-    fn validates_unused_samples_and_rejects_unmeasured_continuations() {
+    fn validates_unused_samples_and_defers_native_marker_measurement() {
         let (roots, mut info, _) = fixture();
         info.numberings[0].level_formats[6].clear();
         assert!(
@@ -697,7 +808,7 @@ mod tests {
                 )
                 .is_ok()
         );
-        let error = lists
+        let output = lists
             .render(
                 &ListKind::Ordered,
                 Some(1),
@@ -707,8 +818,11 @@ mod tests {
                 &body,
                 &mut info,
             )
-            .unwrap_err();
-        assert!(error.contains("UseInstWidth=true") && error.contains("Hancom"));
+            .unwrap();
+        assert_eq!(
+            lists.pending.get(&output[1].para_shape_id),
+            Some(&output[0].para_shape_id)
+        );
     }
 
     #[test]
@@ -824,6 +938,29 @@ mod tests {
                 .continuation_margin(&ListKind::Bullet, 0, &info.para_shapes[0], &info)
                 .unwrap(),
             2176
+        );
+    }
+
+    #[test]
+    fn fractional_marker_widths_encode_fixed_urc_and_reject_relative_inputs() {
+        let shape = ParaShape::default();
+        let head = NumberingHead::default();
+        assert_eq!(
+            continuation_offset(&shape, &head, 2396.5, 1000.0).unwrap(),
+            4792
+        );
+        assert_eq!(
+            continuation_offset(&shape, &head, 2397.5, 1000.0).unwrap(),
+            4796
+        );
+        let relative = ParaShape {
+            margin_left: 1,
+            ..Default::default()
+        };
+        assert!(
+            continuation_offset(&relative, &head, 1000.0, 1000.0)
+                .unwrap_err()
+                .contains("relative character")
         );
     }
 

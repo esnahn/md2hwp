@@ -50,6 +50,13 @@ mod platform {
             count: i32,
             size: *mut Size,
         ) -> i32;
+        fn GetGlyphIndicesW(
+            device: Handle,
+            text: *const u16,
+            count: i32,
+            glyphs: *mut u16,
+            flags: u32,
+        ) -> u32;
         fn GetFontData(
             device: Handle,
             table: u32,
@@ -97,6 +104,50 @@ mod platform {
                 fonts: HashMap::new(),
                 _thread_confined: PhantomData,
             })
+        }
+
+        /// Requires every BMP character to have a glyph in the selected font,
+        /// without Windows font linking or substitution. Supplementary scalars
+        /// cannot be verified by GetGlyphIndicesW and are rejected explicitly.
+        pub fn require_glyphs(&mut self, spec: &FontSpec, text: &str) -> Result<(), String> {
+            if let Some(character) = text
+                .chars()
+                .find(|character| u32::from(*character) > 0xffff)
+            {
+                return Err(format!(
+                    "Native marker glyph coverage cannot be verified for supplementary character U+{:X}",
+                    u32::from(character)
+                ));
+            }
+            // Reuse the complete font selection/face/sfnt validation rather
+            // than allowing glyph checks to select a substituted font.
+            self.extent(spec, text)?;
+            let units: Vec<u16> = text.encode_utf16().collect();
+            if units.is_empty() {
+                return Ok(());
+            }
+            let count =
+                i32::try_from(units.len()).map_err(|_| "Font glyph coverage text is too long")?;
+            let mut glyphs = vec![0u16; units.len()];
+            // SAFETY: this instance owns the DC and extent selected the checked
+            // font. Both UTF-16 and writable glyph buffers have count elements.
+            // GGI_MARK_NONEXISTING_GLYPHS=1 requests 0xffff for missing glyphs.
+            let mapped = unsafe {
+                GetGlyphIndicesW(self.device, units.as_ptr(), count, glyphs.as_mut_ptr(), 1)
+            };
+            if mapped == u32::MAX {
+                return Err(error("Could not verify native marker font glyphs"));
+            }
+            if mapped != count as u32 {
+                return Err("Native marker font glyph coverage was incomplete".into());
+            }
+            if let Some(index) = glyphs.iter().position(|glyph| *glyph == 0xffff) {
+                return Err(format!(
+                    "Native marker font {} has no glyph for U+{:04X}; font fallback cannot be measured accurately",
+                    spec.face, units[index]
+                ));
+            }
+            Ok(())
         }
 
         pub fn extent(&mut self, spec: &FontSpec, text: &str) -> Result<i32, String> {
@@ -211,6 +262,9 @@ mod platform {
         pub fn extent(&mut self, _: &FontSpec, _: &str) -> Result<i32, String> {
             Self::new().map(|_| 0)
         }
+        pub fn require_glyphs(&mut self, _: &FontSpec, _: &str) -> Result<(), String> {
+            Self::new().map(|_| ())
+        }
     }
 }
 
@@ -219,6 +273,30 @@ pub use platform::Measurement;
 #[cfg(all(test, windows))]
 mod tests {
     use super::*;
+
+    #[test]
+    fn marker_glyph_coverage_rejects_missing_and_unverifiable_characters() {
+        let mut measurement = Measurement::new().unwrap();
+        let font = FontSpec {
+            face: "Arial".into(),
+            height: 4000,
+            bold: false,
+            italic: false,
+        };
+        measurement.require_glyphs(&font, "1234567890.)").unwrap();
+        assert!(
+            measurement
+                .require_glyphs(&font, "\u{ffff}")
+                .unwrap_err()
+                .contains("has no glyph for U+FFFF")
+        );
+        assert!(
+            measurement
+                .require_glyphs(&font, "\u{1ffff}")
+                .unwrap_err()
+                .contains("supplementary character U+1FFFF")
+        );
+    }
 
     #[test]
     fn installed_font_measures_utf16_without_face_buffer_length_limit() {
