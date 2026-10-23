@@ -22,7 +22,7 @@ internal static class Program
                 var version = typeof(Program).Assembly
                     .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
                     ?? throw new InvalidOperationException("Missing application version metadata.");
-                Console.WriteLine($"md2hwp-backend {version.Split('+')[0]}");
+                Console.WriteLine($"md2hwp-hancom {version.Split('+')[0]}");
                 return 0;
             }
             if (args.Length > 0 && args[0] == "validate-template")
@@ -41,7 +41,7 @@ internal static class Program
                     1 => "template.hwp",
                     2 when !args[1].StartsWith("--", StringComparison.Ordinal) => args[1],
                     3 when args[1] == "--output" && !args[2].StartsWith("--", StringComparison.Ordinal) => args[2],
-                    _ => throw new ArgumentException("usage: md2hwp-backend init-template [[--output] <template.hwp|template.hwpx>]"),
+                    _ => throw new ArgumentException("usage: md2hwp-hancom init-template [[--output] <template.hwp|template.hwpx>]"),
                 };
                 Console.WriteLine(JsonSerializer.Serialize(HancomPreviewWriter.CreateDefaultTemplate(output), JsonOutput.Options));
                 return 0;
@@ -67,7 +67,7 @@ internal static class Program
         }
         catch (Exception error)
         {
-            Console.Error.WriteLine($"md2hwp-backend: {error}");
+            Console.Error.WriteLine($"md2hwp-hancom: {error}");
             return 1;
         }
     }
@@ -169,11 +169,11 @@ internal sealed record CommandLine(string IrPath, string TemplatePath, string Ou
         + LicenseNotice.Text;
     private const string BaseUsage = """
         usage:
-          md2hwp-backend init-template [[--output] <template.hwp|template.hwpx>]
-          md2hwp-backend validate-template [[--template] <template.hwp|template.hwpx>]
-          md2hwp-backend <source.ir.json> [[--output] <source.output.hwp|source.output.hwpx>] [--template <template.hwp|template.hwpx>] [--visible] [--verbose]
-          md2hwp-backend ir2hwp --ir <source.ir.json> --output <source.output.hwp|source.output.hwpx> [--template <template.hwp|template.hwpx>] [--visible] [--verbose]
-          md2hwp-backend --version
+          md2hwp-hancom init-template [[--output] <template.hwp|template.hwpx>]
+          md2hwp-hancom validate-template [[--template] <template.hwp|template.hwpx>]
+          md2hwp-hancom <source.ir.json> [[--output] <source.output.hwp|source.output.hwpx>] [--template <template.hwp|template.hwpx>] [--visible] [--verbose]
+          md2hwp-hancom ir2hwp --ir <source.ir.json> --output <source.output.hwp|source.output.hwpx> [--template <template.hwp|template.hwpx>] [--visible] [--verbose]
+          md2hwp-hancom --version
         Default template: template.hwp beside the executable.
         Output and template formats follow their .hwp or .hwpx extensions. Default output: HWP.
         """;

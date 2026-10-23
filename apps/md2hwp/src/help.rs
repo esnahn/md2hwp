@@ -3,7 +3,9 @@
 
 const BASIC: &str = "md2hwp <source.md> [source.output.hwp] [--template <template.hwp>] [OPTIONS]";
 const FULL: &str = "md2hwp <source.md> [OPTIONS]";
-const WORKER: &str = "  --worker FILE       Backend executable (default: md2hwp-backend.exe).\n  --dotnet FILE       .NET host for the Hancom backend.";
+const WORKER: &str = "  --worker FILE       Backend executable (default: automatic selection).\n  --dotnet FILE       .NET host for the Hancom backend only.";
+const BACKENDS: &str =
+    "Backend selection: md2hwp-rhwp.exe, then md2hwp-hancom.exe; HWPX uses Hancom.";
 const HELP: &str = "  -h, --help          Show this help.";
 const FORMATS: &str = "Hancom output/template formats: .hwp or .hwpx";
 const COMMANDS: &[(&str, &str, &str)] = &[
@@ -36,7 +38,7 @@ const COMMANDS: &[(&str, &str, &str)] = &[
     (
         "init-template",
         "[template.hwp] [OPTIONS]",
-        "Create a template with Hancom default formatting.",
+        "Create a template with default formatting.",
     ),
 ];
 
@@ -56,7 +58,7 @@ pub fn full() -> String {
         "{FULL}\n\nOptions:\n  [--output] FILE     Optional output path (default: source.output.hwp in the source folder).\n  --template FILE     Template (default: template.hwp).\n{WORKER}\n  --verbose           Show backend details.\n  --version           Show application and selected backend versions.\n{HELP}"
     );
     legacy(&mut text);
-    text.push_str(&format!("\n\n{FORMATS}\n\nSubcommands:\n"));
+    text.push_str(&format!("\n\n{FORMATS}\n{BACKENDS}\n\nSubcommands:\n"));
     for (name, syntax, _) in COMMANDS {
         text.push_str(&format!("  md2hwp {name}"));
         if !syntax.is_empty() {
@@ -131,12 +133,17 @@ pub fn command(name: &str) -> Option<String> {
         ),
         _ => {}
     }
+    if matches!(name, "ir2hwp" | "validate-template" | "init-template") {
+        text.push_str(&format!("\n{BACKENDS}"));
+    }
     Some(text)
 }
 
 fn legacy(text: &mut String) {
     #[cfg(debug_assertions)]
-    text.push_str("\n  --legacy-com        Use the original COM insertion path for comparison.");
+    text.push_str(
+        "\n  --legacy-com        Use Hancom's original COM path (--worker md2hwp-hancom.exe).",
+    );
     #[cfg(not(debug_assertions))]
     let _ = text;
 }

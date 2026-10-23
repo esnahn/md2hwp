@@ -24,7 +24,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
             changes++;
         }
         if (report && changes > 0)
-            Console.Error.WriteLine($"md2hwp-backend: heading layout notice: {changes} table/cell heights changed after title insertion; check wrapping and page placement in the output.");
+            Console.Error.WriteLine($"md2hwp-hancom: heading layout notice: {changes} table/cell heights changed after title insertion; check wrapping and page placement in the output.");
     }
 
     internal static (TemplateHeadingBlocks Layout, XDocument Document) Lower(XDocument source)

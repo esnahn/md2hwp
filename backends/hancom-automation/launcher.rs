@@ -149,7 +149,7 @@ impl VersionOptions {
 }
 
 fn version_usage() -> String {
-    "usage: md2hwp --version [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]".into()
+    "usage: md2hwp --version [--worker <worker.exe>] [--dotnet <dotnet.exe>]".into()
 }
 
 pub fn run_version(arguments: Vec<OsString>) -> Result<(), String> {
@@ -158,7 +158,7 @@ pub fn run_version(arguments: Vec<OsString>) -> Result<(), String> {
         return Err("Hancom requires Windows x64.".into());
     }
     launch_worker(
-        adjacent_default(options.worker, "md2hwp-backend.exe")?,
+        select_worker(options.worker, &[])?,
         options.dotnet,
         vec!["--version".into()],
         None,
@@ -194,7 +194,7 @@ pub fn run_with_resource_root(
     while let Some(key) = args.next() {
         if validate && (key == "--help" || key == "-h") {
             println!(
-                "usage: md2hwp validate-template [[--template] <template.hwp>] [--worker <md2hwp-backend.exe>] [--dotnet <dotnet.exe>]\nThe Hancom backend also accepts .hwpx template paths."
+                "usage: md2hwp validate-template [[--template] <template.hwp>] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\nThe Hancom backend also accepts .hwpx template paths."
             );
             return Ok(());
         }
@@ -242,12 +242,12 @@ pub fn run_with_resource_root(
         println!(".NET 10 x64: {}", resolve_runtime(dotnet)?.display());
         return Ok(());
     }
-    let worker = adjacent_default(worker, "md2hwp-backend.exe")?;
     if validate {
         let template = adjacent_default(template, "template.hwp")?;
         if !has_document_extension(&template) {
             return Err("Template must have .hwp or .hwpx extension.".into());
         }
+        let worker = select_worker(worker, &[&template])?;
         return launch_worker(
             worker,
             dotnet,
@@ -267,6 +267,7 @@ pub fn run_with_resource_root(
         if !has_document_extension(&output) {
             return Err("Template output must be .hwp or .hwpx".into());
         }
+        let worker = select_worker(worker, &[&output])?;
         return launch_worker(
             worker,
             dotnet,
@@ -281,6 +282,7 @@ pub fn run_with_resource_root(
     let ir = ir.ok_or_else(usage)?;
     let template = adjacent_default(template, "template.hwp")?;
     let output = output.ok_or_else(usage)?;
+    let worker = select_worker(worker, &[&template, &output])?;
     for path in [&worker, &ir, &template] {
         if !path.is_file() {
             return Err(format!("Missing input: {}", path.display()));
@@ -386,6 +388,48 @@ fn adjacent_default(explicit: Option<PathBuf>, name: &str) -> Result<PathBuf, St
         .join(name))
 }
 
+fn select_worker(
+    explicit: Option<PathBuf>,
+    documents: &[&std::path::Path],
+) -> Result<PathBuf, String> {
+    if let Some(path) = explicit {
+        return Ok(path);
+    }
+    let executable = env::current_exe().map_err(|e| e.to_string())?;
+    select_adjacent_worker(
+        executable
+            .parent()
+            .ok_or("Executable has no parent directory")?,
+        documents,
+    )
+}
+
+fn select_adjacent_worker(
+    directory: &std::path::Path,
+    documents: &[&std::path::Path],
+) -> Result<PathBuf, String> {
+    let hwpx = documents.iter().any(|path| {
+        path.extension()
+            .is_some_and(|extension| extension.eq_ignore_ascii_case("hwpx"))
+    });
+    let names: &[&str] = if hwpx {
+        &["md2hwp-hancom.exe"]
+    } else {
+        &["md2hwp-rhwp.exe", "md2hwp-hancom.exe"]
+    };
+    for name in names {
+        let path = directory.join(name);
+        if path.is_file() {
+            return Ok(path);
+        }
+    }
+    Err(format!(
+        "No backend worker found beside the executable ({}): expected {}. Use --worker <worker.exe> to select one explicitly.",
+        directory.display(),
+        names.join(" or ")
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -396,6 +440,86 @@ mod tests {
         pe[0x3c..0x40].copy_from_slice(&128u32.to_le_bytes());
         pe[128..].copy_from_slice(b"PE\0\0\x64\x86");
         pe
+    }
+
+    #[test]
+    fn automatic_worker_selection_prefers_rhwp_then_hancom() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path();
+        let hancom = root.join("md2hwp-hancom.exe");
+        fs::write(&hancom, b"worker").unwrap();
+        for documents in [vec![], vec![std::path::Path::new("template.hwp")]] {
+            assert_eq!(select_adjacent_worker(root, &documents).unwrap(), hancom);
+            let rhwp = root.join("md2hwp-rhwp.exe");
+            fs::write(&rhwp, b"worker").unwrap();
+            assert_eq!(select_adjacent_worker(root, &documents).unwrap(), rhwp);
+            fs::remove_file(rhwp).unwrap();
+        }
+    }
+
+    #[test]
+    fn hwpx_template_or_output_requires_hancom_automatically() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path();
+        fs::write(root.join("md2hwp-rhwp.exe"), b"worker").unwrap();
+        let hancom = root.join("md2hwp-hancom.exe");
+        for documents in [
+            vec![std::path::Path::new("template.HwPx")],
+            vec![std::path::Path::new("output.HWPX")],
+            vec![
+                std::path::Path::new("template.hwp"),
+                std::path::Path::new("output.hwpx"),
+            ],
+            vec![
+                std::path::Path::new("template.hwpx"),
+                std::path::Path::new("output.hwp"),
+            ],
+        ] {
+            let error = select_adjacent_worker(root, &documents).unwrap_err();
+            assert!(error.contains("expected md2hwp-hancom.exe"), "{error}");
+            fs::write(&hancom, b"worker").unwrap();
+            assert_eq!(select_adjacent_worker(root, &documents).unwrap(), hancom);
+            fs::remove_file(&hancom).unwrap();
+        }
+    }
+
+    #[test]
+    fn explicit_worker_always_wins_even_for_hwpx_or_missing_workers() {
+        for name in ["md2hwp-rhwp.exe", "custom.exe", "missing.exe"] {
+            let explicit = PathBuf::from("explicit").join(name);
+            for documents in [vec![], vec![std::path::Path::new("template.hwpx")]] {
+                assert_eq!(
+                    select_worker(Some(explicit.clone()), &documents).unwrap(),
+                    explicit
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn automatic_selection_rejects_missing_workers_and_ignores_old_name() {
+        let directory = tempfile::tempdir().unwrap();
+        fs::write(directory.path().join("md2hwp-backend.exe"), b"old worker").unwrap();
+        fs::create_dir(directory.path().join("md2hwp-rhwp.exe")).unwrap();
+        let error = select_adjacent_worker(directory.path(), &[]).unwrap_err();
+        assert!(
+            error.contains("md2hwp-rhwp.exe or md2hwp-hancom.exe"),
+            "{error}"
+        );
+    }
+
+    #[test]
+    fn selected_worker_failure_does_not_switch_to_another_worker() {
+        let directory = tempfile::tempdir().unwrap();
+        let rhwp = directory.path().join("md2hwp-rhwp.exe");
+        fs::write(&rhwp, x64_pe_fixture()).unwrap();
+        fs::write(directory.path().join("md2hwp-hancom.exe"), b"invalid").unwrap();
+        let selected = select_adjacent_worker(directory.path(), &[]).unwrap();
+        assert_eq!(selected, rhwp);
+        // This truncated PE passes the header check but cannot start. Its launch
+        // error must remain the result even when another worker is adjacent.
+        let error = launch_worker(selected, None, vec!["--version".into()], None).unwrap_err();
+        assert!(error.contains("Could not start backend worker"), "{error}");
     }
 
     #[test]
@@ -417,7 +541,7 @@ mod tests {
     fn other_workers_keep_runtime_and_published_exe_requirements() {
         let directory = tempfile::tempdir().unwrap();
         for name in [
-            "md2hwp-backend.exe",
+            "md2hwp-hancom.exe",
             "custom.exe",
             "custom-md2hwp-rhwp.exe",
             "md2hwp-rhwp.dll",
@@ -549,7 +673,7 @@ mod tests {
     }
     #[test]
     fn defaults_are_executable_relative_and_explicit_paths_win() {
-        for name in ["template.hwp", "md2hwp-backend.exe"] {
+        for name in ["template.hwp", "md2hwp-hancom.exe"] {
             assert_eq!(
                 adjacent_default(None, name).unwrap(),
                 env::current_exe().unwrap().parent().unwrap().join(name)

@@ -4,6 +4,7 @@
 param(
     [ValidateSet('Debug', 'Release')][string]$Configuration = 'Release',
     [switch]$Package,
+    # Compatibility switch: both backends are now built unconditionally.
     [switch]$Rhwp
 )
 Set-StrictMode -Version Latest
@@ -19,14 +20,22 @@ Push-Location $root
 try {
     & (Join-Path $PSHOME 'pwsh.exe') -NoProfile -File (Join-Path $PSScriptRoot 'update-third-party-notices.ps1') -Check
     if ($LASTEXITCODE -ne 0) { throw 'Third-party notices need regeneration and review.' }
-    $cargoArgs = @('build', '-p', 'md2hwp', '--target-dir', (Join-Path $root 'target'))
-    if ($Rhwp) { $cargoArgs += @('-p', 'md2hwp-rhwp') }
+    $cargoArgs = @('build', '-p', 'md2hwp', '-p', 'md2hwp-rhwp', '--target-dir', (Join-Path $root 'target'))
     if ($Configuration -eq 'Release') { $cargoArgs += '--release' }
     & cargo @cargoArgs
     if ($LASTEXITCODE -ne 0) { throw 'Rust build failed.' }
     & (Join-Path $PSHOME 'pwsh.exe') -NoProfile -File (Join-Path $PSScriptRoot 'dotnet.ps1') publish $project --configuration $Configuration -p:PublishProfile=FrameworkDependent
     if ($LASTEXITCODE -ne 0) { throw 'Backend publish failed.' }
-    Copy-Item -LiteralPath (Join-Path $published 'md2hwp-backend.exe') -Destination (Join-Path $destination 'md2hwp-backend.exe') -Force
+    Copy-Item -LiteralPath (Join-Path $published 'md2hwp-hancom.exe') -Destination (Join-Path $destination 'md2hwp-hancom.exe') -Force
+    # Remove only the obsolete directly deployed worker, never user templates or archives.
+    $obsoleteWorker = [IO.Path]::GetFullPath((Join-Path $destination 'md2hwp-backend.exe'))
+    if ([IO.Path]::GetDirectoryName($obsoleteWorker) -ne [IO.Path]::GetFullPath($destination) -or [IO.Path]::GetFileName($obsoleteWorker) -ne 'md2hwp-backend.exe') {
+        throw 'Refusing cleanup outside the selected deployment directory.'
+    }
+    if (Test-Path -LiteralPath $obsoleteWorker) {
+        if (-not [IO.File]::Exists($obsoleteWorker)) { throw 'Obsolete worker path is not a regular file.' }
+        Remove-Item -LiteralPath $obsoleteWorker -Force
+    }
     & (Join-Path $PSHOME 'pwsh.exe') -NoProfile -File (Join-Path $PSScriptRoot 'dotnet.ps1') publish $pdfProject --configuration $Configuration -p:PublishProfile=FrameworkDependent
     if ($LASTEXITCODE -ne 0) { throw 'HWP-to-PDF publish failed.' }
     $pdfPublished = Join-Path ([IO.Path]::GetDirectoryName($pdfProject)) "bin/$Configuration/net10.0-windows/win-x64/publish"
@@ -64,7 +73,7 @@ try {
         $stage = Join-Path $dist ('.package-' + [Guid]::NewGuid().ToString('N'))
         $null = New-Item -ItemType Directory -Path $stage
         try {
-            foreach ($name in @('md2hwp.exe', 'md2hwp-backend.exe', 'hwp2pdf.exe', 'md2hwp-completion.ps1', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt')) {
+            foreach ($name in @('md2hwp.exe', 'md2hwp-rhwp.exe', 'md2hwp-hancom.exe', 'hwp2pdf.exe', 'md2hwp-completion.ps1', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt')) {
                 Copy-Item -LiteralPath (Join-Path $destination $name) -Destination $stage
             }
             # Ship the tracked default; never adopt a user's deployment template implicitly.
@@ -72,7 +81,7 @@ try {
             Copy-Item -LiteralPath (Join-Path $root 'licenses') -Destination $stage -Recurse
             $archive = Join-Path $dist "md2hwp-v$version-windows-x64.zip"
             $temporaryArchive = Join-Path $stage 'package.zip'
-            $files = @('md2hwp.exe', 'md2hwp-backend.exe', 'hwp2pdf.exe', 'md2hwp-completion.ps1', 'template.hwp', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt', 'licenses') | ForEach-Object { Join-Path $stage $_ }
+            $files = @('md2hwp.exe', 'md2hwp-rhwp.exe', 'md2hwp-hancom.exe', 'hwp2pdf.exe', 'md2hwp-completion.ps1', 'template.hwp', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt', 'licenses') | ForEach-Object { Join-Path $stage $_ }
             Compress-Archive -LiteralPath $files -DestinationPath $temporaryArchive
             Move-Item -LiteralPath $temporaryArchive -Destination $archive -Force
             Write-Output "Package: $archive"

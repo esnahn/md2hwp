@@ -38,7 +38,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const USAGE: &str = "usage: md2hwp-rhwp <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp init-template [[--output] <template.hwp>]\n       md2hwp-rhwp validate-template [[--template] <template.hwp>]\n       md2hwp-rhwp --version\nExperimental HWP-only backend: paragraphs, heading blocks, lists, code boxes, figures, tables, footnotes, number references and metadata.\nFigures accept PNG, JPG, JPEG and EMF; shorthand resources stay within the IR directory, ir2hwp resources within the working directory.\nTables require installed Windows TrueType/OpenType fonts.\nDefault template: template.hwp beside this EXE. HWPX requires md2hwp-backend.exe.";
+const USAGE: &str = "usage: md2hwp-rhwp <source.ir.json> [[--output] <source.output.hwp>] [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp ir2hwp --ir <source.ir.json> --output <source.output.hwp> [--template <template.hwp>] [--verbose]\n       md2hwp-rhwp init-template [[--output] <template.hwp>]\n       md2hwp-rhwp validate-template [[--template] <template.hwp>]\n       md2hwp-rhwp --version\nExperimental HWP-only backend: paragraphs, heading blocks, lists, code boxes, figures, tables, footnotes, number references and metadata.\nFigures accept PNG, JPG, JPEG and EMF; shorthand resources stay within the IR directory, ir2hwp resources within the working directory.\nTables require installed Windows TrueType/OpenType fonts.\nDefault template: template.hwp beside this EXE. HWPX requires md2hwp-hancom.exe.";
 
 #[derive(Debug)]
 struct Options {
@@ -55,7 +55,7 @@ fn hwp_path(path: &Path, role: &str) -> Result<(), String> {
         .is_some_and(|x| x.eq_ignore_ascii_case("hwp"))
     {
         return Err(format!(
-            "{role} must have .hwp extension. md2hwp-rhwp does not support HWPX; select md2hwp-backend.exe for HWPX."
+            "{role} must have .hwp extension. md2hwp-rhwp does not support HWPX; select md2hwp-hancom.exe for HWPX."
         ));
     }
     Ok(())
