@@ -19,6 +19,9 @@ const TOKENS: [&str; 4] = [
 enum Part {
     Character(usize, char),
     Control(usize),
+    FieldEnd(usize),
+    OrphanEnd(usize),
+    TitleMark(usize),
     Boundary,
 }
 #[derive(Clone, Copy)]
@@ -36,35 +39,11 @@ pub(crate) fn apply(mut paragraphs: Vec<Paragraph>, first: bool) -> Result<Vec<P
                 part: Part::Boundary,
             });
         }
-        let chars: Vec<_> = paragraph.text.chars().collect();
-        let mut positions = paragraph.control_text_positions();
-        // rhwp's text-free fallback counts inline objects as cursor positions;
-        // they still all sit before the paragraph terminator in this text axis.
-        if chars.is_empty() {
-            positions.fill(0);
-        }
-        if positions.iter().any(|&position| position > chars.len()) {
-            return Err(
-                "Conditional ranges require native control positions within their paragraph".into(),
-            );
-        }
-        for position in 0..=chars.len() {
-            for (control, _) in positions
-                .iter()
-                .enumerate()
-                .filter(|(_, p)| **p == position)
-            {
-                atoms.push(Atom {
-                    paragraph: index,
-                    part: Part::Control(control),
-                });
-            }
-            if let Some(&character) = chars.get(position) {
-                atoms.push(Atom {
-                    paragraph: index,
-                    part: Part::Character(position, character),
-                });
-            }
+        for part in parts(paragraph)? {
+            atoms.push(Atom {
+                paragraph: index,
+                part,
+            });
         }
     }
     let matches = |start: usize, token: &str| {
@@ -121,6 +100,46 @@ pub(crate) fn apply(mut paragraphs: Vec<Paragraph>, first: bool) -> Result<Vec<P
     if inside.is_some() {
         return Err("Conditional ranges must end within the same paragraph container".into());
     }
+    // A field may span the paragraph boundary that is about to disappear.
+    // Require both original native boundaries to make the same selection;
+    // retaining an unmatched half cannot survive strict native reopen checks.
+    let mut open_fields = std::collections::HashMap::<(u32, u32), Vec<usize>>::new();
+    for (index, atom) in atoms.iter().enumerate() {
+        let key = match atom.part {
+            Part::Control(control) => {
+                if let Control::Field(field) = &paragraphs[atom.paragraph].controls[control] {
+                    open_fields
+                        .entry((field.field_id, field.ctrl_id))
+                        .or_default()
+                        .push(index);
+                }
+                continue;
+            }
+            Part::FieldEnd(range) => {
+                let paragraph = &paragraphs[atom.paragraph];
+                let Control::Field(field) =
+                    &paragraph.controls[paragraph.field_ranges[range].control_idx]
+                else {
+                    // Legacy Hyperlink controls have no document-wide field ID.
+                    // Their local pair selection is checked by select below.
+                    continue;
+                };
+                (field.field_id, field.ctrl_id)
+            }
+            Part::OrphanEnd(marker) => {
+                let marker = &paragraphs[atom.paragraph].orphan_field_ends[marker];
+                (marker.begin_id_ref, marker.begin_ctrl_id)
+            }
+            _ => continue,
+        };
+        if let Some(begin) = open_fields.get_mut(&key).and_then(Vec::pop)
+            && keep[begin] != keep[index]
+        {
+            return Err(
+                "Conditional ranges cannot remove only one boundary of a native field".into(),
+            );
+        }
+    }
     let mut boundaries = vec![true; paragraphs.len()];
     for (index, atom) in atoms.iter().enumerate() {
         if matches!(atom.part, Part::Boundary) {
@@ -128,20 +147,15 @@ pub(crate) fn apply(mut paragraphs: Vec<Paragraph>, first: bool) -> Result<Vec<P
         }
     }
     for (paragraph_index, paragraph) in paragraphs.iter_mut().enumerate() {
-        let mut text_keep = vec![true; paragraph.text.chars().count()];
-        let mut control_keep = vec![true; paragraph.controls.len()];
-        for (index, atom) in atoms
+        let selected: Vec<_> = atoms
             .iter()
             .enumerate()
-            .filter(|(_, a)| a.paragraph == paragraph_index)
-        {
-            match atom.part {
-                Part::Character(position, _) => text_keep[position] = keep[index],
-                Part::Control(position) => control_keep[position] = keep[index],
-                Part::Boundary => {}
-            }
-        }
-        select(paragraph, &text_keep, &control_keep)?;
+            .filter(|(_, atom)| {
+                atom.paragraph == paragraph_index && !matches!(atom.part, Part::Boundary)
+            })
+            .map(|(index, _)| keep[index])
+            .collect();
+        select(paragraph, &selected)?;
     }
     let mut result = Vec::new();
     let mut cursor = 0;
@@ -153,21 +167,20 @@ pub(crate) fn apply(mut paragraphs: Vec<Paragraph>, first: bool) -> Result<Vec<P
         let mut paragraph = paragraphs[cursor].clone();
         if end > cursor {
             for original in &paragraphs[cursor..=end] {
-                if !original.orphan_field_ends.is_empty()
-                    || !original.title_marks.is_empty()
-                    || !original.field_ranges.is_empty()
-                    || matches!(
-                        original.column_type,
-                        ColumnBreakType::Section | ColumnBreakType::MultiColumn
-                    )
-                    || original.raw_break_type & 3 != 0
+                if matches!(
+                    original.column_type,
+                    ColumnBreakType::Section | ColumnBreakType::MultiColumn
+                ) || original.raw_break_type & 3 != 0
                 {
-                    return Err("Conditional paragraph joins do not support cross-paragraph fields, hidden slots or section/column definitions".into());
+                    return Err(
+                        "Conditional paragraph joins do not support section/column definitions"
+                            .into(),
+                    );
                 }
             }
             let mut tabs = paragraph.tab_extended.clone();
             for next in &paragraphs[cursor + 1..=end] {
-                paragraph.merge_from(next);
+                join(&mut paragraph, next)?;
                 tabs.extend_from_slice(&next.tab_extended);
             }
             let mut meta = paragraphs[end].capture_meta();
@@ -182,6 +195,8 @@ pub(crate) fn apply(mut paragraphs: Vec<Paragraph>, first: bool) -> Result<Vec<P
             || !marker_paragraphs[cursor]
             || !paragraph.text.is_empty()
             || !paragraph.controls.is_empty()
+            || !paragraph.title_marks.is_empty()
+            || !paragraph.orphan_field_ends.is_empty()
             || paragraph.column_type != ColumnBreakType::None
             || paragraph.raw_break_type != 0
         {
@@ -194,6 +209,151 @@ pub(crate) fn apply(mut paragraphs: Vec<Paragraph>, first: bool) -> Result<Vec<P
         cursor = end + 1;
     }
     Ok(result)
+}
+
+// Upstream merge_from omits orphan field ends, trailing hidden slots and
+// recomputes char_count without FIELD_END/TITLE_MARK units. Join on the full
+// native axis instead, retaining every saved control and formatting identity.
+fn join(left: &mut Paragraph, right: &Paragraph) -> Result<(), String> {
+    let text_shift = left.text.chars().count();
+    let native_shift = left
+        .char_count
+        .checked_sub(1)
+        .ok_or("Conditional join has no paragraph terminator")?;
+    let total_native = native_shift
+        .checked_add(right.char_count)
+        .ok_or("Conditional join character count overflow")?;
+    text_shift
+        .checked_add(right.text.chars().count())
+        .ok_or("Conditional join text index overflow")?;
+    let control_shift = left.controls.len();
+    control_shift
+        .checked_add(right.controls.len())
+        .ok_or("Conditional join control index overflow")?;
+    // Prove every addition below stays within the independently checked native
+    // and text axes, including source side channels that do not contain text.
+    for paragraph in [&*left, right] {
+        let text_len = paragraph.text.chars().count();
+        if paragraph.char_count == 0
+            || paragraph
+                .char_offsets
+                .iter()
+                .any(|&p| p >= paragraph.char_count)
+            || paragraph
+                .char_shapes
+                .iter()
+                .any(|s| s.start_pos > paragraph.char_count)
+            || paragraph
+                .range_tags
+                .iter()
+                .any(|r| r.start > r.end || r.end > paragraph.char_count)
+            || paragraph.markpen_marks.iter().any(|m| {
+                m.char_idx > text_len || m.utf16_pos.is_some_and(|p| p > paragraph.char_count)
+            })
+            || paragraph.title_marks.iter().any(|m| m.char_idx > text_len)
+            || paragraph
+                .orphan_field_ends
+                .iter()
+                .any(|m| m.char_idx > text_len)
+            || paragraph.field_ranges.iter().any(|r| {
+                r.start_char_idx > r.end_char_idx
+                    || r.end_char_idx > text_len
+                    || r.control_idx
+                        .checked_add(r.inner_slot_count)
+                        .is_none_or(|i| i >= paragraph.controls.len())
+            })
+        {
+            return Err("Conditional join contains an invalid native position".into());
+        }
+    }
+    left.text.push_str(&right.text);
+    left.char_offsets
+        .extend(right.char_offsets.iter().map(|p| p + native_shift));
+    left.char_shapes
+        .extend(right.char_shapes.iter().cloned().map(|mut shape| {
+            shape.start_pos += native_shift;
+            shape
+        }));
+    // At an empty join boundary the ending paragraph's run owns the next text.
+    let mut shapes = Vec::<rhwp::model::paragraph::CharShapeRef>::new();
+    for shape in left.char_shapes.drain(..) {
+        if shapes
+            .last()
+            .is_some_and(|s| s.start_pos == shape.start_pos)
+        {
+            shapes.pop();
+        }
+        shapes.push(shape);
+    }
+    left.char_shapes = shapes;
+    left.range_tags
+        .extend(right.range_tags.iter().cloned().map(|mut range| {
+            range.start += native_shift;
+            range.end += native_shift;
+            range
+        }));
+    left.markpen_marks
+        .extend(right.markpen_marks.iter().cloned().map(|mut mark| {
+            mark.char_idx += text_shift;
+            if let Some(pos) = &mut mark.utf16_pos {
+                *pos += native_shift;
+            }
+            mark
+        }));
+    left.title_marks
+        .extend(right.title_marks.iter().cloned().map(|mut mark| {
+            mark.char_idx += text_shift;
+            mark
+        }));
+    left.orphan_field_ends
+        .extend(right.orphan_field_ends.iter().cloned().map(|mut mark| {
+            mark.char_idx += text_shift;
+            mark
+        }));
+    left.field_ranges
+        .extend(right.field_ranges.iter().cloned().map(|mut range| {
+            range.start_char_idx += text_shift;
+            range.end_char_idx += text_shift;
+            range.control_idx += control_shift;
+            range
+        }));
+    left.align_ctrl_data_records();
+    left.ctrl_data_records.extend(
+        (0..right.controls.len()).map(|i| right.ctrl_data_records.get(i).cloned().flatten()),
+    );
+    left.controls.extend(right.controls.iter().cloned());
+    left.control_mask |= right.control_mask;
+    left.char_count = total_native;
+    left.has_para_text |= right.has_para_text;
+    // A cross-paragraph field becomes a local pair when its boundary disappears.
+    // Use its native identity, never the display label or a fabricated field ID.
+    let positions = left.control_text_positions();
+    let mut unmatched = Vec::new();
+    for end in std::mem::take(&mut left.orphan_field_ends) {
+        let matched = left.controls.iter().enumerate().find(|(i, control)| {
+            matches!(control, Control::Field(field) if field.field_id == end.begin_id_ref && field.ctrl_id == end.begin_ctrl_id)
+                && positions[*i] <= end.char_idx && !left.field_ranges.iter().any(|range| range.control_idx == *i)
+        });
+        if let Some((control_idx, _)) = matched {
+            let inner_slot_count = positions
+                .iter()
+                .enumerate()
+                .skip(control_idx + 1)
+                .take_while(|(_, position)| **position < end.char_idx)
+                .count();
+            left.field_ranges.push(rhwp::model::paragraph::FieldRange {
+                control_idx,
+                start_char_idx: positions[control_idx],
+                end_char_idx: end.char_idx,
+                end_field_id: end.field_id,
+                inner_slot_count,
+            });
+        } else {
+            unmatched.push(end);
+        }
+    }
+    left.orphan_field_ends = unmatched;
+    Ok(())
 }
 
 fn contains_declaration(control: &Control) -> Result<bool, String> {
@@ -220,175 +380,321 @@ fn width(character: char) -> u32 {
     }
 }
 
-fn select(
-    paragraph: &mut Paragraph,
-    text_keep: &[bool],
-    control_keep: &[bool],
-) -> Result<(), String> {
-    if text_keep.iter().all(|&keep| keep) && control_keep.iter().all(|&keep| keep) {
-        return Ok(());
+// Keep hidden eight-unit slots in the same stream as visible controls. In
+// particular, a tag cannot jump across a field end or a title marker.
+fn parts(paragraph: &Paragraph) -> Result<Vec<Part>, String> {
+    let chars: Vec<_> = paragraph.text.chars().collect();
+    if paragraph.char_offsets.len() != chars.len() {
+        return Err("Conditional ranges require complete native character offsets".into());
     }
-    if paragraph.char_offsets.len() != text_keep.len()
-        || paragraph.ctrl_data_records.len() > paragraph.controls.len()
-    {
-        return Err("Conditional edits require complete native text/control offsets".into());
+    let mut positions = paragraph.control_text_positions();
+    if chars.is_empty() {
+        positions.fill(0);
     }
-    if !paragraph.orphan_field_ends.is_empty() || !paragraph.title_marks.is_empty() {
-        return Err("Conditional edits do not support hidden field-end/title slots".into());
-    }
-    if control_keep.iter().any(|&keep| !keep) && !paragraph.field_ranges.is_empty() {
-        return Err("Conditional control removal does not support native field ranges".into());
-    }
-    let mut tab = 0;
-    let original_tabs = paragraph.tab_extended.clone();
-    paragraph.tab_extended = paragraph
-        .text
-        .chars()
-        .zip(text_keep)
-        .filter_map(|(character, &keep)| {
-            if character != '\t' {
-                return None;
-            }
-            let extension = original_tabs.get(tab).copied();
-            tab += 1;
-            if keep { extension } else { None }
+    if positions.iter().any(|&p| p > chars.len())
+        || paragraph.field_ranges.iter().any(|r| {
+            r.start_char_idx > r.end_char_idx
+                || r.end_char_idx > chars.len()
+                || r.control_idx >= paragraph.controls.len()
+                || r.control_idx
+                    .checked_add(r.inner_slot_count)
+                    .is_none_or(|i| i >= paragraph.controls.len())
         })
-        .collect();
-    // The upstream deletion API preserves rich runs and moves native UTF-16
-    // positions. Delete backwards so every offset still addresses source text.
-    let mut cursor = text_keep.len();
-    while cursor > 0 {
-        cursor -= 1;
-        if text_keep[cursor] {
-            continue;
-        }
-        let end = cursor + 1;
-        while cursor > 0 && !text_keep[cursor - 1] {
-            cursor -= 1;
-        }
-        paragraph.delete_text_at(cursor, end - cursor);
+        || paragraph
+            .orphan_field_ends
+            .iter()
+            .any(|m| m.char_idx > chars.len())
+        || paragraph
+            .title_marks
+            .iter()
+            .any(|m| m.char_idx > chars.len())
+    {
+        return Err("Conditional ranges require complete native control/field positions".into());
     }
-    if control_keep.iter().any(|&keep| !keep) {
-        let chars: Vec<_> = paragraph.text.chars().collect();
-        let mut positions = paragraph.control_text_positions();
-        if chars.is_empty() {
-            positions.fill(0);
+    let mut result = Vec::new();
+    let mut ends = vec![false; paragraph.field_ranges.len()];
+    for position in 0..=chars.len() {
+        for (i, _) in paragraph
+            .orphan_field_ends
+            .iter()
+            .enumerate()
+            .filter(|(_, m)| m.char_idx == position)
+        {
+            result.push(Part::OrphanEnd(i));
         }
-        let mut removed = Vec::new();
-        for position in 0..=chars.len() {
-            let controls: Vec<_> = positions
-                .iter()
-                .enumerate()
-                .filter(|(_, p)| **p == position)
-                .map(|(i, _)| i)
-                .collect();
-            let end = paragraph
-                .char_offsets
-                .get(position)
-                .copied()
-                .unwrap_or_else(|| {
-                    paragraph
-                        .char_offsets
-                        .last()
-                        .zip(chars.last())
-                        .map_or(0, |(&offset, &c)| offset + width(c))
-                        + controls.len() as u32 * 8
-                });
-            let start = end
-                .checked_sub(controls.len() as u32 * 8)
-                .ok_or("Conditional control removal found unsupported native offsets")?;
-            let previous_end = position.checked_sub(1).map_or(0, |previous| {
-                paragraph.char_offsets[previous] + width(chars[previous])
-            });
-            if start < previous_end {
-                return Err(
-                    "Conditional control removal requires native eight-unit control slots".into(),
-                );
+        for (i, _) in paragraph
+            .title_marks
+            .iter()
+            .enumerate()
+            .filter(|(_, m)| m.char_idx == position)
+        {
+            result.push(Part::TitleMark(i));
+        }
+        for (i, range) in paragraph.field_ranges.iter().enumerate() {
+            if range.end_char_idx == position
+                && range.start_char_idx < position
+                && positions[range.control_idx + range.inner_slot_count] < position
+            {
+                result.push(Part::FieldEnd(i));
+                ends[i] = true;
             }
-            for (ordinal, &control) in controls.iter().enumerate() {
-                if !control_keep[control] {
-                    removed.push(start + ordinal as u32 * 8);
+        }
+        for (control, _) in positions
+            .iter()
+            .enumerate()
+            .filter(|(_, p)| **p == position)
+        {
+            result.push(Part::Control(control));
+            for (i, range) in paragraph.field_ranges.iter().enumerate() {
+                if !ends[i]
+                    && range.end_char_idx == position
+                    && range.control_idx + range.inner_slot_count == control
+                {
+                    result.push(Part::FieldEnd(i));
+                    ends[i] = true;
                 }
             }
         }
-        let shift = |position: u32| -> u32 {
-            position
-                - removed
-                    .iter()
-                    .map(|&start| position.saturating_sub(start).min(8))
-                    .sum::<u32>()
-        };
-        for offset in &mut paragraph.char_offsets {
-            *offset = shift(*offset);
+        if let Some(&c) = chars.get(position) {
+            result.push(Part::Character(position, c));
         }
-        for shape in &mut paragraph.char_shapes {
-            shape.start_pos = shift(shape.start_pos);
-        }
-        // Keep the rightmost run at a collapsed boundary, as delete_text_at does.
-        let mut shapes = Vec::<rhwp::model::paragraph::CharShapeRef>::new();
-        for shape in paragraph.char_shapes.drain(..) {
-            if shapes
-                .last()
-                .is_some_and(|s| s.start_pos == shape.start_pos)
-            {
-                shapes.pop();
-            }
-            shapes.push(shape);
-        }
-        paragraph.char_shapes = shapes;
-        for range in &mut paragraph.range_tags {
-            range.start = shift(range.start);
-            range.end = shift(range.end);
-        }
-        for mark in &mut paragraph.markpen_marks {
-            if let Some(position) = &mut mark.utf16_pos {
-                *position = shift(*position);
-            }
-        }
-        paragraph.char_count = paragraph
-            .char_count
-            .checked_sub(removed.len() as u32 * 8)
-            .ok_or("Conditional control removal found an invalid native character count")?;
-        paragraph.align_ctrl_data_records();
-        let mut index = 0;
-        paragraph.controls.retain(|_| {
-            let keep = control_keep[index];
-            index += 1;
-            keep
-        });
-        let mut index = 0;
-        paragraph.ctrl_data_records.retain(|_| {
-            let keep = control_keep[index];
-            index += 1;
-            keep
-        });
     }
+    if ends.iter().any(|&emitted| !emitted) {
+        return Err("Conditional ranges found an invalid native field boundary".into());
+    }
+    Ok(result)
+}
+
+fn select(paragraph: &mut Paragraph, keep: &[bool]) -> Result<(), String> {
+    if keep.iter().all(|&keep| keep) {
+        return Ok(());
+    }
+    let stream = parts(paragraph)?;
+    if paragraph.char_offsets.len() != paragraph.text.chars().count()
+        || paragraph.ctrl_data_records.len() > paragraph.controls.len()
+        || stream.len() != keep.len()
+    {
+        return Err("Conditional edits require complete native text/control offsets".into());
+    }
+    let mut text_keep = vec![false; paragraph.char_offsets.len()];
+    let mut control_keep = vec![false; paragraph.controls.len()];
+    let mut field_keep = vec![false; paragraph.field_ranges.len()];
+    let mut orphan_keep = vec![false; paragraph.orphan_field_ends.len()];
+    let mut title_keep = vec![false; paragraph.title_marks.len()];
+    let mut removed = Vec::new();
+    let mut native = 0u32;
+    let mut previous_control = None;
+    for (part, &retain) in stream.iter().zip(keep) {
+        let units = match *part {
+            Part::Character(i, c) => {
+                // The HWP5 reader leaves one visible space for a native number
+                // control. That character shares the control's eight units.
+                let number_placeholder = c == ' '
+                    && previous_control.is_some_and(|control| {
+                        matches!(
+                            paragraph.controls[control],
+                            Control::AutoNumber(_) | Control::NewNumber(_)
+                        ) && paragraph.char_offsets[i].checked_add(8) == Some(native)
+                            && control_keep[control] == retain
+                    });
+                if !number_placeholder && paragraph.char_offsets[i] != native {
+                    return Err("Conditional edits require exact native UTF-16 slots".into());
+                }
+                text_keep[i] = retain;
+                if number_placeholder { 0 } else { width(c) }
+            }
+            Part::Control(i) => {
+                control_keep[i] = retain;
+                if paragraph.controls[i].occupies_ctrl_char_slot() {
+                    8
+                } else {
+                    0
+                }
+            }
+            Part::FieldEnd(i) => {
+                field_keep[i] = retain;
+                8
+            }
+            Part::OrphanEnd(i) => {
+                orphan_keep[i] = retain;
+                8
+            }
+            Part::TitleMark(i) => {
+                title_keep[i] = retain;
+                8
+            }
+            Part::Boundary => unreachable!(),
+        };
+        if !retain {
+            removed.push((native, units));
+        }
+        native = native
+            .checked_add(units)
+            .ok_or("Conditional native position overflow")?;
+        previous_control = if let Part::Control(i) = *part {
+            Some(i)
+        } else {
+            None
+        };
+    }
+    if native.checked_add(1) != Some(paragraph.char_count) {
+        return Err("Conditional edits require an exact native character count".into());
+    }
+    let shift = |position: u32| -> u32 {
+        position
+            - removed
+                .iter()
+                .map(|&(start, units)| position.saturating_sub(start).min(units))
+                .sum::<u32>()
+    };
+    let mut text_indices = vec![0; text_keep.len() + 1];
+    for (i, &retain) in text_keep.iter().enumerate() {
+        text_indices[i + 1] = text_indices[i] + usize::from(retain);
+    }
+    let mut control_indices = vec![0; control_keep.len() + 1];
+    for (i, &retain) in control_keep.iter().enumerate() {
+        control_indices[i + 1] = control_indices[i] + usize::from(retain);
+    }
+    // Removing just one native field boundary cannot leave a valid native field.
+    // The enclosing template contract requires matched fields after save/reopen.
+    for (i, range) in paragraph.field_ranges.iter().enumerate() {
+        if field_keep[i] != control_keep[range.control_idx] {
+            return Err(
+                "Conditional ranges cannot remove only one boundary of a native field".into(),
+            );
+        }
+    }
+    let mut tab = 0;
+    let old_tabs = std::mem::take(&mut paragraph.tab_extended);
+    paragraph.text = paragraph
+        .text
+        .chars()
+        .enumerate()
+        .filter_map(|(i, c)| {
+            if c == '\t' {
+                if text_keep[i]
+                    && let Some(extension) = old_tabs.get(tab)
+                {
+                    paragraph.tab_extended.push(*extension);
+                }
+                tab += 1;
+            }
+            text_keep[i].then_some(c)
+        })
+        .collect();
+    paragraph.char_offsets = paragraph
+        .char_offsets
+        .iter()
+        .zip(&text_keep)
+        .filter(|(_, retain)| **retain)
+        .map(|(&offset, _)| shift(offset))
+        .collect();
+    let mut shapes = Vec::<rhwp::model::paragraph::CharShapeRef>::new();
+    for mut shape in paragraph.char_shapes.drain(..) {
+        shape.start_pos = shift(shape.start_pos);
+        if shapes
+            .last()
+            .is_some_and(|s| s.start_pos == shape.start_pos)
+        {
+            shapes.pop();
+        }
+        shapes.push(shape);
+    }
+    paragraph.char_shapes = shapes;
+    for range in &mut paragraph.range_tags {
+        range.start = shift(range.start);
+        range.end = shift(range.end);
+    }
+    for mark in &mut paragraph.markpen_marks {
+        mark.char_idx = *text_indices
+            .get(mark.char_idx)
+            .ok_or("Conditional edits found an invalid mark position")?;
+        if let Some(pos) = &mut mark.utf16_pos {
+            *pos = shift(*pos);
+        }
+    }
+    let mut index = 0;
+    paragraph.field_ranges.retain_mut(|range| {
+        let retain = field_keep[index];
+        index += 1;
+        if retain {
+            let last = range.control_idx + range.inner_slot_count + 1;
+            range.inner_slot_count = control_indices[last] - control_indices[range.control_idx + 1];
+            range.control_idx = control_indices[range.control_idx];
+            range.start_char_idx = text_indices[range.start_char_idx];
+            range.end_char_idx = text_indices[range.end_char_idx];
+        }
+        retain
+    });
+    let mut index = 0;
+    paragraph.orphan_field_ends.retain_mut(|mark| {
+        let retain = orphan_keep[index];
+        index += 1;
+        mark.char_idx = text_indices[mark.char_idx];
+        retain
+    });
+    let mut index = 0;
+    paragraph.title_marks.retain_mut(|mark| {
+        let retain = title_keep[index];
+        index += 1;
+        mark.char_idx = text_indices[mark.char_idx];
+        retain
+    });
+    paragraph.align_ctrl_data_records();
+    let mut index = 0;
+    paragraph.controls.retain(|_| {
+        let retain = control_keep[index];
+        index += 1;
+        retain
+    });
+    let mut index = 0;
+    paragraph.ctrl_data_records.retain(|_| {
+        let retain = control_keep[index];
+        index += 1;
+        retain
+    });
+    paragraph.char_count = shift(paragraph.char_count);
     // Match the pinned rhwp native stream categories. The upstream mask helper
     // is private; stale bits must not survive removed controls or tabs.
-    paragraph.control_mask = paragraph.controls.iter().fold(0, |mask, control| {
-        mask | (1
-            << match control {
-                Control::SectionDef(_) | Control::ColumnDef(_) => 2,
-                Control::Field(_) => 3,
-                Control::Table(_)
-                | Control::Shape(_)
-                | Control::Picture(_)
-                | Control::Hyperlink(_)
-                | Control::Ruby(_)
-                | Control::Equation(_)
-                | Control::Form(_)
-                | Control::Unknown(_) => 11,
-                Control::HiddenComment(_) => 15,
-                Control::Header(_) | Control::Footer(_) => 16,
-                Control::Footnote(_) | Control::Endnote(_) => 17,
-                Control::AutoNumber(_) | Control::NewNumber(_) => 18,
-                Control::PageNumberPos(_) | Control::PageHide(_) | Control::PageNumCtrl(_) => 21,
-                Control::Bookmark(_) | Control::IndexMark(_) => 22,
-                Control::CharOverlap(_) => 23,
-            })
-    });
-    if !paragraph.field_ranges.is_empty() {
+    let literal_mask = [(24, '\u{00ad}'), (30, '\u{00a0}'), (31, '\u{2007}')]
+        .into_iter()
+        .filter(|(_, c)| paragraph.text.contains(*c))
+        .fold(0, |mask, (bit, _)| {
+            mask | (paragraph.control_mask & (1 << bit))
+        });
+    paragraph.control_mask = paragraph
+        .controls
+        .iter()
+        .filter(|control| control.occupies_ctrl_char_slot())
+        .fold(literal_mask, |mask, control| {
+            mask | (1
+                << match control {
+                    Control::SectionDef(_) | Control::ColumnDef(_) => 2,
+                    Control::Field(_) => 3,
+                    Control::Table(_)
+                    | Control::Shape(_)
+                    | Control::Picture(_)
+                    | Control::Hyperlink(_)
+                    | Control::Equation(_)
+                    | Control::Form(_)
+                    | Control::Unknown(_) => 11,
+
+                    Control::Header(_) | Control::Footer(_) => 16,
+                    Control::Footnote(_) | Control::Endnote(_) => 17,
+                    Control::AutoNumber(_) => 18,
+                    Control::NewNumber(_)
+                    | Control::PageNumberPos(_)
+                    | Control::PageHide(_)
+                    | Control::PageNumCtrl(_) => 21,
+                    Control::Bookmark(_) | Control::IndexMark(_) => 22,
+                    Control::CharOverlap(_) | Control::Ruby(_) | Control::HiddenComment(_) => 23,
+                })
+        });
+    if !paragraph.field_ranges.is_empty() || !paragraph.orphan_field_ends.is_empty() {
         paragraph.control_mask |= 1 << 4;
+    }
+    if !paragraph.title_marks.is_empty() {
+        paragraph.control_mask |= 1 << 8;
     }
     if paragraph.text.contains('\t') {
         paragraph.control_mask |= 1 << 9;
@@ -540,6 +846,270 @@ mod tests {
                 assert_eq!(paragraph.ctrl_data_records, vec![Some(vec![7, 8])]);
             }
         }
+    }
+
+    fn field() -> Control {
+        use rhwp::model::control::{Field, FieldType};
+        Control::Field(Field {
+            field_type: FieldType::ClickHere,
+            field_id: 42,
+            ctrl_id: u32::from_le_bytes(*b"klc%"),
+            instance_id: Some(87),
+            ..Default::default()
+        })
+    }
+
+    #[test]
+    fn deleting_inside_native_field_preserves_hidden_end_and_utf16_axis() {
+        use rhwp::model::paragraph::FieldRange;
+        let mut paragraph = p(
+            &format!("A{}remove{}한😀", tag("begin:once"), tag("end:once")),
+            3,
+        );
+        let length = paragraph.text.chars().count();
+        paragraph.controls.push(field());
+        paragraph.ctrl_data_records.push(Some(vec![11, 22]));
+        paragraph.field_ranges.push(FieldRange {
+            start_char_idx: 0,
+            end_char_idx: length,
+            control_idx: 0,
+            end_field_id: 91,
+            inner_slot_count: 0,
+        });
+        for offset in &mut paragraph.char_offsets {
+            *offset += 8;
+        }
+        paragraph.char_count += 16;
+        let output = apply(vec![paragraph], false).unwrap();
+        let paragraph = &output[0];
+        assert_eq!(paragraph.text, "A한😀");
+        assert_eq!(paragraph.char_offsets, [8, 9, 10]);
+        assert_eq!(paragraph.char_count, 21);
+        assert_eq!(paragraph.field_ranges.len(), 1);
+        assert_eq!(paragraph.field_ranges[0].end_char_idx, 3);
+        assert_eq!(paragraph.field_ranges[0].end_field_id, 91);
+        assert_eq!(paragraph.ctrl_data_records, [Some(vec![11, 22])]);
+        let Control::Field(field) = &paragraph.controls[0] else {
+            panic!("field lost")
+        };
+        assert_eq!((field.field_id, field.instance_id), (42, Some(87)));
+    }
+
+    #[test]
+    fn deletes_complete_field_and_reindexes_surviving_field() {
+        use rhwp::model::paragraph::FieldRange;
+        let begin = tag("begin:once");
+        let end = tag("end:once");
+        let mut paragraph = p(&format!("{begin}x{end}😀"), 0);
+        let start = begin.chars().count();
+        let after = start + 1;
+        let final_index = paragraph.text.chars().count() - 1;
+        paragraph.controls = vec![field(), field()];
+        paragraph.field_ranges = vec![
+            FieldRange {
+                start_char_idx: start,
+                end_char_idx: after,
+                control_idx: 0,
+                ..Default::default()
+            },
+            FieldRange {
+                start_char_idx: final_index,
+                end_char_idx: final_index + 1,
+                control_idx: 1,
+                end_field_id: 99,
+                ..Default::default()
+            },
+        ];
+        for (i, offset) in paragraph.char_offsets.iter_mut().enumerate() {
+            *offset += u32::from(i >= start) * 8
+                + u32::from(i >= after) * 8
+                + u32::from(i >= final_index) * 8;
+        }
+        paragraph.char_count += 32;
+        let output = apply(vec![paragraph], false).unwrap();
+        let paragraph = &output[0];
+        assert_eq!(paragraph.text, "😀");
+        assert_eq!(paragraph.controls.len(), 1);
+        assert_eq!(paragraph.char_offsets, [8]);
+        assert_eq!(paragraph.char_count, 19);
+        assert_eq!(paragraph.field_ranges[0].control_idx, 0);
+        assert_eq!(paragraph.field_ranges[0].start_char_idx, 0);
+        assert_eq!(paragraph.field_ranges[0].end_char_idx, 1);
+        assert_eq!(paragraph.field_ranges[0].end_field_id, 99);
+    }
+
+    #[test]
+    fn joins_cross_paragraph_field_using_native_identity_and_trailing_slots() {
+        use rhwp::model::paragraph::{OrphanFieldEnd, TitleMark};
+        let mut left = p(&format!("A{}drop", tag("begin:once")), 1);
+        left.controls.push(field());
+        left.ctrl_data_records.push(Some(vec![71]));
+        for offset in &mut left.char_offsets {
+            *offset += 8;
+        }
+        left.char_count += 8;
+        left.column_type = ColumnBreakType::Page;
+        let mut right = p(&format!("drop{}B\t😀", tag("end:once")), 4);
+        let length = right.text.chars().count();
+        right.orphan_field_ends.push(OrphanFieldEnd {
+            char_idx: length,
+            begin_id_ref: 42,
+            field_id: 99,
+            begin_ctrl_id: u32::from_le_bytes(*b"klc%"),
+        });
+        right.title_marks.push(TitleMark {
+            char_idx: length,
+            ignore: true,
+        });
+        right.tab_extended = vec![[7, 6, 5, 4, 3, 2, 1]];
+        right.char_count += 16;
+        right.column_type = ColumnBreakType::Column;
+        let output = apply(vec![left, right], false).unwrap();
+        assert_eq!(output.len(), 1);
+        let paragraph = &output[0];
+        assert_eq!(paragraph.text, "AB\t😀");
+        assert_eq!(paragraph.char_offsets, [8, 9, 10, 18]);
+        assert_eq!(paragraph.char_count, 37);
+        assert_eq!(paragraph.para_shape_id, 4);
+        assert_eq!(paragraph.column_type, ColumnBreakType::Page);
+        assert_eq!(
+            paragraph.title_marks,
+            [TitleMark {
+                char_idx: 4,
+                ignore: true
+            }]
+        );
+        assert!(paragraph.orphan_field_ends.is_empty());
+        assert_eq!(paragraph.field_ranges.len(), 1);
+        assert_eq!(paragraph.field_ranges[0].start_char_idx, 0);
+        assert_eq!(paragraph.field_ranges[0].end_char_idx, 4);
+        assert_eq!(paragraph.field_ranges[0].end_field_id, 99);
+        assert_eq!(paragraph.tab_extended, [[7, 6, 5, 4, 3, 2, 1]]);
+        assert_eq!(paragraph.ctrl_data_records, [Some(vec![71])]);
+    }
+
+    #[test]
+    fn retained_control_mask_matches_native_hwp5_categories() {
+        let mut paragraph = p(&format!("{}x{}B", tag("begin:once"), tag("end:once")), 0);
+        paragraph.controls = vec![
+            Control::Ruby(Default::default()),
+            Control::HiddenComment(Default::default()),
+            Control::NewNumber(Default::default()),
+        ];
+        for offset in &mut paragraph.char_offsets {
+            *offset += 24;
+        }
+        paragraph.char_count += 24;
+        let output = apply(vec![paragraph], false).unwrap();
+        assert_eq!(output[0].text, "B");
+        assert_eq!(output[0].char_offsets, [24]);
+        assert_eq!(output[0].control_mask, (1 << 23) | (1 << 21));
+        assert_eq!(output[0].char_count, 26);
+    }
+
+    #[test]
+    fn joins_reject_overflow_and_out_of_axis_native_positions_before_editing() {
+        let mut left = p("A", 0);
+        left.char_count = u32::MAX;
+        assert!(
+            join(&mut left, &p("B", 0))
+                .unwrap_err()
+                .contains("overflow")
+        );
+        assert_eq!(left.text, "A");
+        let mut left = p("A", 0);
+        let mut right = p("B", 0);
+        right.char_shapes[0].start_pos = u32::MAX;
+        assert!(
+            join(&mut left, &right)
+                .unwrap_err()
+                .contains("invalid native position")
+        );
+        assert_eq!(left.text, "A");
+    }
+
+    #[test]
+    fn rejects_partial_cross_paragraph_field_deletion() {
+        use rhwp::model::paragraph::OrphanFieldEnd;
+        let mut left = p(&format!("A{}", tag("begin:once")), 0);
+        left.controls.push(field());
+        for offset in &mut left.char_offsets {
+            *offset += 8;
+        }
+        left.char_count += 8;
+        let mut right = p(&format!("B{}C", tag("end:once")), 0);
+        right.orphan_field_ends.push(OrphanFieldEnd {
+            char_idx: 1,
+            begin_id_ref: 42,
+            field_id: 91,
+            begin_ctrl_id: u32::from_le_bytes(*b"klc%"),
+        });
+        for offset in &mut right.char_offsets[1..] {
+            *offset += 8;
+        }
+        right.char_count += 8;
+        let error = apply(vec![left, right], false).unwrap_err();
+        assert!(error.contains("only one boundary"), "{error}");
+    }
+
+    #[test]
+    fn retained_native_number_placeholder_shares_its_eight_unit_slot() {
+        use rhwp::model::control::AutoNumber;
+        let mut paragraph = p(
+            &format!(" {}remove{}😀", tag("begin:once"), tag("end:once")),
+            0,
+        );
+        paragraph
+            .controls
+            .push(Control::AutoNumber(AutoNumber::default()));
+        // The reader's visible number space consumes no additional native unit.
+        for offset in &mut paragraph.char_offsets[1..] {
+            *offset += 7;
+        }
+        paragraph.char_count += 7;
+        let output = apply(vec![paragraph], false).unwrap();
+        assert_eq!(output[0].text, " 😀");
+        assert_eq!(output[0].char_offsets, [0, 8]);
+        assert_eq!(output[0].char_count, 11);
+        assert_eq!(output[0].controls.len(), 1);
+    }
+
+    #[test]
+    fn hidden_markers_interrupt_tokens_and_are_selected_with_their_native_slots() {
+        use rhwp::model::paragraph::TitleMark;
+        for first in [true, false] {
+            let begin = tag("begin:once");
+            let end = tag("end:once");
+            let mut paragraph = p(&format!("{begin}한{end}😀"), 0);
+            let position = begin.chars().count();
+            paragraph.title_marks.push(TitleMark {
+                char_idx: position,
+                ignore: false,
+            });
+            for offset in &mut paragraph.char_offsets[position..] {
+                *offset += 8;
+            }
+            paragraph.char_count += 8;
+            let output = apply(vec![paragraph], first).unwrap();
+            let paragraph = &output[0];
+            assert_eq!(paragraph.text, if first { "한😀" } else { "😀" });
+            assert_eq!(paragraph.title_marks.len(), usize::from(first));
+            assert_eq!(
+                paragraph.char_offsets,
+                if first { vec![8, 9] } else { vec![0] }
+            );
+            assert_eq!(paragraph.char_count, if first { 12 } else { 3 });
+        }
+        let mut interrupted = p(&format!("{}x{}", tag("begin:once"), tag("end:once")), 0);
+        interrupted.title_marks.push(TitleMark {
+            char_idx: 3,
+            ignore: false,
+        });
+        for offset in &mut interrupted.char_offsets[3..] {
+            *offset += 8;
+        }
+        interrupted.char_count += 8;
+        assert!(apply(vec![interrupted], true).is_err());
     }
 
     #[test]

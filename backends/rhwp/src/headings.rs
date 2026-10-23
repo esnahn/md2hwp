@@ -483,6 +483,11 @@ fn rewrite_container(
             }
         }
         map_nested_containers(&mut p, &mut |nested| {
+            // An absent optional list (for example a field's memo) is not a
+            // native paragraph container to create during heading expansion.
+            if nested.is_empty() {
+                return Ok(());
+            }
             let empty = nested.first().map(|p| empty_sample(p, "")).transpose()?;
             let rewritten =
                 rewrite_container(std::mem::take(nested), level, current, plan, info, scope)?;
@@ -643,6 +648,68 @@ mod tests {
             }
         }
         roots
+    }
+
+    #[test]
+    fn heading_expansion_does_not_create_an_absent_field_memo() {
+        use rhwp::model::control::{Field, FieldType};
+        let mut anchor = paragraph("필드");
+        anchor.controls.push(Control::Field(Field {
+            field_type: FieldType::ClickHere,
+            field_id: 42,
+            ctrl_id: u32::from_le_bytes(*b"klc%"),
+            ..Default::default()
+        }));
+        anchor.char_count += 8;
+        let roots = block_roots(1, vec![paragraph("{{md2hwp:slot:heading1}}"), anchor]);
+        let original = format!("{roots:?}");
+        let (samples, _) = Samples::read(&roots, &doc_info()).unwrap();
+        let ir = ir(vec![heading(1, "제목")]);
+        let plan = HeadingPlan::new(&ir).unwrap();
+        let (output, _) = samples.expand(1, 0, &ir, &plan, &mut doc_info()).unwrap();
+        let Control::Field(field) = &output[1].controls[0] else {
+            panic!("field lost")
+        };
+        assert!(field.memo_paragraphs.is_empty());
+        assert_eq!(field.field_id, 42);
+        assert_eq!(output[1].text, "필드");
+        assert_eq!(format!("{roots:?}"), original);
+    }
+
+    #[test]
+    fn removing_all_child_repetitions_retains_the_original_cell_format() {
+        let mut first = paragraph("{{md2hwp:begin:each.child:heading2}}");
+        first.para_shape_id = 1;
+        let mut anchor = paragraph("");
+        anchor.controls.push(Control::Table(Box::new(Table {
+            cells: vec![Cell {
+                paragraphs: vec![
+                    first,
+                    paragraph("{{md2hwp:slot:heading2}}"),
+                    paragraph("{{md2hwp:end:each.child:heading2}}"),
+                ],
+                ..Default::default()
+            }],
+            ..Default::default()
+        })));
+        let roots = block_roots(1, vec![paragraph("{{md2hwp:slot:heading1}}"), anchor]);
+        let mut info = doc_info();
+        info.para_shapes.push(Default::default());
+        let (samples, _) = Samples::read(&roots, &info).unwrap();
+        let ir = ir(vec![heading(1, "자식없음")]);
+        let plan = HeadingPlan::new(&ir).unwrap();
+        let (output, _) = samples.expand(1, 0, &ir, &plan, &mut info).unwrap();
+        let Control::Table(table) = &output[1].controls[0] else {
+            panic!("table lost")
+        };
+        let paragraphs = &table.cells[0].paragraphs;
+        assert_eq!(paragraphs.len(), 1);
+        assert_eq!(paragraphs[0].text, "");
+        assert_eq!(paragraphs[0].para_shape_id, 1);
+        assert_eq!(paragraphs[0].char_count, 1);
+        assert_eq!(paragraphs[0].char_shape_id_at(0), Some(0));
+        assert!(paragraphs[0].controls.is_empty());
+        assert_eq!(paragraphs[0].column_type, ColumnBreakType::None);
     }
 
     #[test]
