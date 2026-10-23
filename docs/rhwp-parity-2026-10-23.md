@@ -29,6 +29,10 @@ Hancom은 제목 블록 VIDEO도 `TemplateHeadingBlocks.cs:68`에서 거부한�
 
 ## rhwp의 추가 제한
 
+아래 표는 어댑터의 추가 거부 목록이며, rhwp 자체가 저장할 수 없는 기능 목록이 아니다.
+각 항목의 upstream 특성·미구현·정책 구분과 해제 조건은
+[추가 제한의 출처](rhwp-limit-classification-2026-10-23.md)에 정리했다.
+
 | 항목 | rhwp의 명시적 제한 | C# 대조 근거와 판정 |
 | --- | --- | --- |
 | 목록 후속 문단의 번호 표시 형식 | `backends/rhwp/src/list_markers.rs:321`은 형식 코드 0–5, 8, 10, 12, 13만 허용하며, 나머지는 `:333`에서 거부한다. | `backends/hancom-automation/NativeListContinuations.cs:27`은 `GetHeadingString()`으로 표시 문자열을 얻는다. 대응 형식 whitelist가 없으므로 rhwp의 추가 제한이다. |

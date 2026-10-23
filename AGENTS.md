@@ -365,6 +365,9 @@ The user accepts observed JPEG display differences caused by Hancom re-encoding
 for backend parity decisions. Keep the evidence; do not require JPEG pixel equality
 or treat this accepted difference as a blocker. Preserve structure, layout, caption,
 source-immutability and other image-format checks; this is no blanket tolerance.
+Classify adapter guards separately from upstream storage/reader/renderer limits;
+do not describe every rhwp-backend rejection as an intrinsic rhwp limitation.
+See docs/rhwp-limit-classification-2026-10-23.md for the pinned-code audit.
 The renderer supports paragraphs, plain/numbered heading samples, native heading
 blocks with multiple title slots, once/except.once, nested each.child and template
 heading counters. Metadata is supported in root static paragraphs and heading
