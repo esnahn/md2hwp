@@ -269,9 +269,11 @@ previous protection of target/release/template.hwp. Use a separate template copy
 and explicit --template for experiments and live verification; never mutate the
 source template while rendering. Custom templates to retain belong outside target/.
 
-Align release major/minor versions with the IR version (IR 0.4 corresponds to
-v0.4.0). A Git tag alone does not update application/package version metadata or
-README version labels; check their consistency when preparing a release.
+Version the application and IR independently. Application v0.5.0 keeps IR 0.4;
+do not change IR/schema/template declarations merely to match an application
+release number. Input IR and template ir-version must still match the supported
+IR exactly. A Git tag alone does not update application/package version metadata
+or README version labels; check their consistency when preparing a release.
 
 Track heading1 from md2hwp-heading1-start, incrementing only for heading1.
 Use num:heading1 through num:heading6 in heading blocks, numbered plain heading
