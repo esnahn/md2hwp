@@ -351,6 +351,16 @@ formats exactly instead of materializing missing defaults.
 Reopen, compare the independently authored model and inspect before publishing;
 init-template must refuse existing output paths, including publication races.
 See docs/rhwp-template-tools-2026-10-22.md for live verification and scope.
+Both strict template inspectors reject orphan heading-number tags, including
+unused branches and static/nested content; conversion behavior is unchanged.
+Conditional edits preserve native hidden UTF-16 slots, field boundaries, ranges
+and title offsets. Reject partial field deletion. Heading rewriting must not
+manufacture paragraphs in originally absent optional containers such as field
+memos; preserve the fallback for populated cells emptied by repetition removal.
+Hancom copied InstId/InstID values use collision-free positive 31-bit allocation,
+including detached clones. Preserve original/static IDs and native FieldId pairs.
+See docs/rhwp-parity-2026-10-23.md for remaining differences; do not declare
+universal backend parity from sample output or shared rejection contracts.
 The renderer supports paragraphs, plain/numbered heading samples, native heading
 blocks with multiple title slots, once/except.once, nested each.child and template
 heading counters. Metadata is supported in root static paragraphs and heading

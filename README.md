@@ -11,6 +11,8 @@ v0.4.4부터 HWPX 템플릿과 HWPX 출력을 지원합니다. 확장자로 형�
 
 `md2hwp validate-template --worker md2hwp-rhwp.exe`와 `md2hwp init-template 새템플릿.hwp --worker md2hwp-rhwp.exe`도 한글·.NET 없이 실행할 수 있습니다. 생성되는 템플릿은 기존 보고서 서식을 복사하지 않은 기본 서식이며, 기존 파일은 덮어쓰지 않습니다. rhwp 템플릿 검사는 선언·원형·서식 참조를 검사하며 실제 한글 페이지 배치까지 판정하지 않습니다.
 
+양쪽의 엄격 검사 판정과 조건부 범위의 native 필드 보존을 맞췄습니다. [기능 동등성 검토](docs/rhwp-parity-2026-10-23.md)에 실제 출력 비교와 남은 템플릿 제한을 기록했습니다. 임의 템플릿까지 포함한 완전한 기능 동등성을 보장하지는 않습니다.
+
 ## 라이선스
 
 md2hwp는 **AGPL-3.0-only**로 제공합니다.

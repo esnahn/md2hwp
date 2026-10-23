@@ -101,8 +101,8 @@ pwsh -NoProfile -File tools/development/build.ps1 -Configuration Debug -Rhwp
 변경하지 않는다. rhwp 실행에는 .NET/한글 COM이 필요하지 않으며, 이 worker와
 `--dotnet`을 함께 지정하면 오류를 반환한다. Markdown을 IR로 바꾸는 단계에는
 기존과 같이 Pandoc이 필요하다.
-`init-template`은 아직 기존 한글 백엔드의 기능이므로 템플릿을 새로 만들 때에는
-한글과 .NET이 필요하다. 이미 만들어진 HWP 템플릿을 읽어 생성하는 rhwp 경로와 구분한다.
+rhwp의 `init-template`과 `validate-template`도 한글·.NET 없이 실행할 수 있다.
+아래의 템플릿 도구 설명과 검증 기록을 참고한다.
 
 현재 지원 범위는 일반 문단, heading1–heading6의 평문·번호 문단 및 복합 제목 블록,
 Text/Space/LineBreak, Strong/Emph/Link 표시 문구이다. 제목 블록에서는 표·글상자·머리말·
@@ -169,7 +169,11 @@ OnPage 템플릿으로 양쪽 3쪽이 일치했고, 2쪽의 1–9 뒤 3쪽에서
 식별자를 독립 검사했고, 한글로 출력한 양쪽 5쪽의 픽셀 차이가 없었다. 원형 조각
 서식에 따른 보수적 참조 예약 폭과 인접 필드 경계 보존을 적용한 결과다.
 HWPX는 계속 명시적 미지원 오류다.
-제목 블록의 그림·OLE·구역 정의와 일부 필드가 포함된 조건부 문단 합치기도 거부한다.
+제목 블록의 그림·OLE·구역 정의는 한글 백엔드와 공통으로 거부한다.
+조건부 문단 합치기는 native 필드의 시작·끝과 숨은 위치를 보존한다.
+조건부 삭제가 필드의 한쪽 경계만 없애는 경우는 오류다.
+엄격 검사와 조건부 필드 대조 및 남은 차이는
+[기능 동등성 검토](rhwp-parity-2026-10-23.md)에 기록한다.
 별도 `validate-template`은 원고의 사용 여부와 관계없이 모든 선언과 원형을 검사한다.
 검사 범위와 한글 백엔드 대조 결과는 [템플릿 도구 검증](rhwp-template-tools-2026-10-22.md)에 있다.
 
