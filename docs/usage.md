@@ -2,7 +2,9 @@
 
 ## 사용자 환경
 
-HWP 기본 경로인 `md2hwp-rhwp.exe`는 한글·.NET·보안 모듈 없이 실행합니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. 다음 한글·.NET·보안 모듈 준비는 `md2hwp-hancom.exe`와 `hwp2pdf.exe`에 해당합니다.
+v0.5.0 준비 빌드는 IR 0.4를 사용합니다. 프로그램 버전과 IR 버전은 독립적이며, 프로그램 버전 상향으로 IR이나 템플릿의 `ir-version`을 바꾸지 않습니다.
+
+일반 빌드와 v0.5.0 배포 ZIP은 `md2hwp.exe`, `md2hwp-rhwp.exe`, `md2hwp-hancom.exe`, `hwp2pdf.exe` 네 실행 파일을 포함합니다. HWP 기본 경로인 `md2hwp-rhwp.exe`는 한글·.NET·보안 모듈 없이 실행합니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. Markdown 처리에는 Pandoc이 필요합니다. 다음 한글·.NET·보안 모듈 준비는 HWPX를 처리하는 `md2hwp-hancom.exe`와 HWP 입력 전용 `hwp2pdf.exe`에 해당합니다.
 
 - 한글 설치 및 로그인된 대화형 Windows 세션이 필요합니다. 기준 환경은
   한글 2020 HWP 11.0.0.9136입니다. 실행 중인 한글 문서는 먼저 닫습니다.
@@ -101,8 +103,8 @@ Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔�
 현재 개발 빌드에서 첫 명령 출력은 다음과 같습니다.
 
 ```text
-md2hwp 0.4.4
-md2hwp-rhwp 0.4.4 (experimental; IR 0.4; rhwp 0.8.7)
+md2hwp 0.5.0
+md2hwp-rhwp 0.5.0 (experimental; IR 0.4; rhwp 0.8.7)
 License: AGPL-3.0-only
 ```
 
@@ -132,6 +134,8 @@ v0.4.4부터 `--template`에 `.hwp` 또는 `.hwpx` 템플릿을 지정할 수 �
 원고 입력은 Markdown 또는 Pandoc JSON이며, HWPX 파일을 원고로 직접 읽지는 않습니다.
 `hwp2pdf.exe`도 HWP 입력만 지원합니다.
 상세한 예와 범위는 [HWPX 안내](hwpx.md)를 참고하십시오.
+
+알려진 문제로, 한글 백엔드로 새로 생성한 HWPX 기본 템플릿은 `init-template`·`validate-template`에 성공해도 원고 변환 중 HWPX→HWP 정규화 검사에서 원형 높이·캡션 폭 차이로 실패할 수 있습니다. 기존 검증 HWPX 템플릿과 추적 HWP 템플릿의 HWPX 출력은 성공했습니다. [재현 기록](backend-selection-2026-10-23.md#별도-발견-새-hancom-hwpx-기본-템플릿)을 참고하십시오.
 
 입력 IR과 템플릿의 IR 버전은 프로그램의 현재 IR 버전과 정확히 같아야 합니다.
 변환 규칙과 템플릿에는 별도의 계약 버전을 두지 않습니다.
