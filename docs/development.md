@@ -15,7 +15,8 @@ Release 빌드 결과는 `target/release/`의 다음 파일과 라이선스 폴�
 개발·실행에는 이 두 폴더를 기본으로 사용합니다. `target/dist/`는 버전별 배포 파일과 ZIP의 보관용입니다.
 
 - `md2hwp.exe`
-- `md2hwp-backend.exe`
+- `md2hwp-rhwp.exe`
+- `md2hwp-hancom.exe`
 - `hwp2pdf.exe`
 - `template.hwp`
 - `README.md`
@@ -24,6 +25,8 @@ Release 빌드 결과는 `target/release/`의 다음 파일과 라이선스 폴�
 - `LICENSE`
 - `THIRD-PARTY-NOTICES.txt`
 - `licenses/`
+
+일반 Debug·Release 빌드는 두 백엔드를 모두 생성하며 ZIP에도 함께 넣습니다. 기존 `-Rhwp` 옵션은 호환용으로 계속 허용합니다. 빌드는 선택한 `target/debug` 또는 `target/release` 바로 아래의 구형 `md2hwp-backend.exe` 파일만 정리하며 배포 보관 폴더는 변경하지 않습니다.
 
 C# 백엔드는 `backends/hancom-automation/Md2Hwp.Backend.csproj`, PDF CLI는 `apps/hwp2pdf/Hwp2Pdf.csproj`입니다.
 PDF CLI는 백엔드의 COM 세션·보안 검사 코드를 재사용하고, 게시 시 필요한 관리 어셈블리를 EXE 안에 묶습니다.
@@ -39,7 +42,7 @@ PDF CLI는 백엔드의 COM 세션·보안 검사 코드를 재사용하고, 게
 pwsh -NoProfile -File tools/development/build.ps1 -Configuration Release -Package
 ```
 
-`target/dist/md2hwp-v<버전>-windows-x64.zip`에 실행 파일 세 개, 추적 기본 템플릿, README와 원고 작성 문서 두 개, 프로젝트 라이선스·제3자 고지 및 `licenses/`를 넣고 SHA-256을 출력합니다.
+`target/dist/md2hwp-v<버전>-windows-x64.zip`에 실행 파일 네 개, 추적 기본 템플릿, README와 원고 작성 문서 두 개, 프로젝트 라이선스·제3자 고지 및 `licenses/`를 넣고 SHA-256을 출력합니다.
 패키지는 사용자 편집본 대신 `templates/template.hwp`를 사용합니다. 기존 배포 ZIP은 새 ZIP 생성에 성공한 뒤 교체합니다.
 GitHub Release에는 실행용 ZIP만 첨부하고, 체크섬은 본문 끝에 표시합니다. 소스는 GitHub 자동 다운로드를 사용하며 릴리스 노트·빌드 매니페스트는 별도 첨부하지 않습니다.
 
@@ -71,7 +74,7 @@ pwsh -NoProfile -File tools/development/dotnet.ps1 run --project tests/backend-c
 
 ## 생성 방식 비교
 
-Debug와 Release의 기본 생성 방식은 IR·템플릿 XML 구성입니다. Debug 백엔드는
+한글 백엔드의 Debug와 Release 기본 생성 방식은 IR·템플릿 XML 구성입니다. Debug 한글 백엔드는
 `--legacy-com`으로 기존 COM 문단 삽입 방식을 선택할 수 있습니다. 이 옵션은
 Rust 실행 파일의 원고 변환·`ir2hwp`와 백엔드 직접 실행에서 모두 전달됩니다.
 레거시 옵션과 안내는 Debug 실행 파일에만 있습니다. Rust를 거칠 때는 앱과
@@ -84,12 +87,12 @@ Rust 실행 파일의 원고 변환·`ir2hwp`와 백엔드 직접 실행에서 �
 같은 IR과 템플릿으로 세 결과를 별도 경로에 생성하십시오. 한글 작업은 차례로 실행합니다.
 
 ```powershell
-.\target\debug\md2hwp-backend.exe source.ir.json debug-xml.hwp --template templates/template.hwp
-.\target\debug\md2hwp-backend.exe source.ir.json debug-com.hwp --template templates/template.hwp --legacy-com
-.\target\release\md2hwp-backend.exe source.ir.json release-xml.hwp --template templates/template.hwp
+.\target\debug\md2hwp-hancom.exe source.ir.json debug-xml.hwp --template templates/template.hwp
+.\target\debug\md2hwp-hancom.exe source.ir.json debug-com.hwp --template templates/template.hwp --legacy-com
+.\target\release\md2hwp-hancom.exe source.ir.json release-xml.hwp --template templates/template.hwp
 ```
 
-원고에서 시작할 때도 `md2hwp.exe source.md debug-com.hwp --legacy-com`처럼 지정합니다.
+원고에서 시작할 때도 `md2hwp.exe source.md debug-com.hwp --worker .\target\debug\md2hwp-hancom.exe --legacy-com`처럼 지정합니다.
 Debug의 네이티브 복제·import 추가 진단은 두 생성 방식에 유지합니다.
 기존 COM 삽입의 중간 저장·재열기 검사는 `--legacy-com` 경로에 적용합니다.
 실제 비교 결과는 [세 생성 방식 검증](performance/2026-10-09-generation-modes.md)에 기록합니다.
@@ -164,7 +167,7 @@ Ipsum 본문 11,155어절을 5장·20절로 나누었으며, 작성 당시 최�
 [성능 이력·#7 해결 근거](performance/README.md)에 정리합니다.
 이전 보고서의 해시는 측정 당시 이력이며, 현재 커밋 대응과 되돌리기 안내도 이 문서를 따릅니다.
 
-현재 Debug와 Release는 IR·템플릿 XML에서 평면 문서를 직접 구성합니다. [성능·출력 비교](performance/2026-10-09-direct-xml.md)와
+현재 한글 백엔드의 Debug와 Release는 IR·템플릿 XML에서 평면 문서를 직접 구성합니다. [성능·출력 비교](performance/2026-10-09-direct-xml.md)와
 [집계 JSON](performance/2026-10-09-direct-xml.json)에 일반 실행 209.830 → 121.349초,
 COM 메서드 계측 35,025 → 22,360회 감소를 기록했습니다. 문단 스타일 블록 조회는
 473 → 1회, 전체 XML export는 19 → 14회로 줄었습니다. 기존 Debug 생성 경로와 최종

@@ -1,4 +1,4 @@
-# rhwp 백엔드 교체 검토
+# rhwp 백엔드 범위와 사용
 
 검토일: 2026-10-19. md2hwp 기준은 v0.4.4 (`54caa0d`), 작업 브랜치는
 `codex/rhwp-backend`이다. 최초 소스 검토 뒤 무편집 저장 시험을 수행했다.
@@ -6,7 +6,13 @@
 사용자 결정에 따라 rhwp 백엔드는 HWP 템플릿과 HWP 출력만 지원한다.
 HWPX 보존 문제는 이번 구현 범위에서 제외하며, 기존 한글 백엔드가 HWPX를 계속 담당한다.
 
-## 결론
+## 현재 배포와 자동 선택
+
+현재 개발 빌드와 실행용 ZIP에는 `md2hwp-rhwp.exe`와 `md2hwp-hancom.exe`를 함께 넣는다. `--worker`를 생략하면 EXE 옆의 rhwp를 우선하고, 파일이 없을 때 한글 백엔드를 선택한다. 템플릿 또는 출력이 `.hwpx`이면 한글 백엔드만 자동 선택한다. 명시한 `--worker`는 그대로 사용하며, 실행·검증 실패 후 다른 백엔드로 재시도하지 않는다. HWPX를 명시한 rhwp에 전달하면 명확히 거부한다. 한글 백엔드와 `hwp2pdf.exe`의 한글·.NET·보안 모듈 의존은 유지한다.
+
+사용자는 현재 남은 템플릿·레이아웃 제한을 수용해 기본 선택 변경을 승인했다. 한글의 JPEG 재인코딩에 따른 관찰된 표시 차이는 허용한다. 이 결정은 임의 템플릿의 완전한 동등성이나 긴 박스·표의 잘림 안전성을 입증하지 않는다. [기능 동등성 검토](rhwp-parity-2026-10-23.md)와 아래 날짜별 증거의 범위를 유지한다.
+
+## 초기 검토 결론
 
 rhwp를 Rust 라이브러리로 연결하는 HWP 전용 백엔드를 만든다.
 무편집 저장 시험 결과를 바탕으로 HWP 최소 생성 시험을 진행한다.
@@ -54,7 +60,7 @@ rhwp 백엔드에서 .hwpx 템플릿 또는 출력 경로를 받으면 생성 �
 HWP 기능을 옮긴 후 rhwp 실행 경로의 .NET/한글 의존을 제거할 수 있다.
 글꼴 측정과 PDF까지 포함한 플랫폼 독립 여부는 따로 판단한다.
 
-## 단계와 통과 조건
+## 초기 단계와 통과 조건
 
 1. **무편집 왕복 저장 시험**
    - 기본 템플릿과 전체 기능 출력 문서를 고정 입력으로 사용한다.
@@ -89,16 +95,15 @@ HWP 기능을 옮긴 후 rhwp 실행 경로의 .NET/한글 의존을 제거할 �
 평문 제목·본문·메타데이터의 구조와 한 페이지 픽셀이 일치했다.
 이 결과를 아직 미지원인 복합 제목·개체 생성 성공으로 확대 해석하지 않는다.
 
-## 실험용 실행 파일 빌드와 사용
+## 빌드와 사용
 
 ```powershell
-pwsh -NoProfile -File tools/development/build.ps1 -Configuration Debug -Rhwp
+pwsh -NoProfile -File tools/development/build.ps1 -Configuration Debug
 .\target\debug\md2hwp.exe 원고.md --worker .\target\debug\md2hwp-rhwp.exe
 .\target\debug\md2hwp-rhwp.exe 원고.ir.json
 ```
 
-`-Rhwp`는 별도 네이티브 실행 파일을 추가 빌드한다. 기본 백엔드와 배포 ZIP 구성은
-변경하지 않는다. rhwp 실행에는 .NET/한글 COM이 필요하지 않으며, 이 worker와
+일반 Debug·Release 빌드는 두 백엔드를 모두 만들며 ZIP에도 함께 넣는다. 기존 `-Rhwp`는 호환용 옵션으로 계속 허용한다. rhwp 실행에는 .NET/한글 COM이 필요하지 않으며, 이 worker와
 `--dotnet`을 함께 지정하면 오류를 반환한다. Markdown을 IR로 바꾸는 단계에는
 기존과 같이 Pandoc이 필요하다.
 rhwp의 `init-template`과 `validate-template`도 한글·.NET 없이 실행할 수 있다.

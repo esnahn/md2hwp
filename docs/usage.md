@@ -2,6 +2,8 @@
 
 ## 사용자 환경
 
+HWP 기본 경로인 `md2hwp-rhwp.exe`는 한글·.NET·보안 모듈 없이 실행합니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. 다음 한글·.NET·보안 모듈 준비는 `md2hwp-hancom.exe`와 `hwp2pdf.exe`에 해당합니다.
+
 - 한글 설치 및 로그인된 대화형 Windows 세션이 필요합니다. 기준 환경은
   한글 2020 HWP 11.0.0.9136입니다. 실행 중인 한글 문서는 먼저 닫습니다.
 - .NET 10 x64 런타임이 필요합니다. Rust는 실행 전에 확인하고 없으면
@@ -62,16 +64,17 @@ IR 0.4의 YAML 메타데이터와 템플릿 태그는 [메타데이터 문서](y
 .\md2hwp.exe 원고.md 결과.hwp
 .\md2hwp.exe 원고.md --output 결과.hwp --template 내템플릿.hwp
 .\md2hwp.exe 원고.md --output 결과.hwpx --template 내템플릿.hwpx
-.\md2hwp-backend.exe 원고.ir.json
-.\md2hwp-backend.exe 원고.ir.json --output 결과.hwp --template 내템플릿.hwp
-.\md2hwp-backend.exe 원고.ir.json --output 결과.hwpx --template 내템플릿.hwpx
+.\md2hwp-rhwp.exe 원고.ir.json
+.\md2hwp-hancom.exe 원고.ir.json
+.\md2hwp-hancom.exe 원고.ir.json --output 결과.hwp --template 내템플릿.hwp
+.\md2hwp-hancom.exe 원고.ir.json --output 결과.hwpx --template 내템플릿.hwpx
 ```
 
 첫 명령은 원고 옆에 `원고.ir.json`, `원고.output.hwp`를 생성합니다.
 출력 경로의 `.hwp` 또는 `.hwpx` 확장자가 저장 형식을 정합니다. 백엔드는 기존 IR에서
 지정한 형식의 문서를 생성합니다. 두 번째 인자는 선택적인 출력 경로입니다.
 검증된 IR은 교체하며, 출력 문서는 생성·재열기 검증 성공 후 기존 결과를 교체합니다.
-서식 보존 검사는 저장 중 바뀔 수 있는 문단·글자 모양의 내부 번호 대신 실제 설정을 비교합니다.
+한글 백엔드의 서식 보존 검사는 저장 중 바뀔 수 있는 문단·글자 모양의 내부 번호 대신 실제 설정을 비교합니다.
 한글이 병합하는 동일 서식의 텍스트 조각과 명세 기본값 `TextFlow="BothSides"`의 생략도
 동등하게 비교합니다. 실제 문자·공백·줄바꿈·탭·서식·개체 크기 변경은 계속 오류로 처리합니다.
 작업 문서의 박스 원형 보존 검사에도 같은 비교를 적용합니다. 한글이 다시 계산하는 박스 표의
@@ -84,25 +87,28 @@ Rust 간편 실행은 `--template`, `--worker`, `--dotnet`도 받으며, 백엔�
 옵션 입력 순서는 자유롭습니다. 명시한 경로는 실행한 작업 폴더 기준이며,
 이미지의 기준 폴더만 원고/IR 폴더로 유지됩니다.
 
+`--worker`를 생략하면 md2hwp.exe 옆의 `md2hwp-rhwp.exe`를 우선 사용하고, 파일이 없을 때만 `md2hwp-hancom.exe`를 선택합니다. 템플릿 또는 출력 확장자가 `.hwpx`이면 한글 백엔드만 자동 선택합니다. 이 규칙은 변환·템플릿 검사·템플릿 생성에 적용됩니다. `--worker`를 명시하면 해당 경로를 그대로 사용하며, 선택된 백엔드의 실행이나 검증이 실패해도 다른 백엔드로 재시도하지 않습니다. `--dotnet`은 한글 백엔드에만 지정할 수 있습니다.
+
 `md2hwp --version`은 앱 자체와 실제로 사용할 백엔드의 버전을 함께 표시합니다.
-`md2hwp-backend --version`은 백엔드 자체 버전만 표시합니다.
+`md2hwp-hancom --version`은 백엔드 자체 버전만 표시합니다.
 
 ```powershell
 .\md2hwp.exe --version
-.\md2hwp.exe --version --worker 다른폴더\md2hwp-backend.exe --dotnet 경로\dotnet.exe
-.\md2hwp-backend.exe --version
+.\md2hwp.exe --version --worker 다른폴더\md2hwp-hancom.exe --dotnet 경로\dotnet.exe
+.\md2hwp-hancom.exe --version
 ```
 
-v0.4.4의 첫 명령 출력은 다음과 같습니다.
+현재 개발 빌드에서 첫 명령 출력은 다음과 같습니다.
 
 ```text
 md2hwp 0.4.4
-md2hwp-backend 0.4.4
+md2hwp-rhwp 0.4.4 (experimental; IR 0.4; rhwp 0.8.7)
+License: AGPL-3.0-only
 ```
 
-`--worker`를 생략하면 md2hwp.exe 옆의 백엔드를 확인합니다. `--worker`와 `--dotnet`은
-현재 작업 폴더 기준이며 옵션 순서는 자유롭습니다. 백엔드 확인에는 .NET 런타임이 필요하며,
-한글이나 보안 모듈은 사용하지 않습니다. 백엔드 확인에 실패하면 앱 자체 버전을 표시하고
+`--worker`를 생략한 버전 확인도 EXE 옆의 rhwp를 우선하고 없으면 한글 백엔드를 사용합니다. `--worker`와 `--dotnet`은
+현재 작업 폴더 기준이며 옵션 순서는 자유롭습니다. 한글 백엔드의 버전 확인에는 .NET 런타임이 필요하며,
+한글이나 보안 모듈은 사용하지 않습니다. rhwp 버전 확인에는 .NET도 필요하지 않습니다. 백엔드 확인에 실패하면 앱 자체 버전을 표시하고
 오류와 함께 종료 코드 1을 반환합니다. 버전이 달라도 확인한 값을 그대로 표시합니다.
 
 기존 옵션 방식도 사용할 수 있습니다.
@@ -110,15 +116,14 @@ md2hwp-backend 0.4.4
 ```powershell
 .\md2hwp.exe md2ir 원고.md --force
 .\md2hwp.exe ir2hwp --ir 원고.ir.json --output 원고.output.hwp
-.\md2hwp-backend.exe ir2hwp --ir 원고.ir.json --output 원고.output.hwp
+.\md2hwp-hancom.exe ir2hwp --ir 원고.ir.json --output 원고.output.hwp
 ```
 
 `md2ir`도 `md2ir 원고.md [결과.ir.json]`처럼 위치 인자를 받으며, 기존 `--input`·`--output` 방식도 지원합니다. 같은 항목의 중복 지정은 거부합니다.
 
 `md2ir`에서 `--output`을 생략하면 입력 옆의 `원고.ir.json`, `--from`을 생략하면 `commonmark`를 사용합니다. Pandoc JSON 입력은 `--from pandoc-json`으로 지정합니다.
 
-`--template`과 Rust의 `--worker`를 생략하면 각 EXE 옆의 `template.hwp`,
-`md2hwp-backend.exe`를 찾습니다. 옵션 방식의 이미지 기준 폴더는 작업 폴더입니다.
+`--template`을 생략하면 해당 EXE 옆의 `template.hwp`를 사용합니다. Rust의 `--worker` 자동 선택은 위 규칙을 따릅니다. 옵션 방식의 이미지 기준 폴더는 작업 폴더입니다.
 현재 IR `0.4`, 정규화 규칙과 스키마는 실행 파일에 포함됩니다.
 
 v0.4.4부터 `--template`에 `.hwp` 또는 `.hwpx` 템플릿을 지정할 수 있습니다.
@@ -144,13 +149,13 @@ IR 0.2 입력은 원고에서 다시 생성하고, 기존 템플릿은 새 선�
 .\md2hwp.exe validate-template
 .\md2hwp.exe validate-template 내템플릿.hwp
 .\md2hwp.exe validate-template 내템플릿.hwpx
-.\md2hwp-backend.exe validate-template --template 내템플릿.hwp
+.\md2hwp-hancom.exe validate-template --template 내템플릿.hwp
 ```
 
 `validate`는 Pandoc을 사용해 원고의 엄격한 작성 규칙과 AST/IR 계약을 검사합니다.
 한글 없이 실행하며 파일을 생성하지 않습니다. `--require-meta`를 반복해 필요한 YAML 키를 지정할 수 있습니다.
 
-`validate-template`은 한글로 템플릿 XML을 한 번 읽어 IR 버전, 선언, 슬롯과 원형 구조를 검사합니다.
+`validate-template`은 선택한 백엔드로 IR 버전, 선언, 슬롯과 원형 구조를 검사합니다. rhwp는 한글·.NET 없이 검사하고, 한글 백엔드는 한글로 템플릿 XML을 한 번 읽습니다. 두 검사 모두 실제 페이지 배치의 시각적 안전성을 보장하지 않습니다.
 경로 생략 시 해당 EXE 옆 `template.hwp`를 사용합니다. 원본은 저장하지 않으며 첫 오류에서 실패합니다.
 명시한 `.hwpx` 템플릿도 검사합니다.
 결과의 `RequiredMetadata`는 원고에 필요한 YAML 키이고, `RequiresRecognizedDate`는 인식 가능한 `date`가 필요한지를 뜻합니다.

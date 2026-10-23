@@ -9,12 +9,12 @@ Pandoc JSON이며, HWPX·RST 원고 입력은 지원하지 않습니다. 이 기
 ## 변환
 
 출력 경로의 확장자로 저장 형식을 정하고, `--template`에는 사용할 템플릿을 지정합니다.
-HWP와 HWPX 템플릿·출력은 서로 조합할 수 있습니다.
+HWP와 HWPX 템플릿·출력은 서로 조합할 수 있습니다. `--worker`를 생략하고 템플릿 또는 출력 경로가 `.hwpx`이면 `md2hwp-hancom.exe`만 자동 선택합니다. 한글·.NET·보안 모듈이 필요합니다. 명시한 `--worker`는 그대로 사용하며, rhwp에 HWPX를 지정하면 생성 전에 오류가 납니다. 실행 실패 후 다른 백엔드로 재시도하지 않습니다.
 
 ```powershell
 .\md2hwp.exe 원고.md 결과.hwpx --template 내템플릿.hwpx
 .\md2hwp.exe 원고.md --output 결과.hwpx --template 내템플릿.hwp
-.\md2hwp-backend.exe 원고.ir.json --output 결과.hwpx --template 내템플릿.hwpx
+.\md2hwp-hancom.exe 원고.ir.json --output 결과.hwpx --template 내템플릿.hwpx
 ```
 
 위치 인자와 `--output`은 기존처럼 출력 경로를 받습니다. 기본값은 바뀌지 않습니다.
@@ -34,9 +34,13 @@ HWP와 HWPX 템플릿·출력은 서로 조합할 수 있습니다.
 
 ```powershell
 .\md2hwp.exe init-template 새템플릿.hwpx
-.\md2hwp-backend.exe init-template --output 새템플릿.hwpx
+.\md2hwp-hancom.exe init-template --output 새템플릿.hwpx
 .\md2hwp.exe validate-template 새템플릿.hwpx
 ```
+
+2026-10-23 시험에서는 새 기본 HWPX 템플릿의 생성·검사는 성공했지만, 변환 시 작업용
+HWP로 정규화하는 단계에서 원형 표 높이·캡션 폭 변경으로 거부되는 사례를 확인했습니다.
+기존 검증 HWPX 템플릿의 변환은 성공했습니다. [재현과 구분](backend-selection-2026-10-23.md)에 기록했습니다.
 
 `hwp2pdf.exe` 입력은 HWP 문서로 제한됩니다. 이 기능은 HWPX에서 PDF로 변환하는 기능을
 추가하지 않습니다. [설치·실행 안내](usage.md)와 [템플릿 안내](templates.md)도 참고하십시오.

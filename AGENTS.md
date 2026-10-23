@@ -26,7 +26,7 @@ redirect ordinary builds there merely to preserve an older release.
 The JSON fixtures still tracked are included directly by Rust test compilation.
 Builds include a deployment README.md with usable versioned documentation links.
 Create release ZIPs with tools/development/build.ps1 -Configuration Release -Package;
-include md2hwp.exe, md2hwp-backend.exe, hwp2pdf.exe, the tracked default template, README.md and the manuscript guides.
+include md2hwp.exe, md2hwp-rhwp.exe, md2hwp-hancom.exe, hwp2pdf.exe, the tracked default template, README.md and the manuscript guides.
 Include LICENSE, THIRD-PARTY-NOTICES.txt and licenses/ in deployment
 folders and executable ZIPs. Original project code is AGPL-3.0-only; preserve
 third-party licenses. Regenerate notices with tools/development/update-third-party-notices.ps1
@@ -332,12 +332,17 @@ make the faster path pass. Performance and Debug/Release equivalence evidence is
 recorded in docs/performance/2026-10-09-direct-xml.md; current three-way generation
 evidence and profiles are in docs/performance/2026-10-09-generation-modes.md.
 
-The experimental rhwp backend, md2hwp-rhwp.exe, supports HWP templates and HWP output
+The rhwp backend, md2hwp-rhwp.exe, supports HWP templates and HWP output
 only. Reject HWPX template/output paths explicitly before generation; direct users
 to the existing Hancom backend without automatic fallback. HWPX roundtrip findings
 are investigation evidence, not blockers requiring rhwp HWPX implementation.
 Keep IR 0.4 and existing template syntax. See docs/rhwp-backend-strategy.md.
-Build it explicitly with build.ps1 -Rhwp; do not add it to release archives yet.
+Normal builds and executable ZIPs include both md2hwp-rhwp.exe and md2hwp-hancom.exe.
+The -Rhwp build switch remains accepted for compatibility. With no explicit worker,
+select the colocated rhwp worker first and Hancom only if rhwp is absent; if either
+template or output is HWPX, select only Hancom. Honor explicit --worker selections,
+including incompatible ones that fail; never retry another worker after execution
+failure. Hancom and hwp2pdf still require Hancom/.NET and the security module.
 The rhwp worker also implements HWP-only validate-template and init-template without
 COM/.NET. Strict inspection traverses metadata and all unused prototypes/conditional
 branches before lowering; do not replace it with an empty-manuscript render. Keep
