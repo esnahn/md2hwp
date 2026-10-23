@@ -1,8 +1,8 @@
-# md2hwp v0.5.0 — 릴리스 준비
+# md2hwp v0.5.0
 
 HWP 기본 생성을 rhwp 백엔드로 전환하고, HWPX는 한글 자동화 백엔드로 선택합니다. 프로그램 버전은 **0.5.0**, IR과 원고·템플릿 계약은 **0.4**를 유지합니다. 프로그램과 IR은 독립적으로 버전을 관리하며, 프로그램 버전에 맞춰 IR이나 템플릿의 `ir-version`을 변경하지 않습니다.
 
-이 문서는 발행 준비 중인 변경 사항입니다. v0.5.0 태그·실행용 ZIP·GitHub Release는 아직 발행하지 않았습니다. 최신 공개 배포는 [v0.4.4](https://github.com/esnahn/md2hwp/releases/tag/v0.4.4)입니다.
+정확히 대응하는 소스는 [v0.5.0 태그의 자동 소스 다운로드](https://github.com/esnahn/md2hwp/archive/refs/tags/v0.5.0.zip)로 제공합니다.
 
 ## 백엔드 선택
 
