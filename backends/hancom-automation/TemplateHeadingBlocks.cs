@@ -123,13 +123,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
                 foreach (var cell in table.Elements("ROW").Elements("CELL")) reflow.Add(cell);
             }
             // Repetition duplicates object identities; assign fresh ids to all clones.
-            var identities = result.Descendants().Attributes().Where(a => a.Name.LocalName is "InstId" or "InstID").Select(a => a.Value).ToHashSet();
-            foreach (var attribute in block.SelectMany(p => p.DescendantsAndSelf()).Attributes().Where(a => a.Name.LocalName is "InstId" or "InstID"))
-            {
-                string id;
-                do { id = BitConverter.ToUInt32(Guid.NewGuid().ToByteArray(), 0).ToString(System.Globalization.CultureInfo.InvariantCulture); } while (!identities.Add(id));
-                attribute.Value = id;
-            }
+            ReassignCopiedIdentities(result, block);
             generated.ReplaceWith(block);
             if (pageBreakAfter.Contains(operation.ParagraphStyle) && start + index + 1 < roots.Length)
                 SetPageBreak(roots[start + index + 1]);
@@ -261,14 +255,50 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
         }
         var copy = new XElement(paragraph);
         Resolve(copy);
-        var used = destination.Descendants().Attributes().Where(a => a.Name.LocalName is "InstId" or "InstID")
-            .Select(a => a.Value).ToHashSet(StringComparer.Ordinal);
-        foreach (var attribute in copy.DescendantsAndSelf().Attributes().Where(a => a.Name.LocalName is "InstId" or "InstID"))
-        {
-            string id;
-            do { id = BitConverter.ToUInt32(Guid.NewGuid().ToByteArray(), 0).ToString(System.Globalization.CultureInfo.InvariantCulture); } while (!used.Add(id));
-            attribute.Value = id;
-        }
+        ReassignCopiedIdentities(destination, [copy]);
         return copy;
+    }
+
+    private static void ReassignCopiedIdentities(XDocument destination, IEnumerable<XElement> copies)
+    {
+        var attributes = copies.SelectMany(p => p.DescendantsAndSelf()).Attributes()
+            .Where(a => a.Name.LocalName is "InstId" or "InstID").ToArray();
+        var allocator = destination.Annotation<CopiedIdentityAllocator>();
+        if (allocator is null)
+        {
+            allocator = new CopiedIdentityAllocator();
+            destination.AddAnnotation(allocator);
+        }
+        // Reserve detached imports too: multiple clones may be authored before
+        // any of them are attached to the destination document.
+        allocator.Reserve(destination.Descendants().Attributes().Where(a => a.Name.LocalName is "InstId" or "InstID")
+            .Concat(attributes));
+        foreach (var attribute in attributes) attribute.Value = allocator.Next();
+    }
+
+    private sealed class CopiedIdentityAllocator
+    {
+        private readonly HashSet<uint> used = [];
+        private long next = 1;
+
+        internal void Reserve(IEnumerable<XAttribute> attributes)
+        {
+            foreach (var attribute in attributes)
+                if (uint.TryParse(attribute.Value, System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out var value)) used.Add(value);
+        }
+
+        internal string Next()
+        {
+            // Adapter policy: Hancom 2020 reassigns some imported field identities
+            // above Int32.MaxValue. Preserve existing IDs; give generated clones
+            // positive 31-bit IDs so strict save/reopen identity checks stay exact.
+            while (next <= int.MaxValue)
+            {
+                var value = (uint)next++;
+                if (used.Add(value)) return value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+            throw new InvalidDataException("Generated native identity space exhausted.");
+        }
     }
 }
