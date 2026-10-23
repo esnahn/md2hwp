@@ -1,17 +1,19 @@
-# md2hwp v0.4.4
+# md2hwp v0.5.0 (릴리스 준비)
 
-Markdown 원고를 한글 템플릿의 서식에 맞춰 변환합니다. Windows x64에서 실행하며, 현재 IR 버전은 0.4입니다. 원고는 Markdown 또는 Pandoc JSON으로 입력하며, HWPX·RST 원고 직접 입력은 지원하지 않습니다.
+Markdown 원고를 한글 템플릿의 서식에 맞춰 변환합니다. Windows x64에서 실행하며, 프로그램 v0.5.0의 IR 버전은 0.4입니다. 프로그램과 IR은 독립적으로 버전을 관리합니다. 원고는 Markdown 또는 Pandoc JSON으로 입력하며, HWPX·RST 원고 직접 입력은 지원하지 않습니다.
 
 v0.4.4부터 HWPX 템플릿과 HWPX 출력을 지원합니다. 확장자로 형식을 선택하며 기본값은 HWP입니다. [HWPX 사용 범위](docs/hwpx.md)를 참고하십시오.
 
-배포 파일은 [v0.4.4 릴리스](https://github.com/esnahn/md2hwp/releases/tag/v0.4.4)에서 확인할 수 있습니다.
-변경 사항은 [릴리스 노트](docs/release-v0.4.4.md)를 참고하십시오.
+최신 공개 배포 파일은 [v0.4.4 릴리스](https://github.com/esnahn/md2hwp/releases/tag/v0.4.4)에서 확인할 수 있습니다.
+v0.5.0은 아직 발행하지 않았으며, 준비 중인 변경 사항은 [v0.5.0 릴리스 노트](docs/release-v0.5.0.md)를 참고하십시오. 공개 v0.4.4의 변경 사항은 [당시 릴리스 노트](docs/release-v0.4.4.md)에 기록했습니다.
 
 현재 개발 빌드는 HWP 전용 `md2hwp-rhwp.exe`와 한글 자동화 백엔드 `md2hwp-hancom.exe`를 함께 제공합니다. 일반 문단·제목 블록·메타데이터·중첩 목록·코드 박스·PNG/JPEG/EMF 그림·표·각주·번호 상호참조를 지원하며, 현재 기본 템플릿의 장 표지와 절 목록을 사용할 수 있습니다. 각주는 본문·제목·목록·표 셀에서 지원하며, native 캡션·머리말·꼬리말·바탕쪽에는 넣을 수 없습니다. 여러 문단 목록 항목은 native 번호·글머리표의 실제 폭을 측정해 후속 문단을 정렬합니다. 표의 자동 열 폭과 목록 표식 실측에는 Windows에 설치된 TTF/OTF 글꼴이 필요하며, 지원하지 않는 번호 형식·표식 글리프는 명시적으로 거부합니다. `--worker`를 생략하면 EXE 옆의 rhwp를 우선하고, 파일이 없을 때 한글 백엔드를 선택합니다. 템플릿 또는 출력이 `.hwpx`이면 한글 백엔드만 자동 선택합니다. 명시한 `--worker`는 그대로 사용하며, 실행 실패 후 다른 백엔드로 재시도하지 않습니다. [개발 범위와 사용 방법](docs/rhwp-backend-strategy.md), [각주 시험](docs/rhwp-footnotes-2026-10-22.md), [상호참조 구현과 검증 범위](docs/rhwp-references-2026-10-22.md), [목록 표식 실측 범위](docs/rhwp-list-widths-2026-10-22.md), [통합 비교·성능](docs/rhwp-integration-2026-10-22.md)를 참고하십시오.
 
 `md2hwp validate-template --worker md2hwp-rhwp.exe`와 `md2hwp init-template 새템플릿.hwp --worker md2hwp-rhwp.exe`도 한글·.NET 없이 실행할 수 있습니다. 생성되는 템플릿은 기존 보고서 서식을 복사하지 않은 기본 서식이며, 기존 파일은 덮어쓰지 않습니다. rhwp 템플릿 검사는 선언·원형·서식 참조를 검사하며 실제 한글 페이지 배치까지 판정하지 않습니다.
 
 양쪽의 엄격 검사 판정과 조건부 범위의 native 필드 보존을 맞췄습니다. 한글의 JPEG 재인코딩에 따른 관찰된 표시 차이는 허용하며, 긴 고정 크기 박스·표의 잘림과 지원하지 않는 템플릿 구조 등의 제한은 남아 있습니다. [기능 동등성 검토](docs/rhwp-parity-2026-10-23.md)에 실제 출력 비교와 남은 템플릿 제한을 기록했습니다. 임의 템플릿까지 포함한 완전한 기능 동등성을 보장하지는 않습니다.
+
+알려진 문제로, 한글 백엔드의 `init-template 새템플릿.hwpx`가 만든 새 템플릿은 검사에 성공해도 원고 변환의 HWPX→HWP 정규화 검사에서 실패할 수 있습니다. 기존 검증 HWPX 템플릿과 추적 HWP 템플릿의 HWPX 출력은 성공했습니다. [재현 기록과 범위](docs/backend-selection-2026-10-23.md#별도-발견-새-hancom-hwpx-기본-템플릿)를 참고하십시오.
 
 ## 라이선스
 
@@ -26,7 +28,8 @@ md2hwp는 **AGPL-3.0-only**로 제공합니다.
 실행 파일을 배포할 때는 라이선스·고지를 함께 제공하고, 실행 파일과 정확히 대응하는
 소스의 무료 다운로드 링크를 같은 배포 페이지에 표시하십시오. GitHub Release의
 동일 태그 자동 소스 다운로드를 사용하며, 이전 태그나 이동하는 브랜치 링크로 대신하지 않습니다.
-이 릴리스의 대응 소스: [v0.4.4 소스 다운로드](https://github.com/esnahn/md2hwp/archive/refs/tags/v0.4.4.zip).
+현재 공개 배포의 대응 소스: [v0.4.4 소스 다운로드](https://github.com/esnahn/md2hwp/archive/refs/tags/v0.4.4.zip).
+v0.5.0 발행 시에는 해당 실행 파일과 정확히 대응하는 v0.5.0 태그의 자동 소스 다운로드 링크를 같은 릴리스 페이지에 제공합니다.
 수정한 프로그램을 네트워크 서비스로 제공하는 경우 AGPL 제13조도 적용될 수 있습니다.
 
 Pandoc은 `setup-pandoc`이 따로 다운로드하는 GPL-2.0-or-later 프로그램이며 실행용 ZIP에 포함하지 않습니다.
@@ -37,7 +40,7 @@ Pandoc은 `setup-pandoc`이 따로 다운로드하는 GPL-2.0-or-later 프로그
 
 `md2hwp`는 간략 사용법만 표시합니다. `md2hwp --help` 또는 `md2hwp -h`는 기본 변환 옵션과 명령별 한 줄 사용법을 표시합니다. `md2hwp md2ir --help`처럼 명령 뒤에 `--help`를 붙이면 해당 명령의 사용법·옵션·기본값만 확인할 수 있습니다. 도움말은 Pandoc·한글·.NET을 실행하지 않습니다.
 
-`md2hwp.exe`, `md2hwp-rhwp.exe`, `md2hwp-hancom.exe`, `template.hwp`는 같은 폴더에 둡니다. HWP를 rhwp로 생성할 때는 한글·.NET이 필요하지 않습니다. HWPX와 한글 백엔드, `hwp2pdf.exe`에는 한글, .NET 10 x64 런타임, 한글 보안 모듈이 필요합니다. 이 경우 실행 중인 한글을 닫습니다. [설치 안내](docs/usage.md)를 참고하십시오.
+일반 빌드와 v0.5.0 배포 ZIP에는 `md2hwp.exe`, `md2hwp-rhwp.exe`, `md2hwp-hancom.exe`, `hwp2pdf.exe` 네 실행 파일을 함께 넣습니다. 변환용 EXE들과 `template.hwp`는 같은 폴더에 둡니다. Markdown 처리에는 Pandoc이 필요하며, HWP를 rhwp로 생성할 때는 한글·.NET·보안 모듈이 필요하지 않습니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. HWPX와 한글 백엔드, `hwp2pdf.exe`에는 한글, .NET 10 x64 런타임, 한글 보안 모듈이 필요합니다. 이 경우 실행 중인 한글을 닫습니다. [설치 안내](docs/usage.md)를 참고하십시오.
 
 ```powershell
 .\md2hwp.exe setup-pandoc
@@ -215,14 +218,14 @@ Windows 빌드 도구는 기존 설치를 확인하고 부족하면 필요한 MS
 
 rhwp 검사는 한글·.NET 없이 실행합니다. 한글 백엔드 검사는 한글·.NET과 등록된 보안 모듈이 필요하며, 실행 전 한글 문서를 닫아야 합니다. 원고·Pandoc 없이 IR 버전, 선언, 슬롯과 원형 구조를 검사합니다. 원본은 저장하지 않으며 첫 오류에서 실패합니다. 성공 결과의 `RequiredMetadata`는 원고 YAML에 필요한 키입니다. `RequiresRecognizedDate: true`이면 `date-meta` 생성을 위해 인식 가능한 `date`도 필요합니다. 실제 원고 값, 표 폭, 제목 넘침 등 문서 생성·시각 검증이 필요한 조건은 이 검사만으로 보장하지 않습니다.
 
-개발할 때 기본 서식은 `templates/template.hwp`에서 편집합니다. 빌드는 `target/debug`·`target/release`의 템플릿을 매번 이 파일로 교체합니다. 실행용 배포본에서는 EXE 옆의 `template.hwp`를 사용합니다. 새 파일은 `md2hwp init-template 새템플릿.hwp`로 만들며, `.hwpx` 확장자로 HWPX 템플릿도 만들 수 있습니다. 이전 IR은 다시 생성하고, 기존 사용자 템플릿의 새 선언은 직접 반영하거나 별도 파일로 재생성해야 합니다. HWPX 템플릿·출력의 범위와 실행 예는 [HWPX 안내](docs/hwpx.md)에 있습니다.
+개발할 때 기본 서식은 `templates/template.hwp`에서 편집합니다. 빌드는 `target/debug`·`target/release`의 템플릿을 매번 이 파일로 교체합니다. 실행용 배포본에서는 EXE 옆의 `template.hwp`를 사용합니다. 새 파일은 `md2hwp init-template 새템플릿.hwp`로 만들며, `.hwpx` 확장자로 HWPX 템플릿도 만들 수 있습니다. 지원 IR 버전인 0.4와 다른 이전 IR은 다시 생성하고, 기존 사용자 템플릿의 새 선언은 직접 반영하거나 별도 파일로 재생성해야 합니다. HWPX 템플릿·출력의 범위와 실행 예는 [HWPX 안내](docs/hwpx.md)에 있습니다.
 
-Debug와 Release는 XML 구성 방식으로 생성합니다. 개발용 성능 비교는
+한글 백엔드의 Debug와 Release는 XML 구성 방식으로 생성합니다. 개발용 성능 비교는
 [빌드·검증 안내](docs/development.md#생성-방식-비교)를 참고하십시오.
 
 - [설치·실행 옵션](docs/usage.md) · [템플릿 편집·태그](docs/templates.md) · [HWPX 템플릿·출력](docs/hwpx.md)
 - [표](docs/tables.md) · [번호 상호참조](docs/cross-references.md) · [메타데이터](docs/yaml-variables.md) · [날짜](docs/date-metadata.md)
-- [빌드·검증](docs/development.md) · [통합 예제](examples/all-features/) · [v0.4.4 릴리스 노트](docs/release-v0.4.4.md)
+- [빌드·검증](docs/development.md) · [통합 예제](examples/all-features/) · [v0.5.0 릴리스 준비](docs/release-v0.5.0.md) · [공개 v0.4.4 릴리스 노트](docs/release-v0.4.4.md)
 
 저장·재열기 검증만으로 잘림·겹침이나 각주 표시 번호를 보장하지 않으므로 생성된 문서의 배치도 확인하십시오.
 
