@@ -361,6 +361,10 @@ Hancom copied InstId/InstID values use collision-free positive 31-bit allocation
 including detached clones. Preserve original/static IDs and native FieldId pairs.
 See docs/rhwp-parity-2026-10-23.md for remaining differences; do not declare
 universal backend parity from sample output or shared rejection contracts.
+The user accepts observed JPEG display differences caused by Hancom re-encoding
+for backend parity decisions. Keep the evidence; do not require JPEG pixel equality
+or treat this accepted difference as a blocker. Preserve structure, layout, caption,
+source-immutability and other image-format checks; this is no blanket tolerance.
 The renderer supports paragraphs, plain/numbered heading samples, native heading
 blocks with multiple title slots, once/except.once, nested each.child and template
 heading counters. Metadata is supported in root static paragraphs and heading
