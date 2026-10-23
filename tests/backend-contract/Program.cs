@@ -525,6 +525,7 @@ FigureReferenceContractTests.Run();
 TemplateCrossReferenceTests.Run();
 HeadingReferenceNumbersTests.Run();
 HeadingTemplateNumbersTests.Run();
+TemplateValidationNumberScopeTests.Run();
 TemplateConditionalRangesTests.Run();
 NativeCrossReferenceTests.Run();
 NativeFootnoteTests.Run();
