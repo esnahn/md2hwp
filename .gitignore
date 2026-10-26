@@ -13,7 +13,8 @@ coverage/
 # Local reference material, generated evidence and temporary work (not tracked).
 /reference/*
 !/reference/README.md
-/artifacts/
+/artifacts/*
+!/artifacts/.gitkeep
 /examples/**/*.output.hwp
 /examples/**/*.output.pdf
 /tmp/
