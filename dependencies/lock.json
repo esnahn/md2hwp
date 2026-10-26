@@ -32,6 +32,32 @@
       ]
     },
     {
+      "name": "windows-build-tools",
+      "consumer": "Rust Windows MSVC targets",
+      "pins": [
+        {
+          "name": "visual-studio-build-tools",
+          "kind": "system-reference",
+          "version": "17.14.37614.0",
+          "identifier": "Microsoft.VisualStudio.Product.BuildTools",
+          "url": "https://aka.ms/vs/17/release/vs_buildtools.exe",
+          "channel_id": "VisualStudio.17.Release"
+        },
+        {
+          "name": "msvc-x64-x86",
+          "kind": "system-reference",
+          "version": "14.44.35207",
+          "identifier": "Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+        },
+        {
+          "name": "windows-sdk",
+          "kind": "system-reference",
+          "version": "10.0.26100.0",
+          "identifier": "Microsoft.VisualStudio.Component.Windows11SDK.26100"
+        }
+      ]
+    },
+    {
       "name": "hancom-automation",
       "consumer": "backends/hancom-automation",
       "pins": [

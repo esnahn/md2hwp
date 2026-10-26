@@ -3,14 +3,56 @@
 ## 빌드
 
 Rust 버전은 `rust-toolchain.toml`, .NET SDK는 `global.json`에 고정되어 있습니다.
-Windows x64에서 PowerShell 7.4 이상, Rust 도구 체인과 MSVC C++ 빌드 도구가 필요합니다.
-저장소 루트에서 다음 순서로 개발용 .NET SDK를 준비하고 빌드합니다.
+Windows x64에서 PowerShell 7.4 이상과 Rust 도구 체인을 준비합니다.
+저장소 루트에서 Windows 빌드 도구와 개발용 .NET SDK를 준비하고 빌드합니다.
+MSVC·Windows SDK 설치가 필요한 경우 첫 명령은 관리자 PowerShell에서 실행합니다.
 
 ```powershell
+pwsh -NoProfile -File dependencies/install-windows-build-tools.ps1
 pwsh -NoProfile -File dependencies/install-dotnet-sdk.ps1
 pwsh -NoProfile -File tools/development/build.ps1
 cargo test --workspace
 ```
+
+Windows 도구 설치 스크립트는 `dependencies/lock.json`의 `windows-build-tools`를 읽습니다.
+Visual Studio Build Tools 2022의 검증 기준 버전과 공식 설치 출처, MSVC·Windows SDK의
+기준 버전 및 설치 구성요소 ID를 이 파일에서 관리합니다. 현재 기준은 Build Tools
+17.14.37614.0, MSVC 14.44.35207, SDK 10.0.26100.0입니다. MSVC·SDK는 기준 이상을
+허용하며, Build Tools 제품 버전은 기록용입니다. 기존 적합한 전체 Visual Studio도
+재사용하며, 설치된 버전을 낮추거나 자동 업데이트를 막지 않습니다.
+
+상태 확인과 설치 계획은 시스템 변경 없이 실행할 수 있습니다.
+
+```powershell
+pwsh -NoProfile -File dependencies/install-windows-build-tools.ps1 -Check
+pwsh -NoProfile -File dependencies/install-windows-build-tools.ps1 -WhatIf
+```
+
+적합한 설치가 있으면 다운로드·관리자 권한 없이 종료합니다. 부족하면 기존 Build Tools
+2022에 두 구성요소를 추가하거나 새 Build Tools를 설치하며, 사용자의 전체 IDE는 수정하지
+않습니다. C++ 작업 구성 전체나 추천 구성요소는 요청하지 않습니다. 새 설치에서는 공식
+bootstrapper를 `.local/dependencies/windows-build-tools`에 다운로드하고 유효한 Microsoft
+서명을 확인합니다. 이 URL은 최신 2022 설치 파일을 제공하므로 고정 파일 해시는 사용하지
+않습니다. 실제 도구는 시스템에 설치되며 캐시 폴더만 복사해서 사용할 수 없습니다.
+`-Check`는 필요한 도구가 없으면 실패합니다. 설치가 재부팅을 요구하면 종료 코드 3010을
+반환하며, 재부팅 후 `-Check`에 성공한 것을 확인한 뒤 빌드하십시오.
+
+설치 스크립트의 격리된 검사·명령 구성 테스트는 다음 명령으로 실행합니다.
+
+```powershell
+pwsh -NoProfile -File tests/dependencies/windows-build-tools.Tests.ps1
+```
+
+이 테스트는 임시 파일과 가상 설치 정보를 사용하며 실제 다운로드·설치는 하지 않습니다.
+`-Check`도 버전과 필수 파일의 존재를 확인하는 검사이며 컴파일·링크 성공을 보장하지는
+않습니다. 실제 설치 검증은 별도 Windows x64 VM에서 도구가 없는 상태, MSVC 또는 SDK만
+있는 상태, 기존 Build Tools에 구성요소가 부족한 상태를 각각 시험합니다. 설치 후 새 셸에서
+`-Check`와 x64 C/C++ 컴파일·링크, 프로젝트 빌드 및 `cargo test --workspace`를 확인합니다.
+재실행 시 무변경 종료, 재부팅 요구 시 3010 반환과 재부팅 후 재검사도 확인합니다.
+VM에서의 설치 시험은 격리된 검사 테스트와 별도로 기록해야 합니다.
+
+설치 동작은 [Microsoft 명령행 설치 문서](https://learn.microsoft.com/en-us/visualstudio/install/use-command-line-parameters-to-install-visual-studio?view=vs-2022)와
+[Build Tools 구성요소 목록](https://learn.microsoft.com/en-us/visualstudio/install/workload-component-id-vs-build-tools?view=vs-2022)을 기준으로 합니다.
 
 .NET 설치 스크립트는 `dependencies/lock.json`에 고정된 SDK를 다운로드하고 해시를 검증합니다.
 `tools/development/dotnet.ps1`은 이 SDK를 실행하며, NuGet 패키지는

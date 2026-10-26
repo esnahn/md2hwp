@@ -197,14 +197,15 @@ EMF는 원본 파일을 내장하고 물리적 프레임의 비율로 크기를 
 
 ## 소스에서 빌드
 
-Windows x64에서 PowerShell 7.4 이상, Rust 도구 체인과 MSVC C++ 빌드 도구를 준비한 뒤 저장소 루트에서 실행합니다.
+Windows x64에서 PowerShell 7.4 이상과 Rust 도구 체인을 준비한 뒤 저장소 루트에서 실행합니다. MSVC·Windows SDK 설치가 필요하면 첫 명령은 관리자 PowerShell에서 실행하십시오.
 
 ```powershell
+pwsh -NoProfile -File dependencies/install-windows-build-tools.ps1
 pwsh -NoProfile -File dependencies/install-dotnet-sdk.ps1
 pwsh -NoProfile -File tools/development/build.ps1
 ```
 
-.NET SDK는 고정 버전을 설치하고, 필요한 NuGet 패키지는 빌드 중 공식 nuget.org에서 자동으로 받습니다. 최초 준비와 캐시에 없는 패키지 다운로드에는 네트워크가 필요합니다. 결과는 `target/release`에 모입니다. [빌드·검증 상세](docs/development.md)를 참고하십시오.
+Windows 빌드 도구는 기존 설치를 확인하고 부족하면 필요한 MSVC·SDK 구성요소를 시스템에 설치합니다. .NET SDK는 고정 버전을 설치하고, 필요한 NuGet 패키지는 빌드 중 공식 nuget.org에서 자동으로 받습니다. 최초 준비와 캐시에 없는 패키지 다운로드에는 네트워크가 필요합니다. 결과는 `target/release`에 모입니다. [빌드·검증 상세](docs/development.md)를 참고하십시오.
 
 ## 템플릿과 상세 안내
 
