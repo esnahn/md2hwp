@@ -38,32 +38,6 @@ pub(crate) fn page_break(p: &mut Paragraph) {
 }
 
 impl Samples {
-    pub(crate) fn empty_tail(&self, level: u8) -> Result<Paragraph, String> {
-        let own = tag(&format!("slot:heading{level}"));
-        fn find(paragraphs: &mut [Paragraph], own: &str) -> Result<Option<Paragraph>, String> {
-            for p in paragraphs {
-                if p.text.contains(own) {
-                    return empty_sample(p, own).map(Some);
-                }
-                let mut result = None;
-                map_nested_containers(p, &mut |nested| {
-                    if result.is_none() {
-                        result = find(nested, own)?;
-                    }
-                    Ok(())
-                })?;
-                if result.is_some() {
-                    return Ok(result);
-                }
-            }
-            Ok(None)
-        }
-        let mut sample = conditional_ranges::apply(
-            self.samples[usize::from(level - 1)].paragraphs.clone(),
-            true,
-        )?;
-        find(&mut sample, &own)?.ok_or("Missing heading title format".into())
-    }
     pub(crate) fn read(
         roots: &[Paragraph],
         info: &DocInfo,

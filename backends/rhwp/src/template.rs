@@ -360,13 +360,9 @@ pub fn render(
         )?;
         output.push(paragraph);
     }
-    let mut terminal = match input.blocks.last() {
-        Some(Block::Paragraph { .. } | Block::List { .. } | Block::VerbatimBlock { .. }) => {
-            crate::headings::empty_sample(&samples[0], &tag("body"))?
-        }
-        Some(Block::Heading { level, .. }) => headings.empty_tail(*level)?,
-        _ => roots[content + 1].clone(),
-    };
+    // Like the Hancom renderer, finish with an editable body paragraph rather
+    // than inheriting the last heading/object or the template's trailing style.
+    let mut terminal = crate::headings::empty_sample(&samples[0], &tag("body"))?;
     if break_before_next {
         crate::headings::page_break(&mut terminal);
     }
@@ -1007,6 +1003,177 @@ mod tests {
             &ValidationLimits::default(),
         )
         .unwrap()
+    }
+
+    #[test]
+    fn terminal_paragraph_uses_body_format_for_every_final_block() {
+        use md2hwp_core::ir::{ImageRef, ListItem, ListItemBlock, ListKind, TableAlignment};
+        let text = || {
+            vec![Inline::Text {
+                value: "내용".into(),
+            }]
+        };
+        let mut document = crate::template_init::create().unwrap();
+        let body = document.sections[0]
+            .paragraphs
+            .iter()
+            .find(|p| p.text == tag("body"))
+            .unwrap()
+            .clone();
+        let mut shape = document.doc_info.para_shapes[usize::from(body.para_shape_id)].clone();
+        shape.margin_left = 640;
+        shape.indent = -80;
+        let shape_id = u16::try_from(document.doc_info.para_shapes.len()).unwrap();
+        document.doc_info.para_shapes.push(shape);
+        let mut character = document.doc_info.char_shapes[0].clone();
+        character.base_size = 1250;
+        let character_id = u32::try_from(document.doc_info.char_shapes.len()).unwrap();
+        document.doc_info.char_shapes.push(character);
+        let sample = document.sections[0]
+            .paragraphs
+            .iter_mut()
+            .find(|p| p.text == tag("body"))
+            .unwrap();
+        sample.para_shape_id = shape_id;
+        sample.set_single_char_shape(character_id);
+        // The disposable content successor must not own generated tail formatting.
+        document.sections[0].paragraphs.last_mut().unwrap().style_id = 0;
+        assert_ne!(body.style_id, 0);
+        let directory = tempfile::tempdir().unwrap();
+        std::fs::write(
+            directory.path().join("image.png"),
+            document.bin_data_content[0].data.load(),
+        )
+        .unwrap();
+        let mut cases = vec![
+            vec![],
+            vec![Block::Paragraph { inlines: text() }],
+            vec![Block::VerbatimBlock {
+                lines: vec!["내용".into()],
+                source: None,
+            }],
+            vec![Block::List {
+                kind: ListKind::Bullet,
+                start: None,
+                tight: true,
+                items: vec![ListItem {
+                    blocks: vec![ListItemBlock::Paragraph { inlines: text() }],
+                }],
+            }],
+            vec![Block::Figure {
+                id: None,
+                image: ImageRef {
+                    path: "image.png".into(),
+                    alt: vec![],
+                    title: None,
+                },
+                caption: text(),
+                source: None,
+            }],
+        ];
+        #[cfg(windows)]
+        cases.push(vec![Block::Table {
+            id: None,
+            columns: vec![TableAlignment::Default],
+            header: vec![text()],
+            rows: vec![vec![text()]],
+            caption: None,
+            source: None,
+        }]);
+        #[cfg(not(windows))]
+        let _ = TableAlignment::Default;
+        cases.extend((1..=6).map(|level| {
+            vec![Block::Heading {
+                id: None,
+                level,
+                inlines: text(),
+            }]
+        }));
+        for mut blocks in cases {
+            if matches!(
+                blocks.first(),
+                Some(Block::Figure { .. } | Block::Table { .. })
+            ) {
+                blocks.insert(
+                    0,
+                    Block::Heading {
+                        id: None,
+                        level: 1,
+                        inlines: text(),
+                    },
+                );
+            }
+            let label = format!("{blocks:?}");
+            let input = ir(blocks);
+            let mut core = DocumentCore::new_empty();
+            core.set_document(document.clone());
+            let resources = if let Some(operation) = input
+                .as_document()
+                .blocks
+                .iter()
+                .position(|block| matches!(block, Block::Figure { .. }))
+            {
+                BTreeMap::from([(
+                    operation,
+                    crate::image_resource::Resource::read(directory.path(), "image.png").unwrap(),
+                )])
+            } else {
+                BTreeMap::new()
+            };
+            render(&input, &mut core, &resources).unwrap();
+            let terminal = core.document().sections[0].paragraphs.last().unwrap();
+            assert!(
+                terminal.text.is_empty() && terminal.controls.is_empty(),
+                "{label}"
+            );
+            assert_eq!(terminal.style_id, body.style_id, "{label}");
+            assert_eq!(terminal.para_shape_id, shape_id, "{label}");
+            assert_eq!(terminal.char_shape_id_at(0), Some(character_id), "{label}");
+        }
+    }
+
+    #[test]
+    fn terminal_body_paragraph_keeps_heading_block_ending_page_break() {
+        let mut document = crate::template_init::create().unwrap();
+        let roots = &mut document.sections[0].paragraphs;
+        let body_style = roots
+            .iter()
+            .find(|p| p.text == tag("body"))
+            .unwrap()
+            .style_id;
+        let index = roots
+            .iter()
+            .position(|p| p.text == tag("heading1"))
+            .unwrap();
+        let mut title = roots[index].clone();
+        replace(&mut title, &tag("heading1"), &tag("slot:heading1")).unwrap();
+        let mut end = paragraph(&tag("end:heading1"));
+        crate::headings::page_break(&mut end);
+        roots.splice(
+            index..=index,
+            [paragraph(&tag("begin:heading1")), title, end],
+        );
+        let mut core = DocumentCore::new_empty();
+        core.set_document(document);
+        render(
+            &ir(vec![Block::Heading {
+                id: None,
+                level: 1,
+                inlines: vec![Inline::Text {
+                    value: "제목".into(),
+                }],
+            }]),
+            &mut core,
+            &BTreeMap::new(),
+        )
+        .unwrap();
+        let terminal = core.document().sections[0].paragraphs.last().unwrap();
+        assert_eq!(terminal.style_id, body_style);
+        assert_eq!(
+            terminal.column_type,
+            rhwp::model::paragraph::ColumnBreakType::Page
+        );
+        assert_ne!(terminal.raw_break_type & 4, 0);
     }
 
     #[test]
