@@ -499,14 +499,11 @@ valid provenance seals, then fix cross-paragraph field and connector references.
 Never interpret manuscript/metadata literals as template tags or private markers.
 Clear obsolete sample line-layout caches
 only on changed paragraphs, preserving unchanged static layout. Native generation
-comparison evidence is in docs/rhwp-generation-2026-10-20.md.
-Heading-block comparison evidence is in docs/rhwp-headings-2026-10-21.md.
-List generation evidence and remaining limits are in docs/rhwp-lists-2026-10-21.md;
-current marker-width implementation and verification scope are in
-docs/rhwp-list-widths-2026-10-22.md. Preserve historical reports as dated evidence.
-Code-box generation evidence and clipping limits are in docs/rhwp-code-2026-10-21.md.
-Figure generation evidence is in docs/rhwp-figures-2026-10-21.md.
-Table generation evidence is in docs/rhwp-tables-2026-10-21.md.
+comparison evidence for headings, lists, code boxes, figures and tables is in
+docs/rhwp-integration-2026-10-22.md and docs/rhwp-parity-2026-10-23.md.
+Current marker-width implementation and verification scope are in
+docs/rhwp-list-widths-2026-10-22.md. Current support and clipping limits are also
+summarized in docs/rhwp-backend-strategy.md.
 Footnote generation evidence and verification limits are in docs/rhwp-footnotes-2026-10-22.md.
 Reference implementation and verification scope are in docs/rhwp-references-2026-10-22.md.
 

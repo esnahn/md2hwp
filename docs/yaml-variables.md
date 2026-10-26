@@ -4,7 +4,6 @@ v0.4.4 / IR 0.4에서 지원합니다. 이전 IR은 원고에서 다시 생성�
 변수 입력 위치는 Markdown 원고 맨 앞의 YAML 블록으로 정했습니다.
 지원 키는 title·subtitle·author·date·publisher와 비어 있지 않은 최상위 `md2hwp-<이름>` 키입니다.
 템플릿 태그는 `{{md2hwp:meta:<키>}}`로 정했습니다. 아래 치환 규칙을 사용합니다.
-추가 후보와 자료형은 [Pandoc 메타데이터 변수 조사](pandoc-metadata-variables.md)에 정리했습니다.
 
 ## 이름과 태그
 
@@ -65,7 +64,6 @@ md2hwp-report-number: "기본 2026-01"
 ```
 
 문서 제목 `title`과 본문의 장 제목 `# ...`는 각각의 용도로 사용합니다.
-출력 형식별 차이와 예외 옵션은 [Pandoc 제목 처리 조사](pandoc-title-writers.md)를 참고합니다.
 날짜는 문자열로 입력하고 date에는 원문을 보존합니다.
 Rust core에서 인식한 날짜는 date-meta에 정규화해 저장하며 현재 날짜로 채우지 않습니다.
 날짜에 YAML의 따옴표를 사용하면 입력 의도가 분명합니다.

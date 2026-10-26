@@ -225,40 +225,4 @@ COM 메서드 계측 35,025 → 22,360회 감소를 기록했습니다. 문단 �
 473 → 1회, 전체 XML export는 19 → 14회로 줄었습니다. 기존 Debug 생성 경로와 최종
 저장·재열기 검증을 유지하며, 대규모 107쪽과 모든 기능 원고 17쪽의 구조·서식·내장 이미지·
 전체 픽셀이 일치했습니다. 기존 템플릿의 긴 표 clipping과 간헐적 초기 import 높이 오류는
-동등성 결과와 별도로 보고서에 기록합니다. 원시 증거는
-`artifacts/performance-direct-xml-2026-10-09/`에 보관합니다.
-
-직전 Release의 XML 재사용·반복 비교 최적화는 [성능·출력 비교](performance/2026-10-09-xml-comparison.md)와
-[집계 JSON](performance/2026-10-09-xml-comparison.json)에 있습니다. 같은 대규모 원고의 일반 Release가
-277.016 → 209.830초로 단축됐고, 전체 XML 조회는 37 → 19회로 줄었습니다.
-캐시를 단발 조회까지 적용해 처음에는 느려졌던 실험과 적용 범위 수정도 기록했습니다.
-기존 Debug와 새 Release의 구조·내장 이미지 데이터 및 107쪽 전체 픽셀이 일치했습니다.
-문단 스타일 조회와 저장·재열기 검증은 유지하며, 원시 로그는
-`artifacts/performance-xml-comparison-2026-10-09/`에 보관합니다.
-
-직전 Release의 원형 복제 좌표 추적 변경은 [성능·출력 비교](performance/2026-10-09-clone-coordinates.md)와
-[집계 JSON](performance/2026-10-09-clone-coordinates.json)에 있습니다. 전체 XML 조회 140회를 줄였고,
-기존 Debug와 새 Release의 구조·내장 이미지 데이터 및 107쪽 전체 픽셀이 일치했습니다.
-원시 로그는 `artifacts/performance-coordinates-2026-10-09/`에 보관합니다.
-
-직전 Release의 기준 측정은 [2026-10-09 현재 Release 상세 보고서](performance/2026-10-09-current-release.md)와
-[집계 JSON](performance/2026-10-09-current-release.json)에 있습니다. 실제 배포 빌드의 시간과
-별도 계측 빌드의 호출별 시간을 구분했으며, 원시 로그와 CSV는
-`artifacts/performance-release-2026-10-09/`에 보관합니다.
-
-초기 Release의 액션별 기준 측정은 [2026-10-08 성능 보고서](performance/2026-10-08-baseline.md)와
-[비교용 JSON](performance/2026-10-08-baseline.json)에 보관합니다. 호출별 원시 시간선과 CSV는
-`artifacts/performance-2026-10-08/`에 있습니다. 대규모 원고는 네이티브 자동번호 검증에서
-실패했으므로 실패 지점까지의 비용이며, 정상 완료된 작은 원고와 구분해서 비교하십시오.
-
-각주 번호 추적을 수정한 뒤 같은 대규모 원고가 저장·재열기 검증까지 완료했습니다.
-최적화 작업은 [수정 후 완료 측정](performance/2026-10-08-large-remeasured.md)과
-[집계 JSON](performance/2026-10-08-large-remeasured.json)을 기준으로 진행하십시오.
-전체 실행은 530.699초이며, 호출별 원시 자료는
-`artifacts/performance-remeasure-2026-10-08/`에 있습니다.
-
-첫 Release 최적화는 [Debug·Release 동등성 및 시간 비교](performance/2026-10-09-release-diagnostics.md)에
-기록했습니다. 변경 전 두 빌드, 그리고 변경 전 Debug와 수정 Release의 문서 구조·서식·참조 및
-107쪽 전체 렌더링이 일치했습니다. 그림·박스·출처 치환 중 검증용 전체 XML export만 Debug에
-남기고 완성 문서 검증은 두 빌드에 유지하여, 같은 원고의 Release 실행이 511.752 → 383.004초로
-줄었습니다. 기존 Debug 실행 파일과 세 실행 결과는 `artifacts/debug-release-equivalence/`에 보존합니다.
+동등성 결과와 별도로 보고서에 기록합니다.

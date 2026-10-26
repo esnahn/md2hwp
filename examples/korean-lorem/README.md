@@ -262,7 +262,7 @@ XML·쪽 PNG·셀 위치 JSON·실행 로그는 ignored `artifacts/table-header-
 
 시간 계측만 추가한 대규모 변환은 634.615초였고, 전체 XML 내보내기 855회가
 485.466초를 차지했습니다. 측정 조건·단계별 시간·단축 후보는
-[대규모 문서 성능 측정](../../docs/render-performance.md)에 정리했습니다.
+[최종 성능 검증](../../docs/performance/README.md)에 정리했습니다.
 최적화의 효과를 측정한 값은 아닙니다.
 
 같은 날 수정 빌드로 대규모 원고도 변환하여 최종 결과 `large-5x.output.hwp`를
@@ -302,4 +302,4 @@ Rust `cargo test --workspace` 87개와 `cargo clippy --workspace --all-targets -
 
 비교 결과는 ignored `artifacts/paragraph-style-profile/large.output.hwp`와 `large-pages/`에
 보관합니다. 이 폴더의 기존 HWP는 그대로입니다. 구현·실패 복구·측정 범위는
-[대규모 문서 성능 측정](../../docs/render-performance.md)에 설명했습니다.
+[최종 성능 검증](../../docs/performance/README.md)에 설명했습니다.
