@@ -450,7 +450,6 @@ fn convert_manuscript(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError
     backend.extend(forwarded);
     hancom::run_with_resource_root(backend, input.parent())
         .map_err(|e| format!("{e}\nValidated IR retained: {}", ir.display()))?;
-    println!("{}", output.display());
     Ok(())
 }
 

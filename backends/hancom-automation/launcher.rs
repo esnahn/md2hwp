@@ -1,5 +1,12 @@
 //! Backend launcher; each worker runs in a separate process.
-use std::{env, ffi::OsString, fs, path::PathBuf, process::Command};
+use std::{
+    env,
+    ffi::OsString,
+    fs,
+    io::Write,
+    path::PathBuf,
+    process::{Command, Stdio},
+};
 
 pub(crate) fn has_document_extension(path: &std::path::Path) -> bool {
     path.extension().is_some_and(|extension| {
@@ -281,7 +288,7 @@ pub fn run_with_resource_root(
     }
     let ir = ir.ok_or_else(usage)?;
     let template = adjacent_default(template, "template.hwp")?;
-    let output = output.ok_or_else(usage)?;
+    let output = std::path::absolute(output.ok_or_else(usage)?).map_err(|e| e.to_string())?;
     let worker = select_worker(worker, &[&template, &output])?;
     for path in [&worker, &ir, &template] {
         if !path.is_file() {
@@ -314,7 +321,7 @@ pub fn run_with_resource_root(
         "--template".into(),
         template.into_os_string(),
         "--output".into(),
-        output.into_os_string(),
+        output.as_os_str().into(),
     ];
     if verbose {
         forwarded.push("--verbose".into());
@@ -323,7 +330,16 @@ pub fn run_with_resource_root(
     if legacy_com {
         forwarded.push("--legacy-com".into());
     }
-    launch_worker(worker, dotnet, forwarded, resource_root)
+    launch_worker(worker, dotnet, forwarded, resource_root)?;
+    println!("{}", output.display());
+    Ok(())
+}
+
+fn hide_worker_stdout(arguments: &[OsString]) -> bool {
+    arguments
+        .first()
+        .is_some_and(|argument| argument == "ir2hwp")
+        && !arguments.iter().any(|argument| argument == "--verbose")
 }
 
 fn launch_worker(
@@ -336,10 +352,29 @@ fn launch_worker(
     if let Some(root) = resource_root {
         command.current_dir(root);
     }
-    let status = command
-        .args(arguments)
-        .status()
-        .map_err(|e| format!("Could not start backend worker: {e}"))?;
+    let hide_stdout = hide_worker_stdout(&arguments);
+    command.args(arguments);
+    let status = if hide_stdout {
+        // Keep warnings/errors live. Only the backend's successful render result
+        // is hidden; preserve even stdout diagnostics if the worker fails.
+        let captured = command
+            .stdin(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .output()
+            .map_err(|e| format!("Could not start backend worker: {e}"))?;
+        if !captured.status.success() && !captured.stdout.is_empty() {
+            let mut stderr = std::io::stderr().lock();
+            let _ = stderr.write_all(&captured.stdout);
+            if !captured.stdout.ends_with(b"\n") {
+                let _ = stderr.write_all(b"\n");
+            }
+        }
+        captured.status
+    } else {
+        command
+            .status()
+            .map_err(|e| format!("Could not start backend worker: {e}"))?
+    };
     if !status.success() {
         return Err(format!("Backend worker failed: {status}"));
     }
@@ -433,6 +468,21 @@ fn select_adjacent_worker(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_normal_render_results_are_hidden() {
+        let arguments = |values: &[&str]| values.iter().map(OsString::from).collect::<Vec<_>>();
+        assert!(hide_worker_stdout(&arguments(&[
+            "ir2hwp",
+            "--ir",
+            "원고.ir.json"
+        ])));
+        assert!(!hide_worker_stdout(&arguments(&["ir2hwp", "--verbose"])));
+        for command in ["--version", "init-template", "validate-template"] {
+            assert!(!hide_worker_stdout(&arguments(&[command])));
+        }
+        assert!(!hide_worker_stdout(&[]));
+    }
 
     fn x64_pe_fixture() -> Vec<u8> {
         let mut pe = vec![0; 134];
