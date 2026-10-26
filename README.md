@@ -205,7 +205,7 @@ pwsh -NoProfile -File dependencies/install-dotnet-sdk.ps1
 pwsh -NoProfile -File tools/development/build.ps1
 ```
 
-Windows 빌드 도구는 기존 설치를 확인하고 부족하면 필요한 MSVC·SDK 구성요소를 시스템에 설치합니다. .NET SDK는 고정 버전을 설치하고, 필요한 NuGet 패키지는 빌드 중 공식 nuget.org에서 자동으로 받습니다. 최초 준비와 캐시에 없는 패키지 다운로드에는 네트워크가 필요합니다. 결과는 `target/release`에 모입니다. [빌드·검증 상세](docs/development.md)를 참고하십시오.
+Windows 빌드 도구는 기존 설치를 확인하고 부족하면 필요한 MSVC·SDK 구성요소를 시스템에 설치합니다. .NET SDK는 고정 버전을 설치하고, 필요한 NuGet 패키지는 빌드 중 공식 nuget.org에서 자동으로 받습니다. 최초 준비와 캐시에 없는 패키지 다운로드에는 네트워크가 필요합니다. 결과는 `target/release`에 모입니다. [빌드·검증 상세](docs/development.md)와 [로컬 파일·복원 범위](docs/local-files.md)를 참고하십시오.
 
 ## 템플릿과 상세 안내
 
