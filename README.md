@@ -195,6 +195,17 @@ EMF는 원본 파일을 내장하고 물리적 프레임의 비율로 크기를 
 
 각주는 본문에 `[^이름]`, 별도 문단에 `[^이름]: 각주 내용`으로 작성합니다. [번호 상호참조](docs/cross-references.md)와 [원고 작성 안내](docs/manuscript/README-MANUSCRIPT.md)를 참고하십시오.
 
+## 소스에서 빌드
+
+Windows x64에서 PowerShell 7.4 이상, Rust 도구 체인과 MSVC C++ 빌드 도구를 준비한 뒤 저장소 루트에서 실행합니다.
+
+```powershell
+pwsh -NoProfile -File dependencies/install-dotnet-sdk.ps1
+pwsh -NoProfile -File tools/development/build.ps1
+```
+
+.NET SDK는 고정 버전을 설치하고, 필요한 NuGet 패키지는 빌드 중 공식 nuget.org에서 자동으로 받습니다. 최초 준비와 캐시에 없는 패키지 다운로드에는 네트워크가 필요합니다. 결과는 `target/release`에 모입니다. [빌드·검증 상세](docs/development.md)를 참고하십시오.
+
 ## 템플릿과 상세 안내
 
 박스·표·그림의 템플릿 범위에서 샘플 개체 앞뒤에 빈 문단을 넣으면, 생성된 개체의 앞뒤에 서식과 쪽·단 나눔을 보존하여 복제합니다. [범위 작성 규칙](docs/templates.md)을 참고하십시오.

@@ -3,12 +3,22 @@
 ## 빌드
 
 Rust 버전은 `rust-toolchain.toml`, .NET SDK는 `global.json`에 고정되어 있습니다.
-.NET SDK가 없으면 `dependencies/install-dotnet-sdk.ps1`로 개발용 SDK를 준비합니다.
+Windows x64에서 PowerShell 7.4 이상, Rust 도구 체인과 MSVC C++ 빌드 도구가 필요합니다.
+저장소 루트에서 다음 순서로 개발용 .NET SDK를 준비하고 빌드합니다.
 
 ```powershell
+pwsh -NoProfile -File dependencies/install-dotnet-sdk.ps1
 pwsh -NoProfile -File tools/development/build.ps1
 cargo test --workspace
 ```
+
+.NET 설치 스크립트는 `dependencies/lock.json`에 고정된 SDK를 다운로드하고 해시를 검증합니다.
+`tools/development/dotnet.ps1`은 이 SDK를 실행하며, NuGet 패키지는
+`.local/state/dotnet/nuget-packages`에 보관합니다. C# 빌드·게시의 자동 restore는
+`backends/hancom-automation/NuGet.Config`에 명시된 공식 nuget.org 소스만 사용합니다.
+캐시에 있는 패키지는 재사용하고 없는 패키지는 다운로드하므로, 최초 빌드나
+의존성 변경 후에는 네트워크 연결이 필요합니다. 별도 패키지 다운로드 스크립트나
+기존 캐시 복사는 필요하지 않습니다. SDK·캐시·빌드 결과는 Git에 포함하지 않습니다.
 
 Release 빌드 결과는 `target/release/`의 다음 파일과 라이선스 폴더입니다.
 `-Configuration Debug`를 주면 `target/debug/`에 모입니다.
