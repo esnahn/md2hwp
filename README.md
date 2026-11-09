@@ -199,6 +199,10 @@ EMF는 원본 파일을 내장하고 물리적 프레임의 비율로 크기를 
 
 ## 소스에서 빌드
 
+수식 문자열의 양방향 변환은 독립 개발 크레이트 `md2hwp-math`에서 작업합니다.
+양방향 변환의 범위·실행·시각 검토 자료는
+[수식 변환 안내](docs/math.md)를 참고하십시오. 기존 Markdown/IR 문서 생성에는 아직 연결하지 않았습니다.
+
 Windows x64에서 PowerShell 7.4 이상과 Rust 도구 체인을 준비한 뒤 저장소 루트에서 실행합니다. MSVC·Windows SDK 설치가 필요하면 첫 명령은 관리자 PowerShell에서 실행하십시오.
 
 ```powershell

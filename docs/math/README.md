@@ -1,0 +1,91 @@
+# 수식 검토 자료
+
+- [툴바 수식 76개](toolbar.html) — 사용자 검토 완료 (2026-10-30)
+- [명세 예시 수식](specification.html) — 개별 기호·구문 표기를 포함한 전체 명세 조사
+- [변환 범위·실행·검증](../math.md)
+
+두 HTML은 같은 3칸 구성이다. 위에는 원본 한글과 HML→TeX→HML 왕복 후의
+실제 한글 출력을 나란히 두고, 아래에는 `hml_to_tex`의 TeX 코드·이미지 한 칸을 둔다.
+왕복 입력은 수작업 대응 TeX가 아니라 아래에 표시된 실제 변환 출력이다.
+
+이미지와 코드를 내장한 2026-10-30 스냅샷이며 인터넷 없이 열린다.
+한글 이미지는 한글 2020·HancomEQN 14pt·300dpi, TeX 이미지는 MathJax 4.1.3과
+New Computer Modern을 사용했다. 검토 렌더러에는 textmacros·textcomp 확장도 사용한다. 실행 라이브러리·SVG 경로·폰트 파일은 포함하지 않는다.
+
+툴바 76개 모두 원래 한글과 픽셀까지 같다.
+툴바 #48–51에는 일반 규칙의 결과를 전용 `Lim`으로 정규화하는 조건과
+왕복 보존 목적을 설명했다. 한글과 아래쪽 TeX의 서체 차이는 남는다.
+한글 설치본의 내장 메뉴 예시 수식은 재배포 권한이 확인되지 않아 포함하지 않는다.
+한글 서체에 관한 권리는 해당 권리자에게 있다.
+
+LaTeX에서는 `\usepackage{amsmath,amssymb,textcomp}`를 준비한다.
+OHM·도·온도·옹스트롬 등은 ASCII 명령으로 출력한다. MathJax 미지원 명령 대신
+RTANGLE·well·base는 각각 `∟`·`⌗`·`⌂`로 출력하고 benzene은 `⌬`를 유지한다.
+기존 TeX 명령과 유니코드 입력 별칭은 계속 받는다. 일반 pdfLaTeX에서의
+유니코드 호환 제한은 각 카드에 표시한다.
+
+## 명세 예시 수식
+
+수식 명세 revision 1.2의 물리적 7–16쪽에서 수집한 325개에서 오타 예시 한 건을 제외하고 보충 시험 7개 중
+입력 기호 오타를 정정한 뒤 같은 입력 22건과 반복 시연 22건을 합쳐 287개를 시험한다. 명세 입력은 완성 입력
+53개, 개별 기호·별칭 192개, 문법 표기 34개, 명령줄 없이 표시된 식을 전사한
+1개이며 보충 시험은 7개다. 중복 항목의 원문 출처는 각 카드에 함께 남긴다.
+변수명·대소문자만 다른 반복 시연은 설명을 앞쪽 대표 예시에 합친다. 다만
+입력 문법·열 구조·빈 구문·범위·서체를 달리 검증하는 시험은 남긴다.
+ELL/LITER와 DIV/DIVIDE는 구현 확인을 위해 각각 독립 항목으로 연속 배치한다.
+번호는 PDF 페이지별로 연속 부여한다. 기호 표는 실제 페이지의 위에서 아래,
+각 행의 왼쪽에서 오른쪽 순서를 따른다. 다음 페이지로 이어지는 표도 먼저
+끝낸 뒤 다음 표·예시로 넘어간다. 카드에는 명세 절과 앞쪽 표의 계속 여부를 표시한다.
+중복의 대표 위치는 관련 명령의 묶음을 우선해 정한다. 설명 열의 보충 수식은
+해당 명령 바로 뒤에 둔다. PILE 계열은 CASES 뒤에, CHOOSE·BINOM은 EQALIGN
+뒤에 두며, 단독 적분·합과 집합 명령은 12쪽 요약에서 함께 본다. 기본 함수와 그리스 문자는 각 목록에 함께 둔다. 보충 시험 `p09-042`–`p09-048`의 인용 문자열·함수·첨자·분수·선행 문자 사례는 명세 원문과 구분한다. 각 항목에 PDF 페이지와 원문을 남기며, 반복 표기도 보존한다. 일부 단독 문법은
+원문과 별도로 `test_script`에 abc 등 시험 문맥을 넣었다. `p08-004`는
+11자 인용 문자열로 시험하며 9·10·11자 경계의 회귀 검사도 둔다.
+HML→TeX 성공은 287개, 이어지는 TeX→HML 성공은 287개다. MathJax 렌더링은
+287개 모두 성공한다. 실패·미실행·빈
+출력도 같은 카드에서 표시한다. 이 목록은 변환기의 지원 범위 선언이 아니다.
+
+단독 `s in`과 `bamtrix` 오타 예시는 사용자 검토 지시에 따라 제외했으며, p09 번호는 연속으로 정리했다.
+같은 SCRIPT는 한 번 캡처하고 재사용 여부를 표시했다. 고유 입력 407개 중
+402개에 이미지가 있고 5개는 빈 결과이며 실행 오류는 없었다. 두 이미지가
+있는 왕복 283개 중 267개는 픽셀이 같고 16개는 다르다. `p09-038`의 화학식과
+라틴 자형 그리스 대문자의 ASCII 정규화, 16쪽 작은 괄호 입력 오류의 차이를 보존했다. 15쪽 분수와
+16쪽 긴 극한·총합 예시는 범위를 수정한 뒤 원본과 왕복 픽셀이 일치한다.
+작은 괄호 예시는 닫는 괄호가 지수에 들어가는 원본 입력 오류를 바로잡으므로
+사용자가 불일치를 허용했다. 변환 결과는 정상 괄호를 명시한 한글 대조 수식과
+픽셀이 일치한다. 변환 실행 성공을 모양 일치로 간주하지 않는다. 별도 확인한 rm·it·bold 조합 12개는
+왕복 후 원본 한글과 모두 픽셀이 일치한다.
+`si n` 등의 명세 예시는 유지하고 명세 설명과 실제 한글의 동작 차이를 설명했다.
+변환은 실제 한글에 맞춰 직립체 함수를 출력한다.
+보충한 `"sin" → sin → "sin"`은 실제 한글 왕복 이미지가 일치한다.
+한글끼리의 픽셀 일치는 가운데 TeX의 모양까지 보장하는 검사가 아니다.
+
+```powershell
+python tools/development/prepare_math_specification.py
+python tools/development/render_hancom_equation_gallery.py --input artifacts/math-spec-examples/native-input.json --output artifacts/math-spec-examples/native --continue-empty --continue-errors
+node tools/development/render_math_spec_reviews.cjs --runtime .local/dependencies/mathjax/4.1.3 --report artifacts/math-spec-examples/report.json --native-dir artifacts/math-spec-examples/native --playwright <Playwright-module-path>
+```
+
+일반 캡처는 실패 시 중단한다. 위 명세 조사에서만 빈 출력·항목별 실패를
+기록하며 계속한다. 소유한 한글 프로세스가 종료되면 계속하지 않는다.
+
+## 이미지 갱신
+
+현재 Debug EXE를 빌드한 뒤 실제 왕복 입력과 한글 캡처를 준비한다.
+
+```powershell
+python tools/development/prepare_math_roundtrip.py
+python tools/development/render_hancom_equation_gallery.py --input artifacts/math-roundtrip/inputs/gallery.json --output artifacts/math-roundtrip/gallery
+python tools/development/render_hancom_equation_gallery.py --input artifacts/math-roundtrip/inputs/toolbar.json --output artifacts/math-roundtrip/toolbar
+python tools/development/compare_math_roundtrip.py
+```
+
+그다음 로컬 MathJax·글꼴 4.1.3과 설치된 Playwright 모듈 경로를 지정한다.
+
+```powershell
+node tools/development/refresh_math_reviews.cjs --runtime .local/dependencies/mathjax/4.1.3 --roundtrip-dir artifacts/math-roundtrip --playwright <Playwright-module-path>
+```
+
+갱신 도구는 툴바 76개의 ID, 원본 SCRIPT, 현재 왕복 출력, 한글에서 읽은 SCRIPT,
+PNG 파일을 대조한다. 두 세트가 모두 완전하고 TeX 렌더링도 성공한 뒤 HTML을 갱신한다.
+렌더링은 일시적인 루프백 서버만 사용하며 외부 요청이 발생하면 실패한다.
