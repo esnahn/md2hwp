@@ -5,6 +5,7 @@ target/
 **/obj/
 .vs/
 TestResults/
+__pycache__/
 *.nupkg
 *.snupkg
 coverage/
