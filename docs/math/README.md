@@ -60,32 +60,14 @@ HML→TeX 성공은 287개, 이어지는 TeX→HML 성공은 287개다. MathJax 
 보충한 `"sin" → sin → "sin"`은 실제 한글 왕복 이미지가 일치한다.
 한글끼리의 픽셀 일치는 가운데 TeX의 모양까지 보장하는 검사가 아니다.
 
-```powershell
-python tools/development/prepare_math_specification.py
-python tools/development/render_hancom_equation_gallery.py --input artifacts/math-spec-examples/native-input.json --output artifacts/math-spec-examples/native --continue-empty --continue-errors
-node tools/development/render_math_spec_reviews.cjs --runtime .local/dependencies/mathjax/4.1.3 --report artifacts/math-spec-examples/report.json --native-dir artifacts/math-spec-examples/native --playwright <Playwright-module-path>
-```
+## 고정 기록
 
-일반 캡처는 실패 시 중단한다. 위 명세 조사에서만 빈 출력·항목별 실패를
-기록하며 계속한다. 소유한 한글 프로세스가 종료되면 계속하지 않는다.
+이 폴더의 HTML은 고정 기록이다. 왕복 입력 준비, 픽셀 비교, MathJax 렌더링과
+HTML 생성 스크립트는 저장소에 남기지 않았으므로 HTML을 다시 생성할 수 없다.
+변환기가 바뀌면 각 HTML의 결과는 현재 변환기와 다를 수 있다.
 
-## 이미지 갱신
-
-현재 Debug EXE를 빌드한 뒤 실제 왕복 입력과 한글 캡처를 준비한다.
-
-```powershell
-python tools/development/prepare_math_roundtrip.py
-python tools/development/render_hancom_equation_gallery.py --input artifacts/math-roundtrip/inputs/gallery.json --output artifacts/math-roundtrip/gallery
-python tools/development/render_hancom_equation_gallery.py --input artifacts/math-roundtrip/inputs/toolbar.json --output artifacts/math-roundtrip/toolbar
-python tools/development/compare_math_roundtrip.py
-```
-
-그다음 로컬 MathJax·글꼴 4.1.3과 설치된 Playwright 모듈 경로를 지정한다.
-
-```powershell
-node tools/development/refresh_math_reviews.cjs --runtime .local/dependencies/mathjax/4.1.3 --roundtrip-dir artifacts/math-roundtrip --playwright <Playwright-module-path>
-```
-
-갱신 도구는 툴바 76개의 ID, 원본 SCRIPT, 현재 왕복 출력, 한글에서 읽은 SCRIPT,
-PNG 파일을 대조한다. 두 세트가 모두 완전하고 TeX 렌더링도 성공한 뒤 HTML을 갱신한다.
-렌더링은 일시적인 루프백 서버만 사용하며 외부 요청이 발생하면 실패한다.
+변환 동작은 `cargo test --workspace`의 고정 자료 회귀 검사로 확인한다.
+개별 SCRIPT의 한글 표시는 `tools/development/render_hancom_equation_gallery.py`로
+캡처한다. 이 도구는 실패 시 중단하며 `--continue-empty`·`--continue-errors`를
+지정할 때만 빈 출력·항목별 실패를 기록하고 계속한다. 소유한 한글 프로세스가
+종료되면 계속하지 않는다. 캡처 결과로 이 폴더의 HTML이 갱신되지는 않는다.

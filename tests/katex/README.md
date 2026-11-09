@@ -30,19 +30,17 @@ BinCancellation의 일반 괄호 재출력 오류도 해결하여 현재 재출�
 스타일 크기 선언은 `scale 70/50/100`으로 보존합니다. 현재 한글에서는
 SCALE 크기 변화가 관찰되지 않았으며, 역변환은 숫자 구간에 맞는 TeX 스타일을 출력합니다.
 
-재생성 단계는 다음과 같습니다. 한글 캡처 전에 기존 한글 프로세스가 없는지
-확인해야 합니다. 결과·환경·원본 해시는 `artifacts/katex-math-review/`에 남깁니다.
+비교 HTML은 2026-11-09 시점의 고정 기록입니다. 이를 만든 YAML 추출·TeX 렌더링·
+HTML 생성 스크립트는 저장소에 남기지 않았으므로 HTML을 다시 생성할 수 없습니다.
+변환기가 바뀐 뒤의 HML 변환 결과는 다음 명령으로 확인합니다.
 
-1. `md2hwp-math batch tex-to-hml tests/katex/cases.json artifacts/katex-math-review/conversions.json`
-2. `tools/development/prepare_katex_native_review.py`로 캡처 입력과 HML 재출력을 준비합니다.
-3. `tools/development/render_katex_math_review.cjs`로 TeX PNG를 만듭니다. Playwright가 모듈 경로에 없으면 `--playwright <playwright 패키지 경로>`를 지정합니다.
-4. `tools/development/render_hancom_equation_gallery.py --input artifacts/katex-math-review/native-input.json --output artifacts/katex-math-review/native --continue-empty --continue-errors`로 한글 PNG를 만듭니다.
-5. `tools/development/build_katex_math_review.py`로 비교 HTML을 생성합니다.
+```powershell
+md2hwp-math batch tex-to-hml tests/katex/cases.json artifacts/katex-math-review/conversions.json
+```
 
-원본 YAML을 다시 추출할 때는 고정 커밋의 YAML과 LICENSE를
-`artifacts/katex-math-review/upstream/`에 내려받고 `commit.txt`에 커밋을 기록한 뒤
-`tools/development/prepare_katex_math_review.cjs`를 실행합니다.
-추출기는 로컬 js-yaml 4.1.1을, TeX 렌더러는 로컬 KaTeX 0.19.1과 Playwright를 사용합니다.
+개별 SCRIPT의 한글 표시는 `tools/development/render_hancom_equation_gallery.py`로
+확인합니다. 캡처 전에 기존 한글 프로세스가 없는지 확인해야 합니다.
+이 확인 결과로 비교 HTML이 갱신되지는 않습니다.
 기존 수식 자료와 섞지 않은 독립 검토 모음입니다.
 
 `named-colors.json`은 CSS named color 148개와 KaTeX 0.19.1의 내장 색상 명령
