@@ -1214,6 +1214,13 @@ name = "md2hwp-font-measurement"
 version = "0.5.0"
 
 [[package]]
+name = "md2hwp-math"
+version = "0.5.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
 name = "md2hwp-rhwp"
 version = "0.5.0"
 dependencies = [

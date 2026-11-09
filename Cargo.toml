@@ -4,6 +4,7 @@ members = [
     "backends/rhwp",
     "crates/md2hwp-core",
     "crates/md2hwp-font-measurement",
+    "crates/md2hwp-math",
 ]
 resolver = "3"
 

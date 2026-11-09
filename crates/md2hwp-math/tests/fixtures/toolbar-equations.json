@@ -1,0 +1,463 @@
+{
+  "schema_version": 1,
+  "description": "User-approved toolbar SCRIPT to TeX proposals; structural regression corpus, not a claim of native/TeX pixel equality.",
+  "count": 76,
+  "cases": [
+    {
+      "case_id": "001",
+      "name": "right-sup",
+      "hancom_script": "a ^{b}",
+      "tex": "a^{b}"
+    },
+    {
+      "case_id": "002",
+      "name": "LSUP",
+      "hancom_script": "a LSUP {b}",
+      "tex": "{}^{b}a"
+    },
+    {
+      "case_id": "003",
+      "name": "right-sub",
+      "hancom_script": "a _{b}",
+      "tex": "a_{b}"
+    },
+    {
+      "case_id": "004",
+      "name": "LSUB",
+      "hancom_script": "a LSUB {b}",
+      "tex": "{}_{b}a"
+    },
+    {
+      "case_id": "005",
+      "name": "UNDEROVER",
+      "hancom_script": "UNDEROVER {a}_{b}^{c}",
+      "tex": "\\mathop{a}\\limits_{b}^{c}"
+    },
+    {
+      "case_id": "006",
+      "name": "vec",
+      "hancom_script": "{vec{a}}",
+      "tex": "\\vec{a}"
+    },
+    {
+      "case_id": "007",
+      "name": "dyad",
+      "hancom_script": "{dyad{a}}",
+      "tex": "\\overleftrightarrow{a}"
+    },
+    {
+      "case_id": "008",
+      "name": "acute",
+      "hancom_script": "{acute{a}}",
+      "tex": "\\acute{a}"
+    },
+    {
+      "case_id": "009",
+      "name": "grave",
+      "hancom_script": "{grave{a}}",
+      "tex": "\\grave{a}"
+    },
+    {
+      "case_id": "010",
+      "name": "grave",
+      "hancom_script": "{grave{a}}",
+      "tex": "\\grave{a}"
+    },
+    {
+      "case_id": "011",
+      "name": "dot",
+      "hancom_script": "{dot{a}}",
+      "tex": "\\dot{a}"
+    },
+    {
+      "case_id": "012",
+      "name": "ddot",
+      "hancom_script": "{ddot{a}}",
+      "tex": "\\ddot{a}"
+    },
+    {
+      "case_id": "013",
+      "name": "under",
+      "hancom_script": "{under{a}}",
+      "tex": "\\underline{a}"
+    },
+    {
+      "case_id": "014",
+      "name": "bar",
+      "hancom_script": "{bar{a}}",
+      "tex": "\\bar{a}"
+    },
+    {
+      "case_id": "015",
+      "name": "hat",
+      "hancom_script": "{hat{a}}",
+      "tex": "\\hat{a}"
+    },
+    {
+      "case_id": "016",
+      "name": "check",
+      "hancom_script": "{check{a}}",
+      "tex": "\\check{a}"
+    },
+    {
+      "case_id": "017",
+      "name": "arch",
+      "hancom_script": "{arch{a}}",
+      "tex": "\\overset{\\frown}{a}"
+    },
+    {
+      "case_id": "018",
+      "name": "tilde",
+      "hancom_script": "{tilde{a}}",
+      "tex": "\\tilde{a}"
+    },
+    {
+      "case_id": "019",
+      "name": "BOX",
+      "hancom_script": "{BOX{a}}",
+      "tex": "\\boxed{a}"
+    },
+    {
+      "case_id": "020",
+      "name": "over",
+      "hancom_script": "{a} over {b}",
+      "tex": "\\frac{a}{b}"
+    },
+    {
+      "case_id": "021",
+      "name": "sqrt",
+      "hancom_script": "sqrt {a}",
+      "tex": "\\sqrt{a}"
+    },
+    {
+      "case_id": "022",
+      "name": "root",
+      "hancom_script": "root {b} of {a}",
+      "tex": "\\sqrt[b]{a}"
+    },
+    {
+      "case_id": "023",
+      "name": "sum",
+      "hancom_script": "sum _{a}^{b}",
+      "tex": "\\sum_{a}^{b}"
+    },
+    {
+      "case_id": "024",
+      "name": "prod",
+      "hancom_script": "prod _{a}^{b}",
+      "tex": "\\prod_{a}^{b}"
+    },
+    {
+      "case_id": "025",
+      "name": "coprod",
+      "hancom_script": "coprod _{a}^{b}",
+      "tex": "\\coprod_{a}^{b}"
+    },
+    {
+      "case_id": "026",
+      "name": "inter",
+      "hancom_script": "inter _{a}^{b}",
+      "tex": "\\bigcap_{a}^{b}"
+    },
+    {
+      "case_id": "027",
+      "name": "union",
+      "hancom_script": "union _{a}^{b}",
+      "tex": "\\bigcup_{a}^{b}"
+    },
+    {
+      "case_id": "028",
+      "name": "BIGSQCAP",
+      "hancom_script": "BIGSQCAP _{a}^{b}",
+      "tex": "\\mathop{\\sqcap}\\limits_{a}^{b}"
+    },
+    {
+      "case_id": "029",
+      "name": "BIGSQCUP",
+      "hancom_script": "BIGSQCUP _{a}^{b}",
+      "tex": "\\bigsqcup_{a}^{b}"
+    },
+    {
+      "case_id": "030",
+      "name": "BIGOPLUS",
+      "hancom_script": "BIGOPLUS _{a}^{b}",
+      "tex": "\\bigoplus_{a}^{b}"
+    },
+    {
+      "case_id": "031",
+      "name": "BIGOMINUS",
+      "hancom_script": "BIGOMINUS _{a}^{b}",
+      "tex": "\\mathop{\\ominus}\\limits_{a}^{b}"
+    },
+    {
+      "case_id": "032",
+      "name": "BIGOTIMES",
+      "hancom_script": "BIGOTIMES _{a}^{b}",
+      "tex": "\\bigotimes_{a}^{b}"
+    },
+    {
+      "case_id": "033",
+      "name": "BIGODIV",
+      "hancom_script": "BIGODIV _{a}^{b}",
+      "tex": "\\mathop{\\oslash}\\limits_{a}^{b}"
+    },
+    {
+      "case_id": "034",
+      "name": "BIGODOT",
+      "hancom_script": "BIGODOT _{a}^{b}",
+      "tex": "\\bigodot_{a}^{b}"
+    },
+    {
+      "case_id": "035",
+      "name": "UNDEROVER LOR",
+      "hancom_script": "UNDEROVER {LOR }_{a}^{b}",
+      "tex": "\\bigvee_{a}^{b}"
+    },
+    {
+      "case_id": "036",
+      "name": "UNDEROVER WEDGE",
+      "hancom_script": "UNDEROVER {WEDGE }_{a}^{b}",
+      "tex": "\\bigwedge_{a}^{b}"
+    },
+    {
+      "case_id": "037",
+      "name": "BIGUPLUS",
+      "hancom_script": "BIGUPLUS _{a}^{b}",
+      "tex": "\\biguplus_{a}^{b}"
+    },
+    {
+      "case_id": "038",
+      "name": "int",
+      "hancom_script": "int _{a}^{b} {c}",
+      "tex": "\\int_{a}^{b}{c}"
+    },
+    {
+      "case_id": "039",
+      "name": "dint",
+      "hancom_script": "dint _{a}^{b} {c}",
+      "tex": "\\iint_{a}^{b}{c}"
+    },
+    {
+      "case_id": "040",
+      "name": "tint",
+      "hancom_script": "tint _{a}^{b} {c}",
+      "tex": "\\iiint_{a}^{b}{c}"
+    },
+    {
+      "case_id": "041",
+      "name": "oint",
+      "hancom_script": "oint _{a}^{b} {c}",
+      "tex": "\\oint_{a}^{b}{c}"
+    },
+    {
+      "case_id": "042",
+      "name": "odint",
+      "hancom_script": "odint _{a}^{b} {c}",
+      "tex": "\\oiint_{a}^{b}c"
+    },
+    {
+      "case_id": "043",
+      "name": "otint",
+      "hancom_script": "otint _{a}^{b} {c}",
+      "tex": "\\oiiint_{a}^{b}c"
+    },
+    {
+      "case_id": "044",
+      "name": "lim:a",
+      "hancom_script": "lim _{a} {c}",
+      "tex": "\\lim_{a}{c}"
+    },
+    {
+      "case_id": "045",
+      "name": "lim:a rarrow b",
+      "hancom_script": "lim _{a rarrow b} {c}",
+      "tex": "\\lim_{a\\to b}{c}"
+    },
+    {
+      "case_id": "046",
+      "name": "lim:a rarrow 0",
+      "hancom_script": "lim _{a rarrow 0} {c}",
+      "tex": "\\lim_{a\\to0}{c}"
+    },
+    {
+      "case_id": "047",
+      "name": "lim:a rarrow INF",
+      "hancom_script": "lim _{a rarrow INF} {c}",
+      "tex": "\\lim_{a\\to\\infty}{c}"
+    },
+    {
+      "case_id": "048",
+      "name": "Lim:a",
+      "hancom_script": "Lim _{a} {c}",
+      "tex": "\\operatorname*{Lim}_{a}c"
+    },
+    {
+      "case_id": "049",
+      "name": "Lim:a rarrow b",
+      "hancom_script": "Lim _{a rarrow b} {c}",
+      "tex": "\\operatorname*{Lim}_{a\\to b}c"
+    },
+    {
+      "case_id": "050",
+      "name": "Lim:a rarrow 0",
+      "hancom_script": "Lim _{a rarrow 0} {c}",
+      "tex": "\\operatorname*{Lim}_{a\\to 0}c"
+    },
+    {
+      "case_id": "051",
+      "name": "Lim:a rarrow INF",
+      "hancom_script": "Lim _{a rarrow INF} {c}",
+      "tex": "\\operatorname*{Lim}_{a\\to\\infty}c"
+    },
+    {
+      "case_id": "052",
+      "name": "REL LRARROW",
+      "hancom_script": "REL LRARROW {a} {b}",
+      "tex": "\\overset{a}{\\underset{b}{\\Longleftrightarrow}}"
+    },
+    {
+      "case_id": "053",
+      "name": "REL lrarrow",
+      "hancom_script": "REL lrarrow {a} {b}",
+      "tex": "\\overset{a}{\\underset{b}{\\longleftrightarrow}}"
+    },
+    {
+      "case_id": "054",
+      "name": "REL RARROW",
+      "hancom_script": "REL RARROW {a} {b}",
+      "tex": "\\overset{a}{\\underset{b}{\\Longrightarrow}}"
+    },
+    {
+      "case_id": "055",
+      "name": "REL rarrow",
+      "hancom_script": "REL rarrow {a} {b}",
+      "tex": "\\xrightarrow[b]{a}"
+    },
+    {
+      "case_id": "056",
+      "name": "REL LARROW",
+      "hancom_script": "REL LARROW {a} {b}",
+      "tex": "\\overset{a}{\\underset{b}{\\Longleftarrow}}"
+    },
+    {
+      "case_id": "057",
+      "name": "REL larrow",
+      "hancom_script": "REL larrow {a} {b}",
+      "tex": "\\xleftarrow[b]{a}"
+    },
+    {
+      "case_id": "058",
+      "name": "REL EXARROW",
+      "hancom_script": "REL EXARROW {a} {b}",
+      "tex": "\\overset{a}{\\underset{b}{\\rightleftarrows}}"
+    },
+    {
+      "case_id": "059",
+      "name": "()",
+      "hancom_script": "LEFT ( a RIGHT )",
+      "tex": "\\left(a\\right)"
+    },
+    {
+      "case_id": "060",
+      "name": "[]",
+      "hancom_script": "LEFT [ a RIGHT ]",
+      "tex": "\\left[a\\right]"
+    },
+    {
+      "case_id": "061",
+      "name": "{}",
+      "hancom_script": "LEFT { a RIGHT }",
+      "tex": "\\left\\{a\\right\\}"
+    },
+    {
+      "case_id": "062",
+      "name": "<>",
+      "hancom_script": "LEFT < a RIGHT >",
+      "tex": "\\left\\langle a\\right\\rangle"
+    },
+    {
+      "case_id": "063",
+      "name": "||",
+      "hancom_script": "LEFT | a RIGHT |",
+      "tex": "\\left|a\\right|"
+    },
+    {
+      "case_id": "064",
+      "name": "∥∥",
+      "hancom_script": "LEFT ∥ a RIGHT ∥",
+      "tex": "\\left\\lVert a\\right\\rVert"
+    },
+    {
+      "case_id": "065",
+      "name": "LCEIL/RCEIL",
+      "hancom_script": "LCEIL a RCEIL",
+      "tex": "\\lceil a\\rceil"
+    },
+    {
+      "case_id": "066",
+      "name": "LFLOOR/RFLOOR",
+      "hancom_script": "LFLOOR a RFLOOR",
+      "tex": "\\lfloor a\\rfloor"
+    },
+    {
+      "case_id": "067",
+      "name": "OVERBRACE",
+      "hancom_script": "OVERBRACE {a} {b}",
+      "tex": "\\overbrace{a}^{b}"
+    },
+    {
+      "case_id": "068",
+      "name": "UNDERBRACE",
+      "hancom_script": "UNDERBRACE {a} {b}",
+      "tex": "\\underbrace{b}_{a}"
+    },
+    {
+      "case_id": "069",
+      "name": "cases",
+      "hancom_script": "{cases{a&b#c&d}}",
+      "tex": "\\begin{cases}a&b\\\\c&d\\end{cases}"
+    },
+    {
+      "case_id": "070",
+      "name": "pile",
+      "hancom_script": "pile{a#b}",
+      "tex": "\\begin{gathered}a\\\\b\\end{gathered}"
+    },
+    {
+      "case_id": "071",
+      "name": "matrix",
+      "hancom_script": "{matrix{a&b#c&d}}",
+      "tex": "\\begin{matrix}a&b\\\\c&d\\end{matrix}"
+    },
+    {
+      "case_id": "072",
+      "name": "pmatrix",
+      "hancom_script": "{pmatrix{a&b#c&d}}",
+      "tex": "\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}"
+    },
+    {
+      "case_id": "073",
+      "name": "dmatrix",
+      "hancom_script": "{dmatrix{a&b#c&d}}",
+      "tex": "\\begin{vmatrix}a&b\\\\c&d\\end{vmatrix}"
+    },
+    {
+      "case_id": "074",
+      "name": "bmatrix",
+      "hancom_script": "{bmatrix{a&b#c&d}}",
+      "tex": "\\begin{bmatrix}a&b\\\\c&d\\end{bmatrix}"
+    },
+    {
+      "case_id": "075",
+      "name": "matrix 3x3",
+      "hancom_script": "{matrix{a&b&c#d&e&f#g&h&i}}",
+      "tex": "\\begin{matrix}a&b&c\\\\d&e&f\\\\g&h&i\\end{matrix}"
+    },
+    {
+      "case_id": "076",
+      "name": "bmatrix 4x4",
+      "hancom_script": "{bmatrix{a&b&c&d#e&f&g&h#i&j&k&l#m&n&o&p}}",
+      "tex": "\\begin{bmatrix}a&b&c&d\\\\e&f&g&h\\\\i&j&k&l\\\\m&n&o&p\\end{bmatrix}"
+    }
+  ]
+}
