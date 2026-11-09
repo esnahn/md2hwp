@@ -20,7 +20,16 @@ Check(TemplateValidation.Parse([]) == Path.Combine(AppContext.BaseDirectory, "te
 Check(TemplateValidation.Parse(["--template", "custom.hwp"]) == "custom.hwp", "Explicit template path changed.");
 try { TemplateValidation.Parse(["a.hwp", "--template", "b.hwp"]); throw new Exception("Duplicate template accepted."); }
 catch (ArgumentException) { }
-var sectionFixture = XDocument.Parse("<HWPML><BODY><SECTION><P Style='0' PageBreak='false' ColumnBreak='false'><TEXT CharShape='1'><COLDEF/><SECDEF><MASTERPAGE Type='Even'><PARALIST><P><TEXT><LINE/><CHAR/></TEXT></P></PARALIST></MASTERPAGE></SECDEF><CHAR>{{md2hwp:begin:template}}</CHAR></TEXT></P><P><TEXT><CHAR>{{md2hwp:ir-version:0.4}}</CHAR></TEXT></P></SECTION></BODY></HWPML>");
+static JsonElement MathNode(string script) =>
+    JsonDocument.Parse(JsonSerializer.Serialize(new { type = "inline_math", script })).RootElement;
+// Minimal SCRIPT check matches the Rust core: grammar is not parsed.
+foreach (var script in new[] { "a over b", "{a" })
+    Check(IrContract.ReadMathScript(MathNode(script), "/m") == script, "Minimal math check rejected " + script);
+foreach (var script in new[] { "", " ", "a\nb", "a\u007fb", "é" })
+    Reject(() => IrContract.ReadMathScript(MathNode(script), "/m"));
+Reject(() => IrContract.ReadMathScript(JsonDocument.Parse("{\"type\":\"inline_math\",\"script\":\"x\",\"tex\":\"x\"}").RootElement, "/m"));
+Console.WriteLine("Minimal inline/display math SCRIPT checks match the Rust core.");
+var sectionFixture = XDocument.Parse("<HWPML><BODY><SECTION><P Style='0' PageBreak='false' ColumnBreak='false'><TEXT CharShape='1'><COLDEF/><SECDEF><MASTERPAGE Type='Even'><PARALIST><P><TEXT><LINE/><CHAR/></TEXT></P></PARALIST></MASTERPAGE></SECDEF><CHAR>{{md2hwp:begin:template}}</CHAR></TEXT></P><P><TEXT><CHAR>{{md2hwp:ir-version:0.6}}</CHAR></TEXT></P></SECTION></BODY></HWPML>");
 var originalSectionFixture = sectionFixture.ToString();
 var retainedSection = new XElement(sectionFixture.Descendants("SECDEF").Single());
 var separatedSection = TaggedTemplateBinding.PreserveBeginSectionSettings(sectionFixture);

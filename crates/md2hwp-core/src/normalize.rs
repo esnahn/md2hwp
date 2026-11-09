@@ -1,4 +1,4 @@
-//! Closed Pandoc AST-to-IR 0.4 normalization handlers.
+//! Closed Pandoc AST-to-IR 0.6 normalization handlers.
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -571,12 +571,15 @@ impl Normalizer<'_> {
         match (constructor, rule) {
             ("Figure", BlockRule::Figure { .. }) => self.native_figure(content, path),
             ("Table", BlockRule::Table { .. }) => self.table(content, path),
-            ("Para", BlockRule::Paragraph { .. }) => Ok(Block::Paragraph {
-                inlines: self.inlines(
-                    self.array(content, &format!("{path}/c"))?,
-                    &format!("{path}/c"),
-                )?,
-            }),
+            ("Para", BlockRule::Paragraph { .. }) => {
+                let nodes = self.array(content, &format!("{path}/c"))?;
+                if let Some(script) = self.display_equation(nodes, &format!("{path}/c"))? {
+                    return Ok(Block::DisplayMath { script });
+                }
+                Ok(Block::Paragraph {
+                    inlines: self.inlines(nodes, &format!("{path}/c"))?,
+                })
+            }
             (
                 "Header",
                 BlockRule::Heading {
@@ -748,23 +751,13 @@ impl Normalizer<'_> {
                 else {
                     return Err(self.unsupported(path, constructor));
                 };
-                Ok(ListItemBlock::Paragraph {
-                    inlines: self.inlines(
-                        self.array(content, &format!("{path}/c"))?,
-                        &format!("{path}/c"),
-                    )?,
-                })
+                self.list_item_paragraph(content, path)
             }
             "Para" if !tight => {
                 let Some(BlockRule::Paragraph { .. }) = self.rules.blocks.get("Para") else {
                     return Err(self.unsupported(path, constructor));
                 };
-                Ok(ListItemBlock::Paragraph {
-                    inlines: self.inlines(
-                        self.array(content, &format!("{path}/c"))?,
-                        &format!("{path}/c"),
-                    )?,
-                })
+                self.list_item_paragraph(content, path)
             }
             "BulletList" | "OrderedList" => match self.block(node, path)? {
                 Block::List {
@@ -794,6 +787,91 @@ impl Normalizer<'_> {
                 "block is not representable inside an IR list item",
             )),
         }
+    }
+
+    fn list_item_paragraph(
+        &mut self,
+        content: Option<&Value>,
+        path: &str,
+    ) -> Result<ListItemBlock, NormalizeError> {
+        let nodes = self.array(content, &format!("{path}/c"))?;
+        if let Some(script) = self.display_equation(nodes, &format!("{path}/c"))? {
+            return Ok(ListItemBlock::DisplayMath { script });
+        }
+        Ok(ListItemBlock::Paragraph {
+            inlines: self.inlines(nodes, &format!("{path}/c"))?,
+        })
+    }
+
+    /// A paragraph whose only non-space content is one DisplayMath becomes an
+    /// equation block. Display math mixed with text is rejected by `inline`.
+    fn display_equation(
+        &self,
+        nodes: &[Value],
+        path: &str,
+    ) -> Result<Option<String>, NormalizeError> {
+        if !matches!(self.rules.inlines.get("Math"), Some(InlineRule::Math)) {
+            return Ok(None);
+        }
+        let mut found = None;
+        for (index, node) in nodes.iter().enumerate() {
+            match node.get("t").and_then(Value::as_str) {
+                Some("Space" | "SoftBreak") => {}
+                Some("Math") if found.is_none() => {
+                    let item_path = format!("{path}/{index}");
+                    let (_, content) = self.node(node, &item_path)?;
+                    let (display, tex) = self.math_content(content, &item_path)?;
+                    if !display {
+                        return Ok(None);
+                    }
+                    found = Some(self.convert_math(tex, true, &item_path)?);
+                }
+                _ => return Ok(None),
+            }
+        }
+        Ok(found)
+    }
+
+    fn math_content<'a>(
+        &self,
+        content: Option<&'a Value>,
+        path: &str,
+    ) -> Result<(bool, &'a str), NormalizeError> {
+        let values = self.fixed_array(content, 2, &format!("{path}/c"))?;
+        let display = match self.constructor_only(&values[0], &format!("{path}/c/0"))? {
+            "InlineMath" => false,
+            "DisplayMath" => true,
+            other => {
+                return Err(self.invalid(
+                    &format!("{path}/c/0"),
+                    other,
+                    "math type must be InlineMath or DisplayMath",
+                ));
+            }
+        };
+        let tex = values[1].as_str().ok_or_else(|| {
+            self.invalid(&format!("{path}/c/1"), "Math", "math content must be a string")
+        })?;
+        Ok((display, tex))
+    }
+
+    fn convert_math(&self, tex: &str, display: bool, path: &str) -> Result<String, NormalizeError> {
+        if tex.trim().is_empty() {
+            return Err(self.error(
+                "unsupported_math",
+                &format!("{path}/c/1"),
+                Some("Math"),
+                "math must not be empty",
+            ));
+        }
+        md2hwp_math::tex_to_hml_with_display(tex, display).map_err(|error| {
+            self.error(
+                "unsupported_math",
+                &format!("{path}/c/1"),
+                Some("Math"),
+                format!("cannot convert TeX {tex:?} to a Hancom equation: {error}"),
+            )
+        })
     }
 
     fn list_tightness(
@@ -910,6 +988,19 @@ impl Normalizer<'_> {
                         self.array(Some(&values[1]), &format!("{path}/c/1"))?,
                         &format!("{path}/c/1"),
                     )?,
+                })
+            }
+            ("Math", InlineRule::Math) => {
+                let (display, tex) = self.math_content(content, path)?;
+                if display {
+                    return Err(self.invalid(
+                        path,
+                        constructor,
+                        "display math ($$...$$) must be the only content of a document or list paragraph; use $...$ for math inside text",
+                    ));
+                }
+                Ok(Inline::InlineMath {
+                    script: self.convert_math(tex, false, path)?,
                 })
             }
             (_, InlineRule::Reject) => Err(self.unsupported(path, constructor)),
@@ -1144,6 +1235,7 @@ impl Normalizer<'_> {
                     }
                 }
                 Block::List { items, .. } => self.resolve_list(items, &path, &targets)?,
+                Block::DisplayMath { .. } => {}
             }
         }
         Ok(())
@@ -1165,6 +1257,7 @@ impl Normalizer<'_> {
                     ListItemBlock::List { items, .. } => {
                         self.resolve_list(items, &path, targets)?
                     }
+                    ListItemBlock::DisplayMath { .. } => {}
                 }
             }
         }
@@ -1335,7 +1428,7 @@ mod tests {
 
     const COMMONMARK_FIXTURE: &[u8] =
         include_bytes!("../../../tests/fixtures/pandoc-json/commonmark.json");
-    const EXPECTED_IR: &[u8] = include_bytes!("../../../examples/commonmark-v0.4.expected.ir.json");
+    const EXPECTED_IR: &[u8] = include_bytes!("../../../examples/commonmark-v0.6.expected.ir.json");
 
     #[test]
     fn normalizes_the_commonmark_fixture() {
@@ -1388,7 +1481,7 @@ mod tests {
         )
         .unwrap();
         let expected = read_ir(
-            include_bytes!("../../../examples/commonmark-sources-v0.4.expected.ir.json"),
+            include_bytes!("../../../examples/commonmark-sources-v0.6.expected.ir.json"),
             &limits,
         )
         .unwrap();
@@ -1444,7 +1537,7 @@ mod tests {
         ]))
         .unwrap()
         .into_document();
-        assert_eq!(result.ir_version, "0.4");
+        assert_eq!(result.ir_version, "0.6");
         assert_eq!(result.blocks.len(), 3);
         let Block::Figure {
             image,
@@ -1535,7 +1628,7 @@ mod tests {
     fn normalizes_reference_footnotes_in_headings_body_and_list_items() {
         let limits = ValidationLimits::default();
         let pandoc = read_pandoc_json(
-            include_bytes!("../../../tests/fixtures/pandoc-json/commonmark-footnotes-v0.4.json"),
+            include_bytes!("../../../tests/fixtures/pandoc-json/commonmark-footnotes-v0.6.json"),
             &limits,
         )
         .unwrap();
@@ -1631,5 +1724,137 @@ mod tests {
         };
         let FootnoteBlock::Paragraph { inlines } = &blocks[0];
         assert_eq!(inlines.len(), 3);
+    }
+
+    fn math(display: bool, tex: &str) -> Value {
+        let kind = if display { "DisplayMath" } else { "InlineMath" };
+        serde_json::json!({"t":"Math","c":[{"t":kind},tex]})
+    }
+
+    fn str_node(value: &str) -> Value {
+        serde_json::json!({"t":"Str","c":value})
+    }
+
+    #[test]
+    fn converts_inline_math_to_hancom_script() {
+        use serde_json::json;
+        let document = normalize_blocks(json!([{"t":"Para","c":[
+            str_node("넓이는"), {"t":"Space"}, math(false, r"\pi r^2"), str_node("이다.")
+        ]}]))
+        .unwrap()
+        .into_document();
+        let Block::Paragraph { inlines } = &document.blocks[0] else {
+            panic!("paragraph")
+        };
+        let Inline::InlineMath { script } = &inlines[2] else {
+            panic!("math")
+        };
+        assert_eq!(script, &md2hwp_math::tex_to_hml(r"\pi r^2").unwrap());
+    }
+
+    #[test]
+    fn display_only_paragraphs_become_equation_blocks() {
+        use serde_json::json;
+        let tex = r"\sum_{k=1}^{n} k";
+        for content in [
+            json!([math(true, tex)]),
+            json!([{"t":"SoftBreak"}, math(true, tex), {"t":"Space"}]),
+        ] {
+            let document = normalize_blocks(json!([{"t":"Para","c":content}]))
+                .unwrap()
+                .into_document();
+            assert_eq!(
+                document.blocks,
+                vec![Block::DisplayMath {
+                    script: md2hwp_math::tex_to_hml_with_display(tex, true).unwrap()
+                }]
+            );
+        }
+        let loose = normalize_blocks(json!([{"t":"BulletList","c":[[
+            {"t":"Para","c":[str_node("항목")]},
+            {"t":"Para","c":[math(true, "x")]}
+        ]]}]))
+        .unwrap()
+        .into_document();
+        let Block::List { items, .. } = &loose.blocks[0] else {
+            panic!("list")
+        };
+        assert!(matches!(
+            items[0].blocks[1],
+            ListItemBlock::DisplayMath { .. }
+        ));
+    }
+
+    #[test]
+    fn rejects_display_math_mixed_with_text_and_unconvertible_tex() {
+        use serde_json::json;
+        let mixed = normalize_blocks(json!([{"t":"Para","c":[
+            str_node("앞"), {"t":"Space"}, math(true, "x")
+        ]}]))
+        .unwrap_err();
+        assert_eq!(mixed.path, "/blocks/0/c/2");
+        assert!(mixed.message.contains("only content"));
+        let two = normalize_blocks(json!([{"t":"Para","c":[math(true, "x"), math(true, "y")]}]))
+            .unwrap_err();
+        assert!(two.message.contains("only content"));
+        for tex in ["", "  ", r"\unknowncommand{x}"] {
+            let error = normalize_blocks(json!([{"t":"Para","c":[math(false, tex)]}]))
+                .unwrap_err();
+            assert_eq!(error.code, "unsupported_math", "{tex:?}");
+            assert_eq!(error.path, "/blocks/0/c/0/c/1");
+        }
+    }
+
+    #[test]
+    fn allows_math_only_in_body_list_and_their_note_paragraphs() {
+        use serde_json::json;
+        let inline = math(false, "x");
+        assert!(
+            normalize_blocks(json!([{"t":"BulletList","c":[[{"t":"Plain","c":[inline.clone()]}]]}]))
+                .is_ok()
+        );
+        assert!(normalize_blocks(json!([{"t":"Para","c":[note(json!([inline.clone()]))]}])).is_ok());
+        let link = json!({"t":"Link","c":[["",[],[]],[inline.clone()],["https://example.net",""]]});
+        let math_alt = json!({"t":"Image","c":[["",[],[]],[inline.clone()],["assets/image.png",""]]});
+        let table = json!({"t":"Table","c":[["",[],[]],[null,[]],[[{"t":"AlignDefault"},{"t":"ColWidthDefault"}]],
+            [["",[],[]],[[["",[],[]],[[["",[],[]],{"t":"AlignDefault"},1,1,[{"t":"Plain","c":[inline.clone()]}]]]]]],
+            [[["",[],[]],0,[],[]]],[["",[],[]],[]]]});
+        for blocks in [
+            json!([{"t":"Header","c":[1,["",[],[]],[inline.clone()]]}]),
+            json!([{"t":"Header","c":[1,["",[],[]],[str_node("제목"), note(json!([inline.clone()]))]]}]),
+            json!([{"t":"Para","c":[link]}]),
+            json!([{"t":"Para","c":[math_alt]}]),
+            json!([{"t":"Para","c":[image()]},{"t":"Para","c":[str_node("출처:"),{"t":"Space"},inline.clone()]}]),
+            json!([table]),
+        ] {
+            let error = normalize_blocks(blocks.clone()).unwrap_err();
+            assert_eq!(error.code, "invalid_ir_semantics", "{blocks}");
+            assert!(error.message.contains("inline math is allowed only"), "{error}");
+        }
+    }
+
+    #[test]
+    fn validates_direct_ir_equation_scripts() {
+        let document = |script: &str| Document {
+            schema: SCHEMA_NAME.into(),
+            ir_version: IR_VERSION.into(),
+            metadata: Default::default(),
+            blocks: vec![Block::DisplayMath {
+                script: script.into(),
+            }],
+        };
+        // Validation is minimal: SCRIPT grammar is not parsed, so "{a" passes.
+        for script in ["a over b", "{a"] {
+            assert!(
+                validate(document(script), &ValidationLimits::default()).is_ok(),
+                "{script:?}"
+            );
+        }
+        for script in ["", " ", "a\nb", "a\u{7f}b", "e\u{301}"] {
+            assert!(
+                validate(document(script), &ValidationLimits::default()).is_err(),
+                "{script:?}"
+            );
+        }
     }
 }

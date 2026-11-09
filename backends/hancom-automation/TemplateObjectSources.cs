@@ -51,13 +51,13 @@ internal sealed class TemplateObjectSources(XDocument source, IReadOnlyDictionar
             var prefixSlot = PrefixSlot(role);
             var paragraphs = document.Descendants("P").Where(p => TaggedTemplateBinding.DirectText(p).Contains(contentSlot, StringComparison.Ordinal)).ToArray();
             if (paragraphs.Length != 1)
-                throw new InvalidDataException($"{role}.source requires one source sample. Regenerate with init-template for IR 0.4.");
+                throw new InvalidDataException($"{role}.source requires one source sample. Regenerate with init-template for IR 0.6.");
             var paragraph = paragraphs[0];
             var text = TaggedTemplateBinding.DirectText(paragraph);
             if (text.Split(prefixSlot, StringSplitOptions.None).Length != 2 ||
                 document.Descendants("P").Count(p => TaggedTemplateBinding.DirectText(p).Contains(prefixSlot, StringComparison.Ordinal)) != 1 ||
                 !text.Contains(prefixSlot + ": " + contentSlot, StringComparison.Ordinal))
-                throw new InvalidDataException($"{role}.source requires {prefixSlot}: {contentSlot} in one plain paragraph. Adopt the prefix slot or regenerate for IR 0.4.");
+                throw new InvalidDataException($"{role}.source requires {prefixSlot}: {contentSlot} in one plain paragraph. Adopt the prefix slot or regenerate for IR 0.6.");
             if (paragraph.Elements().Any(e => e.Name.LocalName != "TEXT") ||
                 paragraph.Elements("TEXT").SelectMany(t => t.Elements()).Any(e => e.Name.LocalName != "CHAR" || e.HasElements))
                 throw new InvalidDataException("Source samples require plain text without controls.");

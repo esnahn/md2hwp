@@ -7,6 +7,22 @@ internal static class IrContract
     // Shared with Rust at build time; no runtime schema sidecar is required.
     public static readonly string Version = ReadVersion();
 
+    public const string UnsupportedMath = "Hancom generation does not yet support equations";
+
+    // Same minimal check as the Rust core: SCRIPT grammar is not parsed.
+    public static string ReadMathScript(JsonElement element, string path)
+    {
+        JsonContract.ExpectObject(element, path, ["type", "script"]);
+        var script = JsonContract.RequiredString(element, "script", path);
+        if (string.IsNullOrWhiteSpace(script))
+            throw JsonContract.Error(path + "/script", "equation script must not be empty");
+        if (!script.IsNormalized(System.Text.NormalizationForm.FormC))
+            throw JsonContract.Error(path + "/script", "equation script must use Unicode NFC");
+        if (script.Any(c => c < ' ' || c == '\u007f'))
+            throw JsonContract.Error(path + "/script", "equation script contains a control character");
+        return script;
+    }
+
     private static string ReadVersion()
     {
         using var stream = typeof(IrContract).Assembly.GetManifestResourceStream("md2hwp.ir.schema")

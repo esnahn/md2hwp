@@ -75,8 +75,8 @@ pub(crate) fn inspect(source: &Document) -> Result<Inspection, String> {
     for master in &document.sections[0].section_def.master_pages {
         reject_tags(&master.paragraphs, 0)?;
     }
-    let version = single(&roots, "ir-version:0.4")
-        .map_err(|_| "Template IR must be exactly 0.4; regenerate or explicitly adopt the current declarations".to_string())?;
+    let version = single(&roots, "ir-version:0.6")
+        .map_err(|_| "Template IR must be exactly 0.6; regenerate or explicitly adopt the current declarations".to_string())?;
     let body = inside_plain(&roots, "body", begin, end)?;
     let reset = inside_plain(&roots, "reset", begin, end)?;
     if version <= begin || version >= end {

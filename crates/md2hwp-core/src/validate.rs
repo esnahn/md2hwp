@@ -108,7 +108,7 @@ fn validate_semantics(
     state.require(
         document.ir_version == IR_VERSION,
         "/ir_version",
-        "IR version must be 0.4",
+        "IR version must be 0.6",
     )?;
     crate::metadata::validate(&document.metadata)
         .map_err(|(path, message)| SemanticError { path, message })?;
@@ -212,8 +212,9 @@ impl State<'_> {
         self.add_limited("blocks", path, 1)?;
         match block {
             Block::Paragraph { inlines } => {
-                self.inline_array(inlines, &format!("{path}/inlines"), false, true, true)
+                self.inline_array(inlines, &format!("{path}/inlines"), false, true, true, true)
             }
+            Block::DisplayMath { script } => self.math_script(script, &format!("{path}/script")),
             Block::Heading { id, level, inlines } => {
                 if let Some(id) = id {
                     self.register_id(id, CrossReferenceKind::HeadingNumber, &format!("{path}/id"))?;
@@ -223,7 +224,7 @@ impl State<'_> {
                     &format!("{path}/level"),
                     "heading level must be between 1 and 6",
                 )?;
-                self.inline_array(inlines, &format!("{path}/inlines"), false, true, true)
+                self.inline_array(inlines, &format!("{path}/inlines"), false, true, true, false)
             }
             Block::VerbatimBlock { lines, source } => {
                 self.require(
@@ -267,7 +268,14 @@ impl State<'_> {
                     self.table_row(row, columns.len(), &format!("{path}/rows/{index}"))?;
                 }
                 if let Some(caption) = caption {
-                    self.inline_array(caption, &format!("{path}/caption"), false, false, true)?;
+                    self.inline_array(
+                        caption,
+                        &format!("{path}/caption"),
+                        false,
+                        false,
+                        true,
+                        false,
+                    )?;
                 }
                 if let Some(source) = source {
                     self.sources(source, &format!("{path}/source"))?;
@@ -297,8 +305,22 @@ impl State<'_> {
                         "image title",
                     )?;
                 }
-                self.inline_array(&image.alt, &format!("{path}/image/alt"), true, false, true)?;
-                self.inline_array(caption, &format!("{path}/caption"), false, false, true)?;
+                self.inline_array(
+                    &image.alt,
+                    &format!("{path}/image/alt"),
+                    true,
+                    false,
+                    true,
+                    false,
+                )?;
+                self.inline_array(
+                    caption,
+                    &format!("{path}/caption"),
+                    false,
+                    false,
+                    true,
+                    false,
+                )?;
                 if let Some(source) = source {
                     self.sources(source, &format!("{path}/source"))?;
                 }
@@ -337,6 +359,7 @@ impl State<'_> {
                 false,
                 false,
                 true,
+                false,
             )?;
             fn visible(inlines: &[Inline]) -> bool {
                 inlines.iter().any(|inline| match inline {
@@ -375,7 +398,7 @@ impl State<'_> {
         for (index, cell) in row.iter().enumerate() {
             let cell_path = format!("{path}/{index}");
             self.add_limited("blocks", &cell_path, 1)?;
-            self.inline_array(cell, &cell_path, true, true, true)?;
+            self.inline_array(cell, &cell_path, true, true, true, false)?;
         }
         Ok(())
     }
@@ -441,7 +464,11 @@ impl State<'_> {
                         false,
                         true,
                         true,
+                        true,
                     )?;
+                }
+                ListItemBlock::DisplayMath { script } => {
+                    self.math_script(script, &format!("{block_path}/script"))?;
                 }
                 ListItemBlock::List {
                     kind,
@@ -461,6 +488,7 @@ impl State<'_> {
         allow_empty: bool,
         allow_footnote: bool,
         allow_reference: bool,
+        allow_math: bool,
     ) -> Result<(), SemanticError> {
         if !allow_empty {
             self.require(!inlines.is_empty(), path, "inline array must not be empty")?;
@@ -472,6 +500,7 @@ impl State<'_> {
                 false,
                 allow_footnote,
                 allow_reference,
+                allow_math,
             )?;
         }
         Ok(())
@@ -484,9 +513,18 @@ impl State<'_> {
         inside_link: bool,
         allow_footnote: bool,
         allow_reference: bool,
+        allow_math: bool,
     ) -> Result<(), SemanticError> {
         self.add_limited("inlines", path, 1)?;
         match inline {
+            Inline::InlineMath { script } => {
+                self.require(
+                    allow_math && !inside_link,
+                    path,
+                    "inline math is allowed only in document paragraphs, list paragraphs and their footnote bodies, outside link labels",
+                )?;
+                self.math_script(script, &format!("{path}/script"))
+            }
             Inline::CrossReference { kind, target } => {
                 self.require(
                     allow_reference,
@@ -516,6 +554,7 @@ impl State<'_> {
                         false,
                         false,
                         true,
+                        allow_math,
                     )?;
                 }
                 Ok(())
@@ -548,6 +587,7 @@ impl State<'_> {
                         inside_link,
                         allow_footnote,
                         allow_reference,
+                        allow_math,
                     )?;
                 }
                 Ok(())
@@ -575,11 +615,28 @@ impl State<'_> {
                         true,
                         allow_footnote,
                         allow_reference,
+                        allow_math,
                     )?;
                 }
                 Ok(())
             }
         }
+    }
+
+    /// Minimal check shared with the Hancom worker; SCRIPT grammar is not parsed.
+    fn math_script(&mut self, script: &str, path: &str) -> Result<(), SemanticError> {
+        self.require(
+            !script.trim().is_empty(),
+            path,
+            "equation script must not be empty",
+        )?;
+        self.require_nfc(script, path, "equation script")?;
+        self.require(
+            !script.chars().any(is_control),
+            path,
+            "equation script contains a control character",
+        )?;
+        self.add_limited("text bytes", path, script.len())
     }
 
     fn target_id(&mut self, value: &str, path: &str) -> Result<(), SemanticError> {

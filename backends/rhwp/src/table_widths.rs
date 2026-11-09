@@ -250,6 +250,8 @@ impl TextMeasurement<'_> {
                 Inline::Text { value } => self.text(value, format, strong, emphasis, bounds)?,
                 Inline::Space => self.text(" ", format, strong, emphasis, bounds)?,
                 Inline::LineBreak => bounds.end_line(),
+                // IR validation keeps math out of table cells; never guess a width.
+                Inline::InlineMath { .. } => return Err("Table cells cannot contain math".into()),
                 Inline::Strong { inlines } => self.walk(inlines, format, true, emphasis, bounds)?,
                 Inline::Emph { inlines } => self.walk(inlines, format, strong, true, bounds)?,
                 Inline::Link { inlines, .. } => {

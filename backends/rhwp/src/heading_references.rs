@@ -162,6 +162,7 @@ impl Samples {
                     }
                     bind_sources(source, &targets)?;
                 }
+                Block::DisplayMath { .. } => {}
             }
         }
         validate(document, &ValidationLimits::default()).map_err(|e| e.to_string())
@@ -184,6 +185,7 @@ fn bind_items(items: &mut [ListItem], targets: &BTreeMap<String, String>) -> Res
             match block {
                 ListItemBlock::Paragraph { inlines } => bind(inlines, targets)?,
                 ListItemBlock::List { items, .. } => bind_items(items, targets)?,
+                ListItemBlock::DisplayMath { .. } => {}
             }
         }
     }

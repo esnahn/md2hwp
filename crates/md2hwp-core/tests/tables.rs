@@ -9,7 +9,7 @@ use md2hwp_core::{
 use serde_json::{Value, json};
 
 const FIXTURE: &[u8] =
-    include_bytes!("../../../tests/fixtures/pandoc-json/commonmark-tables-v0.4.json");
+    include_bytes!("../../../tests/fixtures/pandoc-json/commonmark-tables-v0.6.json");
 
 fn normalize(blocks: Value) -> Result<md2hwp_core::ValidatedDocument, md2hwp_core::NormalizeError> {
     let limits = ValidationLimits::default();

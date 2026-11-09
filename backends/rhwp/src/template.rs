@@ -54,6 +54,7 @@ pub fn render(
             }
             Block::VerbatimBlock { .. } => {}
             Block::List { .. } => {}
+            Block::DisplayMath { .. } => return Err(UNSUPPORTED_MATH.into()),
             Block::Table {
                 header,
                 rows,
@@ -116,8 +117,8 @@ pub fn render(
                 .into(),
         );
     }
-    let version = single("ir-version:0.4")
-        .map_err(|_| "Template IR must be exactly 0.4; regenerate or explicitly adopt the current declarations".to_string())?;
+    let version = single("ir-version:0.6")
+        .map_err(|_| "Template IR must be exactly 0.6; regenerate or explicitly adopt the current declarations".to_string())?;
     let body = single("body")?;
     let sample_indices = [body];
     for &index in sample_indices.iter().chain(std::iter::once(&version)) {
@@ -454,6 +455,8 @@ pub fn render(
     Ok((generated_notes, pagination))
 }
 
+pub(crate) const UNSUPPORTED_MATH: &str = "rhwp generation does not yet support equations";
+
 fn unsupported(feature: &str) -> String {
     format!("rhwp generation does not yet support {feature}; use the Hancom backend")
 }
@@ -481,7 +484,7 @@ pub(crate) fn validate_definitions(roots: &[Paragraph]) -> Result<(), String> {
         }
     }
     let mut required: BTreeMap<String, usize> = [
-        "ir-version:0.4",
+        "ir-version:0.6",
         "body",
         "reset",
         "footnote",
@@ -523,7 +526,7 @@ pub(crate) fn validate_definitions(roots: &[Paragraph]) -> Result<(), String> {
         let actual = counts.get(name).copied().unwrap_or(0);
         if actual != *expected {
             return Err(format!(
-                "Template requires {expected} {{{{md2hwp:{name}}}}} declaration(s); found {actual}. Regenerate or explicitly adopt current IR 0.4 prototypes"
+                "Template requires {expected} {{{{md2hwp:{name}}}}} declaration(s); found {actual}. Regenerate or explicitly adopt current IR 0.6 prototypes"
             ));
         }
     }
@@ -722,6 +725,7 @@ pub(crate) fn check_inlines(inlines: &[Inline]) -> Result<(), String> {
             | Inline::Link { inlines, .. } => check_inlines(inlines)?,
             Inline::Footnote { .. } => return Err(unsupported("footnotes")),
             Inline::CrossReference { .. } => return Err(unsupported("cross references")),
+            Inline::InlineMath { .. } => return Err(UNSUPPORTED_MATH.into()),
         }
     }
     Ok(())
@@ -981,7 +985,7 @@ mod tests {
         doc.sections.push(rhwp::model::document::Section::default());
         let mut names = vec![
             "begin:template".to_string(),
-            "ir-version:0.4".into(),
+            "ir-version:0.6".into(),
             "body".into(),
         ];
         names.extend((1..=6).map(|n| format!("heading{n}")));

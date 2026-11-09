@@ -1,6 +1,6 @@
 {
   "schema": "md2hwp.ir",
-  "ir_version": "0.4",
+  "ir_version": "0.6",
   "metadata": {
     "md2hwp-heading1-start": "3",
     "title": "헤딩별 고정 번호 참조 검증"

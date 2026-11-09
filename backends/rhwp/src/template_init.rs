@@ -408,7 +408,7 @@ pub(crate) fn create() -> Result<Document, String> {
             Control::SectionDef(Box::new(document.sections[0].section_def.clone())),
             styles["body"],
         ),
-        declaration("ir-version:0.4"),
+        declaration("ir-version:0.6"),
     ];
     for role in [
         "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "reset",

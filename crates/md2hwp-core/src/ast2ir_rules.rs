@@ -11,7 +11,7 @@ use crate::ir::{IR_VERSION, SCHEMA_NAME};
 use crate::ir_io::read_strict_json_value;
 use crate::validate::ValidationLimits;
 
-const RULES_JSON: &str = include_str!("../../../rules/ast2ir/ir-v0.4.json");
+const RULES_JSON: &str = include_str!("../../../rules/ast2ir/ir-v0.6.json");
 const RULES_SCHEMA: &str = include_str!("../../../schemas/ast2ir-rules.schema.json");
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
@@ -139,6 +139,9 @@ pub enum InlineRule {
     Strong,
     Emph,
     Reject,
+    /// TeX math converted to Hancom SCRIPT; a paragraph holding only display
+    /// math becomes an equation block.
+    Math,
     Link {
         attributes: RequireEmpty,
         target: RequireNonempty,
@@ -221,7 +224,7 @@ pub fn load_builtin_rules() -> Result<Ast2IrRules, RulesError> {
     if rules.target_ir.schema != SCHEMA_NAME || rules.target_ir.version != IR_VERSION {
         return Err(rules_error(
             "/target_ir",
-            "rules target does not match IR 0.4",
+            "rules target does not match IR 0.6",
         ));
     }
     if let Some(BlockRule::Heading {
@@ -257,7 +260,8 @@ mod tests {
         let envelope: Value = serde_json::from_str(RULES_JSON).unwrap();
         assert!(envelope.get("rules_version").is_none());
         assert_eq!(rules.blocks.len(), 8);
-        assert_eq!(rules.inlines.len(), 8);
+        assert_eq!(rules.inlines.len(), 9);
+        assert!(matches!(rules.inlines.get("Math"), Some(InlineRule::Math)));
         assert!(matches!(
             rules.inlines.get("SoftBreak"),
             Some(InlineRule::Space)

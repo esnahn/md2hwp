@@ -195,6 +195,9 @@ impl Lists {
                         self.render_at(kind, *start, items, body, info, depth + 1, output)?;
                         active = None;
                     }
+                    ListItemBlock::DisplayMath { .. } => {
+                        return Err(crate::template::UNSUPPORTED_MATH.into());
+                    }
                     ListItemBlock::Paragraph { inlines } => {
                         let was_first = first;
                         crate::template::check_inlines(inlines)?;

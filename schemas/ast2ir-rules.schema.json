@@ -29,7 +29,7 @@
           "const": "md2hwp.ir"
         },
         "version": {
-          "const": "0.4"
+          "const": "0.6"
         }
       }
     },
@@ -305,6 +305,18 @@
         },
         "Emph": {
           "$ref": "#/$defs/emph_handler"
+        },
+        "Math": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "handler"
+          ],
+          "properties": {
+            "handler": {
+              "const": "math"
+            }
+          }
         },
         "Link": {
           "type": "object",

@@ -1,6 +1,6 @@
 {
   "schema": "md2hwp.ir",
-  "ir_version": "0.4",
+  "ir_version": "0.6",
   "metadata": {
     "md2hwp-heading1-start": "3",
     "title": "상호참조 검증"

@@ -552,6 +552,7 @@ fn walk_document(
                     ListItemBlock::List {
                         items: children, ..
                     } => items(children, visit)?,
+                    ListItemBlock::DisplayMath { .. } => {}
                 }
             }
         }
@@ -597,6 +598,7 @@ fn walk_document(
                     visit(&mut p.inlines, true)?
                 }
             }
+            Block::DisplayMath { .. } => {}
         }
     }
     Ok(())

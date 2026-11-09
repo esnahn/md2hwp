@@ -2,7 +2,7 @@
   "schema": "md2hwp.ast2ir-rules",
   "target_ir": {
     "schema": "md2hwp.ir",
-    "version": "0.4"
+    "version": "0.6"
   },
   "unlisted_constructor": "reject",
   "document": {
@@ -135,6 +135,9 @@
     },
     "Emph": {
       "handler": "emph"
+    },
+    "Math": {
+      "handler": "math"
     },
     "Link": {
       "handler": "link",

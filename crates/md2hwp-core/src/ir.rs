@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 pub const SCHEMA_NAME: &str = "md2hwp.ir";
-pub const IR_VERSION: &str = "0.4";
+pub const IR_VERSION: &str = "0.6";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -74,6 +74,10 @@ pub enum Block {
         caption: Vec<Inline>,
         source: Option<Vec<SourceParagraph>>,
     },
+    /// Display math in Hancom equation SCRIPT, converted and validated by the core.
+    DisplayMath {
+        script: String,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -110,6 +114,9 @@ pub enum ListItemBlock {
         start: Option<u64>,
         tight: bool,
         items: Vec<ListItem>,
+    },
+    DisplayMath {
+        script: String,
     },
 }
 
@@ -152,6 +159,10 @@ pub enum Inline {
         target: String,
         title: Option<String>,
         inlines: Vec<Inline>,
+    },
+    /// Inline math in Hancom equation SCRIPT, converted and validated by the core.
+    InlineMath {
+        script: String,
     },
 }
 

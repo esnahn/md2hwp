@@ -89,6 +89,7 @@ impl Plan {
                 match block {
                     ListItemBlock::Paragraph { inlines } => self.mark(inlines)?,
                     ListItemBlock::List { items, .. } => self.mark_items(items)?,
+                    ListItemBlock::DisplayMath { .. } => {}
                 }
             }
         }

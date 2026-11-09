@@ -179,6 +179,9 @@ internal sealed class PlanBuilder(
             case "table":
                 AddTable(block, path);
                 break;
+            case "display_math":
+                IrContract.ReadMathScript(block, path);
+                throw JsonContract.Error(path + "/type", IrContract.UnsupportedMath);
             default:
                 throw JsonContract.Error(path + "/type", $"unsupported IR block type {type}");
         }
@@ -207,7 +210,7 @@ internal sealed class PlanBuilder(
                 "AURI paragraph styles are bound by unique native names during render.",
                 "Strong/emphasis marks are retained as character-shape runs; link targets remain flattened.",
                 "verbatim_block maps to one prototype-backed code operation; render accepts only the uniquely matched minimal-fixture box structure.",
-                "IR 0.4 box sources replace the template source slot; absent sources remove the native caption.",
+                "IR 0.6 box sources replace the template source slot; absent sources remove the native caption.",
                 "Figure captions remain one prototype-backed native AUTONUM operation; render accepts only the uniquely matched minimal-fixture root-caption structure.",
                 profile.PreserveParagraphLineBreaks
                     ? "IR line_break nodes remain native line breaks in the same paragraph."
@@ -349,6 +352,9 @@ internal sealed class PlanBuilder(
                     case "list":
                         AddList(itemBlock, blockPath, depth + 1);
                         break;
+                    case "display_math":
+                        IrContract.ReadMathScript(itemBlock, blockPath);
+                        throw JsonContract.Error(blockPath + "/type", IrContract.UnsupportedMath);
                     default:
                         throw JsonContract.Error(blockPath + "/type", "list items may contain only paragraph or list blocks");
                 }
@@ -583,6 +589,9 @@ internal static class InlineText
                 }
                 builder.AppendFootnote(new PreviewFootnote(paragraphs), strong, emphasis);
                 break;
+            case "inline_math":
+                IrContract.ReadMathScript(inline, path);
+                throw JsonContract.Error(path + "/type", IrContract.UnsupportedMath);
             default:
                 throw JsonContract.Error(path + "/type", $"unsupported IR inline type {type}");
         }
