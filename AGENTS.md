@@ -47,7 +47,7 @@ separate source ZIPs, release-note copies, checksum files or build manifests.
 
 Keep Pandoc invocation in the app and Pandoc AST handling in the core. Backends
 consume validated IR. Preserve Unicode. Reject unsupported constructors explicitly.
-Use only the current IR 0.4 closed schema. AST2IR rules target that IR without
+Use only the current IR 0.6 closed schema. AST2IR rules target that IR without
 an independent rules version. Input IR and template ir-version must match the
 program's current IR exactly; reject old versions with regeneration guidance.
 Template-owned begin:template/end:template declarations supply all current IR
@@ -83,7 +83,7 @@ the title, removing the prefix and one following space, then skipping immediatel
 following blank/whitespace-only lines. With no title slot, preserve all raw lines.
 Keep this template-dependent presentation in the backend; do not add an IR title
 field or parse Markdown syntax inside the remaining verbatim text.
-Markdown input uses commonmark+yaml_metadata_block+footnotes+attributes+implicit_figures+pipe_tables. Reference-style
+Markdown input uses commonmark+yaml_metadata_block+footnotes+attributes+implicit_figures+pipe_tables+tex_math_dollars. Reference-style
 footnotes are enabled; inline_notes remains disabled. The 제목: and 출처: rules
 are md2hwp conventions, not CommonMark or Pandoc extension syntax. Document these
 separately in README.md.
@@ -143,7 +143,7 @@ even when unused. Object number slots remain native Crossrefs. Heading reference
 are fixed inline text counted from manuscript heading order, independent of native
 outline formatting, target paragraph identities and repeated heading block copies.
 Remove the old ref.heading.number/slot:ref.heading.number declarations; do not retain
-a native outline fallback. IR 0.4 is unchanged. Count headings without IDs too.
+a native outline fallback. The IR is unchanged. Count headings without IDs too.
 Heading1 follows md2hwp-heading1-start; deeper levels increment from 1 and reset on
 any shallower heading. Missing parent levels retain 0. Resolve forward references
 by target ID before rendering/width measurement, including alt/captions, all notes,
@@ -165,7 +165,7 @@ Page and other reference roles remain reserved and unsupported.
 Manuscript input remains Markdown or Pandoc JSON; direct HWPX and RST manuscript
 input are deferred. Since v0.4.4, HWPX templates and HWPX output are supported
 through the existing extension-based CLI; this adds no format option and keeps
-IR 0.4 and the existing HWP/template defaults. hwp2pdf remains HWP-input-only;
+the IR and the existing HWP/template defaults. hwp2pdf remains HWP-input-only;
 do not claim HWPX-to-PDF support. HWPX output must be saved, reopened and pass final strict validation before
 replacing an existing output.
 
@@ -198,7 +198,7 @@ formatting and horizontal borders; use both samples for outer and internal verti
 borders. The left sample's left edge and right sample's right edge own the exterior;
 repeat their facing edges at interior boundaries. A one-column output combines both
 outer edges. Reject old one-column prototypes with explicit adoption/regeneration
-guidance without changing IR 0.4. The
+guidance without changing the IR. The
 last cell has no side/bottom borders or background; its visible top border may
 exactly match the content sample's bottom border. Preserve that shared boundary;
 for header-only outputs align it to the header sample's bottom border. An absent
@@ -269,7 +269,7 @@ previous protection of target/release/template.hwp. Use a separate template copy
 and explicit --template for experiments and live verification; never mutate the
 source template while rendering. Custom templates to retain belong outside target/.
 
-Version the application and IR independently. Application v0.5.0 keeps IR 0.4;
+Version the application and IR independently. Released application v0.5.0 used IR 0.4; development adds math as IR 0.6;
 do not change IR/schema/template declarations merely to match an application
 release number. Input IR and template ir-version must still match the supported
 IR exactly. A Git tag alone does not update application/package version metadata
@@ -338,7 +338,7 @@ The rhwp backend, md2hwp-rhwp.exe, supports HWP templates and HWP output
 only. Reject HWPX template/output paths explicitly before generation; direct users
 to the existing Hancom backend without automatic fallback. HWPX roundtrip findings
 are investigation evidence, not blockers requiring rhwp HWPX implementation.
-Keep IR 0.4 and existing template syntax. See docs/rhwp-backend-strategy.md.
+Keep the current IR and existing template syntax. See docs/rhwp-backend-strategy.md.
 Normal builds and executable ZIPs include both md2hwp-rhwp.exe and md2hwp-hancom.exe.
 The -Rhwp build switch remains accepted for compatibility. With no explicit worker,
 select the colocated rhwp worker first and Hancom only if rhwp is absent; if either
@@ -445,7 +445,7 @@ see docs/rhwp-integration-2026-10-22.md. Pixel equality with a clipped baseline
 does not establish page-break safety.
 Footnotes support body/title/list paragraphs and table cells, including rich link
 labels, repeated heading-title/each.child copies and multiple body paragraphs.
-Keep IR 0.4 and the existing footnote/footnote.next sample declarations. Capture
+Keep the current IR and the existing footnote/footnote.next sample declarations. Capture
 the plain root or native footnote sample before removing disposable definitions;
 preserve native AUTONUM, TAB data, complete paragraph/character formatting and
 continuation affixes. Reject duplicate/mixed/misplaced samples and unsupported
@@ -472,7 +472,7 @@ a structural comparison pass. Rendered numbers still require visual verification
 Live Hancom page-image evidence covers continuous numbering from 1 and 7 and
 OnPage resets (page 2: 1–9, page 3: 1). This does not establish rhwp's own note
 layout/display-number calculation; see docs/rhwp-integration-2026-10-22.md.
-Heading/figure/table number references use the existing IR 0.4 and template
+Heading/figure/table number references use the current IR and template
 declarations. Require all six ref.headingN.number prototypes; resolve fixed heading
 text from manuscript counters, including ID-less headings and skipped parents,
 before notes and width measurement. Preserve source styling, ignore prototype
@@ -546,10 +546,10 @@ option-based render modes remain. Defaults resolve beside the relevant EXE.
 Shorthand resources resolve within the source/IR directory; explicit render modes
 use cwd. Maintain source/template protection and successful-result replacement.
 
-## Object sources (IR 0.4)
+## Object sources
 
 Object source is an optional nonempty array of closed {prefix, inlines} paragraphs.
-Use only the approved labels in rules/ast2ir/ir-v0.4.json, case-insensitive for English.
+Use only the approved labels in rules/ast2ir/ir-v0.6.json, case-insensitive for English.
 Preserve spelling, punctuation, numbers and order. Optional period precedes an optional
 ASCII digit suffix; digits are supported only for 주/주석/note. Require an immediate
 colon followed by space and nonempty content. No space before colon. Attach consecutive
@@ -572,7 +572,7 @@ aspect ratio. Hancom may re-encode or deduplicate embedded image data; do not
 claim byte-for-byte preservation. Do not transcode JPEG into PNG or add format
 fields to IR.
 
-EMF figures accept .emf case-insensitively without changing IR 0.4. Inspect the
+EMF figures accept .emf case-insensitively without changing the IR. Inspect the
 little-endian EMR_HEADER and record/EOF boundaries in the backend before COM;
 limit files to 64 MiB and one million records, reject invalid signatures/versions,
 byte/record counts, offsets and nonpositive physical frames. Use rclFrame deltas
@@ -612,3 +612,24 @@ shape identities before final import and verify field target, cache and formatti
 after save/reopen, including captions, all notes, rich cells and footnote bodies.
 
 Code, figure and table ranges may include 0–63 empty plain root paragraphs in total before and/or after the single native object anchor. Clone them on the corresponding sides of each generated object with their formatting, whitespace and page/column breaks. Reject text, controls and list/outline numbering. Attach spacing only after operation-indexed passes, before recording final layout paths; never space unrelated static template objects.
+
+## Math (IR 0.6)
+
+The core converts Pandoc TeX Math with md2hwp-math and stores only Hancom
+equation SCRIPT: inline {type: inline_math, script} and block {type: display_math, script}.
+Do not add TeX, font, size or numbering fields to IR. A paragraph whose only
+non-space content is one DisplayMath becomes a display_math block (document or
+non-first list item); display math mixed with text is rejected. Inline math is
+allowed only in document/list paragraphs and their footnote bodies, outside link
+labels; reject it in headings, table cells, captions, alt text and sources.
+Both workers apply the same minimal SCRIPT check: nonblank, NFC, control-free
+and counted in text limits. Do not parse SCRIPT grammar in either worker.
+Block templates use display_math.fontsize-pt and begin/end/slot:display_math.
+Design, template declarations and live Hancom numbering evidence are in
+docs/math/ir-design.md. The Hancom worker generates equations; rhwp validates the
+display_math declarations but rejects math content, so math manuscripts need an
+explicit Hancom --worker. Both reject display math in list items. HWPML import
+keeps EQUATION geometry as given: create each distinct (SCRIPT, size) natively
+with one EquationCreate parameter set, require TreatAsChar and a Version, and copy
+that element. Do not relax save/reopen comparison for equations. Verify rendered
+pages; structural checks missed a floating-equation regression.

@@ -1,6 +1,6 @@
 # md2hwp v0.5.0
 
-Markdown 원고를 한글 템플릿의 서식에 맞춰 변환합니다. Windows x64에서 실행하며, 프로그램 v0.5.0의 IR 버전은 0.4입니다. 프로그램과 IR은 독립적으로 버전을 관리합니다. 원고는 Markdown 또는 Pandoc JSON으로 입력하며, HWPX·RST 원고 직접 입력은 지원하지 않습니다.
+Markdown 원고를 한글 템플릿의 서식에 맞춰 변환합니다. Windows x64에서 실행하며, 현재 개발 버전의 IR은 0.6입니다(v0.5.0 릴리스는 IR 0.4). 프로그램과 IR은 독립적으로 버전을 관리합니다. 원고는 Markdown 또는 Pandoc JSON으로 입력하며, HWPX·RST 원고 직접 입력은 지원하지 않습니다.
 
 v0.4.4부터 HWPX 템플릿과 HWPX 출력을 지원합니다. 확장자로 형식을 선택하며 기본값은 HWP입니다. [HWPX 사용 범위](docs/hwpx.md)를 참고하십시오.
 
@@ -201,7 +201,7 @@ EMF는 원본 파일을 내장하고 물리적 프레임의 비율로 크기를 
 
 수식 문자열의 양방향 변환은 독립 개발 크레이트 `md2hwp-math`에서 작업합니다.
 양방향 변환의 범위·실행·시각 검토 자료는
-[수식 변환 안내](docs/math.md)를 참고하십시오. 기존 Markdown/IR 문서 생성에는 아직 연결하지 않았습니다.
+[수식 변환 안내](docs/math.md)를 참고하십시오. Markdown의 `$...$`·`$$...$$` 수식은 IR 0.6의 `inline_math`·`display_math`로 변환합니다. 현재 수식 생성은 한글 백엔드만 지원하므로 HWP 출력이라도 `--worker md2hwp-hancom.exe`를 지정해야 합니다. rhwp 백엔드는 수식이 있는 원고를 거부합니다. 설계는 [수식의 IR 표현](docs/math/ir-design.md)에 있습니다.
 
 Windows x64에서 PowerShell 7.4 이상과 Rust 도구 체인을 준비한 뒤 저장소 루트에서 실행합니다. MSVC·Windows SDK 설치가 필요하면 첫 명령은 관리자 PowerShell에서 실행하십시오.
 
@@ -221,7 +221,7 @@ Windows 빌드 도구는 기존 설치를 확인하고 부족하면 필요한 MS
 
 rhwp 검사는 한글·.NET 없이 실행합니다. 한글 백엔드 검사는 한글·.NET과 등록된 보안 모듈이 필요하며, 실행 전 한글 문서를 닫아야 합니다. 원고·Pandoc 없이 IR 버전, 선언, 슬롯과 원형 구조를 검사합니다. 원본은 저장하지 않으며 첫 오류에서 실패합니다. 성공 결과의 `RequiredMetadata`는 원고 YAML에 필요한 키입니다. `RequiresRecognizedDate: true`이면 `date-meta` 생성을 위해 인식 가능한 `date`도 필요합니다. 실제 원고 값, 표 폭, 제목 넘침 등 문서 생성·시각 검증이 필요한 조건은 이 검사만으로 보장하지 않습니다.
 
-개발할 때 기본 서식은 `templates/template.hwp`에서 편집합니다. 빌드는 `target/debug`·`target/release`의 템플릿을 매번 이 파일로 교체합니다. 실행용 배포본에서는 EXE 옆의 `template.hwp`를 사용합니다. 새 파일은 `md2hwp init-template 새템플릿.hwp`로 만들며, `.hwpx` 확장자로 HWPX 템플릿도 만들 수 있습니다. 지원 IR 버전인 0.4와 다른 이전 IR은 다시 생성하고, 기존 사용자 템플릿의 새 선언은 직접 반영하거나 별도 파일로 재생성해야 합니다. HWPX 템플릿·출력의 범위와 실행 예는 [HWPX 안내](docs/hwpx.md)에 있습니다.
+개발할 때 기본 서식은 `templates/template.hwp`에서 편집합니다. 빌드는 `target/debug`·`target/release`의 템플릿을 매번 이 파일로 교체합니다. 실행용 배포본에서는 EXE 옆의 `template.hwp`를 사용합니다. 새 파일은 `md2hwp init-template 새템플릿.hwp`로 만들며, `.hwpx` 확장자로 HWPX 템플릿도 만들 수 있습니다. 지원 IR 버전인 0.6과 다른 이전 IR은 다시 생성하고, 기존 사용자 템플릿의 새 선언은 직접 반영하거나 별도 파일로 재생성해야 합니다. HWPX 템플릿·출력의 범위와 실행 예는 [HWPX 안내](docs/hwpx.md)에 있습니다.
 
 한글 백엔드의 Debug와 Release는 XML 구성 방식으로 생성합니다. 개발용 성능 비교는
 [빌드·검증 안내](docs/development.md#생성-방식-비교)를 참고하십시오.

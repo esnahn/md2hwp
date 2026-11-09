@@ -25,7 +25,7 @@ HWPX 템플릿과 출력의 지원 범위와 예는 [HWPX 안내](hwpx.md)를 �
 
 ```text
 {{md2hwp:begin:template}}
-{{md2hwp:ir-version:0.4}}
+{{md2hwp:ir-version:0.6}}
 스타일 선언과 목록·박스·그림·표·출처·번호 참조 원형
 {{md2hwp:end:template}}
 {{md2hwp:content}}
@@ -51,7 +51,7 @@ HWPX 템플릿과 출력의 지원 범위와 예는 [HWPX 안내](hwpx.md)를 �
 | 태그 이름 | 필수 여부 | 의미·배치 |
 | --- | --- | --- |
 | `begin:template` / `end:template` | 필수 | 템플릿 정의 영역의 시작·끝. 각각 독립 문단 |
-| `ir-version:0.4` | 필수 | 프로그램과 일치해야 하는 IR 버전 |
+| `ir-version:0.6` | 필수 | 프로그램과 일치해야 하는 IR 버전 |
 | `content` | 필수 | 정의 영역 바로 뒤의 삽입 위치. 독립 문단이며 뒤에 마지막 빈 문단 필요 |
 | `body` | 필수 | 본문에 사용할 한글 문단 스타일을 지정하는 샘플 문단 |
 | `footnote` | 필수 | 실제 각주 안의 본문 샘플 또는 기존 최상위 독립 샘플 문단. 둘 중 하나만 선언 |
@@ -70,6 +70,9 @@ HWPX 템플릿과 출력의 지원 범위와 예는 [HWPX 안내](hwpx.md)를 �
 | `slot:figure.caption` / `slot:figure.source` | 둘 다 필수 | 그림의 실제 캡션 안에 설명·출처 순서로 각각 한 문단 |
 | `table.width-mm:값` | 필수 설정 | 표 전체 폭(mm). 양의 십진수이며 실제 본문·단 폭 안에 맞아야 함. 기본 142mm |
 | `begin:table` / `end:table` | 필수 | 실제 캡션이 붙은 3행·2열 샘플 표 문단 하나를 감싸는 독립 경계 문단. 마지막 행은 병합 |
+| `display_math.fontsize-pt:값` | 필수 설정 | 별행 수식의 수식 편집기 글자 크기(pt). 양수, 소수 둘째 자리까지. `begin:display_math` 앞 |
+| `begin:display_math` / `end:display_math` | 필수 | 별행 수식 표본 문단 하나를 감싸는 독립 경계 문단 |
+| `slot:display_math` | 필수 | 표본 문단의 수식 자리. 앞뒤에 글자·탭, 뒤에 수식 번호(AUTONUM) 하나를 둘 수 있음. [수식 설계](math/ir-design.md) 참고 |
 | `slot:table.header` / `slot:table.content` | 둘 다 필수 | 첫 행·중간 행의 좌우 셀에 각각 독립 슬롯 문단. 공통 서식은 왼쪽 셀, 세로 테두리는 양쪽 셀에서 가져옴 |
 | `slot:table.source` | 필수 | 마지막 투명 셀의 출처 슬롯. 출처가 없으면 생성 행 전체 생략 |
 | `slot:table.caption` | 필수 | 표의 실제 한글 캡션 안의 한 문단. 표 자동번호와 선택적 장 번호를 함께 배치 |
