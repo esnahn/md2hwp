@@ -369,6 +369,7 @@ pub(crate) fn create() -> Result<Document, String> {
         "table.caption",
         "ref.figure.number",
         "ref.table.number",
+        "display_math",
         "reset",
     ]
     .into_iter()
@@ -538,6 +539,22 @@ pub(crate) fn create() -> Result<Document, String> {
             styles["body"],
         ),
         declaration("end:table"),
+    ]);
+    // Same sample as the Hancom worker: slot, native tab, then the Equation
+    // AUTONUM, which shows the preceding equation's number.
+    let mut display_math = controlled(
+        &format!("{}\t(", crate::template::tag("slot:display_math")),
+        ")",
+        number(AutoNumberType::Equation),
+        styles["display_math"],
+    );
+    // The serializer's no-data tab record; Hancom lays out the tab itself.
+    display_math.tab_extended = vec![[0, 0, 0, 0, 0, 0, 9]];
+    roots.extend([
+        declaration("display_math.fontsize-pt:10"),
+        declaration("begin:display_math"),
+        display_math,
+        declaration("end:display_math"),
     ]);
 
     for (kind, label) in [("figure", "그림"), ("table", "표")] {

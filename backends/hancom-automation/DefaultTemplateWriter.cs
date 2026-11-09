@@ -153,6 +153,14 @@ internal static partial class HancomPreviewWriter
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
 
+    // Display math starts at the body character size; users edit the setting.
+    private static string DisplayMathPoints(XDocument document, string charShape)
+    {
+        var height = (int?)document.Descendants("CHARSHAPE").Single(e => (string?)e.Attribute("Id") == charShape).Attribute("Height")
+            ?? throw new InvalidDataException("Default character format has no size.");
+        return (height / 100m).ToString("0.##", CultureInfo.InvariantCulture);
+    }
+
     internal static XDocument BuildDefaultDeclarations(XDocument blank, XDocument seed)
     {
         var result = new XDocument(seed);
@@ -166,7 +174,7 @@ internal static partial class HancomPreviewWriter
         var styleList = styles[0].Parent!;
         var nextId = styles.Max(e => (int)e.Attribute("Id")!) + 1;
         var roles = new[] { "body", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "footnote", "code", "code.title", "code.source", "figure.caption", "figure.source", "table.header", "table.content", "table.source", "table.caption", "ref.figure.number", "ref.table.number", "reset" };
-        roles = roles.Append("footnote.next").Concat(Enumerable.Range(1, 6).Select(TemplateCrossReferences.HeadingRole)).ToArray();
+        roles = roles.Append("footnote.next").Append("display_math").Concat(Enumerable.Range(1, 6).Select(TemplateCrossReferences.HeadingRole)).ToArray();
         var ids = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var role in roles)
         {
@@ -297,6 +305,13 @@ internal static partial class HancomPreviewWriter
             Paragraph("body", picture), Declaration("end:figure"),
             Declaration("table.width-mm:" + figureWidth), Declaration("begin:table"),
             Paragraph("body", tableSample), Declaration("end:table"),
+            Declaration(TemplateDisplayMath.SizeSetting + ":" + DisplayMathPoints(result, charShape)),
+            Declaration("begin:display_math"),
+            Paragraph("display_math", new XElement("CHAR", TemplateDisplayMath.Slot, new XElement("TAB"), "("),
+                new XElement("AUTONUM", new XAttribute("Number", 0), new XAttribute("NumberType", "Equation"),
+                    new XElement("AUTONUMFORMAT", new XAttribute("Superscript", "false"), new XAttribute("Type", "Digit"))),
+                new XElement("CHAR", ")")),
+            Declaration("end:display_math"),
             Declaration("begin:ref.figure.number"),
             TextParagraph("ref.figure.number", "그림 " + TemplateHeadingNumbers.Tag + "-" + TemplateCrossReferences.FigureNumberSlot),
             Declaration("end:ref.figure.number"),

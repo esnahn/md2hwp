@@ -457,6 +457,65 @@ pub fn render(
 
 pub(crate) const UNSUPPORTED_MATH: &str = "rhwp generation does not yet support equations";
 
+const DISPLAY_MATH_SIZE_PREFIX: &str = "display_math.fontsize-pt:";
+
+/// Display math editor size in 1/100 pt; same rule as the Hancom worker.
+pub(crate) fn display_math_points(counts: &BTreeMap<String, usize>) -> Result<i32, String> {
+    let matches: Vec<_> = counts
+        .iter()
+        .filter(|(key, _)| key.starts_with(DISPLAY_MATH_SIZE_PREFIX))
+        .collect();
+    if matches.len() != 1 || *matches[0].1 != 1 {
+        return Err("Template requires exactly one display_math.fontsize-pt setting".into());
+    }
+    let value = &matches[0].0[DISPLAY_MATH_SIZE_PREFIX.len()..];
+    let invalid = || {
+        "display_math.fontsize-pt must be a positive decimal point size with at most two decimal places"
+            .to_string()
+    };
+    let (whole, fraction) = value.split_once('.').unwrap_or((value, ""));
+    if whole.is_empty()
+        || whole.len() > 9
+        || !whole.bytes().all(|b| b.is_ascii_digit())
+        || (value.contains('.') && (fraction.is_empty() || fraction.len() > 2))
+        || !fraction.bytes().all(|b| b.is_ascii_digit())
+    {
+        return Err(invalid());
+    }
+    let hundredths = whole.parse::<i64>().map_err(|_| invalid())? * 100
+        + format!("{fraction:0<2}").parse::<i64>().map_err(|_| invalid())?;
+    i32::try_from(hundredths)
+        .ok()
+        .filter(|n| *n > 0)
+        .ok_or_else(invalid)
+}
+
+/// One root sample between begin/end:display_math, after its size setting.
+fn display_math_range(roots: &[Paragraph]) -> Result<(usize, usize), String> {
+    let position = |needle: &str| {
+        roots
+            .iter()
+            .position(|p| p.text == tag(needle))
+            .ok_or_else(|| format!("Missing root {needle}"))
+    };
+    let start = position("begin:display_math")?;
+    let end = position("end:display_math")?;
+    require_plain(&roots[start])?;
+    require_plain(&roots[end])?;
+    let setting = roots
+        .iter()
+        .position(|p| p.text.starts_with(&format!("{PREFIX}{DISPLAY_MATH_SIZE_PREFIX}")))
+        .ok_or("Missing root display_math.fontsize-pt setting")?;
+    require_plain(&roots[setting])?;
+    if end != start + 2 || setting >= start {
+        return Err("display_math requires its size setting followed by one sample paragraph".into());
+    }
+    if roots[start + 1].text.matches(&tag("slot:display_math")).count() != 1 {
+        return Err("display_math sample must contain one slot:display_math".into());
+    }
+    Ok((start, end))
+}
+
 fn unsupported(feature: &str) -> String {
     format!("rhwp generation does not yet support {feature}; use the Hancom backend")
 }
@@ -511,6 +570,9 @@ pub(crate) fn validate_definitions(roots: &[Paragraph]) -> Result<(), String> {
         "begin:ref.table.number",
         "end:ref.table.number",
         "slot:ref.table.number",
+        "begin:display_math",
+        "end:display_math",
+        "slot:display_math",
     ]
     .into_iter()
     .map(|s| (s.to_string(), 1))
@@ -555,6 +617,7 @@ pub(crate) fn validate_definitions(roots: &[Paragraph]) -> Result<(), String> {
             return Err(format!("Invalid {setting}"));
         }
     }
+    display_math_points(&counts)?;
     for (key, count) in &counts {
         if required.contains_key(key)
             || (1..=6).any(|n| key == &format!("num:heading{n}"))
@@ -563,6 +626,7 @@ pub(crate) fn validate_definitions(roots: &[Paragraph]) -> Result<(), String> {
                 "list.indent-hwp:",
                 "figure.max-width-mm:",
                 "table.width-mm:",
+                DISPLAY_MATH_SIZE_PREFIX,
             ]
             .iter()
             .any(|prefix| key.starts_with(prefix))
@@ -576,7 +640,7 @@ pub(crate) fn validate_definitions(roots: &[Paragraph]) -> Result<(), String> {
             "Unknown, duplicate or unsupported template declaration: {key}"
         ));
     }
-    let mut ranges = Vec::new();
+    let mut ranges = vec![display_math_range(roots)?];
     for role in [
         "code",
         "figure",

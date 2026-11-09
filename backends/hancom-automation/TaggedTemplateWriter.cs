@@ -51,6 +51,8 @@ internal static partial class HancomPreviewWriter
                 else Open(hwp, temporary, visible);
                 var preparedMetadata = TemplateMetadata.Prepare(HwpMarkup.ReadDocument((object)hwp), metadata);
                 XDocument document = TemplateHeadingNumbers.Prepare(TaggedTemplateBinding.PreserveBeginSectionSettings(preparedMetadata.Document));
+                var math = TemplateDisplayMath.Lower(document);
+                document = math.Document;
                 var footnotes = NativeFootnotes.Bind(document);
                 document = footnotes.LowerSample(document);
                 var objectSources = TemplateObjectSources.Lower(document);
