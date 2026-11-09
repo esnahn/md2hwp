@@ -567,6 +567,7 @@ if (args.Length==2) {
 }
 
 ObjectSourceTests.Run();
+DisplayMathTests.Run();
 
 FigureDimensionsTests.Run();
 EmfDimensionsTests.Run();

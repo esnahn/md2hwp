@@ -85,7 +85,8 @@ internal sealed record PreviewOperation(
     PreviewTable? Table = null,
     PreviewListMarker? ListContinuation = null,
     IReadOnlyList<PreviewSourceParagraph>? Sources = null,
-    string? TableId = null);
+    string? TableId = null,
+    string? DisplayMath = null);
 
 internal sealed record PreviewTable(
     IReadOnlyList<string> Columns,
@@ -107,7 +108,12 @@ internal sealed record PreviewTextRun(
     bool Strong,
     bool Emphasis,
     PreviewFootnote? Footnote = null,
-    PreviewCrossReference? CrossReference = null);
+    PreviewCrossReference? CrossReference = null,
+    string? Math = null)
+{
+    // Footnotes, references and math are native controls carried by unique markers.
+    public bool IsControl => Footnote is not null || CrossReference is not null || Math is not null;
+}
 
 internal sealed record PreviewCrossReference(string Kind, string Target);
 
@@ -180,8 +186,8 @@ internal sealed class PlanBuilder(
                 AddTable(block, path);
                 break;
             case "display_math":
-                IrContract.ReadMathScript(block, path);
-                throw JsonContract.Error(path + "/type", IrContract.UnsupportedMath);
+                AddDisplayMath(block, path);
+                break;
             default:
                 throw JsonContract.Error(path + "/type", $"unsupported IR block type {type}");
         }
@@ -247,7 +253,7 @@ internal sealed class PlanBuilder(
         JsonContract.ExpectObject(block, path, ["type", "inlines"]);
         const string style = "body";
         var label = listLabel ?? "body";
-        var content = InlineText.Read(block.GetProperty("inlines"), path + "/inlines");
+        var content = InlineText.Read(block.GetProperty("inlines"), path + "/inlines", allowMath: true);
         if (listMarker is not null && content.Lines.Count != 1 && !profile.PreserveParagraphLineBreaks)
         {
             throw JsonContract.Error(
@@ -255,6 +261,17 @@ internal sealed class PlanBuilder(
                 "the native-list investigation preview does not support line_break in a list marker paragraph");
         }
         operations.Add(Text(label, style, content, listMarker) with { ListContinuation = listContinuation });
+    }
+
+    // A body-formatted marker paragraph passes the flat checks like a table
+    // anchor; TemplateDisplayMath later replaces it with the template sample.
+    private void AddDisplayMath(JsonElement block, string path)
+    {
+        var script = IrContract.ReadMathScript(block, path);
+        var marker = TemplateDisplayMath.DisplayMarkerPrefix + Guid.NewGuid().ToString("N");
+        operations.Add(new PreviewOperation("text", "display_math", [marker], ParagraphStyle: "body",
+            FormattedLines: PreviewInlineContent.Plain([marker]).Lines.Select(line => line.Runs).ToArray(),
+            DisplayMath: script));
     }
 
     private void AddVerbatimBlock(JsonElement block, string path)
@@ -354,7 +371,7 @@ internal sealed class PlanBuilder(
                         break;
                     case "display_math":
                         IrContract.ReadMathScript(itemBlock, blockPath);
-                        throw JsonContract.Error(blockPath + "/type", IrContract.UnsupportedMath);
+                        throw JsonContract.Error(blockPath + "/type", IrContract.UnsupportedListMath);
                     default:
                         throw JsonContract.Error(blockPath + "/type", "list items may contain only paragraph or list blocks");
                 }
@@ -471,14 +488,15 @@ internal sealed class PlanBuilder(
 
 internal static class InlineText
 {
-    public static PreviewInlineContent Read(JsonElement element, string path, bool allowFootnotes = true, bool allowCrossReferences = true)
+    // Math is opt-in: only document/list paragraphs and their notes allow it.
+    public static PreviewInlineContent Read(JsonElement element, string path, bool allowFootnotes = true, bool allowCrossReferences = true, bool allowMath = false)
     {
         var inlines = JsonContract.ExpectArray(element, path);
         var builder = new PreviewRunBuilder();
         var index = 0;
         foreach (var inline in inlines.EnumerateArray())
         {
-            Append(inline, $"{path}/{index}", builder, false, false, allowFootnotes, allowCrossReferences);
+            Append(inline, $"{path}/{index}", builder, false, false, allowFootnotes, allowCrossReferences, allowMath);
             index++;
         }
         return builder.Build();
@@ -491,7 +509,8 @@ internal static class InlineText
         bool strong,
         bool emphasis,
         bool allowFootnotes,
-        bool allowCrossReferences)
+        bool allowCrossReferences,
+        bool allowMath)
     {
         if (inline.ValueKind is not JsonValueKind.Object)
         {
@@ -524,7 +543,8 @@ internal static class InlineText
                     true,
                     emphasis,
                     allowFootnotes,
-                    allowCrossReferences);
+                    allowCrossReferences,
+                    allowMath);
                 break;
             case "emph":
                 JsonContract.ExpectObject(inline, path, ["type", "inlines"]);
@@ -535,7 +555,8 @@ internal static class InlineText
                     strong,
                     true,
                     allowFootnotes,
-                    allowCrossReferences);
+                    allowCrossReferences,
+                    allowMath);
                 break;
             case "link":
                 JsonContract.ExpectObject(inline, path, ["type", "target", "title", "inlines"]);
@@ -548,7 +569,8 @@ internal static class InlineText
                     strong,
                     emphasis,
                     allowFootnotes,
-                    allowCrossReferences);
+                    allowCrossReferences,
+                    allowMath: false);
                 break;
             case "cross_reference":
                 if (!allowCrossReferences)
@@ -584,14 +606,17 @@ internal static class InlineText
                     {
                         throw JsonContract.Error(blockPath + "/inlines", "footnote paragraph must not be empty");
                     }
-                    paragraphs.Add(Read(inlines, blockPath + "/inlines", allowFootnotes: false, allowCrossReferences: allowCrossReferences));
+                    paragraphs.Add(Read(inlines, blockPath + "/inlines", allowFootnotes: false, allowCrossReferences: allowCrossReferences, allowMath: allowMath));
                     blockIndex++;
                 }
                 builder.AppendFootnote(new PreviewFootnote(paragraphs), strong, emphasis);
                 break;
             case "inline_math":
-                IrContract.ReadMathScript(inline, path);
-                throw JsonContract.Error(path + "/type", IrContract.UnsupportedMath);
+                var script = IrContract.ReadMathScript(inline, path);
+                if (!allowMath)
+                    throw JsonContract.Error(path + "/type", "inline math is allowed only in document paragraphs, list paragraphs and their footnote bodies, outside link labels");
+                builder.AppendMath(script, strong, emphasis);
+                break;
             default:
                 throw JsonContract.Error(path + "/type", $"unsupported IR inline type {type}");
         }
@@ -604,13 +629,14 @@ internal static class InlineText
         bool strong,
         bool emphasis,
         bool allowFootnotes,
-        bool allowCrossReferences)
+        bool allowCrossReferences,
+        bool allowMath)
     {
         var children = JsonContract.ExpectArray(element, path);
         var index = 0;
         foreach (var child in children.EnumerateArray())
         {
-            Append(child, $"{path}/{index}", builder, strong, emphasis, allowFootnotes, allowCrossReferences);
+            Append(child, $"{path}/{index}", builder, strong, emphasis, allowFootnotes, allowCrossReferences, allowMath);
             index++;
         }
     }
@@ -627,7 +653,7 @@ internal sealed class PreviewRunBuilder
             return;
         }
         var line = lines[^1];
-        if (line.Count > 0 && line[^1].Footnote is null && line[^1].CrossReference is null && line[^1].Strong == strong && line[^1].Emphasis == emphasis)
+        if (line.Count > 0 && !line[^1].IsControl && line[^1].Strong == strong && line[^1].Emphasis == emphasis)
         {
             line[^1] = line[^1] with { Text = line[^1].Text + text };
             return;
@@ -643,6 +669,10 @@ internal sealed class PreviewRunBuilder
         lines[^1].Add(new PreviewTextRun("MD2HWP_CROSS_REFERENCE_" + Guid.NewGuid().ToString("N"),
             strong, emphasis, CrossReference: reference));
 
+    public void AppendMath(string script, bool strong, bool emphasis) =>
+        lines[^1].Add(new PreviewTextRun(TemplateDisplayMath.InlineMarkerPrefix + Guid.NewGuid().ToString("N"),
+            strong, emphasis, Math: script));
+
     public void BreakLine() => lines.Add([]);
 
     public PreviewInlineContent Build() => new(lines.Select(line => new PreviewLine(
@@ -654,7 +684,7 @@ internal sealed class PreviewRunBuilder
         var builder = new PreviewRunBuilder();
         foreach (var run in source)
         {
-            if (run.Footnote is not null || run.CrossReference is not null)
+            if (run.IsControl)
             {
                 builder.lines[^1].Add(run);
             }

@@ -259,7 +259,7 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
         return copy;
     }
 
-    private static void ReassignCopiedIdentities(XDocument destination, IEnumerable<XElement> copies)
+    internal static void ReassignCopiedIdentities(XDocument destination, IEnumerable<XElement> copies)
     {
         var attributes = copies.SelectMany(p => p.DescendantsAndSelf()).Attributes()
             .Where(a => a.Name.LocalName is "InstId" or "InstID").ToArray();

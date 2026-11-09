@@ -7,7 +7,7 @@ internal static class IrContract
     // Shared with Rust at build time; no runtime schema sidecar is required.
     public static readonly string Version = ReadVersion();
 
-    public const string UnsupportedMath = "Hancom generation does not yet support equations";
+    public const string UnsupportedListMath = "Hancom generation does not yet support display math in list items";
 
     // Same minimal check as the Rust core: SCRIPT grammar is not parsed.
     public static string ReadMathScript(JsonElement element, string path)

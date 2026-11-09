@@ -201,6 +201,10 @@ internal static partial class HancomPreviewWriter
                     tables.Layout.AttachSpacing(document);
                 }));
                 attached = footnotes.Attach(attached, plan);
+                // The live document is replaced by the next full import; native
+                // creation here supplies only equation geometry.
+                attached = math.Layout.Attach(attached, plan, keys =>
+                    (IReadOnlyDictionary<EquationKey, XElement>)MeasureEquations(hwp, keys));
                 TemplateHeadingNumbers.RequireResolved(attached);
                 TemplateHeadingBlocks.RecalculateFigureNumbers(attached);
                 tables.Layout.RecalculateNumbers(attached);
@@ -373,6 +377,43 @@ internal static partial class HancomPreviewWriter
         var known = template.Descendants("CHARSHAPE").Select(shape => (string?)shape.Attribute("Id")).ToHashSet();
         foreach (var shape in generated.Descendants("CHARSHAPE").Where(shape => !known.Contains((string?)shape.Attribute("Id"))))
             DirectXmlParagraphs.OrderMarks(shape);
+    }
+
+    // HWPML import keeps EQUATION geometry as given, so create each distinct
+    // equation natively at the end of the disposable working document.
+    private static IReadOnlyDictionary<EquationKey, XElement> MeasureEquations(dynamic hwp, IReadOnlyList<EquationKey> keys)
+    {
+#if DEBUG
+        using var timing = RenderProfile.Measure("compose.equation-geometry");
+#endif
+        if (keys.Count == 0) return new Dictionary<EquationKey, XElement>();
+        Run(hwp, "MoveDocEnd");
+        foreach (var key in keys)
+        {
+            Run(hwp, "BreakPara");
+            // Keep one parameter object: its defaults (treat as character,
+            // margins, version) must reach the executed action.
+            var parameters = hwp.HParameterSet.HEqEdit;
+            _ = hwp.HAction.GetDefault("EquationCreate", parameters.HSet);
+            parameters.@string = key.Script;
+            parameters.BaseUnit = key.BaseUnit;
+            if (!(bool)hwp.HAction.Execute("EquationCreate", parameters.HSet))
+                throw new InvalidOperationException("Hancom could not create an equation.");
+            Run(hwp, "MoveDocEnd");
+        }
+        var created = HwpMarkup.ReadDocument((object)hwp).Descendants("EQUATION").TakeLast(keys.Count).ToArray();
+        if (created.Length != keys.Count) throw new InvalidOperationException("Missing natively created equations.");
+        var result = new Dictionary<EquationKey, XElement>();
+        foreach (var (key, equation) in keys.Zip(created))
+        {
+            if ((string?)equation.Element("SCRIPT") != key.Script || (int?)equation.Attribute("BaseUnit") != key.BaseUnit)
+                throw new InvalidOperationException("Hancom changed an equation script or font size during creation.");
+            if ((string?)equation.Element("SHAPEOBJECT")?.Element("POSITION")?.Attribute("TreatAsChar") != "true" ||
+                string.IsNullOrEmpty((string?)equation.Attribute("Version")))
+                throw new InvalidOperationException("Hancom created an equation without its default inline layout.");
+            result.Add(key, equation);
+        }
+        return result;
     }
 
     private static void ImportDirectMeasurementDocument(dynamic hwp, XDocument document)
