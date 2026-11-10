@@ -4,6 +4,8 @@
 
 mod code;
 mod conditional_ranges;
+#[allow(dead_code)]
+mod equation_metrics;
 mod figures;
 mod footnotes;
 mod heading_plan;

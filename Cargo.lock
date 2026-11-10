@@ -1227,6 +1227,7 @@ version = "0.5.0"
 dependencies = [
  "md2hwp-core",
  "md2hwp-font-measurement",
+ "md2hwp-math",
  "rhwp",
  "serde_json",
  "tempfile",
