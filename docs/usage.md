@@ -2,7 +2,7 @@
 
 ## 사용자 환경
 
-v0.6.0 준비 빌드는 수식을 담은 IR 0.6을 사용합니다(v0.5.0은 IR 0.4). 프로그램 버전과 IR 버전은 독립적이며, 프로그램 버전 상향으로 IR이나 템플릿의 `ir-version`을 바꾸지 않습니다.
+v0.6.0은 수식을 담은 IR 0.6을 사용합니다(v0.5.0은 IR 0.4). 프로그램 버전과 IR 버전은 독립적이며, 프로그램 버전 상향으로 IR이나 템플릿의 `ir-version`을 바꾸지 않습니다.
 
 일반 빌드와 v0.6.0 배포 ZIP은 `md2hwp.exe`, `md2hwp-rhwp.exe`, `md2hwp-hancom.exe`, `hwp2pdf.exe`, `hwpeqrecalc.exe` 다섯 실행 파일을 포함합니다. HWP 기본 경로인 `md2hwp-rhwp.exe`는 한글·.NET·보안 모듈 없이 실행합니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. Markdown 처리에는 Pandoc이 필요합니다. 다음 한글·.NET·보안 모듈 준비는 HWPX를 처리하는 `md2hwp-hancom.exe`, HWP 입력 전용 `hwp2pdf.exe`, `hwpeqrecalc.exe`에 해당합니다.
 

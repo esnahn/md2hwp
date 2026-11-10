@@ -1,11 +1,11 @@
-# md2hwp v0.6.0 (릴리스 준비)
+# md2hwp v0.6.0
 
 Markdown 원고를 한글 템플릿의 서식에 맞춰 변환합니다. Windows x64에서 실행하며, 프로그램 v0.6.0의 IR 버전은 0.6입니다(v0.5.0은 IR 0.4). 프로그램과 IR은 독립적으로 버전을 관리합니다. 원고는 Markdown 또는 Pandoc JSON으로 입력하며, HWPX·RST 원고 직접 입력은 지원하지 않습니다.
 
 v0.4.4부터 HWPX 템플릿과 HWPX 출력을 지원합니다. 확장자로 형식을 선택하며 기본값은 HWP입니다. [HWPX 사용 범위](docs/hwpx.md)를 참고하십시오.
 
-최신 공개 배포 파일은 [v0.5.0 릴리스](https://github.com/esnahn/md2hwp/releases/tag/v0.5.0)에서 확인할 수 있습니다.
-v0.6.0은 아직 발행하지 않았으며, 준비 중인 변경 사항은 [v0.6.0 릴리스 노트](docs/release-v0.6.0.md)를 참고하십시오. 공개 v0.5.0의 변경 사항은 [당시 릴리스 노트](docs/release-v0.5.0.md)에 기록했습니다.
+배포 파일은 [GitHub Releases](https://github.com/esnahn/md2hwp/releases)에서 확인할 수 있습니다.
+변경 사항은 [v0.6.0 릴리스 노트](docs/release-v0.6.0.md)를 참고하십시오.
 
 v0.6.0은 Markdown의 `$...$`·`$$...$$` 수식을 한글 수식으로 변환하며, 두 백엔드 모두 수식을 생성합니다. 수식 크기를 한글이 다시 조판하게 하는 `hwpeqrecalc.exe`를 추가했고, 한글 백엔드·`hwp2pdf.exe`·`hwpeqrecalc.exe`는 실행 중인 한글이 있어도 동작합니다.
 
@@ -30,8 +30,7 @@ md2hwp는 **AGPL-3.0-only**로 제공합니다.
 실행 파일을 배포할 때는 라이선스·고지를 함께 제공하고, 실행 파일과 정확히 대응하는
 소스의 무료 다운로드 링크를 같은 배포 페이지에 표시하십시오. GitHub Release의
 동일 태그 자동 소스 다운로드를 사용하며, 이전 태그나 이동하는 브랜치 링크로 대신하지 않습니다.
-현재 공개 배포의 대응 소스: [v0.5.0 소스 다운로드](https://github.com/esnahn/md2hwp/archive/refs/tags/v0.5.0.zip).
-v0.6.0 발행 시에는 해당 실행 파일과 정확히 대응하는 v0.6.0 태그의 자동 소스 다운로드 링크를 같은 릴리스 페이지에 제공합니다.
+이 버전의 대응 소스: [v0.6.0 소스 다운로드](https://github.com/esnahn/md2hwp/archive/refs/tags/v0.6.0.zip).
 수정한 프로그램을 네트워크 서비스로 제공하는 경우 AGPL 제13조도 적용될 수 있습니다.
 
 Pandoc은 `setup-pandoc`이 따로 다운로드하는 GPL-2.0-or-later 프로그램이며 실행용 ZIP에 포함하지 않습니다.
@@ -248,7 +247,7 @@ rhwp 검사는 한글·.NET 없이 실행합니다. 한글 백엔드 검사는 �
 
 - [설치·실행 옵션](docs/usage.md) · [템플릿 편집·태그](docs/templates.md) · [HWPX 템플릿·출력](docs/hwpx.md)
 - [표](docs/tables.md) · [번호 상호참조](docs/cross-references.md) · [메타데이터](docs/yaml-variables.md) · [날짜](docs/date-metadata.md)
-- [빌드·검증](docs/development.md) · [통합 예제](examples/all-features/) · [v0.6.0 릴리스 준비](docs/release-v0.6.0.md) · [공개 v0.5.0 릴리스 노트](docs/release-v0.5.0.md)
+- [빌드·검증](docs/development.md) · [통합 예제](examples/all-features/) · [v0.6.0 릴리스 노트](docs/release-v0.6.0.md) · [v0.5.0 릴리스 노트](docs/release-v0.5.0.md)
 
 저장·재열기 검증만으로 잘림·겹침이나 각주 표시 번호를 보장하지 않으므로 생성된 문서의 배치도 확인하십시오.
 
