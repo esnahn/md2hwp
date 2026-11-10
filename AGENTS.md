@@ -626,10 +626,19 @@ Both workers apply the same minimal SCRIPT check: nonblank, NFC, control-free
 and counted in text limits. Do not parse SCRIPT grammar in either worker.
 Block templates use display_math.fontsize-pt and begin/end/slot:display_math.
 Design, template declarations and live Hancom numbering evidence are in
-docs/math/ir-design.md. The Hancom worker generates equations; rhwp validates the
-display_math declarations but rejects math content, so math manuscripts need an
-explicit Hancom --worker. Both reject display math in list items. HWPML import
+docs/math/ir-design.md. Both workers generate equations and reject display math
+in list items. rhwp stores geometry from backends/rhwp/src/equation_metrics.rs,
+fitted to Hancom 2020 measurements (data/hancom-equation-*.json, measured with
+tools/development/measure_hancom_equations.ps1); it estimates unmeasured glyphs
+and never rejects a script. Hancom keeps stored equation geometry on open, so
+underestimated widths overlap following text: verify rendered pages. rhwp copies
+Hancom-saved native fields (inline numbering None, display Equation, HancomEQN,
+Equation Version 60) and recalculates Equation AUTONUMs. Hancom HWPML import
 keeps EQUATION geometry as given: create each distinct (SCRIPT, size) natively
 with one EquationCreate parameter set, require TreatAsChar and a Version, and copy
-that element. Do not relax save/reopen comparison for equations. Verify rendered
+that element. HWPML import stores font HYhwpEQ, which Hancom draws wider than the
+HancomEQN layout: just before the final HWP save, set EqFontName=HancomEQN through
+control Properties on generated equations only (matched by InstId, after checking
+control/HWPML order), and verify it after each reopen. rhwp writes HancomEQN directly.
+Do not relax save/reopen comparison for equations. Verify rendered
 pages; structural checks missed a floating-equation regression.

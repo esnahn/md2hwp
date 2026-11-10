@@ -19,7 +19,7 @@ md2hwp 개발 버전 / IR 0.6용 Markdown 원고 작성·수정에 적용한다.
 입력은 commonmark+yaml_metadata_block+footnotes+attributes+implicit_figures+pipe_tables+tex_math_dollars로 읽는다.
 수식은 `$...$`(문장 안)와 문단 전체를 차지하는 `$$...$$`(별행)로 쓴다. 지원 범위는 md2hwp-math의 TeX 변환 범위다.
 제목·표 셀·캡션·출처·링크 글자에는 수식을 넣지 않는다. 목록 항목 안에는 별행 수식을 두지 않는다.
-수식이 있는 원고는 한글 백엔드(`--worker md2hwp-hancom.exe`)로만 생성된다.
+수식은 두 백엔드 모두 생성한다. rhwp 백엔드의 수식 크기는 한글 실측 기반 추정값이다.
 금액 등 글자로 쓰는 `$`가 한 문단에 둘 이상이면 `\$`로 이스케이프한다.
 제목:·출처:·개체 하단 설명과 인접 표 캡션 연결은 md2hwp 원고 규칙이다.
 

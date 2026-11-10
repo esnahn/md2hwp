@@ -201,7 +201,7 @@ EMF는 원본 파일을 내장하고 물리적 프레임의 비율로 크기를 
 
 수식 문자열의 양방향 변환은 독립 개발 크레이트 `md2hwp-math`에서 작업합니다.
 양방향 변환의 범위·실행·시각 검토 자료는
-[수식 변환 안내](docs/math.md)를 참고하십시오. Markdown의 `$...$`·`$$...$$` 수식은 IR 0.6의 `inline_math`·`display_math`로 변환합니다. 현재 수식 생성은 한글 백엔드만 지원하므로 HWP 출력이라도 `--worker md2hwp-hancom.exe`를 지정해야 합니다. rhwp 백엔드는 수식이 있는 원고를 거부합니다. 설계는 [수식의 IR 표현](docs/math/ir-design.md)에 있습니다.
+[수식 변환 안내](docs/math.md)를 참고하십시오. Markdown의 `$...$`·`$$...$$` 수식은 IR 0.6의 `inline_math`·`display_math`로 변환합니다. 두 백엔드 모두 수식을 생성합니다. 한글 백엔드는 한글이 조판한 크기를 그대로 쓰고, rhwp 백엔드는 한글 2020 실측에 맞춘 계산기로 수식 크기를 추정합니다. 추정 크기는 한글이 만든 크기와 몇 픽셀 다를 수 있습니다. 설계는 [수식의 IR 표현](docs/math/ir-design.md)에 있습니다.
 
 Windows x64에서 PowerShell 7.4 이상과 Rust 도구 체인을 준비한 뒤 저장소 루트에서 실행합니다. MSVC·Windows SDK 설치가 필요하면 첫 명령은 관리자 PowerShell에서 실행하십시오.
 

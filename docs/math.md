@@ -3,7 +3,7 @@
 `crates/md2hwp-math`는 한글 수식 SCRIPT와 TeX를 양방향으로 변환하는
 독립 Rust 라이브러리와 개발용 CLI다. `hml`은 전체 XML 파일이 아니라
 `EQUATION/SCRIPT`의 수식 코드 문자열이다. Markdown/IR 문서 생성에는
-연결 중이다. core는 Markdown 수식을 IR 0.6의 `inline_math`·`display_math`로 변환하고, 한글 백엔드가 수식을 생성한다. rhwp 백엔드는 아직 생성하지 않는다. 설계는 [수식의 IR 표현](math/ir-design.md)에 있다.
+연결 중이다. core는 Markdown 수식을 IR 0.6의 `inline_math`·`display_math`로 변환하고, 한글·rhwp 백엔드가 모두 수식을 생성한다. rhwp는 한글 실측에 맞춘 크기 계산기를 쓴다. 설계는 [수식의 IR 표현](math/ir-design.md)에 있다.
 
 ## 검토 자료
 
