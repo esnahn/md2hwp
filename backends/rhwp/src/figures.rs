@@ -242,12 +242,12 @@ impl Prototype {
         };
         // Use fresh model geometry: sample crop, transforms, borders and embedded
         // bytes are not manuscript defaults. The native crop axis is independent
-        // of display extent; raster inputs follow the reader's 75 HU/pixel axis.
+        // of display extent; raster inputs follow the reader's 75 HU/pixel axis,
+        // which Hancom stores rounded half up to 60 HU (537 px -> 40260) and
+        // restores on re-layout, so write that value directly.
         let natural = if resource.pixel_width > 0 && resource.pixel_height > 0 {
-            (
-                f64::from(resource.pixel_width) * 75.0,
-                f64::from(resource.pixel_height) * 75.0,
-            )
+            let axis = |pixels: u32| ((u64::from(pixels) * 5 + 2) / 4 * 60) as f64;
+            (axis(resource.pixel_width), axis(resource.pixel_height))
         } else {
             (
                 resource.width * 7200.0 / 2540.0,
@@ -507,8 +507,9 @@ mod tests {
         resource.extension = extension.into();
         resource.width = 200.0;
         resource.height = 100.0;
-        resource.pixel_width = 200;
-        resource.pixel_height = 100;
+        // Hancom 2020 stores this image's crop axis as 40260 x 17100.
+        resource.pixel_width = 537;
+        resource.pixel_height = 228;
         resource
     }
 
@@ -640,8 +641,8 @@ mod tests {
             (f64::from(picture.common.width) / 2.0).round() as u32
         );
         assert!(!picture.reverse);
-        assert_eq!(picture.crop.right, 15000);
-        assert_eq!(picture.img_dim, (15000, 7500));
+        assert_eq!(picture.crop.right, 40260);
+        assert_eq!(picture.img_dim, (40260, 17100));
         let caption = picture.caption.as_ref().unwrap();
         assert_eq!(caption.spacing, 123);
         assert!(caption.include_margin);
