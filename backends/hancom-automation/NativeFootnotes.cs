@@ -359,11 +359,15 @@ internal sealed class NativeFootnotes(XDocument source, XElement sample, XElemen
             texts.Add(new XElement("TEXT", new XAttribute("CharShape", id),
                 new XElement("AUTONUM", new XAttribute("Number", 1), new XAttribute("NumberType", "Footnote"), new XElement(numberFormat)),
                 new XElement("CHAR", " ")));
-        void Add(string text, bool strong, bool emphasis, bool lineBreak = false)
+        void Add(string text, RunMarks marks, bool lineBreak = false)
         {
             var shape = new XElement(baseline); shape.Attribute("Id")!.Remove();
-            if (strong && shape.Element("BOLD") is null) shape.Add(new XElement("BOLD"));
-            if (emphasis && shape.Element("ITALIC") is null) shape.Add(new XElement("ITALIC"));
+            if (marks.HasNativeEffects) DirectXmlParagraphs.ApplyMarks(shape, marks);
+            else
+            {
+                if (marks.Strong && shape.Element("BOLD") is null) shape.Add(new XElement("BOLD"));
+                if (marks.Emphasis && shape.Element("ITALIC") is null) shape.Add(new XElement("ITALIC"));
+            }
             var table = baseline.Parent!;
             var match = table.Elements("CHARSHAPE").FirstOrDefault(c => { var key = new XElement(c); key.Attribute("Id")!.Remove(); return XNode.DeepEquals(key, shape); });
             if (match is null)
@@ -379,14 +383,14 @@ internal sealed class NativeFootnotes(XDocument source, XElement sample, XElemen
         }
         for (var i = 0; i < content.Lines.Count; i++)
         {
-            if (i > 0) Add("", false, false, true);
+            if (i > 0) Add("", default, true);
             foreach (var run in content.Lines[i].Runs)
             {
                 if (run.Footnote is not null) throw new InvalidDataException("Nested footnotes are not supported.");
-                Add(run.Text, run.Strong, run.Emphasis);
+                Add(run.Text, run.Marks);
             }
         }
-        if (texts.Count == 0) Add("", false, false);
+        if (texts.Count == 0) Add("", default);
         paragraph.ReplaceNodes(affixes.Prefix, texts, affixes.Suffix);
         return paragraph;
     }

@@ -215,6 +215,9 @@ fn bind(inlines: &mut Vec<Inline>, targets: &BTreeMap<String, String>) -> Result
             }
             Inline::Strong { inlines }
             | Inline::Emph { inlines }
+            | Inline::Strikeout { inlines }
+            | Inline::Superscript { inlines }
+            | Inline::Subscript { inlines }
             | Inline::Link { inlines, .. } => bind(inlines, targets)?,
             Inline::Footnote { blocks } => {
                 for FootnoteBlock::Paragraph { inlines } in blocks {

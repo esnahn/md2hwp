@@ -77,7 +77,17 @@ internal sealed record SavedNativeList(
 internal sealed record SavedTextRun(
     string Text,
     bool Bold,
-    bool Italic);
+    bool Italic,
+    bool Strikeout = false,
+    ScriptPosition Script = ScriptPosition.None)
+{
+    public static SavedTextRun Expected(PreviewTextRun run, NativeStyle style) => new(
+        run.Text,
+        style.BaseBold || run.Strong,
+        style.BaseItalic || run.Emphasis,
+        style.BaseStrikeout || run.Strikeout,
+        run.Script is ScriptPosition.None ? style.BaseScript : run.Script);
+}
 
 internal sealed record ExpectedParagraph(
     string SymbolicStyle,
@@ -662,21 +672,14 @@ internal static partial class HancomPreviewWriter
             return;
         }
 
-        var baseBold = baseStyle.BaseBold;
-        var baseItalic = baseStyle.BaseItalic;
-        var currentBold = baseBold;
-        var currentItalic = baseItalic;
+        var baseline = new SavedTextRun("", baseStyle.BaseBold, baseStyle.BaseItalic, baseStyle.BaseStrikeout, baseStyle.BaseScript);
+        var current = baseline;
         Exception? primaryFailure = null;
         try
         {
             foreach (var run in runs)
             {
-                SetCharacterMarks(
-                    hwp,
-                    baseBold || run.Strong,
-                    baseItalic || run.Emphasis,
-                    ref currentBold,
-                    ref currentItalic);
+                SetCharacterMarks(hwp, SavedTextRun.Expected(run, baseStyle), ref current);
                 InsertText(hwp, run.Text);
             }
         }
@@ -688,12 +691,7 @@ internal static partial class HancomPreviewWriter
         Exception? resetFailure = null;
         try
         {
-            SetCharacterMarks(
-                hwp,
-                baseBold,
-                baseItalic,
-                ref currentBold,
-                ref currentItalic);
+            SetCharacterMarks(hwp, baseline, ref current);
         }
         catch (Exception error)
         {
@@ -714,24 +712,22 @@ internal static partial class HancomPreviewWriter
         }
     }
 
-    private static void SetCharacterMarks(
-        dynamic hwp,
-        bool bold,
-        bool italic,
-        ref bool currentBold,
-        ref bool currentItalic)
+    // Legacy COM insertion toggles Hancom's own character commands.
+    private static void SetCharacterMarks(dynamic hwp, SavedTextRun target, ref SavedTextRun current)
     {
-        if (currentBold != bold)
+        if (current.Bold != target.Bold) Run(hwp, "CharShapeBold");
+        if (current.Italic != target.Italic) Run(hwp, "CharShapeItalic");
+        if (current.Strikeout != target.Strikeout) Run(hwp, "CharShapeCenterline");
+        if (current.Script != target.Script)
         {
-            Run(hwp, "CharShapeBold");
-            currentBold = bold;
+            if (current.Script is not ScriptPosition.None) Run(hwp, ScriptAction(current.Script));
+            if (target.Script is not ScriptPosition.None) Run(hwp, ScriptAction(target.Script));
         }
-        if (currentItalic != italic)
-        {
-            Run(hwp, "CharShapeItalic");
-            currentItalic = italic;
-        }
+        current = target;
     }
+
+    private static string ScriptAction(ScriptPosition script) =>
+        script is ScriptPosition.Superscript ? "CharShapeSuperscript" : "CharShapeSubscript";
 
     private static void Run(dynamic hwp, string action)
     {
@@ -866,10 +862,7 @@ internal static partial class HancomPreviewWriter
                 continue;
             }
             var nativeStyle = styles.Resolve(expected.SymbolicStyle);
-            var expectedRuns = CoalesceSavedRuns(expected.FormattedRuns.Select(run => new SavedTextRun(
-                run.Text,
-                nativeStyle.BaseBold || run.Strong,
-                nativeStyle.BaseItalic || run.Emphasis)));
+            var expectedRuns = CoalesceSavedRuns(expected.FormattedRuns.Select(run => SavedTextRun.Expected(run, nativeStyle)));
             var actualRuns = appended[index].Runs;
             if (expected.SymbolicStyle == "figure.caption")
                 actualRuns = SliceSavedRuns(actualRuns, styles.Profile.CaptionSelector.CaptionTextOffset, expected.Text.Length);
@@ -910,8 +903,7 @@ internal static partial class HancomPreviewWriter
         IReadOnlyList<PreviewTextRun> sourceRuns)
     {
         var style = styles.Resolve(styles.Profile.BoxSelector.SourceStyle);
-        var expected = CoalesceSavedRuns(sourceRuns.Select(run => new SavedTextRun(run.Text,
-            style.BaseBold || run.Strong, style.BaseItalic || run.Emphasis)));
+        var expected = CoalesceSavedRuns(sourceRuns.Select(run => SavedTextRun.Expected(run, style)));
         var actual = ReadSavedRuns(paragraph, HwpmlCharacterShapes.Read(paragraph.Document ??
             throw new InvalidOperationException("Source verification requires its owning HWPML document.")));
         actual = SliceSavedRuns(actual, styles.Profile.BoxSource.Prefix.Length, sourceRuns.Sum(r => r.Text.Length));
@@ -922,7 +914,7 @@ internal static partial class HancomPreviewWriter
         "[" + string.Join(
             ", ",
             runs.Select(run =>
-                $"{JsonSerializer.Serialize(run.Text)}:bold={run.Bold}:italic={run.Italic}")) + "]";
+                $"{JsonSerializer.Serialize(run.Text)}:bold={run.Bold}:italic={run.Italic}:strikeout={run.Strikeout}:script={run.Script}")) + "]";
 
     private static void VerifyBoxes(
         dynamic hwp,
@@ -1391,7 +1383,7 @@ internal static partial class HancomPreviewWriter
                 .Select(element => element.Value));
             if (text.Length > 0)
             {
-                runs.Add(new SavedTextRun(text, marks.Bold, marks.Italic));
+                runs.Add(new SavedTextRun(text, marks.Bold, marks.Italic, marks.Strikeout, marks.Script));
             }
         }
         return CoalesceSavedRuns(runs);
@@ -1403,9 +1395,7 @@ internal static partial class HancomPreviewWriter
         var result = new List<SavedTextRun>();
         foreach (var run in source.Where(run => run.Text.Length > 0))
         {
-            if (result.Count > 0 &&
-                result[^1].Bold == run.Bold &&
-                result[^1].Italic == run.Italic)
+            if (result.Count > 0 && result[^1] with { Text = "" } == run with { Text = "" })
             {
                 result[^1] = result[^1] with { Text = result[^1].Text + run.Text };
             }
@@ -1444,7 +1434,7 @@ internal static partial class HancomPreviewWriter
 
 }
 
-internal sealed record CharacterMarks(bool Bold, bool Italic);
+internal sealed record CharacterMarks(bool Bold, bool Italic, bool Strikeout = false, ScriptPosition Script = ScriptPosition.None);
 
 internal static class HwpmlCharacterShapes
 {
@@ -1459,7 +1449,12 @@ internal static class HwpmlCharacterShapes
                     id,
                     new CharacterMarks(
                         element.Elements().Any(child => child.Name.LocalName == "BOLD"),
-                        element.Elements().Any(child => child.Name.LocalName == "ITALIC"))))
+                        element.Elements().Any(child => child.Name.LocalName == "ITALIC"),
+                        element.Elements().Any(child => child.Name.LocalName == "STRIKEOUT" &&
+                            (string?)child.Attribute("Type") is not (null or "None")),
+                        element.Elements().Any(child => child.Name.LocalName == "SUPERSCRIPT") ? ScriptPosition.Superscript
+                            : element.Elements().Any(child => child.Name.LocalName == "SUBSCRIPT") ? ScriptPosition.Subscript
+                            : ScriptPosition.None)))
             {
                 throw new InvalidOperationException(
                     "HWPML character-shape definitions must have unique integer IDs.");
@@ -1479,7 +1474,9 @@ internal sealed record NativeStyle(
     bool BaseBold,
     bool BaseItalic,
     int BaseLeftMargin,
-    SavedNativeList? BaseNativeList = null);
+    SavedNativeList? BaseNativeList = null,
+    bool BaseStrikeout = false,
+    ScriptPosition BaseScript = ScriptPosition.None);
 
 internal sealed class AuriPreviewStyleBindings
 {
@@ -1590,7 +1587,9 @@ internal sealed class AuriPreviewStyleBindings
             characterMarks.Bold,
             characterMarks.Italic,
             baseLeftMargin,
-            baseNativeList);
+            baseNativeList,
+            characterMarks.Strikeout,
+            characterMarks.Script);
     }
 
     public NativeStyle Resolve(string symbolic)

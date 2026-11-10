@@ -337,7 +337,7 @@ fn fill_rich(
         .char_shape_id_at(p.text[..byte].chars().count())
         .ok_or("Figure slot has no character format")?;
     let mut spans = Vec::new();
-    crate::template::flatten(inlines, false, false, &mut spans);
+    crate::template::flatten(inlines, &mut spans);
     crate::template::replace_rich(p, token, &spans, base, info)
 }
 

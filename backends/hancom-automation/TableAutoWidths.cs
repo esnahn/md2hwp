@@ -152,11 +152,12 @@ internal static class TableAutoWidths
                         wordWidth = 0; wordGap = 0;
                         continue;
                     }
+                    var runShape = ScriptShape(format.CharacterShape, run.Script);
                     var elements = StringInfo.GetTextElementEnumerator(run.Text);
                     while (elements.MoveNext())
                     {
                         var text = elements.GetTextElement();
-                        var key = Font(format.CharacterShape, text, run.Strong, run.Emphasis);
+                        var key = Font(runShape, text, run.Strong, run.Emphasis);
                         var width = Width(key, text);
                         lineWidth += previousGap + width;
                         previousGap = width * key.Spacing / 100.0;
@@ -201,7 +202,7 @@ internal static class TableAutoWidths
             var reference = run.CrossReference!;
             if (references is null)
                 return MeasurePlain(reference.Kind switch { "figure_number" => "그림 999-999", "table_number" => "표 999-999", _ => "999.999.999." },
-                    format.CharacterShape, run.Strong, run.Emphasis);
+                    ScriptShape(format.CharacterShape, run.Script), run.Strong, run.Emphasis);
             var marker = "MD2HWP_WIDTH_" + Guid.NewGuid().ToString("N");
             var fragments = reference.Kind switch
             {
@@ -217,7 +218,7 @@ internal static class TableAutoWidths
                     (string?)e.Attribute("Id") == (string?)fragment.Attribute("CharShape"));
                 var text = string.Concat(fragment.Elements("CHAR").Select(e => e.Value))
                     .Replace(marker, "999", StringComparison.Ordinal);
-                var measured = MeasurePlain(text, shape, run.Strong, run.Emphasis);
+                var measured = MeasurePlain(text, ScriptShape(shape, run.Script), run.Strong, run.Emphasis);
                 if (text.Length != 0)
                 {
                     width += previousGap + measured.Width;
@@ -225,6 +226,16 @@ internal static class TableAutoWidths
                 }
             }
             return new(width, previousGap);
+        }
+
+        // Hancom draws superscript/subscript at 64% size; measure them that way,
+        // rounding like the note-reference reservation.
+        private static XElement ScriptShape(XElement shape, ScriptPosition script)
+        {
+            if (script is ScriptPosition.None) return shape;
+            var scaled = new XElement(shape);
+            scaled.SetAttributeValue("Height", Math.Max(1, (int)Math.Round((int)scaled.Attribute("Height")! * RunMarks.ScriptScale)));
+            return scaled;
         }
 
         internal double MeasureText(string text, XElement shape, bool strong, bool emphasis) =>

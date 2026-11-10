@@ -306,6 +306,30 @@
         "Emph": {
           "$ref": "#/$defs/emph_handler"
         },
+        "Strikeout": {
+          "const": {
+            "handler": "strikeout"
+          }
+        },
+        "Superscript": {
+          "const": {
+            "handler": "superscript"
+          }
+        },
+        "Subscript": {
+          "const": {
+            "handler": "subscript"
+          }
+        },
+        "RawInline": {
+          "const": {
+            "handler": "html_script_tag",
+            "tags": [
+              "sup",
+              "sub"
+            ]
+          }
+        },
         "Math": {
           "type": "object",
           "additionalProperties": false,

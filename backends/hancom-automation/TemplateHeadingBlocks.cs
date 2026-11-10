@@ -178,8 +178,15 @@ internal sealed class TemplateHeadingBlocks(XDocument source, Dictionary<string,
         {
             var shape = new XElement(baseline);
             shape.Attribute("Id")!.Remove();
-            if (run.Strong && shape.Element("BOLD") is null) shape.Add(new XElement("BOLD"));
-            if (run.Emphasis && shape.Element("ITALIC") is null) shape.Add(new XElement("ITALIC"));
+            if (run.Marks.HasNativeEffects)
+            {
+                DirectXmlParagraphs.ApplyMarks(shape, run.Marks);
+            }
+            else
+            {
+                if (run.Strong && shape.Element("BOLD") is null) shape.Add(new XElement("BOLD"));
+                if (run.Emphasis && shape.Element("ITALIC") is null) shape.Add(new XElement("ITALIC"));
+            }
             var match = table.Elements("CHARSHAPE").FirstOrDefault(c =>
             {
                 var key = new XElement(c); key.Attribute("Id")?.Remove();

@@ -323,11 +323,15 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
         var id = (string?)sampleRun.Attribute("CharShape") ?? throw new InvalidDataException("Table slot has no character format.");
         var baseline = destination.Descendants("CHARSHAPE").Single(shape => (string?)shape.Attribute("Id") == id);
         var texts = new List<XElement>();
-        void Add(string value, bool strong, bool emphasis, bool lineBreak)
+        void Add(string value, RunMarks marks, bool lineBreak)
         {
             var shape = new XElement(baseline); shape.Attribute("Id")!.Remove();
-            if (strong && shape.Element("BOLD") is null) shape.Add(new XElement("BOLD"));
-            if (emphasis && shape.Element("ITALIC") is null) shape.Add(new XElement("ITALIC"));
+            if (marks.HasNativeEffects) DirectXmlParagraphs.ApplyMarks(shape, marks);
+            else
+            {
+                if (marks.Strong && shape.Element("BOLD") is null) shape.Add(new XElement("BOLD"));
+                if (marks.Emphasis && shape.Element("ITALIC") is null) shape.Add(new XElement("ITALIC"));
+            }
             var table = baseline.Parent!;
             var match = table.Elements("CHARSHAPE").FirstOrDefault(candidate =>
             {
@@ -345,10 +349,10 @@ internal sealed class TemplateTables(XDocument source, XElement prototype, doubl
         }
         for (var line = 0; line < content.Lines.Count; line++)
         {
-            if (line > 0) Add("", false, false, true);
-            foreach (var run in content.Lines[line].Runs) Add(run.Text, run.Strong, run.Emphasis, false);
+            if (line > 0) Add("", default, true);
+            foreach (var run in content.Lines[line].Runs) Add(run.Text, run.Marks, false);
         }
-        if (texts.Count == 0) Add("", false, false, false);
+        if (texts.Count == 0) Add("", default, false);
         return texts;
     }
 

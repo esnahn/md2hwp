@@ -155,6 +155,16 @@ pub enum Inline {
     Emph {
         inlines: Vec<Inline>,
     },
+    Strikeout {
+        inlines: Vec<Inline>,
+    },
+    /// Superscript and subscript never nest inside each other.
+    Superscript {
+        inlines: Vec<Inline>,
+    },
+    Subscript {
+        inlines: Vec<Inline>,
+    },
     Link {
         target: String,
         title: Option<String>,

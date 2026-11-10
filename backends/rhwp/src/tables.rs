@@ -636,7 +636,7 @@ fn fill(
         .char_shape_id_at(p.text[..byte].chars().count())
         .ok_or("Table slot has no character format")?;
     let mut spans = Vec::new();
-    crate::template::flatten(inlines, false, false, &mut spans);
+    crate::template::flatten(inlines, &mut spans);
     crate::template::replace_rich(p, slot, &spans, base, info)?;
     if p.text.is_empty() {
         p.set_single_char_shape(base);

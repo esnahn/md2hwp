@@ -549,7 +549,7 @@ fn fill_pending(
                 .char_shape_id_at(offset)
                 .ok_or("Heading title has no character format")?;
             let mut spans = Vec::new();
-            flatten(inlines, false, false, &mut spans);
+            flatten(inlines, &mut spans);
             replace_rich(p, &needle, &spans, base, info)?;
         }
         map_nested_containers(p, &mut |nested| {

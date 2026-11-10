@@ -479,7 +479,7 @@ fn body_paragraph(
         .char_shape_id_at(0)
         .ok_or("Body sample has no character format")?;
     let mut spans = Vec::new();
-    crate::template::flatten(inlines, false, false, &mut spans);
+    crate::template::flatten(inlines, &mut spans);
     crate::template::replace_rich(
         &mut paragraph,
         &crate::template::tag("body"),

@@ -492,6 +492,15 @@
           "$ref": "#/$defs/emph"
         },
         {
+          "$ref": "#/$defs/strikeout"
+        },
+        {
+          "$ref": "#/$defs/superscript"
+        },
+        {
+          "$ref": "#/$defs/subscript"
+        },
+        {
           "$ref": "#/$defs/link"
         },
         {
@@ -629,6 +638,56 @@
           "$ref": "#/$defs/inline_array"
         }
       }
+    },
+    "strikeout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "inlines"
+      ],
+      "properties": {
+        "type": {
+          "const": "strikeout"
+        },
+        "inlines": {
+          "$ref": "#/$defs/inline_array"
+        }
+      }
+    },
+    "superscript": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "inlines"
+      ],
+      "properties": {
+        "type": {
+          "const": "superscript"
+        },
+        "inlines": {
+          "$ref": "#/$defs/inline_array"
+        }
+      },
+      "$comment": "Semantic validation rejects superscript or subscript nested inside superscript or subscript."
+    },
+    "subscript": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "inlines"
+      ],
+      "properties": {
+        "type": {
+          "const": "subscript"
+        },
+        "inlines": {
+          "$ref": "#/$defs/inline_array"
+        }
+      },
+      "$comment": "Semantic validation rejects superscript or subscript nested inside superscript or subscript."
     },
     "link": {
       "type": "object",

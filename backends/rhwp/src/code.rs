@@ -207,7 +207,7 @@ impl Prototype {
                     .char_shape_id_at(p.text[..byte].chars().count())
                     .ok_or("Code source has no character format")?;
                 let mut spans = Vec::new();
-                crate::template::flatten(&source.inlines, false, false, &mut spans);
+                crate::template::flatten(&source.inlines, &mut spans);
                 // Content first keeps literal tag-shaped manuscript text opaque.
                 crate::template::replace_rich(&mut p, SOURCE, &spans, base, info)?;
                 crate::template::replace(&mut p, PREFIX, &source.prefix)?;

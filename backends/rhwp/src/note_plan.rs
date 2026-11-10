@@ -109,6 +109,9 @@ impl Plan {
                 }
                 Inline::Strong { inlines }
                 | Inline::Emph { inlines }
+                | Inline::Strikeout { inlines }
+                | Inline::Superscript { inlines }
+                | Inline::Subscript { inlines }
                 | Inline::Link { inlines, .. } => self.mark(inlines)?,
                 _ => {}
             }
@@ -129,6 +132,15 @@ impl Plan {
                     inlines: self.measurement_inlines(inlines),
                 },
                 Inline::Emph { inlines } => Inline::Emph {
+                    inlines: self.measurement_inlines(inlines),
+                },
+                Inline::Strikeout { inlines } => Inline::Strikeout {
+                    inlines: self.measurement_inlines(inlines),
+                },
+                Inline::Superscript { inlines } => Inline::Superscript {
+                    inlines: self.measurement_inlines(inlines),
+                },
+                Inline::Subscript { inlines } => Inline::Subscript {
                     inlines: self.measurement_inlines(inlines),
                 },
                 Inline::Link {
@@ -287,7 +299,7 @@ fn collect_visible(value: &serde_json::Value, out: &mut String) {
                 }
                 Some("space") => out.push(' '),
                 Some("line_break") => out.push('\n'),
-                Some("strong" | "emph" | "link") => {
+                Some("strong" | "emph" | "strikeout" | "superscript" | "subscript" | "link") => {
                     if let Some(value) = fields.get("inlines") {
                         collect_visible(value, out);
                     }

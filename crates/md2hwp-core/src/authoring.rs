@@ -52,7 +52,6 @@ pub fn check_source(source: &str) -> Vec<Diagnostic> {
     let number = regex(r"^\s*\d+[.)]\s+");
     let heading = regex(r"^ {0,3}#{1,6}\s+(?:\d+(?:\.\d+)*[.)]?\s+|제\s*\d+\s*[장절])");
     let metadata_key = regex(r"^([^\s:#][^:]*):\s*(.*)$");
-    let unsupported_literal = regex(r"~~[^~]+~~");
     let mut table_columns = None;
     let mut previous_row: Option<(usize, usize)> = None;
     for (index, line) in lines.iter().enumerate() {
@@ -123,13 +122,7 @@ pub fn check_source(source: &str) -> Vec<Diagnostic> {
             continue;
         }
         let visible = unescaped(line);
-        if unsupported_literal.is_match(&visible) {
-            result.push(diagnostic(
-                &location,
-                "unsupported_syntax",
-                "strikethrough syntax is unsupported; escape literal delimiters",
-            ));
-        }
+
         if bullets.is_match(line) && !trimmed.chars().all(|c| c == '*' || c.is_whitespace()) {
             result.push(diagnostic(
                 &location,
@@ -381,7 +374,9 @@ fn text(inlines: &Value) -> String {
             match inline["type"].as_str() {
                 Some("text") => result.push_str(inline["value"].as_str().unwrap_or_default()),
                 Some("space" | "line_break") => result.push(' '),
-                Some("strong" | "emph" | "link") => result.push_str(&text(&inline["inlines"])),
+                Some("strong" | "emph" | "strikeout" | "superscript" | "subscript" | "link") => {
+                    result.push_str(&text(&inline["inlines"]))
+                }
                 _ => {}
             }
         }

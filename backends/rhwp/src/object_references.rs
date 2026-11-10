@@ -250,6 +250,9 @@ impl Plan {
                 }
                 Inline::Strong { inlines }
                 | Inline::Emph { inlines }
+                | Inline::Strikeout { inlines }
+                | Inline::Superscript { inlines }
+                | Inline::Subscript { inlines }
                 | Inline::Link { inlines, .. } => self.mark(inlines, required)?,
                 Inline::Footnote { blocks } => {
                     for FootnoteBlock::Paragraph { inlines } in blocks {
@@ -399,6 +402,15 @@ impl Plan {
                     inlines: self.measurement_inlines(inlines)?,
                 }),
                 Inline::Emph { inlines } => result.push(Inline::Emph {
+                    inlines: self.measurement_inlines(inlines)?,
+                }),
+                Inline::Strikeout { inlines } => result.push(Inline::Strikeout {
+                    inlines: self.measurement_inlines(inlines)?,
+                }),
+                Inline::Superscript { inlines } => result.push(Inline::Superscript {
+                    inlines: self.measurement_inlines(inlines)?,
+                }),
+                Inline::Subscript { inlines } => result.push(Inline::Subscript {
                     inlines: self.measurement_inlines(inlines)?,
                 }),
                 Inline::Link {

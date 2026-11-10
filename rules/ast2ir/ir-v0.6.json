@@ -136,6 +136,22 @@
     "Emph": {
       "handler": "emph"
     },
+    "Strikeout": {
+      "handler": "strikeout"
+    },
+    "Superscript": {
+      "handler": "superscript"
+    },
+    "Subscript": {
+      "handler": "subscript"
+    },
+    "RawInline": {
+      "handler": "html_script_tag",
+      "tags": [
+        "sup",
+        "sub"
+      ]
+    },
     "Math": {
       "handler": "math"
     },

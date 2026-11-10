@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Euisoon Ahn
 //! Template-owned cell formats measured by the same GDI policy as Hancom.
 
+use crate::char_marks::{Marks, SCRIPT_SCALE, Script};
 use md2hwp_core::ir::Inline;
 use md2hwp_font_measurement::{FontSpec, Measurement};
 use rhwp::model::{
@@ -232,7 +233,7 @@ impl TextMeasurement<'_> {
         format: &CellFormat<'_>,
     ) -> Result<(f64, f64), String> {
         let mut bounds = Bounds::default();
-        self.walk(inlines, format, false, false, &mut bounds)?;
+        self.walk(inlines, format, Marks::default(), &mut bounds)?;
         bounds.end_line();
         Ok((bounds.minimum, bounds.preferred))
     }
@@ -241,22 +242,39 @@ impl TextMeasurement<'_> {
         &mut self,
         inlines: &[Inline],
         format: &CellFormat<'_>,
-        strong: bool,
-        emphasis: bool,
+        marks: Marks,
         bounds: &mut Bounds,
     ) -> Result<(), String> {
+        let (strong, emphasis) = (marks.bold, marks.italic);
         for inline in inlines {
             match inline {
-                Inline::Text { value } => self.text(value, format, strong, emphasis, bounds)?,
-                Inline::Space => self.text(" ", format, strong, emphasis, bounds)?,
+                Inline::Text { value } => self.text(value, format, marks, bounds)?,
+                Inline::Space => self.text(" ", format, marks, bounds)?,
                 Inline::LineBreak => bounds.end_line(),
                 // IR validation keeps math out of table cells; never guess a width.
                 Inline::InlineMath { .. } => return Err("Table cells cannot contain math".into()),
-                Inline::Strong { inlines } => self.walk(inlines, format, true, emphasis, bounds)?,
-                Inline::Emph { inlines } => self.walk(inlines, format, strong, true, bounds)?,
-                Inline::Link { inlines, .. } => {
-                    self.walk(inlines, format, strong, emphasis, bounds)?
+                Inline::Strong { inlines } => {
+                    self.walk(inlines, format, marks.with_bold(), bounds)?
                 }
+                Inline::Emph { inlines } => {
+                    self.walk(inlines, format, marks.with_italic(), bounds)?
+                }
+                // A strikeout line does not change advance widths.
+                Inline::Strikeout { inlines } | Inline::Link { inlines, .. } => {
+                    self.walk(inlines, format, marks, bounds)?
+                }
+                Inline::Superscript { inlines } => self.walk(
+                    inlines,
+                    format,
+                    marks.with_script(Script::Superscript),
+                    bounds,
+                )?,
+                Inline::Subscript { inlines } => self.walk(
+                    inlines,
+                    format,
+                    marks.with_script(Script::Subscript),
+                    bounds,
+                )?,
                 Inline::Footnote { .. } => {
                     // Match the existing native backend's conservative note
                     // reference reservation, never the private adapter marker.
@@ -294,6 +312,11 @@ impl TextMeasurement<'_> {
                                 "Table reference prototype refers to an absent character format",
                             )?
                             .clone();
+                        let shape = if marks.script == Script::None {
+                            shape
+                        } else {
+                            script_shape(&shape)
+                        };
                         for element in text.graphemes(true) {
                             let key = self.font(&shape, language(element), strong, emphasis)?;
                             let advance = self.width(&key, element)?;
@@ -318,13 +341,19 @@ impl TextMeasurement<'_> {
         &mut self,
         text: &str,
         format: &CellFormat<'_>,
-        strong: bool,
-        emphasis: bool,
+        marks: Marks,
         bounds: &mut Bounds,
     ) -> Result<(), String> {
+        let scaled;
+        let shape = if marks.script == Script::None {
+            format.shape
+        } else {
+            scaled = script_shape(format.shape);
+            &scaled
+        };
         for element in text.graphemes(true) {
             let lang = language(element);
-            let key = self.font(format.shape, lang, strong, emphasis)?;
+            let key = self.font(shape, lang, marks.bold, marks.italic)?;
             let width = self.width(&key, element)?;
             bounds.line += bounds.previous_gap + width;
             bounds.previous_gap = width * f64::from(key.spacing) / 100.0;
@@ -411,6 +440,16 @@ impl TextMeasurement<'_> {
         self.widths.insert(cache, width);
         Ok(width)
     }
+}
+
+/// Hancom draws superscript/subscript at 64% size; measure them that way,
+/// rounding like the note-reference reservation.
+fn script_shape(shape: &CharShape) -> CharShape {
+    let mut scaled = shape.clone();
+    scaled.base_size = (f64::from(shape.base_size) * SCRIPT_SCALE)
+        .round_ties_even()
+        .max(1.0) as i32;
+    scaled
 }
 
 fn language(text: &str) -> usize {

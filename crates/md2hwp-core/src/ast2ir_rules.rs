@@ -138,6 +138,14 @@ pub enum InlineRule {
     Footnote,
     Strong,
     Emph,
+    Strikeout,
+    Superscript,
+    Subscript,
+    /// Raw HTML `<sup>`/`<sub>` open and close tags paired within one inline
+    /// array; every other raw inline is rejected.
+    HtmlScriptTag {
+        tags: Vec<HtmlScriptTag>,
+    },
     Reject,
     /// TeX math converted to Hancom SCRIPT; a paragraph holding only display
     /// math becomes an equation block.
@@ -148,6 +156,13 @@ pub enum InlineRule {
         absent_title: NullPolicy,
         internal_target: InternalTargetPolicy,
     },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HtmlScriptTag {
+    Sup,
+    Sub,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
@@ -260,7 +275,11 @@ mod tests {
         let envelope: Value = serde_json::from_str(RULES_JSON).unwrap();
         assert!(envelope.get("rules_version").is_none());
         assert_eq!(rules.blocks.len(), 8);
-        assert_eq!(rules.inlines.len(), 9);
+        assert_eq!(rules.inlines.len(), 13);
+        assert!(matches!(
+            rules.inlines.get("RawInline"),
+            Some(InlineRule::HtmlScriptTag { tags }) if tags == &[HtmlScriptTag::Sup, HtmlScriptTag::Sub]
+        ));
         assert!(matches!(rules.inlines.get("Math"), Some(InlineRule::Math)));
         assert!(matches!(
             rules.inlines.get("SoftBreak"),

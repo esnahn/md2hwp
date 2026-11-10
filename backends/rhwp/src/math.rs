@@ -109,6 +109,9 @@ impl Plan {
                 }
                 Inline::Strong { inlines }
                 | Inline::Emph { inlines }
+                | Inline::Strikeout { inlines }
+                | Inline::Superscript { inlines }
+                | Inline::Subscript { inlines }
                 | Inline::Link { inlines, .. } => self.mark(inlines),
                 _ => {}
             }

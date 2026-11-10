@@ -5,7 +5,9 @@ use std::fmt;
 
 use serde_json::Value;
 
-use crate::ast2ir_rules::{Ast2IrRules, BlockRule, InlineRule, NumberDelimiter, NumberStyle};
+use crate::ast2ir_rules::{
+    Ast2IrRules, BlockRule, HtmlScriptTag, InlineRule, NumberDelimiter, NumberStyle,
+};
 use crate::ir::{
     Block, CrossReferenceKind, Document, FootnoteBlock, IR_VERSION, ImageRef, Inline, ListItem,
     ListItemBlock, ListKind, SCHEMA_NAME, TableAlignment, is_target_id,
@@ -324,14 +326,11 @@ impl Normalizer<'_> {
             return Err(self.invalid(path, "Para", "table caption requires 'Table: ', 'table: ', ': ' or '표: ' followed by nonempty inline content"));
         }
         self.inline(&nodes[1], &format!("{path}/c/1"))?;
-        Ok(Some(
-            nodes
-                .iter()
-                .enumerate()
-                .skip(2)
-                .map(|(index, node)| self.inline(node, &format!("{path}/c/{index}")))
-                .collect::<Result<Vec<_>, _>>()?,
-        ))
+        Ok(Some(self.inline_sequence(
+            &nodes[2..],
+            &format!("{path}/c"),
+            2,
+        )?))
     }
 
     fn table(&mut self, content: Option<&Value>, path: &str) -> Result<Block, NormalizeError> {
@@ -549,12 +548,7 @@ impl Normalizer<'_> {
             return Err(self.invalid(path, "Para", "object source requires a recognized prefix followed by ': ', and nonempty inline content"));
         }
         self.inline(&nodes[1], &format!("{path}/c/1"))?;
-        let inlines = nodes
-            .iter()
-            .enumerate()
-            .skip(2)
-            .map(|(i, node)| self.inline(node, &format!("{path}/c/{i}")))
-            .collect::<Result<Vec<_>, _>>()?;
+        let inlines = self.inline_sequence(&nodes[2..], &format!("{path}/c"), 2)?;
         Ok(Some(crate::ir::SourceParagraph {
             prefix: prefix.to_owned(),
             inlines,
@@ -925,11 +919,118 @@ impl Normalizer<'_> {
     }
 
     fn inlines(&mut self, nodes: &[Value], path: &str) -> Result<Vec<Inline>, NormalizeError> {
+        self.inline_sequence(nodes, path, 0)
+    }
+
+    /// Normalizes `nodes`, whose first element is `{path}/{offset}`. Raw HTML
+    /// `<sup>`/`<sub>` tags are paired here because Pandoc emits them as
+    /// separate RawInline nodes around the enclosed inlines.
+    fn inline_sequence(
+        &mut self,
+        nodes: &[Value],
+        path: &str,
+        offset: usize,
+    ) -> Result<Vec<Inline>, NormalizeError> {
         let mut inlines = Vec::with_capacity(nodes.len());
-        for (index, node) in nodes.iter().enumerate() {
-            inlines.push(self.inline(node, &format!("{path}/{index}"))?);
+        let mut index = 0;
+        while index < nodes.len() {
+            let node_path = format!("{path}/{}", offset + index);
+            let Some((tag, open)) = self.html_script_tag(&nodes[index], &node_path)? else {
+                inlines.push(self.inline(&nodes[index], &node_path)?);
+                index += 1;
+                continue;
+            };
+            let name = html_tag_name(tag);
+            if !open {
+                return Err(self.invalid(
+                    &node_path,
+                    "RawInline",
+                    format!("</{name}> has no matching <{name}> earlier in the same inline sequence; open and close tags must enclose text within one formatting span"),
+                ));
+            }
+            let mut depth = 0usize;
+            let mut close = None;
+            for (later, node) in nodes.iter().enumerate().skip(index + 1) {
+                let later_path = format!("{path}/{}", offset + later);
+                if let Some((other, other_open)) = self.html_script_tag(node, &later_path)?
+                    && other == tag
+                {
+                    if other_open {
+                        depth += 1;
+                    } else if depth == 0 {
+                        close = Some(later);
+                        break;
+                    } else {
+                        depth -= 1;
+                    }
+                }
+            }
+            let close = close.ok_or_else(|| {
+                self.invalid(
+                    &node_path,
+                    "RawInline",
+                    format!("<{name}> has no matching </{name}> in the same inline sequence; open and close tags must enclose text within one formatting span"),
+                )
+            })?;
+            if close == index + 1 {
+                return Err(self.invalid(
+                    &node_path,
+                    "RawInline",
+                    format!("<{name}></{name}> must enclose text"),
+                ));
+            }
+            let children =
+                self.inline_sequence(&nodes[index + 1..close], path, offset + index + 1)?;
+            inlines.push(match tag {
+                HtmlScriptTag::Sup => Inline::Superscript { inlines: children },
+                HtmlScriptTag::Sub => Inline::Subscript { inlines: children },
+            });
+            index = close + 1;
         }
         Ok(inlines)
+    }
+
+    /// Recognizes exactly `<sup>`, `</sup>`, `<sub>` and `</sub>` (ASCII case
+    /// insensitive, no attributes). Other raw inlines are rejected.
+    fn html_script_tag(
+        &self,
+        node: &Value,
+        path: &str,
+    ) -> Result<Option<(HtmlScriptTag, bool)>, NormalizeError> {
+        if node.get("t").and_then(Value::as_str) != Some("RawInline") {
+            return Ok(None);
+        }
+        let Some(InlineRule::HtmlScriptTag { tags }) = self.rules.inlines.get("RawInline") else {
+            return Err(self.unsupported(path, "RawInline"));
+        };
+        let values = self.fixed_array(node.get("c"), 2, &format!("{path}/c"))?;
+        let format = values[0].as_str().unwrap_or_default();
+        let raw = values[1].as_str().unwrap_or_default();
+        let unsupported = || {
+            self.error(
+                "unsupported_pandoc_node",
+                path,
+                Some("RawInline"),
+                format!("raw {format} {raw:?} is not supported; only <sup>…</sup> and <sub>…</sub> HTML tags without attributes are converted"),
+            )
+        };
+        if format != "html" {
+            return Err(unsupported());
+        }
+        let lower = raw.to_ascii_lowercase();
+        let (open, name) = match lower.strip_prefix("</") {
+            Some(rest) => (false, rest),
+            None => (true, lower.strip_prefix('<').ok_or_else(unsupported)?),
+        };
+        let tag = match name {
+            "sup>" => HtmlScriptTag::Sup,
+            "sub>" => HtmlScriptTag::Sub,
+            _ => return Err(unsupported()),
+        };
+        if !tags.contains(&tag) {
+            return Err(unsupported());
+        }
+        Ok(Some((tag, open)))
     }
 
     fn inline(&mut self, node: &Value, path: &str) -> Result<Inline, NormalizeError> {
@@ -967,6 +1068,34 @@ impl Normalizer<'_> {
                     &format!("{path}/c"),
                 )?,
             }),
+            ("Strikeout", InlineRule::Strikeout) => Ok(Inline::Strikeout {
+                inlines: self.inlines(
+                    self.array(content, &format!("{path}/c"))?,
+                    &format!("{path}/c"),
+                )?,
+            }),
+            ("Superscript", InlineRule::Superscript) => Ok(Inline::Superscript {
+                inlines: self.inlines(
+                    self.array(content, &format!("{path}/c"))?,
+                    &format!("{path}/c"),
+                )?,
+            }),
+            ("Subscript", InlineRule::Subscript) => Ok(Inline::Subscript {
+                inlines: self.inlines(
+                    self.array(content, &format!("{path}/c"))?,
+                    &format!("{path}/c"),
+                )?,
+            }),
+            ("RawInline", InlineRule::HtmlScriptTag { .. }) => {
+                // Paired tags never reach here; inline_sequence reports the
+                // unpaired or unsupported case with its exact reason.
+                self.html_script_tag(node, path)?;
+                Err(self.invalid(
+                    path,
+                    constructor,
+                    "raw <sup>/<sub> tags must be paired within one inline sequence",
+                ))
+            }
             ("Link", InlineRule::Link { .. }) => {
                 let values = self.fixed_array(content, 3, &format!("{path}/c"))?;
                 self.require_empty_attr(&values[0], &format!("{path}/c/0"), constructor)?;
@@ -1293,7 +1422,11 @@ impl Normalizer<'_> {
                         };
                     }
                 }
-                Inline::Strong { inlines } | Inline::Emph { inlines } => {
+                Inline::Strong { inlines }
+                | Inline::Emph { inlines }
+                | Inline::Strikeout { inlines }
+                | Inline::Superscript { inlines }
+                | Inline::Subscript { inlines } => {
                     self.resolve_inlines(inlines, &format!("{path}/inlines"), targets)?
                 }
                 Inline::Footnote { blocks } => {
@@ -1416,11 +1549,21 @@ fn is_table(node: &Value) -> bool {
 fn contains_footnote(inlines: &[Inline]) -> bool {
     inlines.iter().any(|inline| match inline {
         Inline::Footnote { .. } => true,
-        Inline::Strong { inlines } | Inline::Emph { inlines } | Inline::Link { inlines, .. } => {
-            contains_footnote(inlines)
-        }
+        Inline::Strong { inlines }
+        | Inline::Emph { inlines }
+        | Inline::Strikeout { inlines }
+        | Inline::Superscript { inlines }
+        | Inline::Subscript { inlines }
+        | Inline::Link { inlines, .. } => contains_footnote(inlines),
         _ => false,
     })
+}
+
+fn html_tag_name(tag: HtmlScriptTag) -> &'static str {
+    match tag {
+        HtmlScriptTag::Sup => "sup",
+        HtmlScriptTag::Sub => "sub",
+    }
 }
 
 #[cfg(test)]
@@ -1528,6 +1671,163 @@ mod tests {
 
     fn image() -> Value {
         serde_json::json!({"t":"Image","c":[["",[],[]],[{"t":"Str","c":"그림"}],["assets/image.png","제목"]]})
+    }
+
+    fn raw(tag: &str) -> Value {
+        serde_json::json!({"t":"RawInline","c":["html",tag]})
+    }
+
+    fn para_inlines(inlines: Value) -> Result<Vec<Inline>, NormalizeError> {
+        let document =
+            normalize_blocks(serde_json::json!([{"t":"Para","c":inlines}]))?.into_document();
+        let Block::Paragraph { inlines, .. } = &document.blocks[0] else {
+            panic!("paragraph")
+        };
+        Ok(inlines.clone())
+    }
+
+    fn text(value: &str) -> Inline {
+        Inline::Text {
+            value: value.into(),
+        }
+    }
+
+    #[test]
+    fn converts_strikeout_and_html_superscript_subscript() {
+        use serde_json::json;
+        // Pandoc 3.10.1 commonmark+strikeout output for
+        // "~~취소~~ m<sup>2</sup> H<SUB>2</SUB>O <sup>**굵게**</sup>".
+        let inlines = para_inlines(json!([
+            {"t":"Strikeout","c":[{"t":"Str","c":"취소"}]},{"t":"Space"},
+            {"t":"Str","c":"m"},raw("<sup>"),{"t":"Str","c":"2"},raw("</sup>"),{"t":"Space"},
+            {"t":"Str","c":"H"},raw("<SUB>"),{"t":"Str","c":"2"},raw("</SUB>"),{"t":"Str","c":"O"},
+            {"t":"Space"},raw("<sup>"),{"t":"Strong","c":[{"t":"Str","c":"굵게"}]},raw("</sup>")
+        ]))
+        .unwrap();
+        assert_eq!(
+            inlines,
+            vec![
+                Inline::Strikeout {
+                    inlines: vec![text("취소")]
+                },
+                Inline::Space,
+                text("m"),
+                Inline::Superscript {
+                    inlines: vec![text("2")]
+                },
+                Inline::Space,
+                text("H"),
+                Inline::Subscript {
+                    inlines: vec![text("2")]
+                },
+                text("O"),
+                Inline::Space,
+                Inline::Superscript {
+                    inlines: vec![Inline::Strong {
+                        inlines: vec![text("굵게")]
+                    }]
+                },
+            ]
+        );
+        // Pandoc's own constructors (Pandoc JSON input) map to the same IR.
+        let inlines = para_inlines(json!([
+            {"t":"Superscript","c":[{"t":"Str","c":"a"}]},
+            {"t":"Subscript","c":[{"t":"Str","c":"b"}]}
+        ]))
+        .unwrap();
+        assert!(matches!(inlines[0], Inline::Superscript { .. }));
+        assert!(matches!(inlines[1], Inline::Subscript { .. }));
+
+        // Captions and sources strip their prefix before the same pairing.
+        let script = json!([
+            {"t":"Str","c":"m"},raw("<sup>"),{"t":"Str","c":"2"},raw("</sup>")
+        ]);
+        let mut caption = vec![json!({"t":"Str","c":"표:"}), json!({"t":"Space"})];
+        caption.extend(script.as_array().unwrap().iter().cloned());
+        let mut source = vec![json!({"t":"Str","c":"출처:"}), json!({"t":"Space"})];
+        source.extend(script.as_array().unwrap().iter().cloned());
+        let cell = |text: &str| json!([{"t":"Plain","c":[{"t":"Str","c":text}]}]);
+        let table = json!({"t":"Table","c":[["",[],[]],[null,[]],[[{"t":"AlignDefault"},{"t":"ColWidthDefault"}]],
+            [["",[],[]],[[["",[],[]],[[["",[],[]],{"t":"AlignDefault"},1,1,cell("a")]]]]],
+            [[["",[],[]],0,[],[[["",[],[]],[[["",[],[]],{"t":"AlignDefault"},1,1,cell("b")]]]]]],
+            [["",[],[]],[]]]});
+        let document =
+            normalize_blocks(json!([{"t":"Para","c":caption}, table, {"t":"Para","c":source}]))
+                .unwrap()
+                .into_document();
+        let Block::Table {
+            caption: Some(caption),
+            source: Some(source),
+            ..
+        } = &document.blocks[0]
+        else {
+            panic!("table with caption and source")
+        };
+        let expected = vec![
+            text("m"),
+            Inline::Superscript {
+                inlines: vec![text("2")],
+            },
+        ];
+        assert_eq!(caption, &expected);
+        assert_eq!(source[0].inlines, expected);
+    }
+
+    #[test]
+    fn rejects_unpaired_unsupported_and_nested_script_tags() {
+        use serde_json::json;
+        let cases = [
+            (
+                json!([raw("<sup>"), {"t":"Str","c":"2"}]),
+                "no matching </sup>",
+            ),
+            (
+                json!([{"t":"Str","c":"2"}, raw("</sub>")]),
+                "no matching <sub>",
+            ),
+            (json!([raw("<sup>"), raw("</sup>")]), "must enclose text"),
+            (
+                json!([raw("<sup class=\"x\">"), {"t":"Str","c":"2"}, raw("</sup>")]),
+                "only <sup>",
+            ),
+            (
+                json!([raw("<b>"), {"t":"Str","c":"2"}, raw("</b>")]),
+                "only <sup>",
+            ),
+            (
+                // Tags must not cross a formatting boundary.
+                json!([{"t":"Emph","c":[raw("<sup>"),{"t":"Str","c":"a"}]}, raw("</sup>")]),
+                "no matching",
+            ),
+        ];
+        for (inlines, message) in cases {
+            let error = para_inlines(inlines).unwrap_err();
+            assert!(error.message.contains(message), "{}", error.message);
+            assert_eq!(error.constructor.as_deref(), Some("RawInline"));
+        }
+        let error = para_inlines(json!([
+            {"t":"Str","c":"x"}, raw("<sup>"), {"t":"Str","c":"a"}, raw("<sub>"),
+            {"t":"Str","c":"b"}, raw("</sub>"), raw("</sup>")
+        ]))
+        .unwrap_err();
+        assert!(
+            error.message.contains("cannot be nested"),
+            "{}",
+            error.message
+        );
+        // Repeated tags of one kind pair as written, then fail as nesting.
+        let error = para_inlines(json!([
+            raw("<sup>"), raw("<sup>"), {"t":"Str","c":"a"}, raw("</sup>"), raw("</sup>")
+        ]))
+        .unwrap_err();
+        assert!(
+            error.message.contains("cannot be nested"),
+            "{}",
+            error.message
+        );
+        // A raw block of HTML remains unsupported.
+        let error = normalize_blocks(json!([{"t":"RawBlock","c":["html","<sup>"]}])).unwrap_err();
+        assert_eq!(error.code, "unsupported_pandoc_node");
     }
 
     #[test]

@@ -362,7 +362,7 @@ pub fn render(
             .char_shape_id_at(0)
             .ok_or("Template sample has no character format")?;
         let mut spans = Vec::new();
-        flatten(inlines, false, false, &mut spans);
+        flatten(inlines, &mut spans);
         replace_rich(
             &mut paragraph,
             &tag(&name),
@@ -815,6 +815,9 @@ pub(crate) fn check_inlines(inlines: &[Inline]) -> Result<(), String> {
             Inline::Text { .. } | Inline::Space | Inline::LineBreak => {}
             Inline::Strong { inlines }
             | Inline::Emph { inlines }
+            | Inline::Strikeout { inlines }
+            | Inline::Superscript { inlines }
+            | Inline::Subscript { inlines }
             | Inline::Link { inlines, .. } => check_inlines(inlines)?,
             Inline::Footnote { .. } => return Err(unsupported("footnotes")),
             Inline::CrossReference { .. } => return Err(unsupported("cross references")),
@@ -829,31 +832,47 @@ pub(crate) fn check_inlines(inlines: &[Inline]) -> Result<(), String> {
 #[derive(Debug)]
 pub(crate) struct Span {
     text: String,
-    bold: bool,
-    italic: bool,
+    marks: crate::char_marks::Marks,
 }
 
-pub(crate) fn flatten(inlines: &[Inline], bold: bool, italic: bool, out: &mut Vec<Span>) {
+pub(crate) fn flatten(inlines: &[Inline], out: &mut Vec<Span>) {
+    flatten_marked(inlines, crate::char_marks::Marks::default(), out);
+}
+
+fn flatten_marked(inlines: &[Inline], marks: crate::char_marks::Marks, out: &mut Vec<Span>) {
+    use crate::char_marks::Script;
     for inline in inlines {
         let text = match inline {
             Inline::Text { value } => value.clone(),
             Inline::Space => " ".into(),
             Inline::LineBreak => "\n".into(),
             Inline::Strong { inlines } => {
-                flatten(inlines, true, italic, out);
+                flatten_marked(inlines, marks.with_bold(), out);
                 continue;
             }
             Inline::Emph { inlines } => {
-                flatten(inlines, bold, true, out);
+                flatten_marked(inlines, marks.with_italic(), out);
+                continue;
+            }
+            Inline::Strikeout { inlines } => {
+                flatten_marked(inlines, marks.with_strikeout(), out);
+                continue;
+            }
+            Inline::Superscript { inlines } => {
+                flatten_marked(inlines, marks.with_script(Script::Superscript), out);
+                continue;
+            }
+            Inline::Subscript { inlines } => {
+                flatten_marked(inlines, marks.with_script(Script::Subscript), out);
                 continue;
             }
             Inline::Link { inlines, .. } => {
-                flatten(inlines, bold, italic, out);
+                flatten_marked(inlines, marks, out);
                 continue;
             }
             _ => unreachable!("inlines were validated before composition"),
         };
-        out.push(Span { text, bold, italic });
+        out.push(Span { text, marks });
     }
 }
 
@@ -870,25 +889,11 @@ pub(crate) fn replace_rich(
     let mut formats = BTreeMap::new();
     for span in spans {
         let len = span.text.chars().count();
-        let id = if !span.bold && !span.italic {
-            base
-        } else if let Some(id) = formats.get(&(span.bold, span.italic)) {
+        let id = if let Some(id) = formats.get(&span.marks) {
             *id
         } else {
-            let mut shape = info
-                .char_shapes
-                .get(base as usize)
-                .ok_or("Template references an absent character format")?
-                .clone();
-            shape.bold |= span.bold;
-            shape.italic |= span.italic;
-            shape.attr = (shape.attr & !3) | u32::from(shape.italic) | (u32::from(shape.bold) << 1);
-            shape.raw_data = None;
-            let id =
-                u32::try_from(info.char_shapes.len()).map_err(|_| "Too many character formats")?;
-            info.char_shapes.push(shape);
-            info.raw_stream_dirty = true;
-            formats.insert((span.bold, span.italic), id);
+            let id = crate::char_marks::derive(info, base, span.marks)?;
+            formats.insert(span.marks, id);
             id
         };
         p.apply_char_shape_range(offset, offset + len, id);
@@ -1350,8 +1355,6 @@ mod tests {
                     }],
                 },
             ],
-            false,
-            false,
             &mut spans,
         );
         replace_rich(&mut p, &tag("body"), &spans, 0, &mut info).unwrap();
@@ -1491,8 +1494,6 @@ mod tests {
                     }],
                 },
             ],
-            false,
-            false,
             &mut spans,
         );
         replace_rich(&mut p, &tag("body"), &spans, 0, &mut info).unwrap();

@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Euisoon Ahn
 #![forbid(unsafe_code)]
 
+mod char_marks;
 mod code;
 mod conditional_ranges;
 mod equation_metrics;

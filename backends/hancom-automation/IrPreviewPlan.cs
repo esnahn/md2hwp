@@ -103,14 +103,43 @@ internal sealed record PreviewListMarker(
     int Number,
     bool StartsList);
 
+internal enum ScriptPosition
+{
+    None,
+    Superscript,
+    Subscript,
+}
+
+// Manuscript character marks applied on top of the template character format.
+internal readonly record struct RunMarks(
+    bool Strong = false,
+    bool Emphasis = false,
+    bool Strikeout = false,
+    ScriptPosition Script = ScriptPosition.None)
+{
+    // Hancom draws superscript/subscript at 64% of the character size
+    // (Hancom 2020 page images at 10pt and 20pt).
+    public const double ScriptScale = 0.64;
+
+    public bool HasNativeEffects => Strikeout || Script is not ScriptPosition.None;
+}
+
 internal sealed record PreviewTextRun(
     string Text,
     bool Strong,
     bool Emphasis,
     PreviewFootnote? Footnote = null,
     PreviewCrossReference? CrossReference = null,
-    string? Math = null)
+    string? Math = null,
+    bool Strikeout = false,
+    ScriptPosition Script = ScriptPosition.None)
 {
+    public PreviewTextRun(string text, RunMarks marks, PreviewFootnote? footnote = null,
+        PreviewCrossReference? crossReference = null, string? math = null)
+        : this(text, marks.Strong, marks.Emphasis, footnote, crossReference, math, marks.Strikeout, marks.Script) { }
+
+    public RunMarks Marks => new(Strong, Emphasis, Strikeout, Script);
+
     // Footnotes, references and math are native controls carried by unique markers.
     public bool IsControl => Footnote is not null || CrossReference is not null || Math is not null;
 }
@@ -496,7 +525,7 @@ internal static class InlineText
         var index = 0;
         foreach (var inline in inlines.EnumerateArray())
         {
-            Append(inline, $"{path}/{index}", builder, false, false, allowFootnotes, allowCrossReferences, allowMath);
+            Append(inline, $"{path}/{index}", builder, default, allowFootnotes, allowCrossReferences, allowMath);
             index++;
         }
         return builder.Build();
@@ -506,8 +535,7 @@ internal static class InlineText
         JsonElement inline,
         string path,
         PreviewRunBuilder builder,
-        bool strong,
-        bool emphasis,
+        RunMarks marks,
         bool allowFootnotes,
         bool allowCrossReferences,
         bool allowMath)
@@ -524,11 +552,11 @@ internal static class InlineText
                 var value = JsonContract.RequiredString(inline, "value", path);
                 if (value.Length == 0 || value.Any(c => c <= ' ' || c == '\u007f'))
                     throw JsonContract.Error(path + "/value", "text must be nonempty and contain no ASCII spaces or control characters; use space/line_break nodes");
-                builder.Append(value, strong, emphasis);
+                builder.Append(value, marks);
                 break;
             case "space":
                 JsonContract.ExpectObject(inline, path, ["type"]);
-                builder.Append(" ", strong, emphasis);
+                builder.Append(" ", marks);
                 break;
             case "line_break":
                 JsonContract.ExpectObject(inline, path, ["type"]);
@@ -540,8 +568,7 @@ internal static class InlineText
                     inline.GetProperty("inlines"),
                     path + "/inlines",
                     builder,
-                    true,
-                    emphasis,
+                    marks with { Strong = true },
                     allowFootnotes,
                     allowCrossReferences,
                     allowMath);
@@ -552,8 +579,34 @@ internal static class InlineText
                     inline.GetProperty("inlines"),
                     path + "/inlines",
                     builder,
-                    strong,
-                    true,
+                    marks with { Emphasis = true },
+                    allowFootnotes,
+                    allowCrossReferences,
+                    allowMath);
+                break;
+            case "strikeout":
+                JsonContract.ExpectObject(inline, path, ["type", "inlines"]);
+                RequireMarkedContent(inline, path);
+                AppendChildren(
+                    inline.GetProperty("inlines"),
+                    path + "/inlines",
+                    builder,
+                    marks with { Strikeout = true },
+                    allowFootnotes,
+                    allowCrossReferences,
+                    allowMath);
+                break;
+            case "superscript":
+            case "subscript":
+                JsonContract.ExpectObject(inline, path, ["type", "inlines"]);
+                RequireMarkedContent(inline, path);
+                if (marks.Script is not ScriptPosition.None)
+                    throw JsonContract.Error(path + "/type", "superscript and subscript cannot be nested inside superscript or subscript");
+                AppendChildren(
+                    inline.GetProperty("inlines"),
+                    path + "/inlines",
+                    builder,
+                    marks with { Script = type == "superscript" ? ScriptPosition.Superscript : ScriptPosition.Subscript },
                     allowFootnotes,
                     allowCrossReferences,
                     allowMath);
@@ -566,8 +619,7 @@ internal static class InlineText
                     inline.GetProperty("inlines"),
                     path + "/inlines",
                     builder,
-                    strong,
-                    emphasis,
+                    marks,
                     allowFootnotes,
                     allowCrossReferences,
                     allowMath: false);
@@ -581,7 +633,7 @@ internal static class InlineText
                     throw JsonContract.Error(path + "/kind", "supported reference kinds are figure_number, table_number and heading_number");
                 var target = JsonContract.RequiredString(inline, "target", path);
                 FigureReferenceContract.RequireId(target, path + "/target");
-                builder.AppendCrossReference(new PreviewCrossReference(kind, target), strong, emphasis);
+                builder.AppendCrossReference(new PreviewCrossReference(kind, target), marks);
                 break;
             case "footnote":
                 if (!allowFootnotes)
@@ -609,25 +661,32 @@ internal static class InlineText
                     paragraphs.Add(Read(inlines, blockPath + "/inlines", allowFootnotes: false, allowCrossReferences: allowCrossReferences, allowMath: allowMath));
                     blockIndex++;
                 }
-                builder.AppendFootnote(new PreviewFootnote(paragraphs), strong, emphasis);
+                builder.AppendFootnote(new PreviewFootnote(paragraphs), marks);
                 break;
             case "inline_math":
                 var script = IrContract.ReadMathScript(inline, path);
                 if (!allowMath)
                     throw JsonContract.Error(path + "/type", "inline math is allowed only in document paragraphs, list paragraphs and their footnote bodies, outside link labels");
-                builder.AppendMath(script, strong, emphasis);
+                if (marks.Script is not ScriptPosition.None)
+                    throw JsonContract.Error(path + "/type", "inline math cannot be inside superscript or subscript; write the exponent or index in the math itself");
+                builder.AppendMath(script, marks);
                 break;
             default:
                 throw JsonContract.Error(path + "/type", $"unsupported IR inline type {type}");
         }
     }
 
+    private static void RequireMarkedContent(JsonElement inline, string path)
+    {
+        if (JsonContract.ExpectArray(inline.GetProperty("inlines"), path + "/inlines").GetArrayLength() == 0)
+            throw JsonContract.Error(path + "/inlines", "marked inline array must not be empty");
+    }
+
     private static void AppendChildren(
         JsonElement element,
         string path,
         PreviewRunBuilder builder,
-        bool strong,
-        bool emphasis,
+        RunMarks marks,
         bool allowFootnotes,
         bool allowCrossReferences,
         bool allowMath)
@@ -636,7 +695,7 @@ internal static class InlineText
         var index = 0;
         foreach (var child in children.EnumerateArray())
         {
-            Append(child, $"{path}/{index}", builder, strong, emphasis, allowFootnotes, allowCrossReferences, allowMath);
+            Append(child, $"{path}/{index}", builder, marks, allowFootnotes, allowCrossReferences, allowMath);
             index++;
         }
     }
@@ -646,32 +705,32 @@ internal sealed class PreviewRunBuilder
 {
     private readonly List<List<PreviewTextRun>> lines = [[]];
 
-    public void Append(string text, bool strong, bool emphasis)
+    public void Append(string text, RunMarks marks)
     {
         if (text.Length == 0)
         {
             return;
         }
         var line = lines[^1];
-        if (line.Count > 0 && !line[^1].IsControl && line[^1].Strong == strong && line[^1].Emphasis == emphasis)
+        if (line.Count > 0 && !line[^1].IsControl && line[^1].Marks == marks)
         {
             line[^1] = line[^1] with { Text = line[^1].Text + text };
             return;
         }
-        line.Add(new PreviewTextRun(text, strong, emphasis));
+        line.Add(new PreviewTextRun(text, marks));
     }
 
-    public void AppendFootnote(PreviewFootnote footnote, bool strong, bool emphasis) =>
+    public void AppendFootnote(PreviewFootnote footnote, RunMarks marks) =>
         lines[^1].Add(new PreviewTextRun(
-            "MD2HWP_FOOTNOTE_" + Guid.NewGuid().ToString("N"), strong, emphasis, footnote));
+            "MD2HWP_FOOTNOTE_" + Guid.NewGuid().ToString("N"), marks, footnote));
 
-    public void AppendCrossReference(PreviewCrossReference reference, bool strong, bool emphasis) =>
+    public void AppendCrossReference(PreviewCrossReference reference, RunMarks marks) =>
         lines[^1].Add(new PreviewTextRun("MD2HWP_CROSS_REFERENCE_" + Guid.NewGuid().ToString("N"),
-            strong, emphasis, CrossReference: reference));
+            marks, crossReference: reference));
 
-    public void AppendMath(string script, bool strong, bool emphasis) =>
+    public void AppendMath(string script, RunMarks marks) =>
         lines[^1].Add(new PreviewTextRun(TemplateDisplayMath.InlineMarkerPrefix + Guid.NewGuid().ToString("N"),
-            strong, emphasis, Math: script));
+            marks, math: script));
 
     public void BreakLine() => lines.Add([]);
 
@@ -690,7 +749,7 @@ internal sealed class PreviewRunBuilder
             }
             else
             {
-                builder.Append(run.Text, run.Strong, run.Emphasis);
+                builder.Append(run.Text, run.Marks);
             }
         }
         return builder.lines[0].ToArray();

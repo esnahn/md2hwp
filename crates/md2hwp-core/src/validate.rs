@@ -99,6 +99,7 @@ fn validate_semantics(
         text_bytes: 0,
         targets: BTreeMap::new(),
         references: Vec::new(),
+        inside_script: false,
     };
     state.require(
         document.schema == SCHEMA_NAME,
@@ -164,6 +165,8 @@ struct State<'a> {
     text_bytes: usize,
     targets: BTreeMap<String, (CrossReferenceKind, String)>,
     references: Vec<(CrossReferenceKind, String, String)>,
+    /// Set while validating superscript/subscript content.
+    inside_script: bool,
 }
 
 impl State<'_> {
@@ -372,7 +375,11 @@ impl State<'_> {
                 inlines.iter().any(|inline| match inline {
                     Inline::Text { value } => !value.trim().is_empty(),
                     Inline::CrossReference { .. } => true,
-                    Inline::Strong { inlines } | Inline::Emph { inlines } => visible(inlines),
+                    Inline::Strong { inlines }
+                    | Inline::Emph { inlines }
+                    | Inline::Strikeout { inlines }
+                    | Inline::Superscript { inlines }
+                    | Inline::Subscript { inlines } => visible(inlines),
                     // Internal-link labels may be empty until normalization
                     // replaces them with a validated symbolic reference.
                     Inline::Link {
@@ -530,6 +537,11 @@ impl State<'_> {
                     path,
                     "inline math is allowed only in document paragraphs, list paragraphs and their footnote bodies, outside link labels",
                 )?;
+                self.require(
+                    !self.inside_script,
+                    path,
+                    "inline math cannot be inside superscript or subscript; write the exponent or index in the math itself",
+                )?;
                 self.math_script(script, &format!("{path}/script"))
             }
             Inline::CrossReference { kind, target } => {
@@ -551,6 +563,9 @@ impl State<'_> {
                     &format!("{path}/blocks"),
                     "footnote must contain at least one paragraph",
                 )?;
+                // A note body is its own text, independent of a surrounding
+                // superscript/subscript run.
+                let outer = std::mem::replace(&mut self.inside_script, false);
                 for (index, block) in blocks.iter().enumerate() {
                     let block_path = format!("{path}/blocks/{index}");
                     self.add_limited("blocks", &block_path, 1)?;
@@ -564,6 +579,7 @@ impl State<'_> {
                         allow_math,
                     )?;
                 }
+                self.inside_script = outer;
                 Ok(())
             }
             Inline::Text { value } => {
@@ -581,12 +597,27 @@ impl State<'_> {
                 self.add_limited("text bytes", &format!("{path}/value"), value.len())
             }
             Inline::Space | Inline::LineBreak => Ok(()),
-            Inline::Strong { inlines } | Inline::Emph { inlines } => {
+            Inline::Strong { inlines }
+            | Inline::Emph { inlines }
+            | Inline::Strikeout { inlines }
+            | Inline::Superscript { inlines }
+            | Inline::Subscript { inlines } => {
                 self.require(
                     !inlines.is_empty(),
                     &format!("{path}/inlines"),
                     "marked inline array must not be empty",
                 )?;
+                let script = matches!(
+                    inline,
+                    Inline::Superscript { .. } | Inline::Subscript { .. }
+                );
+                self.require(
+                    !(script && self.inside_script),
+                    path,
+                    "superscript and subscript cannot be nested inside superscript or subscript",
+                )?;
+                let outer = self.inside_script;
+                self.inside_script |= script;
                 for (index, child) in inlines.iter().enumerate() {
                     self.inline(
                         child,
@@ -597,6 +628,7 @@ impl State<'_> {
                         allow_math,
                     )?;
                 }
+                self.inside_script = outer;
                 Ok(())
             }
             Inline::Link {

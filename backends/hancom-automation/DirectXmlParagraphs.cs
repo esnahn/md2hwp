@@ -9,7 +9,7 @@ namespace Md2Hwp.HancomIrPreview;
 // native-list composer, and note/reference placeholders remain literal here.
 internal sealed class DirectXmlParagraphs(XDocument destination, AuriPreviewStyleBindings styles)
 {
-    private readonly Dictionary<(string Baseline, bool Strong, bool Emphasis), string> characterIds = [];
+    private readonly Dictionary<(string Baseline, RunMarks Marks), string> characterIds = [];
 
     internal IReadOnlyList<XElement> Create(PreviewOperation operation)
     {
@@ -47,7 +47,7 @@ internal sealed class DirectXmlParagraphs(XDocument destination, AuriPreviewStyl
                 if (run.Text.IndexOfAny(['\r', '\n']) >= 0)
                     throw new InvalidOperationException("A direct paragraph run cannot contain CR/LF; use separate lines.");
                 XmlConvert.VerifyXmlChars(run.Text);
-                var character = CharacterId(baseline, run.Strong, run.Emphasis);
+                var character = CharacterId(baseline, run.Marks);
                 var pieces = run.Text.Split('\t');
                 for (var piece = 0; piece < pieces.Length; piece++)
                 {
@@ -61,16 +61,16 @@ internal sealed class DirectXmlParagraphs(XDocument destination, AuriPreviewStyl
         return paragraph;
     }
 
-    private string CharacterId(string baselineId, bool strong, bool emphasis)
+    private string CharacterId(string baselineId, RunMarks marks)
     {
-        var key = (baselineId, strong, emphasis);
+        var key = (baselineId, marks);
         if (characterIds.TryGetValue(key, out var existing)) return existing;
         var baseline = destination.Descendants("CHARSHAPE").SingleOrDefault(shape =>
             (string?)shape.Attribute("Id") == baselineId)
             ?? throw new InvalidOperationException($"Unknown direct character format {baselineId}.");
         var definition = new XElement(baseline);
         definition.Attribute("Id")!.Remove();
-        ApplyMarks(definition, strong, emphasis);
+        ApplyMarks(definition, marks);
         var table = baseline.Parent!;
         var match = table.Elements("CHARSHAPE").FirstOrDefault(candidate =>
         {
@@ -89,13 +89,32 @@ internal sealed class DirectXmlParagraphs(XDocument destination, AuriPreviewStyl
         return id;
     }
 
-    // Hancom exports the language metrics first, then ITALIC and BOLD, followed
-    // by the remaining character effects. Apply this only to owned new variants;
-    // existing template definitions and comparison inputs remain untouched.
-    internal static void ApplyMarks(XElement definition, bool strong, bool emphasis)
+    // Hancom exports the language metrics first, then ITALIC, BOLD, UNDERLINE,
+    // STRIKEOUT, OUTLINE, SHADOW, EMBOSS, ENGRAVE, SUPERSCRIPT and SUBSCRIPT.
+    // Apply this only to owned new variants; existing template definitions and
+    // comparison inputs remain untouched.
+    internal static void ApplyMarks(XElement definition, RunMarks marks)
     {
-        if (strong && definition.Element("BOLD") is null) definition.Add(new XElement("BOLD"));
-        if (emphasis && definition.Element("ITALIC") is null) definition.Add(new XElement("ITALIC"));
+        if (marks.Strong && definition.Element("BOLD") is null) definition.Add(new XElement("BOLD"));
+        if (marks.Emphasis && definition.Element("ITALIC") is null) definition.Add(new XElement("ITALIC"));
+        // A template strikeout keeps its own type, shape and color; otherwise
+        // use what Hancom's own strikeout command stores.
+        if (marks.Strikeout && (string?)definition.Element("STRIKEOUT")?.Attribute("Type") is null or "None")
+        {
+            definition.Element("STRIKEOUT")?.Remove();
+            definition.Add(new XElement("STRIKEOUT",
+                new XAttribute("Color", "0"), new XAttribute("Shape", "Solid"), new XAttribute("Type", "Continuous")));
+        }
+        if (marks.Script is ScriptPosition.Superscript)
+        {
+            definition.Element("SUBSCRIPT")?.Remove();
+            if (definition.Element("SUPERSCRIPT") is null) definition.Add(new XElement("SUPERSCRIPT"));
+        }
+        else if (marks.Script is ScriptPosition.Subscript)
+        {
+            definition.Element("SUPERSCRIPT")?.Remove();
+            if (definition.Element("SUBSCRIPT") is null) definition.Add(new XElement("SUBSCRIPT"));
+        }
         OrderMarks(definition);
     }
 
@@ -103,14 +122,30 @@ internal sealed class DirectXmlParagraphs(XDocument destination, AuriPreviewStyl
     {
         var italic = definition.Element("ITALIC");
         var bold = definition.Element("BOLD");
-        if (italic is null && bold is null) return;
-        italic?.Remove();
-        bold?.Remove();
-        var effects = new[] { italic, bold }.OfType<XElement>().ToArray();
-        var following = definition.Elements().FirstOrDefault(element => element.Name.LocalName is not
-            ("FONTID" or "RATIO" or "CHARSPACING" or "RELSIZE" or "CHAROFFSET"));
-        if (following is not null) following.AddBeforeSelf(effects);
-        else definition.Add(effects);
+        if (italic is not null || bold is not null)
+        {
+            italic?.Remove();
+            bold?.Remove();
+            var effects = new[] { italic, bold }.OfType<XElement>().ToArray();
+            var following = definition.Elements().FirstOrDefault(element => element.Name.LocalName is not
+                ("FONTID" or "RATIO" or "CHARSPACING" or "RELSIZE" or "CHAROFFSET"));
+            if (following is not null) following.AddBeforeSelf(effects);
+            else definition.Add(effects);
+        }
+        if (definition.Element("STRIKEOUT") is { } strike)
+        {
+            strike.Remove();
+            var following = definition.Elements().FirstOrDefault(element => element.Name.LocalName is
+                "OUTLINE" or "SHADOW" or "EMBOSS" or "ENGRAVE" or "SUPERSCRIPT" or "SUBSCRIPT");
+            if (following is not null) following.AddBeforeSelf(strike);
+            else definition.Add(strike);
+        }
+        foreach (var name in new[] { "SUPERSCRIPT", "SUBSCRIPT" })
+            if (definition.Element(name) is { } script)
+            {
+                script.Remove();
+                definition.Add(script);
+            }
     }
 
     private static void Add(XElement paragraph, string characterId, XNode payload)
