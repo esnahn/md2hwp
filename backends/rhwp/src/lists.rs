@@ -196,7 +196,7 @@ impl Lists {
                         active = None;
                     }
                     ListItemBlock::DisplayMath { .. } => {
-                        return Err(crate::template::UNSUPPORTED_MATH.into());
+                        return Err(crate::math::UNSUPPORTED_LIST_MATH.into());
                     }
                     ListItemBlock::Paragraph { inlines } => {
                         let was_first = first;

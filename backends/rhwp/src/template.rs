@@ -39,8 +39,9 @@ pub fn render(
     {
         return Err("Template requires exactly one plain root {{md2hwp:body}}".into());
     }
+    let (math, prepared_math) = crate::math::Plan::prepare(ir, original_roots)?;
     let heading_references = crate::heading_references::Samples::read(original_roots)?;
-    let prepared_headings = heading_references.prepare(ir)?;
+    let prepared_headings = heading_references.prepare(&prepared_math)?;
     let (mut references, prepared_references) =
         crate::object_references::Plan::prepare(&prepared_headings, original_roots)?;
     let note_sample = crate::footnotes::Sample::read(original_roots, &document.doc_info)?;
@@ -54,7 +55,7 @@ pub fn render(
             }
             Block::VerbatimBlock { .. } => {}
             Block::List { .. } => {}
-            Block::DisplayMath { .. } => return Err(UNSUPPORTED_MATH.into()),
+            Block::DisplayMath { .. } => {}
             Block::Table {
                 header,
                 rows,
@@ -152,6 +153,7 @@ pub fn render(
         crate::code::Prototype::read(&roots[begin + 1..end], &samples[0], &document.doc_info)?;
     let figures = crate::figures::Prototype::read(&roots[begin + 1..end], &document.doc_info)?;
     let tables = crate::tables::Prototype::read(&roots, &document.doc_info)?;
+    let display_math = crate::math::Display::read(&roots[begin + 1..end])?;
     let mut object_orders = crate::model_tools::ObjectOrders::new(&document)?;
     let mut output = roots[..begin].to_vec();
     if !roots[begin].controls.is_empty() {
@@ -294,6 +296,15 @@ pub fn render(
             output.extend(paragraphs);
             continue;
         }
+        if let Block::DisplayMath { script } = block {
+            let mut paragraph = display_math.render(script, &mut object_orders, &mut identity)?;
+            if break_before_next {
+                crate::headings::page_break(&mut paragraph);
+            }
+            break_before_next = false;
+            output.push(paragraph);
+            continue;
+        }
         if let Block::VerbatimBlock { lines, source } = block {
             let mut paragraphs = code.render(lines, source.as_deref(), &mut document.doc_info)?;
             if break_before_next {
@@ -376,10 +387,18 @@ pub fn render(
         &note_shape,
         &mut identity,
     )?;
+    // Footnote bodies exist now, so their inline math is replaced too.
+    math.apply(
+        &mut output,
+        &document.doc_info,
+        &mut object_orders,
+        &mut identity,
+    )?;
     let section = &mut document.sections[0];
     section.paragraphs = output;
     section.raw_stream = None;
     section.raw_provenance = None;
+    crate::math::recalculate_numbers(&mut document)?;
     lists.resolve_continuations(&mut document)?;
     crate::footnotes::assign_numbers(&mut document, &generated_notes)?;
     crate::table_layout::require_fits(&document.sections[0].paragraphs, &generated_tables)?;
@@ -455,8 +474,6 @@ pub fn render(
     Ok((generated_notes, pagination))
 }
 
-pub(crate) const UNSUPPORTED_MATH: &str = "rhwp generation does not yet support equations";
-
 const DISPLAY_MATH_SIZE_PREFIX: &str = "display_math.fontsize-pt:";
 
 /// Display math editor size in 1/100 pt; same rule as the Hancom worker.
@@ -483,7 +500,9 @@ pub(crate) fn display_math_points(counts: &BTreeMap<String, usize>) -> Result<i3
         return Err(invalid());
     }
     let hundredths = whole.parse::<i64>().map_err(|_| invalid())? * 100
-        + format!("{fraction:0<2}").parse::<i64>().map_err(|_| invalid())?;
+        + format!("{fraction:0<2}")
+            .parse::<i64>()
+            .map_err(|_| invalid())?;
     i32::try_from(hundredths)
         .ok()
         .filter(|n| *n > 0)
@@ -504,13 +523,23 @@ fn display_math_range(roots: &[Paragraph]) -> Result<(usize, usize), String> {
     require_plain(&roots[end])?;
     let setting = roots
         .iter()
-        .position(|p| p.text.starts_with(&format!("{PREFIX}{DISPLAY_MATH_SIZE_PREFIX}")))
+        .position(|p| {
+            p.text
+                .starts_with(&format!("{PREFIX}{DISPLAY_MATH_SIZE_PREFIX}"))
+        })
         .ok_or("Missing root display_math.fontsize-pt setting")?;
     require_plain(&roots[setting])?;
     if end != start + 2 || setting >= start {
-        return Err("display_math requires its size setting followed by one sample paragraph".into());
+        return Err(
+            "display_math requires its size setting followed by one sample paragraph".into(),
+        );
     }
-    if roots[start + 1].text.matches(&tag("slot:display_math")).count() != 1 {
+    if roots[start + 1]
+        .text
+        .matches(&tag("slot:display_math"))
+        .count()
+        != 1
+    {
         return Err("display_math sample must contain one slot:display_math".into());
     }
     Ok((start, end))
@@ -789,7 +818,9 @@ pub(crate) fn check_inlines(inlines: &[Inline]) -> Result<(), String> {
             | Inline::Link { inlines, .. } => check_inlines(inlines)?,
             Inline::Footnote { .. } => return Err(unsupported("footnotes")),
             Inline::CrossReference { .. } => return Err(unsupported("cross references")),
-            Inline::InlineMath { .. } => return Err(UNSUPPORTED_MATH.into()),
+            Inline::InlineMath { .. } => {
+                return Err("Inline math was not replaced before composition".into());
+            }
         }
     }
     Ok(())

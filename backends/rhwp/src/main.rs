@@ -4,7 +4,6 @@
 
 mod code;
 mod conditional_ranges;
-#[allow(dead_code)]
 mod equation_metrics;
 mod figures;
 mod footnotes;
@@ -14,6 +13,7 @@ mod headings;
 mod image_resource;
 mod list_markers;
 mod lists;
+mod math;
 mod model_tools;
 mod note_insert;
 mod note_plan;

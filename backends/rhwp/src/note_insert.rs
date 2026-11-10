@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2026 Euisoon Ahn
-//! Replace an adapter-owned text marker with a native, non-text footnote slot.
+//! Replace an adapter-owned text marker with a native, non-text control slot.
 
 use rhwp::model::control::Control;
 use rhwp::model::footnote::Footnote;
@@ -11,34 +11,54 @@ pub(crate) fn insert(
     marker: &str,
     note: Footnote,
 ) -> Result<(), String> {
+    insert_control(
+        paragraph,
+        marker,
+        Control::Footnote(Box::new(note)),
+        1 << 0x11,
+        "Footnote",
+    )
+}
+
+/// Replace a private text marker with one eight-unit native control slot.
+/// `mask` is the paragraph control-mask bit of the control kind.
+pub(crate) fn insert_control(
+    paragraph: &mut Paragraph,
+    marker: &str,
+    control: Control,
+    mask: u32,
+    kind: &str,
+) -> Result<(), String> {
     if marker.is_empty() || marker.chars().any(char::is_control) {
-        return Err("Footnote marker must be nonempty plain text".into());
+        return Err(format!("{kind} marker must be nonempty plain text"));
     }
     // Repeated heading slots can clone one private marker into a paragraph.
     // The caller supplies a fresh note for each occurrence in manuscript order.
     let byte_start = paragraph
         .text
         .find(marker)
-        .ok_or("Footnote marker was not found")?;
+        .ok_or(format!("{kind} marker was not found"))?;
     let start = paragraph.text[..byte_start].chars().count();
     let count = marker.chars().count();
     let end = start + count;
     let chars: Vec<char> = paragraph.text.chars().collect();
     if paragraph.char_offsets.len() != chars.len() {
-        return Err("Footnote paragraph has incomplete native character offsets".into());
+        return Err(format!(
+            "{kind} paragraph has incomplete native character offsets"
+        ));
     }
     let native_start = paragraph.char_offsets[start];
     let slot_end = native_start
         .checked_add(8)
-        .ok_or("Footnote slot offset overflow")?;
+        .ok_or(format!("{kind} slot offset overflow"))?;
     let mut native_end = native_start;
     for (index, character) in chars.iter().enumerate().take(end).skip(start) {
         if paragraph.char_offsets[index] != native_end {
-            return Err("Footnote marker crosses a native control".into());
+            return Err(format!("{kind} marker crosses a native control"));
         }
         native_end = native_end
             .checked_add(character.len_utf16() as u32)
-            .ok_or("Footnote marker offset overflow")?;
+            .ok_or(format!("{kind} marker offset overflow"))?;
     }
     let inside = |index| start < index && index < end;
     if paragraph.field_ranges.iter().any(|range| {
@@ -54,16 +74,18 @@ pub(crate) fn insert(
             .iter()
             .any(|mark| inside(mark.char_idx))
     {
-        return Err("Footnote marker overlaps a native field or title marker".into());
+        return Err(format!(
+            "{kind} marker overlaps a native field or title marker"
+        ));
     }
     let positions = paragraph.control_text_positions();
     if positions.iter().any(|&position| inside(position)) {
-        return Err("Footnote marker crosses a native control".into());
+        return Err(format!("{kind} marker crosses a native control"));
     }
     // Every existing slot before the first marker character stays before the note.
     let control_index = positions.partition_point(|&position| position <= start);
     if positions.windows(2).any(|pair| pair[0] > pair[1]) {
-        return Err("Footnote paragraph has unordered native controls".into());
+        return Err(format!("{kind} paragraph has unordered native controls"));
     }
     let removed = native_end - native_start;
     let remap = |position: u32| -> Result<u32, String> {
@@ -75,7 +97,7 @@ pub(crate) fn insert(
             position
                 .checked_sub(removed)
                 .and_then(|p| p.checked_add(8))
-                .ok_or_else(|| "Footnote native position overflow".into())
+                .ok_or_else(|| format!("{kind} native position overflow"))
         }
     };
     let shape_at = |position| {
@@ -87,13 +109,13 @@ pub(crate) fn insert(
             .map(|shape| shape.char_shape_id)
     };
     let reference_shape =
-        shape_at(native_start).ok_or("Footnote marker has no character format")?;
+        shape_at(native_start).ok_or(format!("{kind} marker has no character format"))?;
     let following_shape = shape_at(native_end).unwrap_or(reference_shape);
     let new_count = paragraph
         .char_count
         .checked_sub(removed)
         .and_then(|c| c.checked_add(8))
-        .ok_or("Footnote paragraph character count overflow")?;
+        .ok_or(format!("{kind} paragraph character count overflow"))?;
 
     // Work on a detached clone: malformed offsets must never partially edit a caller.
     let mut edited = paragraph.clone();
@@ -160,15 +182,13 @@ pub(crate) fn insert(
         range.end = remap(range.end)?;
     }
     if edited.ctrl_data_records.len() > edited.controls.len() {
-        return Err("Footnote paragraph has excess native control data".into());
+        return Err(format!("{kind} paragraph has excess native control data"));
     }
     edited.ctrl_data_records.resize(edited.controls.len(), None);
-    edited
-        .controls
-        .insert(control_index, Control::Footnote(Box::new(note)));
+    edited.controls.insert(control_index, control);
     edited.ctrl_data_records.insert(control_index, None);
     edited.char_count = new_count;
-    edited.control_mask |= 1 << 0x11;
+    edited.control_mask |= mask;
     edited.has_para_text = true;
     crate::template::discard_stale_layout(&mut edited);
     *paragraph = edited;

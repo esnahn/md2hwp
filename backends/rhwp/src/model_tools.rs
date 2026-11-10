@@ -77,6 +77,15 @@ impl ObjectOrders {
                     picture.common.z_order = i32::try_from(*next)
                         .map_err(|_| "Native object ZOrder space exhausted".to_string())?;
                     *next += 1;
+                } else if let Control::Equation(equation) = control {
+                    if !equation.raw_ctrl_data.is_empty() {
+                        return Err(
+                            "Generated equations must not carry retained native payloads".into(),
+                        );
+                    }
+                    equation.common.z_order = i32::try_from(*next)
+                        .map_err(|_| "Native object ZOrder space exhausted".to_string())?;
+                    *next += 1;
                 }
             }
             map_nested_containers(paragraph, &mut |paragraphs| {
