@@ -39,7 +39,7 @@ Pandoc은 `setup-pandoc`이 따로 다운로드하는 GPL-2.0-or-later 프로그
 
 `md2hwp`는 간략 사용법만 표시합니다. `md2hwp --help` 또는 `md2hwp -h`는 기본 변환 옵션과 명령별 한 줄 사용법을 표시합니다. `md2hwp md2ir --help`처럼 명령 뒤에 `--help`를 붙이면 해당 명령의 사용법·옵션·기본값만 확인할 수 있습니다. 도움말은 Pandoc·한글·.NET을 실행하지 않습니다.
 
-일반 빌드와 v0.5.0 배포 ZIP에는 `md2hwp.exe`, `md2hwp-rhwp.exe`, `md2hwp-hancom.exe`, `hwp2pdf.exe` 네 실행 파일을 함께 넣습니다. 변환용 EXE들과 `template.hwp`는 같은 폴더에 둡니다. Markdown 처리에는 Pandoc이 필요하며, HWP를 rhwp로 생성할 때는 한글·.NET·보안 모듈이 필요하지 않습니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. HWPX와 한글 백엔드, `hwp2pdf.exe`에는 한글, .NET 10 x64 런타임, 한글 보안 모듈이 필요합니다. 이 경우 실행 중인 한글을 닫습니다. [설치 안내](docs/usage.md)를 참고하십시오.
+일반 빌드에는 `md2hwp.exe`, `md2hwp-rhwp.exe`, `md2hwp-hancom.exe`, `hwp2pdf.exe`, `hwpeqrecalc.exe` 다섯 실행 파일을 함께 넣습니다(v0.5.0 배포 ZIP은 `hwpeqrecalc.exe`를 뺀 네 개). 변환용 EXE들과 `template.hwp`는 같은 폴더에 둡니다. Markdown 처리에는 Pandoc이 필요하며, HWP를 rhwp로 생성할 때는 한글·.NET·보안 모듈이 필요하지 않습니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. HWPX와 한글 백엔드, `hwp2pdf.exe`, `hwpeqrecalc.exe`에는 한글, .NET 10 x64 런타임, 한글 보안 모듈이 필요합니다. 이 경우 실행 중인 한글을 닫습니다. [설치 안내](docs/usage.md)를 참고하십시오.
 
 ```powershell
 .\md2hwp.exe setup-pandoc
@@ -92,6 +92,21 @@ HWPX 입력은 지원하지 않습니다.
 `GraphicQuality=100`을 사용하며, 완료 확인 후 기존 PDF를 교체합니다.
 한글·.NET 10 x64·한글 보안 모듈이 필요하며 템플릿·Pandoc은 필요하지 않습니다.
 [실행 방법과 검증 범위](docs/hwp2pdf.md)를 참고하십시오.
+
+## 수식 크기 다시 계산
+
+한글은 파일을 열 때 저장된 수식 크기를 그대로 씁니다. rhwp 백엔드처럼 다른
+프로그램이 추정한 크기를 저장한 문서는 `hwpeqrecalc.exe`로 한글이 모든 수식을
+다시 조판하게 할 수 있습니다. HWP·HWPX 입출력을 모두 지원합니다.
+
+```powershell
+.\hwpeqrecalc.exe 결과.hwp
+.\hwpeqrecalc.exe 결과.hwp --output 결과.hwpx
+```
+
+기본 출력은 원본 옆의 `결과.recalc.hwp`(HWPX 입력이면 `.recalc.hwpx`)이며 원본은
+바꾸지 않습니다. 한글·.NET 10 x64·한글 보안 모듈이 필요합니다.
+[동작과 검증 범위](docs/hwpeqrecalc.md)를 참고하십시오.
 
 ## 원고 문법
 

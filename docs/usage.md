@@ -4,7 +4,7 @@
 
 v0.5.0 릴리스는 IR 0.4를 사용했고, 현재 개발 버전은 수식 추가로 IR 0.6을 사용합니다. 프로그램 버전과 IR 버전은 독립적이며, 프로그램 버전 상향으로 IR이나 템플릿의 `ir-version`을 바꾸지 않습니다.
 
-일반 빌드와 v0.5.0 배포 ZIP은 `md2hwp.exe`, `md2hwp-rhwp.exe`, `md2hwp-hancom.exe`, `hwp2pdf.exe` 네 실행 파일을 포함합니다. HWP 기본 경로인 `md2hwp-rhwp.exe`는 한글·.NET·보안 모듈 없이 실행합니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. Markdown 처리에는 Pandoc이 필요합니다. 다음 한글·.NET·보안 모듈 준비는 HWPX를 처리하는 `md2hwp-hancom.exe`와 HWP 입력 전용 `hwp2pdf.exe`에 해당합니다.
+일반 빌드는 `md2hwp.exe`, `md2hwp-rhwp.exe`, `md2hwp-hancom.exe`, `hwp2pdf.exe`, `hwpeqrecalc.exe` 다섯 실행 파일을 포함합니다(v0.5.0 배포 ZIP은 `hwpeqrecalc.exe`를 뺀 네 개). HWP 기본 경로인 `md2hwp-rhwp.exe`는 한글·.NET·보안 모듈 없이 실행합니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. Markdown 처리에는 Pandoc이 필요합니다. 다음 한글·.NET·보안 모듈 준비는 HWPX를 처리하는 `md2hwp-hancom.exe`와 HWP 입력 전용 `hwp2pdf.exe`에 해당합니다.
 
 - 한글 설치 및 로그인된 대화형 Windows 세션이 필요합니다. 기준 환경은
   한글 2020 HWP 11.0.0.9136입니다. 실행 중인 한글 문서는 먼저 닫습니다.

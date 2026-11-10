@@ -15,6 +15,16 @@ Rust application: apps/md2hwp. Shared semantic core: crates/md2hwp-core.
 C# backend: backends/hancom-automation/Md2Hwp.Backend.csproj.
 Standalone PDF CLI: apps/hwp2pdf/Hwp2Pdf.csproj. Publish its referenced backend
 assembly inside hwp2pdf.exe; no template/Pandoc or separate worker is needed.
+Standalone equation CLI: apps/hwpeqrecalc/HwpEqRecalc.csproj builds hwpeqrecalc.exe the
+same way. It opens HWP/HWPX in Hancom, re-sets each equation control's own EqFontName
+so Hancom lays every equation out again, and saves to a separate output (default
+source.recalc.<ext>); the source is never modified. Pair controls with exported
+equations by script, keep scripts/sizes/fonts, and expect only equation geometry,
+re-laid-out table/cell heights and Hancom's re-encoded image bytes to differ.
+Any other difference, after re-layout or after save/reopen (including format
+conversion loss), is printed as a warning and the output is still published; the
+user chose this over failing. Equation pairing/script/size/font and saved equation
+geometry checks, save failures and the source hash remain errors. See docs/hwpeqrecalc.md.
 Use PrintToPDFEx through Action.Execute with GraphicQuality=100, Device=5,
 full-document Range=6 and 100% scaling. Publish only after PDF completion,
 source hash and normal COM cleanup checks; preserve old output on failure.
@@ -26,7 +36,7 @@ redirect ordinary builds there merely to preserve an older release.
 The JSON fixtures still tracked are included directly by Rust test compilation.
 Builds include a deployment README.md with usable versioned documentation links.
 Create release ZIPs with tools/development/build.ps1 -Configuration Release -Package;
-include md2hwp.exe, md2hwp-rhwp.exe, md2hwp-hancom.exe, hwp2pdf.exe, the tracked default template, README.md and the manuscript guides.
+include md2hwp.exe, md2hwp-rhwp.exe, md2hwp-hancom.exe, hwp2pdf.exe, hwpeqrecalc.exe, the tracked default template, README.md and the manuscript guides.
 Include LICENSE, THIRD-PARTY-NOTICES.txt and licenses/ in deployment
 folders and executable ZIPs. Original project code is AGPL-3.0-only; preserve
 third-party licenses. Regenerate notices with tools/development/update-third-party-notices.ps1
@@ -344,7 +354,7 @@ The -Rhwp build switch remains accepted for compatibility. With no explicit work
 select the colocated rhwp worker first and Hancom only if rhwp is absent; if either
 template or output is HWPX, select only Hancom. Honor explicit --worker selections,
 including incompatible ones that fail; never retry another worker after execution
-failure. Hancom and hwp2pdf still require Hancom/.NET and the security module.
+failure. Hancom, hwp2pdf and hwpeqrecalc still require Hancom/.NET and the security module.
 The rhwp worker also implements HWP-only validate-template and init-template without
 COM/.NET. Strict inspection traverses metadata and all unused prototypes/conditional
 branches before lowering; do not replace it with an empty-manuscript render. Keep
