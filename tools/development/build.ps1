@@ -14,6 +14,7 @@ if ($Package -and $Configuration -ne 'Release') { throw 'Deployment archives req
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 $project = Join-Path $root 'backends/hancom-automation/Md2Hwp.Backend.csproj'
 $pdfProject = Join-Path $root 'apps/hwp2pdf/Hwp2Pdf.csproj'
+$equationProject = Join-Path $root 'apps/hwpeqrecalc/HwpEqRecalc.csproj'
 $destination = Join-Path $root "target/$($Configuration.ToLowerInvariant())"
 $published = Join-Path ([IO.Path]::GetDirectoryName($project)) "bin/$Configuration/net10.0-windows/win-x64/publish"
 Push-Location $root
@@ -40,6 +41,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'HWP-to-PDF publish failed.' }
     $pdfPublished = Join-Path ([IO.Path]::GetDirectoryName($pdfProject)) "bin/$Configuration/net10.0-windows/win-x64/publish"
     Copy-Item -LiteralPath (Join-Path $pdfPublished 'hwp2pdf.exe') -Destination (Join-Path $destination 'hwp2pdf.exe') -Force
+    & (Join-Path $PSHOME 'pwsh.exe') -NoProfile -File (Join-Path $PSScriptRoot 'dotnet.ps1') publish $equationProject --configuration $Configuration -p:PublishProfile=FrameworkDependent
+    if ($LASTEXITCODE -ne 0) { throw 'Equation recalculation publish failed.' }
+    $equationPublished = Join-Path ([IO.Path]::GetDirectoryName($equationProject)) "bin/$Configuration/net10.0-windows/win-x64/publish"
+    Copy-Item -LiteralPath (Join-Path $equationPublished 'hwpeqrecalc.exe') -Destination (Join-Path $destination 'hwpeqrecalc.exe') -Force
     $templateDestination = Join-Path $destination 'template.hwp'
     Copy-Item -LiteralPath (Join-Path $root 'templates/template.hwp') -Destination $templateDestination -Force
     Copy-Item -LiteralPath (Join-Path $root 'tools/completions/md2hwp-completion.ps1') -Destination $destination -Force
@@ -73,7 +78,7 @@ try {
         $stage = Join-Path $dist ('.package-' + [Guid]::NewGuid().ToString('N'))
         $null = New-Item -ItemType Directory -Path $stage
         try {
-            foreach ($name in @('md2hwp.exe', 'md2hwp-rhwp.exe', 'md2hwp-hancom.exe', 'hwp2pdf.exe', 'md2hwp-completion.ps1', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt')) {
+            foreach ($name in @('md2hwp.exe', 'md2hwp-rhwp.exe', 'md2hwp-hancom.exe', 'hwp2pdf.exe', 'hwpeqrecalc.exe', 'md2hwp-completion.ps1', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt')) {
                 Copy-Item -LiteralPath (Join-Path $destination $name) -Destination $stage
             }
             # Ship the tracked default; never adopt a user's deployment template implicitly.
@@ -81,7 +86,7 @@ try {
             Copy-Item -LiteralPath (Join-Path $root 'licenses') -Destination $stage -Recurse
             $archive = Join-Path $dist "md2hwp-v$version-windows-x64.zip"
             $temporaryArchive = Join-Path $stage 'package.zip'
-            $files = @('md2hwp.exe', 'md2hwp-rhwp.exe', 'md2hwp-hancom.exe', 'hwp2pdf.exe', 'md2hwp-completion.ps1', 'template.hwp', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt', 'licenses') | ForEach-Object { Join-Path $stage $_ }
+            $files = @('md2hwp.exe', 'md2hwp-rhwp.exe', 'md2hwp-hancom.exe', 'hwp2pdf.exe', 'hwpeqrecalc.exe', 'md2hwp-completion.ps1', 'template.hwp', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt', 'licenses') | ForEach-Object { Join-Path $stage $_ }
             Compress-Archive -LiteralPath $files -DestinationPath $temporaryArchive
             Move-Item -LiteralPath $temporaryArchive -Destination $archive -Force
             Write-Output "Package: $archive"
