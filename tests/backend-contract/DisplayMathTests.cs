@@ -108,7 +108,7 @@ internal static class DisplayMathTests
             Number(), new XElement("CHAR", ")")), "14", Text(displays[0])));
         var centeredPlan = new IrPreviewPlan("ir.json", "test", new PreviewSummary(1, 1, 0, 0, 0), [operations[1]], []);
         var centeredResult = centered.Layout.Attach(centered.Document, centeredPlan, keys => keys.ToDictionary(k => k, k =>
-            new XElement("EQUATION", new XAttribute("BaseUnit", k.BaseUnit), new XElement("SHAPEOBJECT", new XAttribute("ZOrder", 1)), new XElement("SCRIPT", k.Script))));
+            new XElement("EQUATION", new XAttribute("BaseUnit", k.BaseUnit), new XElement("SHAPEOBJECT", new XAttribute("InstId", 7), new XAttribute("ZOrder", 1)), new XElement("SCRIPT", k.Script))));
         var centeredParagraph = centeredResult.Descendants("EQUATION").Single().Parent!;
         Check(centeredParagraph.Elements().Select(e => e.Name.LocalName).SequenceEqual(["CHAR", "EQUATION", "CHAR", "AUTONUM", "CHAR"]) &&
             centeredParagraph.Elements("CHAR").First().Nodes().Single() is XElement { Name.LocalName: "TAB" } &&

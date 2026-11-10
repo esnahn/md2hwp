@@ -270,9 +270,12 @@ internal static partial class HancomPreviewWriter
                 nativeTiming.Dispose();
                 var saveNativeTiming = RenderProfile.Measure("phase.save-native-reopen");
 #endif
+                // Last native edit: later imports would reset the equation font.
+                math.Layout.ApplyFont(hwp);
                 if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
                     throw new InvalidOperationException("Could not save native figure captions.");
                 CloseDocument(hwp); Open(hwp, temporary, visible);
+                math.Layout.VerifyFont(hwp);
 #if DEBUG
                 saveNativeTiming.Dispose();
                 using var verifyNativeTiming = RenderProfile.Measure("phase.verify-native-reopened");
@@ -285,6 +288,7 @@ internal static partial class HancomPreviewWriter
                     if (!IndicatesSuccess(hwp.SaveAs(publication, "HWPX", "")))
                         throw new InvalidOperationException("Could not save the rendered HWPX document.");
                     CloseDocument(hwp); Open(hwp, publication, visible);
+                    math.Layout.VerifyFont(hwp);
                     var hwpxSaved = HwpMarkup.ReadDocument((object)hwp);
                     RequireFigureDocument(attached, hwpxSaved, headings.Layout, reportLayout: true,
                         boxes: boxes.Layout, footnotes: footnotes, references: references.Layout, tables: tables.Layout,

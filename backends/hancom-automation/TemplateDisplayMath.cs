@@ -20,8 +20,12 @@ internal sealed class TemplateDisplayMath
         RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
     private static readonly Regex SizeValue = new(@"^[0-9]{1,9}(\.[0-9]{1,2})?$", RegexOptions.CultureInvariant);
 
+    // EquationCreate's default font (HParameterSet.HEqEdit.EqFontName).
+    internal const string FontName = "HancomEQN";
+
     private readonly XDocument source;
     private readonly XElement sample;
+    private readonly HashSet<string> generated = new(StringComparer.Ordinal);
 
     private TemplateDisplayMath(XDocument source, XElement sample, int baseUnit)
     {
@@ -167,6 +171,65 @@ internal sealed class TemplateDisplayMath
             ReplaceInline(group.Key, group.ToDictionary(i => i.Marker, i => Equation(natives[i.Key], "None", result), StringComparer.Ordinal));
         AllocateOrders(result);
         RecalculateNumbers(result);
+        foreach (var shape in result.Descendants("EQUATION").Select(e => e.Element("SHAPEOBJECT")!)
+            .Where(s => s.Annotation<GeneratedEquation>() is not null))
+            generated.Add((string?)shape.Attribute("InstId")
+                ?? throw new InvalidOperationException("A generated equation has no native instance identity."));
+        return result;
+    }
+
+    // HWPML has no equation font, and its import stores HYhwpEQ. Restore the
+    // EquationCreate default on generated equations through each control's
+    // properties; static template equations keep their own font.
+    internal void ApplyFont(dynamic hwp)
+    {
+        var changed = 0;
+        foreach (var control in GeneratedControls((object)hwp))
+        {
+            var properties = control.Properties;
+            properties.SetItem("EqFontName", FontName);
+            control.Properties = properties;
+            changed++;
+        }
+        if (changed != generated.Count)
+            throw new InvalidOperationException("A generated equation was not found for its font update.");
+        VerifyFont(hwp);
+    }
+
+    // Font names are absent from HWPML, so read them from the native controls.
+    internal void VerifyFont(dynamic hwp)
+    {
+        var found = 0;
+        foreach (var control in GeneratedControls((object)hwp))
+        {
+            if ((string?)control.Properties.Item("EqFontName") != FontName)
+                throw new InvalidOperationException($"A generated equation does not use the {FontName} font.");
+            found++;
+        }
+        if (found != generated.Count)
+            throw new InvalidOperationException("A generated equation was lost before its font check.");
+    }
+
+    // The control chain and the HWPML export list equations in the same order,
+    // including those in footnotes; require that pairing before using it.
+    private List<dynamic> GeneratedControls(object application)
+    {
+        dynamic hwp = application;
+        var result = new List<dynamic>();
+        if (generated.Count == 0) return result;
+        var equations = HwpMarkup.ReadDocument((object)hwp).Descendants("EQUATION").ToArray();
+        var controls = new List<dynamic>();
+        for (dynamic? control = hwp.HeadCtrl; control is not null; control = control.Next)
+            if ((string)control.CtrlID == "eqed") controls.Add(control);
+        if (controls.Count != equations.Length)
+            throw new InvalidOperationException("Native equation controls do not match the exported equations.");
+        for (var i = 0; i < equations.Length; i++)
+        {
+            if ((string?)controls[i].Properties.Item("String") != (string?)equations[i].Element("SCRIPT"))
+                throw new InvalidOperationException("Native equation controls are not in exported document order.");
+            if (generated.Contains((string?)equations[i].Element("SHAPEOBJECT")?.Attribute("InstId") ?? ""))
+                result.Add(controls[i]);
+        }
         return result;
     }
 
