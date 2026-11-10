@@ -11,7 +11,6 @@ internal static partial class HancomPreviewWriter
     {
         var output = ValidateNewHwpPath(outputPath, "Template");
         EnsureInteractiveContext();
-        EnsureNoExistingHwpProcess();
         var module = SecurityModuleRegistration.ReadAndValidate(Directory.GetCurrentDirectory());
         var temporary = NativeDocumentFormat.TemporaryPath(output, "md2hwp-template");
         try

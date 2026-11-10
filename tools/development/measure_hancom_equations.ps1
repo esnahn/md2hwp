@@ -5,8 +5,9 @@ Measure native Hancom equation geometry for explicit (script, base unit) cases.
 
 .DESCRIPTION
 Run in Windows PowerShell 5.1 x64 STA in the interactive session. Requires the
-registered FilePathCheckerModuleExample module and no running HWP process. The
-script owns one hidden HWP process, creates each equation with EquationCreate
+registered FilePathCheckerModuleExample module. Hancom windows already open are
+recorded and never touched: the script starts and closes only its own hidden HWP
+process, creates each equation with EquationCreate
 (default HancomEQN font) in a disposable document and records the exported
 EQUATION width, height and baseline. It never opens or saves user documents.
 
@@ -22,9 +23,6 @@ $ErrorActionPreference = 'Stop'
 if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA' -or -not [Environment]::Is64BitProcess) {
     throw 'Run in 64-bit Windows PowerShell with -STA.'
 }
-if (@(Get-Process hwp,hwp64 -ErrorAction SilentlyContinue).Count -gt 0) {
-    throw 'Close every running HWP process first; existing processes are never touched.'
-}
 $source = [IO.File]::ReadAllText((Resolve-Path $InputPath), [Text.Encoding]::UTF8) | ConvertFrom-Json
 $cases = @($source.cases)
 if ($cases.Count -eq 0) { throw 'Input has no cases.' }
@@ -34,10 +32,23 @@ foreach ($case in $cases) {
     }
 }
 
+if (-not ('Md2HwpMeasure.NativeWindow' -as [type])) {
+    Add-Type -Namespace Md2HwpMeasure -Name NativeWindow -MemberDefinition @'
+[System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+public static extern uint GetWindowThreadProcessId(System.IntPtr hWnd, out uint processId);
+'@
+}
+$before = @{}
+foreach ($p in @(Get-Process hwp,hwp64 -ErrorAction SilentlyContinue)) { $before[[int]$p.Id] = $p.StartTime }
 $hwp = New-Object -ComObject HWPFrame.HwpObject
-$owned = @(Get-Process hwp,hwp64 -ErrorAction SilentlyContinue)
-if ($owned.Count -ne 1) { throw 'Expected exactly one owned HWP process.' }
-$ownedId = $owned[0].Id; $ownedStart = $owned[0].StartTime
+# Identify the process behind this COM object; never touch one that already existed.
+[uint32]$ownedId = 0
+[void][Md2HwpMeasure.NativeWindow]::GetWindowThreadProcessId([IntPtr][long]$hwp.XHwpWindows.Active_XHwpWindow.WindowHandle, [ref]$ownedId)
+if ($ownedId -eq 0 -or $before.ContainsKey([int]$ownedId)) {
+    [void][Runtime.InteropServices.Marshal]::ReleaseComObject($hwp)
+    throw "COM did not start a new Hancom process ($ownedId); it was left untouched."
+}
+$ownedStart = (Get-Process -Id $ownedId).StartTime
 $results = New-Object System.Collections.Generic.List[object]
 try {
     if (-not $hwp.RegisterModule('FilePathCheckDLL', 'FilePathCheckerModuleExample')) { throw 'RegisterModule failed.' }
@@ -90,5 +101,9 @@ try {
         Start-Sleep -Milliseconds 200
     }
     $q = Get-Process -Id $ownedId -ErrorAction SilentlyContinue
-    if ($q -and $q.StartTime -eq $ownedStart) { Write-Warning "Owned HWP process $ownedId did not exit." }
+    if ($q -and $q.StartTime -eq $ownedStart) {
+        # Only the process this script started may be stopped.
+        Stop-Process -Id $ownedId -Force
+        Write-Warning "Owned HWP process $ownedId did not exit after Quit and was stopped."
+    }
 }

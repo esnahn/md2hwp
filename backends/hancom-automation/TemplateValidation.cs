@@ -61,18 +61,19 @@ internal static partial class HancomPreviewWriter
         var source = ValidateTemplate(path);
         var hash = HashFile(source);
         EnsureInteractiveContext();
-        EnsureNoExistingHwpProcess();
         var module = SecurityModuleRegistration.ReadAndValidate(Directory.GetCurrentDirectory());
+        var snapshot = SharedFile.Snapshot(source);
         try
         {
             return WithHwp(module, hwp =>
             {
-                Open(hwp, source, false);
+                Open(hwp, snapshot, false);
                 return TemplateValidation.Inspect(HwpMarkup.ReadDocument((object)hwp), source);
             });
         }
         finally
         {
+            SharedFile.DeleteSnapshot(snapshot);
             if (HashFile(source) != hash)
                 throw new InvalidOperationException("Template changed during validation.");
         }

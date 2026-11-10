@@ -22,14 +22,16 @@ internal static partial class HancomPreviewWriter
         var hash = HashFile(source);
         if (!File.Exists(irPath)) throw new FileNotFoundException("Missing IR input.", irPath);
         var metadata = TemplateMetadata.Load(irPath);
-        EnsureInteractiveContext(); EnsureNoExistingHwpProcess();
+        EnsureInteractiveContext();
         var module = SecurityModuleRegistration.ReadAndValidate(repositoryRoot);
         var temporary = Path.Combine(Path.GetDirectoryName(output)!, $".tagged-render-{Guid.NewGuid():N}.hwp");
         var publication = NativeDocumentFormat.FromPath(output) == "HWP"
             ? temporary : NativeDocumentFormat.TemporaryPath(output, "tagged-render");
+        string? snapshot = null;
         try
         {
-            if (NativeDocumentFormat.FromPath(source) == "HWP") File.Copy(source, temporary, false);
+            if (NativeDocumentFormat.FromPath(source) == "HWP") SharedFile.Copy(source, temporary);
+            else snapshot = SharedFile.Snapshot(source);
             WithHwp(module, hwp =>
             {
 #if DEBUG
@@ -40,7 +42,7 @@ internal static partial class HancomPreviewWriter
                 // to a disposable working document before rendering begins.
                 if (NativeDocumentFormat.FromPath(source) == "HWPX")
                 {
-                    Open(hwp, source, visible);
+                    Open(hwp, snapshot!, visible);
                     var originalTemplate = HwpMarkup.ReadDocument((object)hwp);
                     if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
                         throw new InvalidOperationException("Could not create the working template copy.");
@@ -309,6 +311,7 @@ internal static partial class HancomPreviewWriter
         {
             if (File.Exists(temporary)) File.Delete(temporary);
             if (publication != temporary && File.Exists(publication)) File.Delete(publication);
+            if (snapshot is not null) SharedFile.DeleteSnapshot(snapshot);
         }
     }
 

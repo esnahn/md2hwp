@@ -113,18 +113,23 @@ internal static partial class HancomPreviewWriter
         _ = module;
         object? comObject = null;
         dynamic? hwp = null;
+        OwnedHwpProcess? owner = null;
         Exception? primaryFailure = null;
         Exception? cleanupFailure = null;
         T? result = default;
 
         try
         {
+            // Hancom windows the user already has open are recorded and never
+            // touched; this session starts and closes only its own process.
+            var before = OwnedHwpProcess.Snapshot();
             var type = Type.GetTypeFromProgID(ProgId, throwOnError: true)!;
             comObject = Activator.CreateInstance(type)
                 ?? throw new InvalidOperationException($"Could not create {ProgId}.");
+            owner = OwnedHwpProcess.Identify(comObject, before);
             hwp = comObject;
 
-            // This must remain the first COM call after object creation.
+            // Register before any document operation.
             if (!(bool)hwp.RegisterModule("FilePathCheckDLL", ModuleName))
             {
                 throw SecurityModuleRegistration.Unavailable("한글이 등록된 보안 모듈을 받아들이지 않았습니다.");
@@ -170,7 +175,7 @@ internal static partial class HancomPreviewWriter
         Exception? exitFailure = null;
         try
         {
-            WaitForHwpExit();
+            owner?.WaitForExit();
         }
         catch (Exception error)
         {
@@ -1434,35 +1439,8 @@ internal static partial class HancomPreviewWriter
         }
     }
 
-    private static void EnsureNoExistingHwpProcess()
-    {
-        var processes = Process.GetProcessesByName("Hwp");
-        if (processes.Length > 0)
-        {
-            throw new InvalidOperationException(
-                "Close existing HWP processes before the isolated preview: " +
-                string.Join(", ", processes.Select(process => process.Id)));
-        }
-    }
-
-    private static void WaitForHwpExit()
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(15);
-        while (DateTime.UtcNow < deadline && Process.GetProcessesByName("Hwp").Length > 0)
-        {
-            Thread.Sleep(200);
-        }
-        var remaining = Process.GetProcessesByName("Hwp");
-        if (remaining.Length > 0)
-        {
-            throw new InvalidOperationException(
-                "HWP remained after COM cleanup; no process was force-stopped: " +
-                string.Join(", ", remaining.Select(process => process.Id)));
-        }
-    }
-
-    private static string HashFile(string path) =>
-        Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
+    // Shared read: the source may stay open in the user's Hancom.
+    private static string HashFile(string path) => SharedFile.Hash(path);
 
 }
 

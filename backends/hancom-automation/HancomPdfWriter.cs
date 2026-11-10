@@ -78,23 +78,19 @@ internal static partial class HancomPreviewWriter
     {
         options.ValidatePaths();
         EnsureInteractiveContext();
-        EnsureNoExistingHwpProcess();
-        // Some Hancom installations use the Hwp64 process name.
-        foreach (var process in Process.GetProcessesByName("Hwp64"))
-        {
-            using (process) throw new InvalidOperationException("Close existing HWP processes before PDF conversion.");
-        }
         var module = SecurityModuleRegistration.ReadAndValidate(AppContext.BaseDirectory);
         var sourceHash = HashFile(options.SourcePath);
         var temporaryDirectory = Path.Combine(Path.GetDirectoryName(options.OutputPath)!, ".hwp2pdf-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(temporaryDirectory);
         var temporaryPdf = Path.Combine(temporaryDirectory, "output.pdf");
+        string? snapshot = null;
         try
         {
+            snapshot = SharedFile.Snapshot(options.SourcePath);
             var pages = WithHwp(module, hwp =>
             {
                 hwp.XHwpWindows.Item(0).Visible = false;
-                Open(hwp, options.SourcePath, visible: false);
+                Open(hwp, snapshot, visible: false);
                 var pageCount = (int)hwp.PageCount;
                 if (pageCount < 1) throw new InvalidOperationException("HWP has no printable pages.");
                 dynamic action = hwp.CreateAction("PrintToPDFEx");
@@ -123,6 +119,7 @@ internal static partial class HancomPreviewWriter
         finally
         {
             if (File.Exists(temporaryPdf)) File.Delete(temporaryPdf);
+            if (snapshot is not null) SharedFile.DeleteSnapshot(snapshot);
             Directory.Delete(temporaryDirectory, recursive: false);
         }
     }

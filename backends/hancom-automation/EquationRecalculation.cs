@@ -84,23 +84,20 @@ internal static partial class HancomPreviewWriter
     {
         options.ValidatePaths();
         EnsureInteractiveContext();
-        EnsureNoExistingHwpProcess();
-        foreach (var process in System.Diagnostics.Process.GetProcessesByName("Hwp64"))
-        {
-            using (process) throw new InvalidOperationException("Close existing HWP processes before recalculating equations.");
-        }
         var module = SecurityModuleRegistration.ReadAndValidate(AppContext.BaseDirectory);
         var sourceHash = HashFile(options.SourcePath);
         var temporary = NativeDocumentFormat.TemporaryPath(options.OutputPath, "hwpeqrecalc");
         var hwpx = NativeDocumentFormat.FromPath(options.OutputPath) == "HWPX";
         var converting = NativeDocumentFormat.FromPath(options.SourcePath) != NativeDocumentFormat.FromPath(options.OutputPath);
+        string? snapshot = null;
         var warnings = new List<string>();
         try
         {
+            snapshot = SharedFile.Snapshot(options.SourcePath);
             var (count, resized, tables, images) = WithHwp(module, hwp =>
             {
                 hwp.XHwpWindows.Item(0).Visible = false;
-                Open(hwp, options.SourcePath, visible: false);
+                Open(hwp, snapshot!, visible: false);
                 var original = HwpMarkup.ReadDocument((object)hwp);
                 List<EquationState> before = ReadEquations(hwp, original);
                 foreach (var control in EquationControls((object)hwp))
@@ -144,6 +141,7 @@ internal static partial class HancomPreviewWriter
         finally
         {
             if (File.Exists(temporary)) File.Delete(temporary);
+            if (snapshot is not null) SharedFile.DeleteSnapshot(snapshot);
         }
     }
 

@@ -69,6 +69,17 @@ internal static class NativeDocumentFormatTests
                     Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(expectedSource)),
                     "Template fingerprint must allow Hancom's existing HWPX write handle.");
                 Check(writer.Length == expectedSource.Length, "Fingerprint changed the open template.");
+                // Sources may stay open in the user's Hancom: hash and snapshot
+                // through shared reads, never taking ownership of the file.
+                Check(SharedFile.Hash(source) == fingerprint.Sha256, "Shared hash must read a source held open for writing.");
+                var snapshot = SharedFile.Snapshot(source);
+                try
+                {
+                    Check(File.ReadAllBytes(snapshot).SequenceEqual(expectedSource) && Path.GetExtension(snapshot) == ".hwpx",
+                        "Snapshot must copy the open source with its format extension.");
+                }
+                finally { SharedFile.DeleteSnapshot(snapshot); }
+                Check(!Directory.Exists(Path.GetDirectoryName(snapshot)), "Snapshot directory was not removed.");
             }
             Check(File.ReadAllBytes(source).SequenceEqual(expectedSource), "Fingerprint modified template bytes.");
             foreach (var extension in new[] { ".hwp", ".HWPX" })
