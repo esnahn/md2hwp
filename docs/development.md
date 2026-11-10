@@ -97,7 +97,7 @@ PDF CLI는 백엔드의 COM 세션·보안 검사 코드를 재사용하고, 게
 pwsh -NoProfile -File tools/development/build.ps1 -Configuration Release -Package
 ```
 
-`target/dist/md2hwp-v<버전>-windows-x64.zip`에 실행 파일 네 개, 추적 기본 템플릿, PowerShell 자동완성, README와 원고 작성 문서 두 개, 프로젝트 라이선스·제3자 고지 및 `licenses/`를 넣고 SHA-256을 출력합니다.
+`target/dist/md2hwp-v<버전>-windows-x64.zip`에 실행 파일 다섯 개, 추적 기본 템플릿, PowerShell 자동완성, README와 원고 작성 문서 두 개, 프로젝트 라이선스·제3자 고지 및 `licenses/`를 넣고 SHA-256을 출력합니다.
 패키지는 사용자 편집본 대신 `templates/template.hwp`를 사용합니다. 기존 배포 ZIP은 새 ZIP 생성에 성공한 뒤 교체합니다.
 GitHub Release에는 실행용 ZIP만 첨부하고, 체크섬은 본문 끝에 표시합니다. 소스는 GitHub 자동 다운로드를 사용하며 릴리스 노트·빌드 매니페스트는 별도 첨부하지 않습니다.
 
