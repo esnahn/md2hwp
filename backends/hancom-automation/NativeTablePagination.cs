@@ -32,7 +32,12 @@ internal static class NativeTablePagination
     }
 
     internal static int Reflow(dynamic hwp, XDocument document, IReadOnlyCollection<Anchor> anchors,
-        Action<XDocument> reimport) => Correct(document, anchors, anchor => ReadStartPages(hwp, anchor), reimport);
+        Action<XDocument> reimport)
+    {
+        var moved = Correct(document, anchors, anchor => ReadStartPages(hwp, anchor), reimport);
+        ReturnToBodyStart((object)hwp);
+        return moved;
+    }
 
     internal static int Correct(XDocument document, IReadOnlyCollection<Anchor> anchors,
         Func<Anchor, StartPages> readPages, Action<XDocument> reimport)
@@ -68,8 +73,27 @@ internal static class NativeTablePagination
         return corrected;
     }
 
-    internal static void VerifyReopened(dynamic hwp, IReadOnlyCollection<Anchor> anchors) =>
+    internal static void VerifyReopened(dynamic hwp, IReadOnlyCollection<Anchor> anchors)
+    {
         Verify(anchors, anchor => ReadStartPages(hwp, anchor));
+        ReturnToBodyStart((object)hwp);
+    }
+
+    // Reading cell pages leaves the caret in the last generated cell, and SaveAs
+    // stores it. Hancom 2020 CreatePageImage then renders pages of that cell's
+    // list instead of the body, and the document opens inside the table.
+    private static void ReturnToBodyStart(object automation)
+    {
+        dynamic hwp = automation;
+        if (!(bool)hwp.MovePos(2, 0, 0))
+            throw new InvalidOperationException("Could not return the caret to the document start.");
+        int list, paragraph, position;
+        hwp.GetPos(out list, out paragraph, out position);
+        // The first body paragraph may begin with section/column controls, so
+        // the top-of-file position need not be character offset 0.
+        if (list != 0 || paragraph != 0)
+            throw new InvalidOperationException($"The caret did not return to the document body start ({list}, {paragraph}, {position}).");
+    }
 
     internal static void Verify(IReadOnlyCollection<Anchor> anchors, Func<Anchor, StartPages> readPages)
     {

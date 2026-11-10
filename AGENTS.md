@@ -110,8 +110,9 @@ STRIKEOUT Type=Continuous Shape=Solid Color=0 (HWP attr bits 18-20=1, strike sha
 underline bits 2-3=2 only without an underline, strike color 0), SUPERSCRIPT bit 15,
 SUBSCRIPT bit 16; an existing template strikeout keeps its type, shape and color.
 Table widths measure superscript/subscript at 64% character size (Hancom page images,
-10pt and 20pt). Hancom CreatePageImage fails on Hancom-backend outputs containing
-tables (pre-existing, also v0.6.0 before this change); verify those via hwp2pdf.
+10pt and 20pt). Hancom 2020 CreatePageImage renders the stored caret's list, not
+the body: table pagination checks walk generated cells, so return the caret to the
+body start before each save. Outputs from earlier builds with tables fail page images.
 IR inline footnote contains nonempty paragraph blocks. Allow notes in document
 paragraphs, headings, list paragraphs and table cells, including formatted spans and link labels.
 Footnote bodies allow multiple paragraphs and existing inline formatting/links/line
