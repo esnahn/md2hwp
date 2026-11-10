@@ -40,9 +40,10 @@ include md2hwp.exe, md2hwp-rhwp.exe, md2hwp-hancom.exe, hwp2pdf.exe, hwpeqrecalc
 Include LICENSE, THIRD-PARTY-NOTICES.txt and licenses/ in deployment
 folders and executable ZIPs. Original project code is AGPL-3.0-only; preserve
 third-party licenses. Regenerate notices with tools/development/update-third-party-notices.ps1
-after dependency changes; builds check them. Link the exact matching release-tag
-Corresponding Source next to binary downloads. Confirm third-party material
-permissions before publication.
+after dependency changes; builds check them. GitHub Releases show the tag's
+source downloads next to the binaries automatically; do not add Corresponding
+Source links to release notes. Confirm third-party material permissions before
+publication.
 Ship tools/completions/md2hwp-completion.ps1 at the deployment/package root.
 Keep its static command/options map aligned with the CLI. It must register only
 within the current PowerShell session, never edit user profiles or execute a backend.
