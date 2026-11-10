@@ -534,7 +534,13 @@ Use documented COM only, not UI clicks/keystrokes. Process one document at a tim
 Never modify source templates or manuscripts. Replace generated HWP only after
 successful temporary rendering, save/reopen and structural verification. Preserve
 the old result on failure. Do not accept security, repair or data-loss dialogs.
-Do not terminate user-owned HWP processes. Require existing HWP processes to close.
+Hancom tools work while the user's Hancom is open. WithHwp records existing
+Hwp/Hwp64 processes, identifies the process behind the new COM object from its
+window, refuses one that already existed without clearing, quitting or stopping it,
+and waits only for its own process (PID plus start time). If that process does not
+exit after Quit, stop only it and fail without publishing. Read sources through
+shared reads (hash, snapshot, working copy); unsaved edits in the user's window
+are not included. Never terminate or alter user-owned HWP processes or documents.
 
 Verified workstation context from the removed environment record:
 DESKTOP-BRTN48S\MOLIT, interactive Session 1, Windows PowerShell 5.1 x64 STA,

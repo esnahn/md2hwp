@@ -4,10 +4,10 @@
 
 v0.5.0 릴리스는 IR 0.4를 사용했고, 현재 개발 버전은 수식 추가로 IR 0.6을 사용합니다. 프로그램 버전과 IR 버전은 독립적이며, 프로그램 버전 상향으로 IR이나 템플릿의 `ir-version`을 바꾸지 않습니다.
 
-일반 빌드는 `md2hwp.exe`, `md2hwp-rhwp.exe`, `md2hwp-hancom.exe`, `hwp2pdf.exe`, `hwpeqrecalc.exe` 다섯 실행 파일을 포함합니다(v0.5.0 배포 ZIP은 `hwpeqrecalc.exe`를 뺀 네 개). HWP 기본 경로인 `md2hwp-rhwp.exe`는 한글·.NET·보안 모듈 없이 실행합니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. Markdown 처리에는 Pandoc이 필요합니다. 다음 한글·.NET·보안 모듈 준비는 HWPX를 처리하는 `md2hwp-hancom.exe`와 HWP 입력 전용 `hwp2pdf.exe`에 해당합니다.
+일반 빌드는 `md2hwp.exe`, `md2hwp-rhwp.exe`, `md2hwp-hancom.exe`, `hwp2pdf.exe`, `hwpeqrecalc.exe` 다섯 실행 파일을 포함합니다(v0.5.0 배포 ZIP은 `hwpeqrecalc.exe`를 뺀 네 개). HWP 기본 경로인 `md2hwp-rhwp.exe`는 한글·.NET·보안 모듈 없이 실행합니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. Markdown 처리에는 Pandoc이 필요합니다. 다음 한글·.NET·보안 모듈 준비는 HWPX를 처리하는 `md2hwp-hancom.exe`, HWP 입력 전용 `hwp2pdf.exe`, `hwpeqrecalc.exe`에 해당합니다.
 
 - 한글 설치 및 로그인된 대화형 Windows 세션이 필요합니다. 기준 환경은
-  한글 2020 HWP 11.0.0.9136입니다. 실행 중인 한글 문서는 먼저 닫습니다.
+  한글 2020 HWP 11.0.0.9136입니다. 이미 실행 중인 한글이 있어도 됩니다. 각 실행은 자기 한글 프로세스를 따로 띄워 그것만 닫으며, 사용자가 열어 둔 한글 창과 문서는 건드리지 않습니다. 원본이 사용자 한글에 열려 있어도 저장된 파일을 읽으며, 저장하지 않은 변경은 반영되지 않습니다.
 - .NET 10 x64 런타임이 필요합니다. Rust는 실행 전에 확인하고 없으면
   [공식 설치 페이지](https://dotnet.microsoft.com/ko-kr/download/dotnet/10.0)를 안내합니다.
   백엔드 직접 실행 시 별도 설치 런타임은 `DOTNET_ROOT_X64`로 지정합니다.

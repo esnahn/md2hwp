@@ -39,7 +39,7 @@ Pandoc은 `setup-pandoc`이 따로 다운로드하는 GPL-2.0-or-later 프로그
 
 `md2hwp`는 간략 사용법만 표시합니다. `md2hwp --help` 또는 `md2hwp -h`는 기본 변환 옵션과 명령별 한 줄 사용법을 표시합니다. `md2hwp md2ir --help`처럼 명령 뒤에 `--help`를 붙이면 해당 명령의 사용법·옵션·기본값만 확인할 수 있습니다. 도움말은 Pandoc·한글·.NET을 실행하지 않습니다.
 
-일반 빌드에는 `md2hwp.exe`, `md2hwp-rhwp.exe`, `md2hwp-hancom.exe`, `hwp2pdf.exe`, `hwpeqrecalc.exe` 다섯 실행 파일을 함께 넣습니다(v0.5.0 배포 ZIP은 `hwpeqrecalc.exe`를 뺀 네 개). 변환용 EXE들과 `template.hwp`는 같은 폴더에 둡니다. Markdown 처리에는 Pandoc이 필요하며, HWP를 rhwp로 생성할 때는 한글·.NET·보안 모듈이 필요하지 않습니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. HWPX와 한글 백엔드, `hwp2pdf.exe`, `hwpeqrecalc.exe`에는 한글, .NET 10 x64 런타임, 한글 보안 모듈이 필요합니다. 이 경우 실행 중인 한글을 닫습니다. [설치 안내](docs/usage.md)를 참고하십시오.
+일반 빌드에는 `md2hwp.exe`, `md2hwp-rhwp.exe`, `md2hwp-hancom.exe`, `hwp2pdf.exe`, `hwpeqrecalc.exe` 다섯 실행 파일을 함께 넣습니다(v0.5.0 배포 ZIP은 `hwpeqrecalc.exe`를 뺀 네 개). 변환용 EXE들과 `template.hwp`는 같은 폴더에 둡니다. Markdown 처리에는 Pandoc이 필요하며, HWP를 rhwp로 생성할 때는 한글·.NET·보안 모듈이 필요하지 않습니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. HWPX와 한글 백엔드, `hwp2pdf.exe`, `hwpeqrecalc.exe`에는 한글, .NET 10 x64 런타임, 한글 보안 모듈이 필요합니다. 이미 실행 중인 한글이 있어도 됩니다. 각 실행은 자기 한글 프로세스를 따로 띄워 그것만 닫으며, 사용자가 열어 둔 한글 창과 문서는 건드리지 않습니다. 원본이 사용자 한글에 열려 있어도 저장된 파일을 읽으며, 저장하지 않은 변경은 반영되지 않습니다. [설치 안내](docs/usage.md)를 참고하십시오.
 
 ```powershell
 .\md2hwp.exe setup-pandoc
@@ -234,7 +234,7 @@ Windows 빌드 도구는 기존 설치를 확인하고 부족하면 필요한 MS
 
 템플릿만 검사하려면 `md2hwp validate-template [template.hwp]`를 실행합니다. 경로를 생략하면 EXE 옆의 `template.hwp`를 검사하며, `--template`, `--worker`, `--dotnet`도 지정할 수 있습니다. 명시한 `.hwpx` 템플릿도 검사합니다. 백엔드에서도 `md2hwp-hancom validate-template [template.hwp]`로 실행할 수 있습니다.
 
-rhwp 검사는 한글·.NET 없이 실행합니다. 한글 백엔드 검사는 한글·.NET과 등록된 보안 모듈이 필요하며, 실행 전 한글 문서를 닫아야 합니다. 원고·Pandoc 없이 IR 버전, 선언, 슬롯과 원형 구조를 검사합니다. 원본은 저장하지 않으며 첫 오류에서 실패합니다. 성공 결과의 `RequiredMetadata`는 원고 YAML에 필요한 키입니다. `RequiresRecognizedDate: true`이면 `date-meta` 생성을 위해 인식 가능한 `date`도 필요합니다. 실제 원고 값, 표 폭, 제목 넘침 등 문서 생성·시각 검증이 필요한 조건은 이 검사만으로 보장하지 않습니다.
+rhwp 검사는 한글·.NET 없이 실행합니다. 한글 백엔드 검사는 한글·.NET과 등록된 보안 모듈이 필요하며, 실행 중인 한글이 있어도 됩니다. 원고·Pandoc 없이 IR 버전, 선언, 슬롯과 원형 구조를 검사합니다. 원본은 저장하지 않으며 첫 오류에서 실패합니다. 성공 결과의 `RequiredMetadata`는 원고 YAML에 필요한 키입니다. `RequiresRecognizedDate: true`이면 `date-meta` 생성을 위해 인식 가능한 `date`도 필요합니다. 실제 원고 값, 표 폭, 제목 넘침 등 문서 생성·시각 검증이 필요한 조건은 이 검사만으로 보장하지 않습니다.
 
 개발할 때 기본 서식은 `templates/template.hwp`에서 편집합니다. 빌드는 `target/debug`·`target/release`의 템플릿을 매번 이 파일로 교체합니다. 실행용 배포본에서는 EXE 옆의 `template.hwp`를 사용합니다. 새 파일은 `md2hwp init-template 새템플릿.hwp`로 만들며, `.hwpx` 확장자로 HWPX 템플릿도 만들 수 있습니다. 지원 IR 버전인 0.6과 다른 이전 IR은 다시 생성하고, 기존 사용자 템플릿의 새 선언은 직접 반영하거나 별도 파일로 재생성해야 합니다. HWPX 템플릿·출력의 범위와 실행 예는 [HWPX 안내](docs/hwpx.md)에 있습니다.
 

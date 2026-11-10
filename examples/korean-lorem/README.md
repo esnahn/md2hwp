@@ -111,7 +111,7 @@ Ipsum 언어 후보 생성에 사용한 402문단·11,060어절과 집계 목적
 현재 지원 Markdown 문법의 해석, IR 0.3 검증, 기존 본문의 보존과 기능별 개수를
 확인했습니다. 2026-10-05에는 한글 변환·저장·재열기 구조 검증을 통과하고 전체 쪽
 모음과 대표 쪽의 시각 점검을 수행했습니다. 세부 결과와 발견 사항은 아래에 기록합니다.
-한글 문서를 닫은 뒤 다음 명령으로 HWP를 생성할 수 있습니다.
+다음 명령으로 HWP를 생성할 수 있습니다.
 
 ```powershell
 .\target\release\md2hwp.exe .\examples\korean-lorem\large-5x.md --template .\templates\template.hwp
