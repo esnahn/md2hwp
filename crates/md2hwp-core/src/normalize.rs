@@ -850,7 +850,11 @@ impl Normalizer<'_> {
             }
         };
         let tex = values[1].as_str().ok_or_else(|| {
-            self.invalid(&format!("{path}/c/1"), "Math", "math content must be a string")
+            self.invalid(
+                &format!("{path}/c/1"),
+                "Math",
+                "math content must be a string",
+            )
         })?;
         Ok((display, tex))
     }
@@ -1798,8 +1802,7 @@ mod tests {
             .unwrap_err();
         assert!(two.message.contains("only content"));
         for tex in ["", "  ", r"\unknowncommand{x}"] {
-            let error = normalize_blocks(json!([{"t":"Para","c":[math(false, tex)]}]))
-                .unwrap_err();
+            let error = normalize_blocks(json!([{"t":"Para","c":[math(false, tex)]}])).unwrap_err();
             assert_eq!(error.code, "unsupported_math", "{tex:?}");
             assert_eq!(error.path, "/blocks/0/c/0/c/1");
         }
@@ -1810,12 +1813,17 @@ mod tests {
         use serde_json::json;
         let inline = math(false, "x");
         assert!(
-            normalize_blocks(json!([{"t":"BulletList","c":[[{"t":"Plain","c":[inline.clone()]}]]}]))
-                .is_ok()
+            normalize_blocks(
+                json!([{"t":"BulletList","c":[[{"t":"Plain","c":[inline.clone()]}]]}])
+            )
+            .is_ok()
         );
-        assert!(normalize_blocks(json!([{"t":"Para","c":[note(json!([inline.clone()]))]}])).is_ok());
+        assert!(
+            normalize_blocks(json!([{"t":"Para","c":[note(json!([inline.clone()]))]}])).is_ok()
+        );
         let link = json!({"t":"Link","c":[["",[],[]],[inline.clone()],["https://example.net",""]]});
-        let math_alt = json!({"t":"Image","c":[["",[],[]],[inline.clone()],["assets/image.png",""]]});
+        let math_alt =
+            json!({"t":"Image","c":[["",[],[]],[inline.clone()],["assets/image.png",""]]});
         let table = json!({"t":"Table","c":[["",[],[]],[null,[]],[[{"t":"AlignDefault"},{"t":"ColWidthDefault"}]],
             [["",[],[]],[[["",[],[]],[[["",[],[]],{"t":"AlignDefault"},1,1,[{"t":"Plain","c":[inline.clone()]}]]]]]],
             [[["",[],[]],0,[],[]]],[["",[],[]],[]]]});
@@ -1829,7 +1837,10 @@ mod tests {
         ] {
             let error = normalize_blocks(blocks.clone()).unwrap_err();
             assert_eq!(error.code, "invalid_ir_semantics", "{blocks}");
-            assert!(error.message.contains("inline math is allowed only"), "{error}");
+            assert!(
+                error.message.contains("inline math is allowed only"),
+                "{error}"
+            );
         }
     }
 

@@ -224,7 +224,14 @@ impl State<'_> {
                     &format!("{path}/level"),
                     "heading level must be between 1 and 6",
                 )?;
-                self.inline_array(inlines, &format!("{path}/inlines"), false, true, true, false)
+                self.inline_array(
+                    inlines,
+                    &format!("{path}/inlines"),
+                    false,
+                    true,
+                    true,
+                    false,
+                )
             }
             Block::VerbatimBlock { lines, source } => {
                 self.require(
