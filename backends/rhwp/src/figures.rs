@@ -242,18 +242,14 @@ impl Prototype {
         };
         // Use fresh model geometry: sample crop, transforms, borders and embedded
         // bytes are not manuscript defaults. The native crop axis is independent
-        // of display extent; raster inputs follow the reader's 75 HU/pixel axis,
-        // which Hancom stores rounded half up to 60 HU (537 px -> 40260) and
-        // restores on re-layout, so write that value directly.
-        let natural = if resource.pixel_width > 0 && resource.pixel_height > 0 {
-            let axis = |pixels: u32| ((u64::from(pixels) * 5 + 2) / 4 * 60) as f64;
-            (axis(resource.pixel_width), axis(resource.pixel_height))
-        } else {
-            (
-                resource.width * 7200.0 / 2540.0,
-                resource.height * 7200.0 / 2540.0,
-            )
-        };
+        // of display extent. Hancom stores raster pixels and EMF rclBounds
+        // device units at 75 HU each, rounded half up to 60 HU (537 -> 40260),
+        // and restores that value on re-layout, so write it directly.
+        if resource.pixel_width == 0 || resource.pixel_height == 0 {
+            return Err("Figure resource has no native picture extent".into());
+        }
+        let axis = |units: u32| ((u64::from(units) * 5 + 2) / 4 * 60) as f64;
+        let natural = (axis(resource.pixel_width), axis(resource.pixel_height));
         if natural.0 < 1.0
             || natural.1 < 1.0
             || natural.0 > f64::from(i32::MAX)
@@ -851,6 +847,11 @@ mod tests {
             })
             .collect();
         assert_eq!(pictures.len(), 4);
+        // Hancom 2020 stores examples/emf/EmfOnly.emf as 41760 x 24240.
+        assert_eq!(
+            (pictures[2].crop.right, pictures[2].crop.bottom),
+            (41760, 24240)
+        );
         assert_eq!(
             pictures[0].image_attr.bin_data_id,
             pictures[3].image_attr.bin_data_id

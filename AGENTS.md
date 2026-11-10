@@ -608,8 +608,13 @@ EMF figures accept .emf case-insensitively without changing the IR. Inspect the
 little-endian EMR_HEADER and record/EOF boundaries in the backend before COM;
 limit files to 64 MiB and one million records, reject invalid signatures/versions,
 byte/record counts, offsets and nonpositive physical frames. Use rclFrame deltas
-in 0.01 mm for aspect ratio, never treat rclBounds device units as pixels or fall
-back silently when the frame is invalid. Pass the original file to embedded
+in 0.01 mm for aspect ratio, never derive display aspect from rclBounds or fall
+back silently when the frame is invalid. rhwp writes the native crop axis the way
+Hancom 2020 stores it (live probes): absolute rclBounds deltas, or, if either is
+zero, floor(frame * szlDevice / (szlMillimeters * 100)) for both axes; raster
+pixels and these units become units * 75 HU rounded half up to 60 HU. Hancom
+restores that value on re-layout, which hwpeqrecalc reports as a non-equation
+change. Reject an empty-bounds EMF without a positive device size. Pass the original file to embedded
 InsertPicture; do not add a rasterization dependency or an IR format field.
 The bounded container reader is not a full drawing-record semantic validator.
 Hancom 2020 tests cover ordinary EMF and EMF+ Only/Dual. Compare native lossless

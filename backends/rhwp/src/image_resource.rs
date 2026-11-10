@@ -20,7 +20,8 @@ pub(crate) struct Resource {
     /// Raster pixels, or EMF physical frame units (0.01 mm).
     pub width: f64,
     pub height: f64,
-    /// Zero for vector EMF resources, which have no intrinsic pixel dimensions.
+    /// Native crop-axis units: raster pixels, or the EMF device extent that
+    /// Hancom 2020 derives from rclBounds (see emf_dimensions).
     pub pixel_width: u32,
     pub pixel_height: u32,
     source: Option<SourceIdentity>,
@@ -118,8 +119,8 @@ impl Resource {
                 (f64::from(w), f64::from(h), w, h)
             }
             "emf" => {
-                let (w, h) = emf_dimensions(&bytes)?;
-                (w as f64, h as f64, 0, 0)
+                let (w, h, bounds_w, bounds_h) = emf_dimensions(&bytes)?;
+                (w as f64, h as f64, bounds_w, bounds_h)
             }
             _ => return Err("unsupported image extension".into()),
         };
@@ -229,7 +230,9 @@ fn jpeg_dimensions(bytes: &[u8]) -> Result<(u32, u32), String> {
     Err("missing JPEG frame header".into())
 }
 
-fn emf_dimensions(bytes: &[u8]) -> Result<(i64, i64), String> {
+/// Returns the rclFrame size (0.01 mm, display aspect ratio) and the device
+/// extent Hancom uses for the native picture crop axis.
+fn emf_dimensions(bytes: &[u8]) -> Result<(i64, i64, u32, u32), String> {
     fn u(bytes: &[u8], offset: usize) -> u32 {
         u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap())
     }
@@ -270,6 +273,28 @@ fn emf_dimensions(bytes: &[u8]) -> Result<(i64, i64), String> {
     if width <= 0 || height <= 0 {
         return Err("EMF physical frame must have positive width and height".into());
     }
+    // Hancom 2020's native extent (live probes): absolute rclBounds deltas,
+    // or, when either delta is zero, the frame truncated to device units.
+    let mut extent = (
+        (i(bytes, 16) - i(bytes, 8)).unsigned_abs(),
+        (i(bytes, 20) - i(bytes, 12)).unsigned_abs(),
+    );
+    if extent.0 == 0 || extent.1 == 0 {
+        let device = |frame: i64, pixels: usize, millimeters: usize| {
+            let (pixels, millimeters) = (i(bytes, pixels), i(bytes, millimeters));
+            (pixels > 0 && millimeters > 0).then(|| {
+                (i128::from(frame) * i128::from(pixels) / (i128::from(millimeters) * 100)) as u64
+            })
+        };
+        extent = match (device(width, 72, 80), device(height, 76, 84)) {
+            (Some(w), Some(h)) if w > 0 && h > 0 => (w, h),
+            _ => return Err("EMF has empty device bounds and no usable device size".into()),
+        };
+    }
+    if extent.0 > i32::MAX as u64 || extent.1 > i32::MAX as u64 {
+        return Err("EMF device extent exceeds native limits".into());
+    }
+    let (bounds_width, bounds_height) = (extent.0 as i64, extent.1 as i64);
     let mut cursor = header_size;
     let mut count = 1;
     while cursor < bytes.len() {
@@ -301,7 +326,7 @@ fn emf_dimensions(bytes: &[u8]) -> Result<(i64, i64), String> {
             {
                 return Err("invalid EMF EOF palette or size".into());
             }
-            return Ok((width, height));
+            return Ok((width, height, bounds_width as u32, bounds_height as u32));
         }
         cursor += size;
     }
@@ -337,6 +362,10 @@ mod tests {
         for (offset, value) in [
             (0, 1),
             (4, 88),
+            (8, (-10_i32) as u32),
+            (12, (-10_i32) as u32),
+            (16, 547),
+            (20, 313),
             (24, 100),
             (28, 200),
             (32, 2100),
@@ -388,14 +417,35 @@ mod tests {
     }
 
     #[test]
-    fn emf_uses_physical_frame_and_checks_container_boundaries() {
+    fn emf_uses_frame_for_aspect_bounds_for_extent_and_checks_container_boundaries() {
         let bytes = emf();
         let resource = Resource::from_bytes(bytes.clone(), "emf".into()).unwrap();
         assert_eq!((resource.width, resource.height), (2000.0, 1000.0));
-        assert_eq!((resource.pixel_width, resource.pixel_height), (0, 0));
+        // Exclusive deltas, as Hancom 2020 uses them: 547 - (-10), 313 - (-10).
+        assert_eq!((resource.pixel_width, resource.pixel_height), (557, 323));
         assert_eq!(resource.bytes, bytes);
+        // Hancom 2020 ignores the bounds' sign: (10,10)-(5,7) is 5 x 3.
+        let mut inverted = emf();
+        for (offset, value) in [(8, 10), (12, 10), (16, 5), (20, 7)] {
+            put(&mut inverted, offset, value);
+        }
+        assert_eq!(emf_dimensions(&inverted).unwrap(), (2000, 1000, 5, 3));
+        // An empty axis switches both axes to the frame in truncated device
+        // units: 2000 * 1366 / 36100 = 75.6 -> 75, 1000 * 768 / 20300 -> 37.
+        let mut empty = emf();
+        for (offset, value) in [
+            (16, (-10_i32) as u32),
+            (72, 1366),
+            (76, 768),
+            (80, 361),
+            (84, 203),
+        ] {
+            put(&mut empty, offset, value);
+        }
+        assert_eq!(emf_dimensions(&empty).unwrap(), (2000, 1000, 75, 37));
         for (offset, value) in [
             (4, 87),
+            (16, (-10_i32) as u32),
             (32, 100),
             (40, 0),
             (44, 2),
