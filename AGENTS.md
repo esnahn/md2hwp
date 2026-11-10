@@ -93,10 +93,25 @@ the title, removing the prefix and one following space, then skipping immediatel
 following blank/whitespace-only lines. With no title slot, preserve all raw lines.
 Keep this template-dependent presentation in the backend; do not add an IR title
 field or parse Markdown syntax inside the remaining verbatim text.
-Markdown input uses commonmark+yaml_metadata_block+footnotes+attributes+implicit_figures+pipe_tables+tex_math_dollars. Reference-style
+Markdown input uses commonmark+yaml_metadata_block+footnotes+attributes+implicit_figures+pipe_tables+tex_math_dollars+strikeout. Reference-style
 footnotes are enabled; inline_notes remains disabled. The 제목: and 출처: rules
 are md2hwp conventions, not CommonMark or Pandoc extension syntax. Document these
 separately in README.md.
+IR 0.6 marks also include strikeout, superscript and subscript ({type, inlines},
+nonempty, allowed wherever strong/emph are). ~~x~~ is Pandoc strikeout; a single
+tilde stays literal (verified with Pandoc 3.10.1). Superscript/subscript come only
+from raw HTML <sup>/<sub> (ASCII case-insensitive, no attributes) paired by the core
+within one inline sequence, or from Pandoc JSON Superscript/Subscript; do not enable
+the superscript/subscript Markdown extensions (they clash with 1~2 ranges). Reject
+unpaired tags, other raw HTML, superscript/subscript nested in either, and inline
+math inside them. Both workers derive formats from the template character format
+the way Hancom 2020's own 취소선/위 첨자/아래 첨자 commands store them: HWPML
+STRIKEOUT Type=Continuous Shape=Solid Color=0 (HWP attr bits 18-20=1, strike shape 0,
+underline bits 2-3=2 only without an underline, strike color 0), SUPERSCRIPT bit 15,
+SUBSCRIPT bit 16; an existing template strikeout keeps its type, shape and color.
+Table widths measure superscript/subscript at 64% character size (Hancom page images,
+10pt and 20pt). Hancom CreatePageImage fails on Hancom-backend outputs containing
+tables (pre-existing, also v0.6.0 before this change); verify those via hwp2pdf.
 IR inline footnote contains nonempty paragraph blocks. Allow notes in document
 paragraphs, headings, list paragraphs and table cells, including formatted spans and link labels.
 Footnote bodies allow multiple paragraphs and existing inline formatting/links/line
