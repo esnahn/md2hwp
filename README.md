@@ -1,228 +1,119 @@
-# md2hwp v0.6.0
+# md2hwp
 
-Markdown 원고를 한글 템플릿의 서식에 맞춰 변환합니다. Windows x64에서 실행하며, 프로그램 v0.6.0의 IR 버전은 0.6입니다(v0.5.0은 IR 0.4). 프로그램과 IR은 독립적으로 버전을 관리합니다. 원고는 Markdown 또는 Pandoc JSON으로 입력하며, HWPX·RST 원고 직접 입력은 지원하지 않습니다.
+Markdown 원고를 한글 템플릿의 서식에 맞춰 HWP·HWPX 문서로 변환합니다. Windows x64에서 실행합니다.
+원고에는 내용만 적고, 글꼴·번호·배치는 템플릿으로 자동 생성합니다.
 
-v0.4.4부터 HWPX 템플릿과 HWPX 출력을 지원합니다. 확장자로 형식을 선택하며 기본값은 HWP입니다. [HWPX 사용 범위](docs/hwpx.md)를 참고하십시오.
-
-배포 파일은 [GitHub Releases](https://github.com/esnahn/md2hwp/releases)에서 확인할 수 있습니다.
+현재 버전은 v0.6.0입니다. 배포 파일은 [GitHub Releases](https://github.com/esnahn/md2hwp/releases)에서 받고,
 변경 사항은 [v0.6.0 릴리스 노트](docs/release-v0.6.0.md)를 참고하십시오.
 
-v0.6.0은 Markdown의 `$...$`·`$$...$$` 수식을 한글 수식으로 변환하며, 두 백엔드 모두 수식을 생성합니다. 수식 크기를 한글이 다시 조판하게 하는 `hwpeqrecalc.exe`를 추가했고, 한글 백엔드·`hwp2pdf.exe`·`hwpeqrecalc.exe`는 실행 중인 한글이 있어도 동작합니다.
+## 실행
 
-v0.6.0은 HWP 전용 `md2hwp-rhwp.exe`와 한글 자동화 백엔드 `md2hwp-hancom.exe`를 함께 제공합니다. 일반 문단·제목 블록·메타데이터·중첩 목록·코드 박스·PNG/JPEG/EMF 그림·표·각주·번호 상호참조를 지원하며, 현재 기본 템플릿의 장 표지와 절 목록을 사용할 수 있습니다. 각주는 본문·제목·목록·표 셀에서 지원하며, native 캡션·머리말·꼬리말·바탕쪽에는 넣을 수 없습니다. 여러 문단 목록 항목은 native 번호·글머리표의 실제 폭을 측정해 후속 문단을 정렬합니다. 표의 자동 열 폭과 목록 표식 실측에는 Windows에 설치된 TTF/OTF 글꼴이 필요하며, 지원하지 않는 번호 형식·표식 글리프는 명시적으로 거부합니다. `--worker`를 생략하면 EXE 옆의 rhwp를 우선하고, 파일이 없을 때 한글 백엔드를 선택합니다. 템플릿 또는 출력이 `.hwpx`이면 한글 백엔드만 자동 선택합니다. 명시한 `--worker`는 그대로 사용하며, 실행 실패 후 다른 백엔드로 재시도하지 않습니다. [개발 범위와 사용 방법](docs/rhwp-backend-strategy.md), [각주 시험](docs/rhwp-footnotes-2026-10-22.md), [상호참조 구현과 검증 범위](docs/rhwp-references-2026-10-22.md), [목록 표식 실측 범위](docs/rhwp-list-widths-2026-10-22.md), [통합 비교·성능](docs/rhwp-integration-2026-10-22.md)를 참고하십시오.
-
-`md2hwp validate-template --worker md2hwp-rhwp.exe`와 `md2hwp init-template 새템플릿.hwp --worker md2hwp-rhwp.exe`도 한글·.NET 없이 실행할 수 있습니다. 생성되는 템플릿은 기존 보고서 서식을 복사하지 않은 기본 서식이며, 기존 파일은 덮어쓰지 않습니다. rhwp 템플릿 검사는 선언·원형·서식 참조를 검사하며 실제 한글 페이지 배치까지 판정하지 않습니다.
-
-양쪽의 엄격 검사 판정과 조건부 범위의 native 필드 보존을 맞췄습니다. 한글의 JPEG 재인코딩에 따른 관찰된 표시 차이는 허용하며, 긴 고정 크기 박스·표의 잘림과 지원하지 않는 템플릿 구조 등의 제한은 남아 있습니다. [기능 동등성 검토](docs/rhwp-parity-2026-10-23.md)에 실제 출력 비교와 남은 템플릿 제한을 기록했습니다. 임의 템플릿까지 포함한 완전한 기능 동등성을 보장하지는 않습니다.
-
-알려진 문제로, 한글 백엔드의 `init-template 새템플릿.hwpx`가 만든 새 템플릿은 검사에 성공해도 원고 변환의 HWPX→HWP 정규화 검사에서 실패할 수 있습니다. 기존 검증 HWPX 템플릿과 추적 HWP 템플릿의 HWPX 출력은 성공했습니다. [재현 기록과 범위](docs/backend-selection-2026-10-23.md#별도-발견-새-hancom-hwpx-기본-템플릿)를 참고하십시오.
-
-## 라이선스
-
-md2hwp는 **AGPL-3.0-only**로 제공합니다.
-[전문](LICENSE)을 확인하십시오. 라이선스 조건에 따라
-수정·재배포할 수 있으며 보증은 제공하지 않습니다. 사용자 원고의 권리는 작성자에게 있습니다.
-
-외부 라이브러리의 저작권·라이선스는 [제3자 고지](THIRD-PARTY-NOTICES.txt)와
-`licenses/`에 보존합니다. 제3자 자료는 각 원저작자의 조건을 따르며,
-프로젝트의 AGPL 선언이 해당 자료의 권리를 변경하지 않습니다.
-
-실행 파일을 배포할 때는 라이선스·고지를 함께 제공하고, 실행 파일과 정확히 대응하는
-소스의 무료 다운로드 링크를 같은 배포 페이지에 표시하십시오. GitHub Release의
-동일 태그 자동 소스 다운로드를 사용하며, 이전 태그나 이동하는 브랜치 링크로 대신하지 않습니다.
-이 버전의 대응 소스: [v0.6.0 소스 다운로드](https://github.com/esnahn/md2hwp/archive/refs/tags/v0.6.0.zip).
-수정한 프로그램을 네트워크 서비스로 제공하는 경우 AGPL 제13조도 적용될 수 있습니다.
-
-Pandoc은 `setup-pandoc`이 따로 다운로드하는 GPL-2.0-or-later 프로그램이며 실행용 ZIP에 포함하지 않습니다.
-[Pandoc 저작권·라이선스](https://github.com/jgm/pandoc/blob/main/COPYRIGHT)를 참고하십시오.
-한글·보안 모듈·서체·.NET 런타임도 별도 제품으로, 각 제공자의 조건을 따릅니다.
-
-## 시작하기
-
-`md2hwp`는 간략 사용법만 표시합니다. `md2hwp --help` 또는 `md2hwp -h`는 기본 변환 옵션과 명령별 한 줄 사용법을 표시합니다. `md2hwp md2ir --help`처럼 명령 뒤에 `--help`를 붙이면 해당 명령의 사용법·옵션·기본값만 확인할 수 있습니다. 도움말은 Pandoc·한글·.NET을 실행하지 않습니다.
-
-일반 빌드와 v0.6.0 배포 ZIP에는 `md2hwp.exe`, `md2hwp-rhwp.exe`, `md2hwp-hancom.exe`, `hwp2pdf.exe`, `hwpeqrecalc.exe` 다섯 실행 파일을 함께 넣습니다. 변환용 EXE들과 `template.hwp`는 같은 폴더에 둡니다. Markdown 처리에는 Pandoc이 필요하며, HWP를 rhwp로 생성할 때는 한글·.NET·보안 모듈이 필요하지 않습니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. HWPX와 한글 백엔드, `hwp2pdf.exe`, `hwpeqrecalc.exe`에는 한글, .NET 10 x64 런타임, 한글 보안 모듈이 필요합니다. 이미 실행 중인 한글이 있어도 됩니다. 각 실행은 자기 한글 프로세스를 따로 띄워 그것만 닫으며, 사용자가 열어 둔 한글 창과 문서는 건드리지 않습니다. 원본이 사용자 한글에 열려 있어도 저장된 파일을 읽으며, 저장하지 않은 변경은 반영되지 않습니다. [설치 안내](docs/usage.md)를 참고하십시오.
+배포 ZIP을 한 폴더에 풀고 그 폴더에서 실행합니다.
 
 ```powershell
 .\md2hwp.exe setup-pandoc
 .\md2hwp.exe 원고.md
+```
+
+첫 명령은 Pandoc을 내려받으며 한 번만 실행합니다. 둘째 명령은 원고 옆에 `원고.output.hwp`와
+중간 파일 `원고.ir.json`을 만듭니다. 원고와 템플릿은 바꾸지 않으며, 변환에 실패하면 기존 결과 파일을 그대로 둡니다.
+
+```powershell
 .\md2hwp.exe 원고.md --output 결과.hwp --template 내템플릿.hwp
 .\md2hwp.exe 원고.md --output 결과.hwpx --template 내템플릿.hwpx
 ```
 
-기본 출력은 원고 옆의 `원고.ir.json`과 `원고.output.hwp`입니다. HWP/HWPX는 생성·재열기 검증 성공 후 교체하며, 실패하면 기존 결과를 보존합니다. 원고와 원본 템플릿은 변경하지 않습니다.
+출력과 템플릿 경로를 지정할 수 있습니다.
+생략하면 출력은 원고 경로 옆의 `원고.output.hwp`, 템플릿은 EXE 옆의 `template.hwp`를 사용합니다.
 
-## PowerShell 자동완성
+| 작업 | 필요한 것 |
+| --- | --- |
+| Markdown 원고 읽기 | Pandoc |
+| HWP 만들기 | 템플릿이 쓰는 글꼴(Windows에 설치된 TTF/OTF) |
+| HWPX 템플릿·출력, PDF 변환, 수식 크기 다시 계산 | 한글, .NET 10 x64 런타임, 한글 보안 모듈 |
 
-배포 폴더에 동봉된 `md2hwp-completion.ps1`을 현재 세션에서 불러옵니다.
-Windows PowerShell 5.1과 PowerShell 7에서 사용할 수 있습니다.
+설치 방법과 모든 옵션은 [설치와 실행](docs/usage.md)에 있습니다.
 
-```powershell
-. .\md2hwp-completion.ps1
-```
+## 명령
 
-`md2hwp v` 뒤에서 Tab을 누르면 `validate`·`validate-template`을 완성합니다.
-명령별 옵션, `--from` 값, 파일 경로도 완성합니다.
-Windows PowerShell 5.1에서는 `--`만 입력하면 셸이 자동완성을 호출하지 않으므로
-`--t`처럼 옵션의 첫 글자까지 입력하십시오. PowerShell 7은 `--`부터 완성합니다.
-`md2hwp`, `md2hwp.exe`, `./md2hwp.exe` 또는 전체 실행 파일 경로를 사용할 수 있습니다.
-자동완성은 md2hwp·Pandoc·한글·.NET을 실행하지 않습니다.
-
-매번 불러오려면 `$PROFILE` 파일에 아래 한 줄을 추가하십시오. 경로는 실제 배포 위치로
-고쳐야 합니다. 프로그램과 빌드 스크립트는 사용자 프로필을 수정하지 않습니다.
-
-```powershell
-. 'C:\Tools\md2hwp\md2hwp-completion.ps1'
-```
-
-개발 저장소에서는 `tools/completions/md2hwp-completion.ps1`이 원본입니다.
-빌드할 때 Debug·Release 폴더에 복사하며, 배포 ZIP에도 포함합니다.
-명령이나 옵션을 추가할 때 이 스크립트도 갱신해야 합니다. Debug 전용 `--legacy-com`은
-배포용 자동완성 목록에 포함하지 않습니다.
-
-## HWP를 PDF로 변환
-
-`hwp2pdf.exe`는 기존 HWP를 PDF로 변환하는 별도 실행 파일입니다.
-HWPX 입력은 지원하지 않습니다.
-
-```powershell
-.\hwp2pdf.exe 원고.hwp
-.\hwp2pdf.exe 원고.hwp --output 결과.pdf
-```
-
-기본 출력은 원본 옆의 `원고.pdf`입니다. 권장 설정인 `PrintToPDFEx`와
-`GraphicQuality=100`을 사용하며, 완료 확인 후 기존 PDF를 교체합니다.
-한글·.NET 10 x64·한글 보안 모듈이 필요하며 템플릿·Pandoc은 필요하지 않습니다.
-[실행 방법과 검증 범위](docs/hwp2pdf.md)를 참고하십시오.
-
-## 수식 크기 다시 계산
-
-한글은 파일을 열 때 저장된 수식 크기를 그대로 씁니다. rhwp 백엔드처럼 다른
-프로그램이 추정한 크기를 저장한 문서는 `hwpeqrecalc.exe`로 한글이 모든 수식을
-다시 조판하게 할 수 있습니다. HWP·HWPX 입출력을 모두 지원합니다.
-
-```powershell
-.\hwpeqrecalc.exe 결과.hwp
-.\hwpeqrecalc.exe 결과.hwp --output 결과.hwpx
-```
-
-기본 출력은 원본 옆의 `결과.recalc.hwp`(HWPX 입력이면 `.recalc.hwpx`)이며 원본은
-바꾸지 않습니다. 한글·.NET 10 x64·한글 보안 모듈이 필요합니다.
-[동작과 검증 범위](docs/hwpeqrecalc.md)를 참고하십시오.
+| 명령 | 하는 일 |
+| --- | --- |
+| `md2hwp 원고.md [결과.hwp]` | 원고를 한글 문서로 변환합니다. `--output`, `--template`, `--worker`를 지정할 수 있습니다. |
+| `md2hwp validate 원고.md --require-meta title` | 변환하지 않고 원고 작성 규칙만 검사합니다. |
+| `md2hwp md2ir 원고.md` | 중간 파일 `원고.ir.json`만 만듭니다. |
+| `md2hwp ir2hwp --ir 원고.ir.json --output 결과.hwp` | 중간 파일에서 한글 문서를 만듭니다. |
+| `md2hwp init-template 새템플릿.hwp` | 새 기본 템플릿을 만듭니다. 기존 파일은 덮어쓰지 않습니다. |
+| `md2hwp validate-template [template.hwp]` | 템플릿의 선언과 샘플 구조를 검사합니다. |
+| `md2hwp setup-pandoc` | Pandoc을 내려받습니다. |
+| `md2hwp --help`, `md2hwp <명령> --help`, `md2hwp --version` | 사용법과 버전을 표시합니다. |
+| `hwp2pdf 원고.hwp` | HWP를 PDF로 변환합니다. [상세](docs/hwp2pdf.md) |
+| `hwpeqrecalc 결과.hwp` | 한글이 모든 수식 크기를 다시 계산하게 하고 `결과.recalc.hwp`로 저장합니다. [상세](docs/hwpeqrecalc.md) |
+| `. .\md2hwp-completion.ps1` | 현재 PowerShell 세션에 Tab 자동완성을 등록합니다. [상세](docs/usage.md#powershell-자동완성) |
 
 ## 원고 문법
 
-간략한 작성 방법과 예시는 [원고 작성 안내](docs/manuscript/README-MANUSCRIPT.md)를 참고하십시오.
+- **문서 정보:** 원고 맨 앞 YAML에 `title`, `subtitle`, `author`, `date`, `publisher`, `md2hwp-<이름>`을 적습니다.
+- **문단:** 빈 줄로 나눕니다. 문단 안 줄바꿈은 줄 끝에 공백 두 칸이나 `\`를 붙입니다.
+- **제목:** `#`~`######`로 적으며 번호는 템플릿이 붙입니다.
+- **글자 서식:** `**굵게**`, `*기울임*`, `~~취소선~~`, `<sup>위 첨자</sup>`, `<sub>아래 첨자</sub>`.
+- **목록:** `-` 글머리표와 `1.` 번호 목록을 쓰고, 들여써서 하위 목록을 만듭니다.
+- **수식:** 문장 안은 `$...$`, 별행은 문단 전체를 `$$...$$`로 적습니다.
+- **그림:** 독립 문단의 `![캡션](파일)`. PNG·JPG·JPEG·EMF를 지원합니다.
+- **글상자:** 백틱 세 개로 감싼 블록. 첫 줄 `제목: `으로 제목을 붙입니다.
+- **표:** 파이프 표. 제목은 표 앞이나 뒤 문단에 `표: 제목`으로 적습니다.
+- **출처와 설명:** 그림·글상자·표 뒤 문단에 `출처: 내용`, `주: 내용`처럼 적습니다.
+- **각주:** 본문에 `[^이름]`, 별도 문단에 `[^이름]: 내용`.
+- **번호 참조:** 제목·그림·표에 `{#ID}`를 붙이고 `[문구](#ID)`로 번호를 가리킵니다.
+- **링크:** `[표시문](주소)`는 표시문만 출력합니다.
 
-변환 전에 `md2hwp.exe validate 원고.md --require-meta title`로 엄격한 작성 규칙을 검사할 수 있습니다.
-Pandoc은 필요하지만 한글·백엔드를 실행하거나 IR/HWP를 쓰지 않습니다.
-개체에 연결되지 않은 `주:`·`출처:`·표 캡션, 잘못된 접두어, 중복/미정의 각주,
-닫히지 않은 코드 울타리, 표 칸 수와 기존 AST/IR 계약을 검사합니다.
-필수 정보는 `--require-meta <키>`를 반복 지정하며 오류는 종료 코드 1입니다.
-일반 변환의 문단 처리 방식은 유지합니다.
-검사 범위와 템플릿·시각 검증의 차이는 [엄격한 원고 검사](docs/manuscript/AGENTS.md#엄격한-원고-검사)를 참고하십시오.
+`제목:`, `출처:`, `표:` 규칙은 CommonMark나 Pandoc 확장이 아닌 md2hwp의 원고 규칙입니다.
+지원하지 않는 문법은 무시하지 않고 오류로 알립니다.
 
-### 본문
+예시와 세부 규칙은 [원고 작성 안내](docs/manuscript/README-MANUSCRIPT.md)에 있습니다.
 
-CommonMark를 기본으로 YAML·각주·속성·독립 그림·파이프 표·수식·취소선 확장을 지원합니다.
+## 템플릿
 
-- **문자:** 유니코드로 작성합니다. 한글 전용 비유니코드 특수문자(예: 옛 문자표의 사각형 숫자 10)는 입력할 수 없습니다.
-- **문단 계속:** 빈 줄 없이 줄을 바꾸면 같은 문단으로 이어지며, 줄바꿈은 공백이 됩니다.
-- **문단 나누기:** 문단 사이에 빈 줄을 넣습니다.
-- **강제 줄바꿈:** 줄 끝에 공백 두 칸 또는 `\`를 넣고 줄을 바꿉니다.
-- **강조:** `**굵게**`, `*기울임*`으로 작성합니다.
-- **취소선:** `~~취소선~~`처럼 물결표 두 개로 감쌉니다. `1~2`처럼 하나만 쓴 물결표는 그대로 글자입니다.
-- **위·아래 첨자:** HTML 태그 `m<sup>2</sup>`, `H<sub>2</sub>O`로 작성하며 한글의 위 첨자·아래 첨자 글자 모양이 됩니다. 태그는 대소문자를 가리지 않지만 속성은 쓸 수 없고, 같은 강조 범위 안에서 열고 닫아야 합니다. 위·아래 첨자를 서로 겹치거나 그 안에 수식을 넣을 수 없습니다. Pandoc의 `^위^`·`~아래~` 표기는 `1~2` 같은 범위 표기와 헷갈리므로 지원하지 않습니다.
+템플릿은 한글에서 편집하는 HWP·HWPX 파일입니다. `{{md2hwp:…}}` 태그로 원고 내용이 들어갈 자리와
+제목·본문·목록·글상자·그림·표·각주·번호 참조의 샘플 서식을 정합니다.
 
-#### 링크와 미지원 문법
+- `--template`을 생략하면 EXE 옆의 `template.hwp`를 사용합니다.
+- 새 템플릿은 `md2hwp init-template 새템플릿.hwp`로 만들어 한글에서 서식을 고칩니다.
+- 고친 뒤 `md2hwp validate-template 새템플릿.hwp`로 검사합니다.
+- 템플릿의 `ir-version`은 프로그램의 IR 버전(v0.6.0은 0.6)과 같아야 합니다. 이전 버전 템플릿은 새로 만들거나 선언을 직접 고칩니다.
+- 변환은 원본 템플릿을 수정하지 않습니다.
 
-일반 링크 `[표시문](주소)`는 연결 기능 없이 표시문과 글자 서식만 출력합니다. 내부 번호 참조는 아래 상호참조 규칙을 따릅니다. 인라인 코드·인용 블록·HTML(`<sup>`·`<sub>` 제외) 등 미지원 요소는 무시하지 않고 오류로 처리합니다.
+태그와 작성 규칙은 [템플릿 만들기와 편집](docs/templates.md), HWPX는 [HWPX 템플릿과 출력](docs/hwpx.md)을 참고하십시오.
 
-### 메타데이터
+## 백엔드
 
-원고 맨 앞에 YAML로 문서 제목을 적습니다. 동봉 템플릿에는 `title`이 필요하며, 문서 제목은 첫 장 제목과 별개입니다.
+문서를 실제로 만드는 프로그램은 두 가지이며, `md2hwp.exe`가 자동으로 고릅니다.
 
-```yaml
----
-title: 문서 제목
----
-```
+| 백엔드 | 형식 | 한글·.NET·보안 모듈 |
+| --- | --- | --- |
+| `md2hwp-rhwp.exe` | HWP | 필요 없음 |
+| `md2hwp-hancom.exe` | HWP, HWPX | 필요 |
 
-저자·날짜 등은 [메타데이터 안내](docs/yaml-variables.md)를 참고하십시오.
+- 템플릿과 출력이 모두 HWP이면 rhwp를(파일이 없으면 한글 백엔드를), 하나라도 HWPX이면 한글 백엔드를 사용합니다.
+- `--worker <경로>`로 직접 지정할 수 있습니다. 실행에 실패해도 다른 백엔드로 다시 시도하지 않습니다.
+- 한글을 쓰는 프로그램은 자기 한글을 따로 띄우고 닫습니다. 열어 둔 한글 창과 문서는 건드리지 않으며, 저장하지 않은 변경은 읽지 않습니다.
+- 두 백엔드의 결과가 모든 템플릿에서 같다고 보장하지는 않습니다.
 
-### 장·절 제목(개요번호, 헤딩)
+[rhwp 백엔드 범위](docs/rhwp-backend-strategy.md)와 [두 백엔드 비교](docs/rhwp-parity-2026-10-23.md)를 참고하십시오.
 
-`# 장 제목`, `## 절 제목`처럼 `#` 1~6개로 작성하며 템플릿의 `heading1`~`heading6`에 대응합니다. 실제 한글 개요 번호는 템플릿에 설정되어 있어야 표시됩니다.
+## 제한
 
-- **템플릿:** 단일 `{{md2hwp:heading1}}` 선언 또는 `begin:heading1`~`end:heading1` 범위 안의 `slot:heading1`로 제목을 배치합니다.
-- **하위 제목 목록:** `begin:each.child:heading2`~`end:each.child:heading2` 안에 `slot:heading2`를 두면 해당 장의 절 제목을 순서대로 반복합니다. 제목과 반복 범위에서 `num:heading1`~`num:heading6`으로 자신의 번호와 상위 번호를 함께 표시할 수 있습니다.
-- **장 시작 번호:** YAML의 `md2hwp-heading1-start: 3`으로 지정합니다. 1일 경우 지정하지 않은 것과 같은 결과를 얻습니다. 장 번호는 장마다 증가합니다.
-
-태그는 모두 `{{md2hwp:…}}` 형태입니다. [템플릿 상세](docs/templates.md)를 참고하십시오.
-
-헤딩 템플릿의 `once` 범위는 첫 사용에만, `except.once` 범위는 두 번째 이후에만
-적용합니다. 기본 템플릿은 Heading1 앞의 문단 경계와 쪽 나눔을 `except.once`로
-감싸 첫 장 앞 빈 쪽을 없애고, 두 번째 장부터 강제 쪽 나눔을 유지합니다.
-
-### 그림
-
-`![그림 설명](image.png)`를 독립 문단에 작성합니다. PNG·JPG·JPEG·EMF를 지원하며 설명은 그림 캡션으로 출력합니다.
-EMF는 원본 파일을 내장하고 물리적 프레임의 비율로 크기를 정합니다. [지원 범위와 표시 검증](docs/emf-figures.md)을 참고하십시오.
-
-하단 설명은 빈 줄로 구분한 `출처: 내용`, `주.1: 내용` 등의 문단을 개체 뒤에 연속해서 적습니다. 접두어와 순서를 보존하고 템플릿의 출처 문단 서식을 사용합니다. [지원 접두어와 문법](docs/object-sources.md)을 참고하십시오.
-
-### 글상자
-
-백틱 세 개로 감싼 코드 블록을 사용합니다. 공백·탭·본문 빈 줄을 보존하며 블록 안의 Markdown은 해석하지 않습니다. 아래의 `제목:`과 `출처:`는 CommonMark나 Pandoc 확장 문법이 아닌 md2hwp의 원고 규칙입니다.
-
-````markdown
-```
-제목: 글상자 제목
-
-글상자 본문 첫 줄입니다.
-글상자 본문 둘째 줄입니다.
-```
-
-출처: 작성자
-````
-
-첫 줄에 `제목: 제목 내용`을 적으면 템플릿에 `slot:code.title`이 있을 때 제목으로 분리하고 바로 뒤 빈 줄을 제거합니다. 제목 슬롯이 없으면 원문을 유지합니다.
-
-하단 설명은 블록 뒤에 빈 줄로 구분한 `출처: 내용`, `주: 내용` 등의 문단을 적습니다. 여러 문단을 지원합니다.
-
-### 표
-
-파이프(`|`)로 열을 나누고 머리행 아래에 구분선을 둡니다. `:---`는 왼쪽, `:---:`는 가운데, `---:`는 오른쪽 정렬이며 `---`는 템플릿 정렬을 따릅니다.
-
-```markdown
-표: 항목별 수량
-
-| 항목 | 수량 |
-| :--- | ---: |
-| 예시 | 10 |
-
-출처: 작성자
-```
-
-제목은 표 앞이나 뒤의 별도 문단에 `표: 내용`으로 적습니다. `Table:`, `table:`, `:`도 지원합니다.
-
-출처는 표 뒤에 적되, 아래쪽 제목이 있으면 그 다음에 적습니다.
-
-[표 상세](docs/tables.md)를 참고하십시오.
-
-### 상호참조
-
-헤딩·그림에 `{#ID}`를 붙이거나 표 바로 앞의 독립된 줄에 `{#ID}`를 적고 `[참조](#ID)`로 연결하면 템플릿의 그림·표·헤딩 번호 참조로 출력합니다. 헤딩 참조는 원고의 순서로 장·절 번호를 계산한 고정 텍스트이며 헤딩별 템플릿 양식을 사용합니다. 그림·표 참조는 한글 상호참조이고, 표 참조 대상에는 캡션이 필요합니다.
-
-각주는 본문에 `[^이름]`, 별도 문단에 `[^이름]: 각주 내용`으로 작성합니다. [번호 상호참조](docs/cross-references.md)와 [원고 작성 안내](docs/manuscript/README-MANUSCRIPT.md)를 참고하십시오.
+- 변환은 저장한 문서를 다시 열어 구조를 검증하지만 화면 배치는 확인하지 않습니다. 잘림·겹침, 쪽 나눔, 각주 번호는 결과 문서에서 직접 확인하십시오.
+- 크기가 고정된 글상자·제목 영역과 긴 표는 내용이 넘치면 잘릴 수 있습니다.
+- rhwp가 저장하는 수식 크기는 추정값입니다. 한글이 계산한 크기가 필요하면 `hwpeqrecalc.exe`를 실행하십시오.
+- 장·절 번호 참조는 고정된 글자입니다. 한글에서 제목을 옮겨도 바뀌지 않으므로 원고를 고쳐 다시 변환하십시오.
+- 한글은 JPEG 그림을 다시 인코딩할 수 있습니다.
+- 원고 입력은 Markdown과 Pandoc JSON만 지원합니다. `hwp2pdf.exe`는 HWP만 읽습니다.
+- 한글 백엔드의 `init-template 새템플릿.hwpx`로 만든 템플릿은 검사에 성공해도 변환에 실패할 수 있습니다. [재현 기록](docs/backend-selection-2026-10-23.md#별도-발견-새-hancom-hwpx-기본-템플릿)
 
 ## 소스에서 빌드
 
-수식 문자열의 양방향 변환은 독립 개발 크레이트 `md2hwp-math`에서 작업합니다.
-양방향 변환의 범위·실행·시각 검토 자료는
-[수식 변환 안내](docs/math.md)를 참고하십시오. Markdown의 `$...$`·`$$...$$` 수식은 IR 0.6의 `inline_math`·`display_math`로 변환합니다. 두 백엔드 모두 수식을 생성합니다. 한글 백엔드는 한글이 조판한 크기를 그대로 쓰고, rhwp 백엔드는 한글 2020 실측에 맞춘 계산기로 수식 크기를 추정합니다. 추정 크기는 한글이 만든 크기와 몇 픽셀 다를 수 있습니다. 설계는 [수식의 IR 표현](docs/math/ir-design.md)에 있습니다.
-
-Windows x64에서 PowerShell 7.4 이상과 Rust 도구 체인을 준비한 뒤 저장소 루트에서 실행합니다. MSVC·Windows SDK 설치가 필요하면 첫 명령은 관리자 PowerShell에서 실행하십시오.
+Windows x64, PowerShell 7.4 이상, Rust 도구 체인이 필요합니다. 저장소 루트에서 실행하며,
+MSVC·Windows SDK를 설치해야 하면 첫 명령은 관리자 PowerShell에서 실행하십시오.
 
 ```powershell
 pwsh -NoProfile -File dependencies/install-windows-build-tools.ps1
@@ -230,27 +121,18 @@ pwsh -NoProfile -File dependencies/install-dotnet-sdk.ps1
 pwsh -NoProfile -File tools/development/build.ps1
 ```
 
-Windows 빌드 도구는 기존 설치를 확인하고 부족하면 필요한 MSVC·SDK 구성요소를 시스템에 설치합니다. .NET SDK는 고정 버전을 설치하고, 필요한 NuGet 패키지는 빌드 중 공식 nuget.org에서 자동으로 받습니다. 최초 준비와 캐시에 없는 패키지 다운로드에는 네트워크가 필요합니다. 결과는 `target/release`에 모입니다. [빌드·검증 상세](docs/development.md)와 [로컬 파일·복원 범위](docs/local-files.md)를 참고하십시오.
+결과는 `target/release`에 모입니다. [빌드와 검증](docs/development.md)을 참고하십시오.
 
-## 템플릿과 상세 안내
+## 문서
 
-박스·표·그림의 템플릿 범위에서 샘플 개체 앞뒤에 빈 문단을 넣으면, 생성된 개체의 앞뒤에 서식과 쪽·단 나눔을 보존하여 복제합니다. [범위 작성 규칙](docs/templates.md)을 참고하십시오.
+- 사용: [설치와 실행](docs/usage.md) · [원고 작성 안내](docs/manuscript/README-MANUSCRIPT.md) · [예시](examples/README.md)
+- 원고 기능: [표](docs/tables.md) · [번호 참조](docs/cross-references.md) · [출처와 설명](docs/object-sources.md) · [캡션 안의 참조](docs/caption-inlines.md) · [메타데이터](docs/yaml-variables.md) · [날짜](docs/date-metadata.md) · [EMF 그림](docs/emf-figures.md) · [수식](docs/math.md)
+- 템플릿과 도구: [템플릿](docs/templates.md) · [HWPX](docs/hwpx.md) · [hwp2pdf](docs/hwp2pdf.md) · [hwpeqrecalc](docs/hwpeqrecalc.md)
+- 개발: [빌드와 검증](docs/development.md) · [로컬 파일](docs/local-files.md) · [rhwp 백엔드](docs/rhwp-backend-strategy.md)
 
-템플릿만 검사하려면 `md2hwp validate-template [template.hwp]`를 실행합니다. 경로를 생략하면 EXE 옆의 `template.hwp`를 검사하며, `--template`, `--worker`, `--dotnet`도 지정할 수 있습니다. 명시한 `.hwpx` 템플릿도 검사합니다. 백엔드에서도 `md2hwp-hancom validate-template [template.hwp]`로 실행할 수 있습니다.
+## 라이선스
 
-rhwp 검사는 한글·.NET 없이 실행합니다. 한글 백엔드 검사는 한글·.NET과 등록된 보안 모듈이 필요하며, 실행 중인 한글이 있어도 됩니다. 원고·Pandoc 없이 IR 버전, 선언, 슬롯과 원형 구조를 검사합니다. 원본은 저장하지 않으며 첫 오류에서 실패합니다. 성공 결과의 `RequiredMetadata`는 원고 YAML에 필요한 키입니다. `RequiresRecognizedDate: true`이면 `date-meta` 생성을 위해 인식 가능한 `date`도 필요합니다. 실제 원고 값, 표 폭, 제목 넘침 등 문서 생성·시각 검증이 필요한 조건은 이 검사만으로 보장하지 않습니다.
-
-개발할 때 기본 서식은 `templates/template.hwp`에서 편집합니다. 빌드는 `target/debug`·`target/release`의 템플릿을 매번 이 파일로 교체합니다. 실행용 배포본에서는 EXE 옆의 `template.hwp`를 사용합니다. 새 파일은 `md2hwp init-template 새템플릿.hwp`로 만들며, `.hwpx` 확장자로 HWPX 템플릿도 만들 수 있습니다. 지원 IR 버전인 0.6과 다른 이전 IR은 다시 생성하고, 기존 사용자 템플릿의 새 선언은 직접 반영하거나 별도 파일로 재생성해야 합니다. HWPX 템플릿·출력의 범위와 실행 예는 [HWPX 안내](docs/hwpx.md)에 있습니다.
-
-한글 백엔드의 Debug와 Release는 XML 구성 방식으로 생성합니다. 개발용 성능 비교는
-[빌드·검증 안내](docs/development.md#생성-방식-비교)를 참고하십시오.
-
-- [설치·실행 옵션](docs/usage.md) · [템플릿 편집·태그](docs/templates.md) · [HWPX 템플릿·출력](docs/hwpx.md)
-- [표](docs/tables.md) · [번호 상호참조](docs/cross-references.md) · [메타데이터](docs/yaml-variables.md) · [날짜](docs/date-metadata.md)
-- [빌드·검증](docs/development.md) · [통합 예제](examples/all-features/) · [v0.6.0 릴리스 노트](docs/release-v0.6.0.md) · [v0.5.0 릴리스 노트](docs/release-v0.5.0.md)
-
-저장·재열기 검증만으로 잘림·겹침이나 각주 표시 번호를 보장하지 않으므로 생성된 문서의 배치도 확인하십시오.
-
-그림·표 캡션과 코드·그림·표의 출처 및 하단 설명에서도 헤딩·그림·표 번호 상호참조를
-사용할 수 있습니다. 각주는 해당 영역에서 지원하지 않습니다.
-[캡션 내부 기능과 한글 2020 검증 결과](docs/caption-inlines.md)를 참고하십시오.
+md2hwp는 **AGPL-3.0-only**로 제공하며 보증은 없습니다. [전문](LICENSE)을 확인하십시오.
+외부 라이브러리는 [제3자 고지](THIRD-PARTY-NOTICES.txt)와 `licenses/`의 각 라이선스를 따릅니다.
+실행 파일을 다시 배포할 때는 라이선스·고지와 대응 소스([v0.6.0 소스](https://github.com/esnahn/md2hwp/archive/refs/tags/v0.6.0.zip))의 링크를 함께 제공하십시오.
+Pandoc·한글·보안 모듈·서체·.NET 런타임은 포함하지 않는 별도 제품이며 각 제공자의 조건을 따릅니다.
