@@ -231,10 +231,17 @@ fn blank() -> Document {
                     text_distance: 50,
                     char_shape_id: 0,
                     ..Default::default()
-                }; 7],
-                level_formats: std::array::from_fn(|level| format!("^{}.", level + 1)),
+                }; rhwp::model::style::NUMBERING_LEVELS],
+                // Levels 8-10 keep empty formats, as in a seven-level native record.
+                level_formats: std::array::from_fn(|level| {
+                    if level < 7 {
+                        format!("^{}.", level + 1)
+                    } else {
+                        String::new()
+                    }
+                }),
                 start_number: 1,
-                level_start_numbers: [1; 7],
+                level_start_numbers: [1; rhwp::model::style::NUMBERING_LEVELS],
                 ..Default::default()
             }],
             ..Default::default()
@@ -473,7 +480,6 @@ pub(crate) fn create() -> Result<Document, String> {
         )
     };
     picture.common.attr = 0x240a_2211;
-    picture.common.hwp5_gen_shape_attr_bit26 = true;
     picture.common.affect_line_spacing = false;
     picture.common.flow_with_text = true;
     picture.common.vert_rel_to = VertRelTo::Para;

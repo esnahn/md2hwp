@@ -631,10 +631,10 @@ mod tests {
                 heads: [NumberingHead {
                     char_shape_id: u32::MAX,
                     ..Default::default()
-                }; 7],
+                }; rhwp::model::style::NUMBERING_LEVELS],
                 level_formats: formats,
                 start_number: 9,
-                level_start_numbers: [9; 7],
+                level_start_numbers: [9; rhwp::model::style::NUMBERING_LEVELS],
                 raw_data: Some(raw),
                 ..Default::default()
             }],
@@ -708,7 +708,13 @@ mod tests {
         assert_eq!(numbering.start_number, 7);
         assert_eq!(numbering.level_start_numbers[0], 7);
         assert_eq!(numbering.level_formats, info.numberings[0].level_formats);
-        assert!(numbering.heads.iter().all(|h| h.char_shape_id == 0));
+        // Only the seven manuscript levels are rewritten; native levels 8-10 stay as authored.
+        assert!(numbering.heads.iter().take(7).all(|h| h.char_shape_id == 0));
+        assert!(
+            numbering.heads[7..]
+                .iter()
+                .all(|h| h.char_shape_id == u32::MAX)
+        );
         assert_eq!(
             &numbering.raw_data.as_ref().unwrap()[numbering.raw_data.as_ref().unwrap().len() - 2..],
             &[0xab, 0xcd]

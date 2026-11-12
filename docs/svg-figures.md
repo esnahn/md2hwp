@@ -214,8 +214,8 @@ SVG 안의 PNG·JPEG 이미지는 EMF에 두 번 들어갑니다.
 5 MiB 이하의 EMF는 PNG보다 커도 그대로 씁니다.
 
 matplotlib 갤러리에서는 EMF로 변환되는 765개 중 17개가 5 MiB를 넘고, 17개 모두 PNG가 더 작아 PNG로 들어갑니다
-(예: 3차원 면 25.7 MiB → 0.7 MiB, `hist2d` 격자 21.2 MiB → 2.3 MiB, 빗금 무늬 모음 9.5 MiB → 1.6 MiB). 2400픽셀 PNG는 갤러리 전체에서 중앙값 0.4 MB,
-상위 1% 4.0 MB, 최대 7.7 MB입니다.
+(예: 3차원 면 25.7 MiB → 0.4 MiB, `hist2d` 격자 21.2 MiB → 0.2 MiB, 빗금 무늬 모음 9.5 MiB → 0.2 MiB). 2400픽셀 PNG는 갤러리 전체에서 중앙값 0.1 MB,
+상위 1% 2.0 MB, 최대 5.2 MB입니다.
 
 ## PNG·JPG
 

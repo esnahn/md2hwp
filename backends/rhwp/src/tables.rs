@@ -434,7 +434,6 @@ impl Prototype {
             table.caption = None;
         }
         patch_common(table, self.width as u32, row_count as u32)?;
-        crate::code::compose_empty_cell_lines(table, info)?;
         crate::template::discard_stale_layout(&mut anchor);
         let mut output = self.before.clone();
         output.push(anchor);
@@ -1029,7 +1028,7 @@ mod tests {
             info.para_shapes[usize::from(t.cells[1].paragraphs[0].para_shape_id)].alignment,
             Alignment::Center
         );
-        assert_eq!(t.cells[2].paragraphs[0].line_segs.len(), 1);
+        assert!(t.cells[2].paragraphs[0].line_segs.is_empty());
         assert_eq!(proto.table().cells[0].width, 1000);
     }
 
@@ -1227,9 +1226,8 @@ mod tests {
             .export_hwp_with_adapter_snapshot_with_report()
             .unwrap();
         assert!(saved.content_loss().is_empty());
-        let reopened = rhwp::DocumentCore::from_bytes(saved.bytes()).unwrap();
-        let diff =
-            rhwp::serializer::hwpx::roundtrip::diff_documents(&expected, reopened.document());
+        let stored = rhwp::parser::parse_hwp(saved.bytes()).unwrap();
+        let diff = rhwp::serializer::hwpx::roundtrip::diff_documents(&expected, &stored);
         assert!(diff.is_empty(), "{:?}", diff.differences);
     }
 }

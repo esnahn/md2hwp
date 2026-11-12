@@ -444,7 +444,6 @@ pub fn render(
         fn resize(
             paragraphs: &mut [Paragraph],
             widths: &BTreeMap<u32, Vec<i32>>,
-            info: &DocInfo,
         ) -> Result<(), String> {
             for paragraph in paragraphs {
                 for control in &mut paragraph.controls {
@@ -452,23 +451,19 @@ pub fn render(
                         && let Some(widths) = widths.get(&table.common.instance_id)
                     {
                         crate::tables::resize_generated(table, widths)?;
-                        crate::code::compose_empty_cell_lines(table, info)?;
                     }
                 }
-                crate::model_tools::map_nested_containers(paragraph, &mut |ps| {
-                    resize(ps, widths, info)
-                })?;
+                crate::model_tools::map_nested_containers(paragraph, &mut |ps| resize(ps, widths))?;
             }
             Ok(())
         }
-        resize(
-            &mut document.sections[0].paragraphs,
-            &widths,
-            &document.doc_info,
-        )?;
+        resize(&mut document.sections[0].paragraphs, &widths)?;
     }
     references.apply(&mut document.sections[0].paragraphs, &mut identity)?;
     let pagination = crate::pagination::Plan::resolve(&document, &tables_with_body)?;
+    for section in &mut document.sections {
+        crate::model_tools::forget_emptied_text_records(&mut section.paragraphs)?;
+    }
     core.set_document(document);
     pagination.correct(core)?;
     Ok((generated_notes, pagination))

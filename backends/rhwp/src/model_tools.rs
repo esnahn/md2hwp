@@ -407,8 +407,30 @@ pub(crate) fn refresh_block_identities(
     Ok(())
 }
 
-/// Visit each immediate nested paragraph list without descending into its
-/// paragraphs. The callback owns paragraph recursion and can replace a list.
+/// rhwp 0.9 writes an empty PARA_TEXT for every paragraph still flagged as
+/// having one, and Hancom rejects that file as damaged. Paragraphs emptied
+/// while composing (removed tags, merged markers) therefore drop the flag, as
+/// Hancom's own empty paragraphs have no PARA_TEXT.
+pub(crate) fn forget_emptied_text_records(paragraphs: &mut [Paragraph]) -> Result<(), String> {
+    for paragraph in paragraphs {
+        if paragraph.text.is_empty()
+            && paragraph.controls.is_empty()
+            && paragraph.title_marks.is_empty()
+            && paragraph
+                .orphan_field_ends
+                .iter()
+                .all(|end| end.begin_ctrl_id == 0)
+        {
+            paragraph.has_para_text = false;
+        }
+        map_nested_containers(paragraph, &mut |children| {
+            forget_emptied_text_records(children)
+        })?;
+    }
+    Ok(())
+}
+
+/// Visit each immediate nested paragraph list without descending into its/// paragraphs. The callback owns paragraph recursion and can replace a list.
 /// Grouped drawing objects are traversed to reach their paragraph containers.
 pub(crate) fn map_nested_containers(
     paragraph: &mut Paragraph,
@@ -504,6 +526,47 @@ fn map_drawing(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn emptied_paragraphs_store_no_text_record_at_any_depth() {
+        use rhwp::model::footnote::Footnote;
+        let emptied = || Paragraph {
+            char_count: 1,
+            has_para_text: true,
+            ..Default::default()
+        };
+        let mut kept = emptied();
+        kept.text = "a".into();
+        let mut host = emptied();
+        host.controls.push(Control::Footnote(Box::new(Footnote {
+            paragraphs: vec![emptied()],
+            ..Default::default()
+        })));
+        let mut paragraphs = vec![emptied(), kept, host];
+        forget_emptied_text_records(&mut paragraphs).unwrap();
+        assert!(!paragraphs[0].has_para_text);
+        assert!(paragraphs[1].has_para_text && paragraphs[2].has_para_text);
+        let Control::Footnote(note) = &paragraphs[2].controls[0] else {
+            panic!()
+        };
+        assert!(!note.paragraphs[0].has_para_text);
+        let mut core = rhwp::DocumentCore::new_empty();
+        let mut document = core.document().clone();
+        document.sections = vec![rhwp::model::document::Section {
+            paragraphs: vec![paragraphs.remove(0)],
+            ..Default::default()
+        }];
+        core.set_document(document);
+        let saved = core.export_hwp_with_adapter_snapshot_with_report().unwrap();
+        let section = &rhwp::parser::parse_hwp(saved.bytes()).unwrap().sections[0];
+        let records =
+            rhwp::parser::record::Record::read_all(section.raw_stream.as_ref().unwrap()).unwrap();
+        assert!(
+            records
+                .iter()
+                .all(|record| record.tag_id != rhwp::parser::tags::HWPTAG_PARA_TEXT)
+        );
+    }
     use rhwp::model::shape::{GroupShape, RectangleShape, TextBox};
     use rhwp::model::table::{Cell, Table};
 
@@ -749,6 +812,7 @@ mod tests {
                     begin_id_ref: 991,
                     field_id: 87,
                     begin_ctrl_id: 0,
+                    ..Default::default()
                 }],
                 ..Default::default()
             },

@@ -301,7 +301,6 @@ fn equation(script: &str, base_unit: u32, numbered: bool) -> Equation {
             text_wrap: TextWrap::TopAndBottom,
             width_criterion: SizeCriterion::Absolute,
             height_criterion: SizeCriterion::Absolute,
-            hwp5_gen_shape_attr_bit26: numbered,
             numbering_type: if numbered {
                 ObjectNumberingType::Equation
             } else {

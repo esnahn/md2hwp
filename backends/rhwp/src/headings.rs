@@ -879,7 +879,7 @@ mod tests {
         info.numberings.push(Numbering {
             raw_data: Some(numbering_raw.clone()),
             start_number: 9,
-            level_start_numbers: [9; 7],
+            level_start_numbers: [9; rhwp::model::style::NUMBERING_LEVELS],
             ..Default::default()
         });
         let mut shape_raw = vec![0_u8; 60];
