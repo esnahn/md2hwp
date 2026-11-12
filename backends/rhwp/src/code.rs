@@ -217,122 +217,12 @@ impl Prototype {
         } else {
             table.caption = None;
         }
-        compose_empty_cell_lines(table, info)?;
         crate::template::discard_stale_layout(&mut anchor);
         let mut output = self.before.clone();
         output.push(anchor);
         output.extend(self.after.clone());
         Ok(output)
     }
-}
-
-/// The pinned native reader synthesizes one line for control-free empty cell
-/// paragraphs whose edited text has no stored partition. Compose that expected
-/// reader representation from the native formats, never from exported bytes.
-/// Keep the partition dirty: this record is not an authoritative rendered cache.
-/// Matches rhwp 1a76570e's document_core/commands/document.rs
-/// reflow_zero_height_paragraphs path (MIT; see third-party notices).
-pub(crate) fn compose_empty_cell_lines(
-    table: &mut rhwp::model::table::Table,
-    info: &DocInfo,
-) -> Result<(), String> {
-    use rhwp::model::{
-        paragraph::LineSeg,
-        style::{CenterLine, LineSpacingType},
-    };
-    use rhwp::renderer::{hwpunit_to_px, px_to_hwpunit};
-    const DPI: f64 = 96.0;
-    let diagonal = |id: u16| {
-        id.checked_sub(1)
-            .and_then(|id| info.border_fills.get(usize::from(id)))
-            .is_some_and(|b| {
-                (b.attr & 0xfc != 0 || b.center_line != CenterLine::None)
-                    && b.diagonal.diagonal_type != 0
-            })
-    };
-    for cell in &mut table.cells {
-        if diagonal(cell.border_fill_id)
-            || table.zones.iter().any(|z| {
-                z.start_row <= cell.row
-                    && cell.row <= z.end_row
-                    && z.start_col <= cell.col
-                    && cell.col <= z.end_col
-                    && diagonal(z.border_fill_id)
-            })
-        {
-            continue;
-        }
-        let padding = cell.effective_padding(&table.padding);
-        // TreatAsChar means the native cell width owns the paragraph frame.
-        let width = hwpunit_to_px(cell.width.min(i32::MAX as u32) as i32, DPI);
-        let left = hwpunit_to_px(i32::from(padding.left), DPI);
-        let right = hwpunit_to_px(i32::from(padding.right), DPI);
-        let available = width - left - right;
-        let minimum = 1440.0 / 7200.0 * DPI;
-        let inner = if width > 0.0 && (0.0..minimum).contains(&available) {
-            // Match the pinned reader's operation order before truncating HU.
-            let adjusted_right = width - left - minimum;
-            (width - left - adjusted_right).max(0.0)
-        } else {
-            available.max(0.0)
-        };
-        for p in &mut cell.paragraphs {
-            if !p.text.is_empty() || !p.controls.is_empty() {
-                continue;
-            }
-            let para = shape(p, info)?;
-            let margin_left = px_to_hwpunit(hwpunit_to_px(para.margin_left, DPI) / 2.0, DPI);
-            let margin_right = px_to_hwpunit(hwpunit_to_px(para.margin_right, DPI) / 2.0, DPI);
-            let frame_end = px_to_hwpunit(inner, DPI).saturating_sub(margin_right);
-            if margin_left >= frame_end {
-                continue;
-            }
-            let font = p
-                .char_shapes
-                .iter()
-                .filter_map(|s| info.char_shapes.get(s.char_shape_id as usize))
-                .map(|s| hwpunit_to_px(s.base_size, DPI))
-                .filter(|size| *size > 0.0)
-                .reduce(f64::max)
-                .unwrap_or(12.0);
-            let height = (font * 7200.0 / DPI).round() as i32;
-            let spacing = match para.line_spacing_type {
-                LineSpacingType::Percent if para.line_spacing >= 0 => {
-                    let raw = f64::from(height) * (f64::from(para.line_spacing) - 100.0) / 100.0;
-                    ((raw.abs() / 4.0 + 0.5).floor() * 4.0 * raw.signum()) as i32
-                }
-                LineSpacingType::Percent => 0,
-                LineSpacingType::Fixed | LineSpacingType::Minimum => {
-                    let pitch =
-                        (hwpunit_to_px(para.line_spacing, DPI) / 2.0 * 7200.0 / DPI).round() as i32;
-                    (pitch - height).max(0)
-                }
-                LineSpacingType::SpaceOnly => {
-                    (hwpunit_to_px(para.line_spacing, DPI) / 2.0 * 7200.0 / DPI).round() as i32
-                }
-            };
-            let mut tag = LineSeg::TAG_SINGLE_SEGMENT_LINE | LineSeg::TAG_IMPLEMENTATION_PROPERTY;
-            if para.indent > 0 {
-                tag |= LineSeg::TAG_INDENTATION;
-            }
-            let column_start = if matches!(para.head_type, HeadType::None | HeadType::Outline) {
-                margin_left
-            } else {
-                0
-            };
-            p.line_segs = vec![LineSeg {
-                line_height: height,
-                text_height: height,
-                baseline_distance: (f64::from(height) * 0.85).round() as i32,
-                line_spacing: spacing,
-                column_start,
-                segment_width: frame_end.saturating_sub(margin_left),
-                tag,
-                ..Default::default()
-            }];
-        }
-    }
-    Ok(())
 }
 
 fn shape<'a>(
@@ -598,87 +488,43 @@ mod tests {
     }
 
     #[test]
-    fn empty_code_cell_lines_match_native_reparse_without_using_export_as_expected() {
+    fn empty_code_cell_paragraphs_store_no_line_records() {
         use rhwp::{
             DocumentCore,
-            model::{
-                document::Section,
-                style::{Font, LineSpacingType},
-            },
+            model::{document::Section, style::Font},
         };
-        for spacing_type in [
-            LineSpacingType::Percent,
-            LineSpacingType::Fixed,
-            LineSpacingType::SpaceOnly,
-            LineSpacingType::Minimum,
-        ] {
-            for narrow in [false, true] {
-                let (mut roots, body, mut info) = fixture(false);
-                info.font_faces = vec![vec![Font::default()]; 7];
-                info.char_shapes[0].base_size = 1050;
-                let mut trailing = info.char_shapes[0].clone();
-                trailing.base_size = 2200;
-                info.char_shapes.push(trailing);
-                let Control::Table(sample) = &mut roots[2].controls[0] else {
-                    panic!()
-                };
-                if narrow {
-                    // This frame exercises a real one-HU floating-point edge in
-                    // the pinned reader's minimum cell-width calculation.
-                    sample.cells[0].width = 22070;
-                    sample.common.width = 22070;
-                    sample.padding.left = 8681;
-                    sample.padding.right = 12680;
-                }
-                let content = &mut sample.cells[0].paragraphs[0];
-                content.apply_char_shape_range(1, CONTENT.chars().count(), 1);
-                info.para_shapes[0].margin_left = 120;
-                info.para_shapes[0].margin_right = 244;
-                info.para_shapes[0].indent = 100;
-                info.para_shapes[0].line_spacing_type = spacing_type;
-                info.para_shapes[0].line_spacing = if spacing_type == LineSpacingType::Percent {
-                    145
-                } else {
-                    2444
-                };
-                let prototype = Prototype::read(&roots, &body, &info).unwrap();
-                let output = prototype
-                    .render(
-                        &["".into(), "text".into(), "".into(), "".into()],
-                        None,
-                        &mut info,
-                    )
-                    .unwrap();
-                let expected = table(&output).cells[0].paragraphs.clone();
-                assert_eq!(expected[0].line_segs[0].line_height, 1050);
-                assert_eq!(expected[0].line_segs[0].baseline_distance, 893);
-                if narrow {
-                    assert_eq!(expected[0].line_segs[0].segment_width, 1257);
-                }
-                assert!(expected[0].stored_text_partition_dirty);
-                let mut core = DocumentCore::new_empty();
-                let mut doc = core.document().clone();
-                doc.doc_info = info;
-                doc.sections = vec![Section {
-                    paragraphs: output,
-                    ..Default::default()
-                }];
-                core.set_document(doc);
-                let bytes = core.export_hwp_with_adapter_snapshot_with_report().unwrap();
-                assert!(bytes.content_loss().is_empty());
-                let reopened = DocumentCore::from_bytes(bytes.bytes()).unwrap();
-                let Control::Table(actual) =
-                    &reopened.document().sections[0].paragraphs[1].controls[0]
-                else {
-                    panic!()
-                };
-                for index in [0, 2, 3] {
-                    assert_eq!(
-                        serde_json::to_value(&expected[index].line_segs).unwrap(),
-                        serde_json::to_value(&actual.cells[0].paragraphs[index].line_segs).unwrap()
-                    );
-                }
-            }
+        let (roots, body, mut info) = fixture(false);
+        info.font_faces = vec![vec![Font::default()]; 7];
+        let prototype = Prototype::read(&roots, &body, &info).unwrap();
+        let output = prototype
+            .render(
+                &["".into(), "text".into(), "".into(), "".into()],
+                None,
+                &mut info,
+            )
+            .unwrap();
+        let expected = table(&output).cells[0].paragraphs.clone();
+        // Line layout is the reader's derived cache: generate none of it.
+        for index in [0, 2, 3] {
+            assert!(expected[index].line_segs.is_empty());
+            assert!(expected[index].stored_text_partition_dirty);
+        }
+        let mut core = DocumentCore::new_empty();
+        let mut doc = core.document().clone();
+        doc.doc_info = info;
+        doc.sections = vec![Section {
+            paragraphs: output,
+            ..Default::default()
+        }];
+        core.set_document(doc);
+        let bytes = core.export_hwp_with_adapter_snapshot_with_report().unwrap();
+        assert!(bytes.content_loss().is_empty());
+        let stored = rhwp::parser::parse_hwp(bytes.bytes()).unwrap();
+        let Control::Table(actual) = &stored.sections[0].paragraphs[1].controls[0] else {
+            panic!()
+        };
+        for index in [0, 2, 3] {
+            assert!(actual.cells[0].paragraphs[index].line_segs.is_empty());
         }
     }
 }

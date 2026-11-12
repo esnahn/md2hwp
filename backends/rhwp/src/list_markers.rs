@@ -311,7 +311,8 @@ fn number(definition: &Numbering, counters: &[u32; 7], level: usize) -> Result<S
     if matches!(code, 1) && !(1..=20).contains(&value)
         || matches!(code, 2 | 3) && !(1..=3999).contains(&value)
         || matches!(code, 8 | 10) && !(1..=14).contains(&value)
-        || matches!(code, 4 | 5) && value == 0
+        // rhwp 0.9 cycles letters after Z; Hancom's display there is unverified.
+        || matches!(code, 4 | 5) && !(1..=26).contains(&value)
     {
         return Err(format!(
             "Native list number {value} is outside the supported range for format {code}; use the Hancom backend"
@@ -388,7 +389,7 @@ mod tests {
     fn resolves_actual_generated_paragraph_order_and_rejects_missing_targets() {
         use rhwp::model::{document::Section, style::ParaShape};
         let mut definition = Numbering {
-            level_start_numbers: [1; 7],
+            level_start_numbers: [1; rhwp::model::style::NUMBERING_LEVELS],
             ..Default::default()
         };
         definition.level_formats[0] = "(^1)".into();
@@ -438,7 +439,7 @@ mod tests {
             [1, 9, 0, 0, 0, 0, 0]
         );
         let mut definition = Numbering {
-            level_start_numbers: [7, 99, 1, 1, 1, 1, 1],
+            level_start_numbers: [7, 99, 1, 1, 1, 1, 1, 1, 1, 1],
             ..Default::default()
         };
         definition.level_formats[1] = "^1.^2".into();
@@ -451,7 +452,7 @@ mod tests {
     #[test]
     fn template_formats_preserve_affixes_and_use_each_referenced_level_format() {
         let mut definition = Numbering {
-            level_start_numbers: [1; 7],
+            level_start_numbers: [1; rhwp::model::style::NUMBERING_LEVELS],
             ..Default::default()
         };
         definition.heads[0].number_format = 2;
@@ -473,7 +474,7 @@ mod tests {
     #[test]
     fn measured_formats_never_silently_fall_back_to_decimal() {
         let mut definition = Numbering {
-            level_start_numbers: [1; 7],
+            level_start_numbers: [1; rhwp::model::style::NUMBERING_LEVELS],
             ..Default::default()
         };
         for (code, count) in [(1, 21), (2, 4000), (3, 4000), (8, 15), (10, 15)] {
@@ -487,8 +488,9 @@ mod tests {
         );
         definition.heads[0].number_format = 4;
         assert_eq!(
-            number(&definition, &[27, 0, 0, 0, 0, 0, 0], 0).unwrap(),
-            "AA"
+            number(&definition, &[26, 0, 0, 0, 0, 0, 0], 0).unwrap(),
+            "Z"
         );
+        assert!(number(&definition, &[27, 0, 0, 0, 0, 0, 0], 0).is_err());
     }
 }

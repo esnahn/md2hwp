@@ -956,6 +956,7 @@ mod tests {
             begin_id_ref: 42,
             field_id: 99,
             begin_ctrl_id: u32::from_le_bytes(*b"klc%"),
+            ..Default::default()
         });
         right.title_marks.push(TitleMark {
             char_idx: length,
@@ -1043,6 +1044,7 @@ mod tests {
             begin_id_ref: 42,
             field_id: 91,
             begin_ctrl_id: u32::from_le_bytes(*b"klc%"),
+            ..Default::default()
         });
         for offset in &mut right.char_offsets[1..] {
             *offset += 8;

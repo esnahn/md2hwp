@@ -7,5 +7,5 @@ license.workspace = true
 publish = false
 
 [dependencies]
-resvg = "0.45.1"
+resvg = "0.47.0"
 image = { version = "0.25.10", default-features = false, features = ["jpeg", "png"] }

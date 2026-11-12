@@ -182,7 +182,7 @@ fn key_for(script: &str) -> Option<Key> {
         EqNode::Text(t) if t.chars().count() == 1 => {
             Some(Key::Letter(Style::Italic, t.chars().next()?))
         }
-        EqNode::FontStyle { style, body } => match (*body, style) {
+        EqNode::FontStyle { style, body } => match (unnest_style(&style, *body), style) {
             (EqNode::Text(t), FontStyleKind::Roman) if t.chars().count() == 1 => {
                 Some(Key::Letter(Style::Roman, t.chars().next()?))
             }
@@ -193,6 +193,19 @@ fn key_for(script: &str) -> Option<Key> {
         },
         EqNode::Number(t) | EqNode::Symbol(t) | EqNode::MathSymbol(t) => Some(Key::Upright(t)),
         _ => None,
+    }
+}
+
+/// rhwp 0.9 wraps a styled run twice (`rm x` is Roman{Roman{x}}); read one level.
+fn unnest_style(style: &FontStyleKind, body: EqNode) -> EqNode {
+    match body {
+        EqNode::FontStyle {
+            style: inner,
+            body: inner_body,
+        } if std::mem::discriminant(&inner) == std::mem::discriminant(style) => {
+            unnest_style(style, *inner_body)
+        }
+        other => other,
     }
 }
 
@@ -415,6 +428,40 @@ impl Layout {
     fn node(&mut self, node: &EqNode, base: f64, style: Style) -> Box_ {
         match node {
             EqNode::Row(children) => self.row(children, base, style),
+            // rhwp 0.9 keeps explicit braces, binomials, left scripts and long
+            // division as their own nodes. Measure them as the shapes the fitted
+            // model was built on.
+            EqNode::Group(body) => self.node(body, base, style),
+            EqNode::Binomial { top, bottom } => self.node(
+                &EqNode::Paren {
+                    left: "(".into(),
+                    right: ")".into(),
+                    body: Box::new(EqNode::Atop {
+                        top: top.clone(),
+                        bottom: bottom.clone(),
+                    }),
+                },
+                base,
+                style,
+            ),
+            EqNode::LeftScripts { base: b, sub, sup } => {
+                self.scripts(b, sub.as_deref(), sup.as_deref(), base, style)
+            }
+            EqNode::LongDiv {
+                divisor,
+                quotient,
+                body,
+            } => self.row(
+                &[
+                    (**quotient).clone(),
+                    EqNode::Symbol("÷".into()),
+                    (**divisor).clone(),
+                    EqNode::Symbol("=".into()),
+                    (**body).clone(),
+                ],
+                base,
+                style,
+            ),
             EqNode::Text(t) if t.starts_with(BIG_MARK) => {
                 self.big_operator(&t[BIG_MARK.len_utf8()..], None, None, base, style)
             }
@@ -451,6 +498,12 @@ impl Layout {
                     return self.big_operator(s, None, None, base, style);
                 }
                 Self::text_box(self.glyph(Key::Upright(s.clone()), s, base), base)
+            }
+            EqNode::FontStyle { style: s, body }
+                if matches!(&**body, EqNode::FontStyle { style: inner, .. }
+                    if std::mem::discriminant(inner) == std::mem::discriminant(s)) =>
+            {
+                self.node(body, base, style)
             }
             EqNode::FontStyle { style: s, body } => {
                 let next = match s {
@@ -561,7 +614,7 @@ impl Layout {
             } => {
                 let mut b = self.grid(rows, base, style);
                 b.width += match matrix {
-                    MatrixStyle::Plain => 0.0,
+                    MatrixStyle::Plain | MatrixStyle::Ladder | MatrixStyle::ShortLadder => 0.0,
                     MatrixStyle::Paren => self.delimiter("(", base) + self.delimiter(")", base),
                     MatrixStyle::Bracket | MatrixStyle::Vert => 2.0 * size48(base) * PX,
                 };
@@ -571,7 +624,7 @@ impl Layout {
                 let rows: Vec<Vec<EqNode>> = rows.iter().map(|r| vec![r.clone()]).collect();
                 self.grid(&rows, base, style)
             }
-            EqNode::EqAlign { rows } => {
+            EqNode::EqAlign { rows, .. } => {
                 // Left parts align right, right parts left; the first row owns the baseline.
                 let line = Self::line(base);
                 let (mut left, mut right, mut height, mut ascent) = (0.0_f64, 0.0_f64, 0.0, 0.0);

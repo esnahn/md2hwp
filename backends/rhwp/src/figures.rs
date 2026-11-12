@@ -261,7 +261,6 @@ impl Prototype {
         let mut picture = Picture::default();
         picture.common.ctrl_id = 0x6773_6f20;
         picture.common.attr = 0x240a_2211;
-        picture.common.hwp5_gen_shape_attr_bit26 = true;
         picture.common.numbering_type = ObjectNumberingType::Picture;
         picture.common.treat_as_char = true;
         picture.common.affect_line_spacing = false;
@@ -875,8 +874,8 @@ mod tests {
         let result = core.export_hwp_with_adapter_snapshot_with_report().unwrap();
         assert!(result.content_loss().is_empty());
         let reopened = rhwp::DocumentCore::from_bytes(result.bytes()).unwrap();
-        let diff =
-            rhwp::serializer::hwpx::roundtrip::diff_documents(&expected, reopened.document());
+        let stored = rhwp::parser::parse_hwp(result.bytes()).unwrap();
+        let diff = rhwp::serializer::hwpx::roundtrip::diff_documents(&expected, &stored);
         assert!(diff.is_empty(), "{:?}", diff.differences);
         crate::verify_embedded_bytes(&expected, reopened.document()).unwrap();
         let mut corrupted = reopened.document().clone();

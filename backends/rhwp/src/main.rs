@@ -216,11 +216,14 @@ fn run(options: Options) -> Result<(), String> {
     }
     let mut reopened = DocumentCore::from_bytes(&saved)
         .map_err(|e| format!("Saved HWP could not be reopened: {e:?}"))?;
-    verify_embedded_bytes(&expected, reopened.document())?;
-    note_storage::verify_stored(&expected, reopened.document(), &generated_notes)?;
+    // Compare what is stored: DocumentCore adds derived line layout on open.
+    let stored = rhwp::parser::parse_hwp(&saved)
+        .map_err(|e| format!("Saved HWP could not be parsed: {e:?}"))?;
+    verify_embedded_bytes(&expected, &stored)?;
+    note_storage::verify_stored(&expected, &stored, &generated_notes)?;
     let mut reader_expected = expected;
     note_storage::expected_reader_numbers(&mut reader_expected)?;
-    let diff = diff_documents(&reader_expected, reopened.document());
+    let diff = diff_documents(&reader_expected, &stored);
     if !diff.is_empty() {
         return Err(format!(
             "Saved HWP differs from the composed document: {:?}",
@@ -375,7 +378,11 @@ fn init_template_file(path: &Path) -> Result<(), String> {
     verify_embedded_bytes(&expected, reopened.document())?;
     // Restore only the known native note counters before comparing the independent model.
     note_storage::restore_source_autonums(reopened.document_mut())?;
-    let diff = diff_documents(&expected, reopened.document());
+    // Compare what is stored: DocumentCore adds derived line layout on open.
+    let mut stored = rhwp::parser::parse_hwp(&bytes)
+        .map_err(|e| format!("Saved template could not be parsed: {e:?}"))?;
+    note_storage::restore_source_autonums(&mut stored)?;
+    let diff = diff_documents(&expected, &stored);
     if !diff.is_empty() {
         return Err(format!(
             "Saved template differs from the authored model: {:?}",
@@ -400,7 +407,7 @@ fn main() {
     let args: Vec<_> = env::args_os().skip(1).collect();
     if args.len() == 1 && args[0] == "--version" {
         println!(
-            "md2hwp-rhwp {} (experimental; IR {}; rhwp 0.8.7)\nLicense: AGPL-3.0-only",
+            "md2hwp-rhwp {} (experimental; IR {}; rhwp 0.9.0)\nLicense: AGPL-3.0-only",
             env!("CARGO_PKG_VERSION"),
             md2hwp_core::ir::IR_VERSION
         );
