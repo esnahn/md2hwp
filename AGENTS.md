@@ -448,6 +448,13 @@ The rhwp pin follows upstream devel, not main or release tags: main lacks the
 master-page kind fix (d7873c6, upstream PR #8906), so keep the pin at or after it.
 Move the pin only when a needed fix appears, not to track devel routinely; then
 refresh Cargo.lock and notices and recheck the examples in Hancom.
+Branch layout while main stays on a release pin: main <- rhwp-devel <- feature
+branches. rhwp-devel differs from main only by the rhwp pin and the adapter changes
+it needs; each pin move is one commit there. Follow main by rebasing, not merging
+(git rebase --update-refs main from the feature branch); regenerate Cargo.lock and
+notices instead of hand-merging them. When an upstream release contains the needed
+fixes, pin rhwp-devel to it, fast-forward main and delete rhwp-devel. Recreate it
+from main under the same name the next time an unreleased devel commit is needed.
 Code table ZOrders are freshly allocated above all source orders (including master
 pages), with raw payload/seal updates. This differs from Hancom's allocation order;
 retain that distinction in comparison evidence. Current long TreatAsChar boxes clip
