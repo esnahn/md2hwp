@@ -4,11 +4,10 @@
 const BASIC: &str = "md2hwp <source.md> [source.output.hwp] [--template <template.hwp>] [OPTIONS]";
 const FULL: &str = "md2hwp <source.md> [OPTIONS]";
 const WORKER: &str = "  --worker FILE       Backend executable (default: automatic selection).\n  --dotnet FILE       .NET host for the Hancom backend only.";
-const BACKENDS: &str =
-    "Backend selection: md2hwp-rhwp.exe, then md2hwp-hancom.exe; HWPX uses Hancom.";
+const BACKENDS: &str = "Backend selection: md2hwp-rhwp.exe, then md2hwp-hancom.exe.";
 const HELP: &str = "  -h, --help          Show this help.";
 const SVG: &str = "  --svg FORMAT        SVG figures: auto (default: emf, or png when emf is impossible or\n                      over 5 MiB and larger than the png), emf (fail when impossible), png or jpg.";
-const FORMATS: &str = "Hancom output/template formats: .hwp or .hwpx";
+const FORMATS: &str = "Output/template formats: .hwp or .hwpx";
 const COMMANDS: &[(&str, &str, &str)] = &[
     (
         "md2ir",
@@ -124,10 +123,11 @@ pub fn command(name: &str) -> Option<String> {
             .push_str("\n\nInput formats: Markdown (default) or Pandoc JSON (--from pandoc-json)."),
         "ir2hwp" => text.push_str(&format!("\n\n{FORMATS}")),
         "validate-template" => {
-            text.push_str("\n\nDefault: template.hwp. Hancom also accepts .hwpx templates.")
+            text.push_str("\n\nDefault: template.hwp. .hwpx templates are also accepted.")
         }
-        "init-template" => text
-            .push_str("\n\nExisting files are not overwritten. Hancom also accepts .hwpx output."),
+        "init-template" => {
+            text.push_str("\n\nExisting files are not overwritten. .hwpx output is also accepted.")
+        }
         "check-runtime" => text.push_str("\n\nRequires a stable .NET 10 x64 runtime."),
         "setup-pandoc" => text.push_str(
             "\n\nInstalls into the managed dependency directory; no PATH edit is required.",
