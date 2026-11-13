@@ -1321,6 +1321,7 @@ dependencies = [
  "serde_json",
  "tempfile",
  "unicode-segmentation",
+ "zip 9.5.1",
 ]
 
 [[package]]

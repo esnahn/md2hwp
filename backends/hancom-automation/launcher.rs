@@ -165,7 +165,7 @@ pub fn run_version(arguments: Vec<OsString>) -> Result<(), String> {
         return Err("Hancom requires Windows x64.".into());
     }
     launch_worker(
-        select_worker(options.worker, &[])?,
+        select_worker(options.worker)?,
         options.dotnet,
         vec!["--version".into()],
         None,
@@ -201,7 +201,7 @@ pub fn run_with_resource_root(
     while let Some(key) = args.next() {
         if validate && (key == "--help" || key == "-h") {
             println!(
-                "usage: md2hwp validate-template [[--template] <template.hwp>] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\nThe Hancom backend also accepts .hwpx template paths."
+                "usage: md2hwp validate-template [[--template] <template.hwp>] [--worker <worker.exe>] [--dotnet <dotnet.exe>]\nTemplates may be .hwp or .hwpx."
             );
             return Ok(());
         }
@@ -254,7 +254,7 @@ pub fn run_with_resource_root(
         if !has_document_extension(&template) {
             return Err("Template must have .hwp or .hwpx extension.".into());
         }
-        let worker = select_worker(worker, &[&template])?;
+        let worker = select_worker(worker)?;
         return launch_worker(
             worker,
             dotnet,
@@ -274,7 +274,7 @@ pub fn run_with_resource_root(
         if !has_document_extension(&output) {
             return Err("Template output must be .hwp or .hwpx".into());
         }
-        let worker = select_worker(worker, &[&output])?;
+        let worker = select_worker(worker)?;
         return launch_worker(
             worker,
             dotnet,
@@ -289,7 +289,7 @@ pub fn run_with_resource_root(
     let ir = ir.ok_or_else(usage)?;
     let template = adjacent_default(template, "template.hwp")?;
     let output = std::path::absolute(output.ok_or_else(usage)?).map_err(|e| e.to_string())?;
-    let worker = select_worker(worker, &[&template, &output])?;
+    let worker = select_worker(worker)?;
     for path in [&worker, &ir, &template] {
         if !path.is_file() {
             return Err(format!("Missing input: {}", path.display()));
@@ -423,10 +423,7 @@ fn adjacent_default(explicit: Option<PathBuf>, name: &str) -> Result<PathBuf, St
         .join(name))
 }
 
-fn select_worker(
-    explicit: Option<PathBuf>,
-    documents: &[&std::path::Path],
-) -> Result<PathBuf, String> {
+fn select_worker(explicit: Option<PathBuf>) -> Result<PathBuf, String> {
     if let Some(path) = explicit {
         return Ok(path);
     }
@@ -435,23 +432,11 @@ fn select_worker(
         executable
             .parent()
             .ok_or("Executable has no parent directory")?,
-        documents,
     )
 }
 
-fn select_adjacent_worker(
-    directory: &std::path::Path,
-    documents: &[&std::path::Path],
-) -> Result<PathBuf, String> {
-    let hwpx = documents.iter().any(|path| {
-        path.extension()
-            .is_some_and(|extension| extension.eq_ignore_ascii_case("hwpx"))
-    });
-    let names: &[&str] = if hwpx {
-        &["md2hwp-hancom.exe"]
-    } else {
-        &["md2hwp-rhwp.exe", "md2hwp-hancom.exe"]
-    };
+fn select_adjacent_worker(directory: &std::path::Path) -> Result<PathBuf, String> {
+    let names = ["md2hwp-rhwp.exe", "md2hwp-hancom.exe"];
     for name in names {
         let path = directory.join(name);
         if path.is_file() {
@@ -498,51 +483,17 @@ mod tests {
         let root = directory.path();
         let hancom = root.join("md2hwp-hancom.exe");
         fs::write(&hancom, b"worker").unwrap();
-        for documents in [vec![], vec![std::path::Path::new("template.hwp")]] {
-            assert_eq!(select_adjacent_worker(root, &documents).unwrap(), hancom);
-            let rhwp = root.join("md2hwp-rhwp.exe");
-            fs::write(&rhwp, b"worker").unwrap();
-            assert_eq!(select_adjacent_worker(root, &documents).unwrap(), rhwp);
-            fs::remove_file(rhwp).unwrap();
-        }
+        assert_eq!(select_adjacent_worker(root).unwrap(), hancom);
+        let rhwp = root.join("md2hwp-rhwp.exe");
+        fs::write(&rhwp, b"worker").unwrap();
+        assert_eq!(select_adjacent_worker(root).unwrap(), rhwp);
     }
 
     #[test]
-    fn hwpx_template_or_output_requires_hancom_automatically() {
-        let directory = tempfile::tempdir().unwrap();
-        let root = directory.path();
-        fs::write(root.join("md2hwp-rhwp.exe"), b"worker").unwrap();
-        let hancom = root.join("md2hwp-hancom.exe");
-        for documents in [
-            vec![std::path::Path::new("template.HwPx")],
-            vec![std::path::Path::new("output.HWPX")],
-            vec![
-                std::path::Path::new("template.hwp"),
-                std::path::Path::new("output.hwpx"),
-            ],
-            vec![
-                std::path::Path::new("template.hwpx"),
-                std::path::Path::new("output.hwp"),
-            ],
-        ] {
-            let error = select_adjacent_worker(root, &documents).unwrap_err();
-            assert!(error.contains("expected md2hwp-hancom.exe"), "{error}");
-            fs::write(&hancom, b"worker").unwrap();
-            assert_eq!(select_adjacent_worker(root, &documents).unwrap(), hancom);
-            fs::remove_file(&hancom).unwrap();
-        }
-    }
-
-    #[test]
-    fn explicit_worker_always_wins_even_for_hwpx_or_missing_workers() {
+    fn explicit_worker_always_wins_even_when_missing() {
         for name in ["md2hwp-rhwp.exe", "custom.exe", "missing.exe"] {
             let explicit = PathBuf::from("explicit").join(name);
-            for documents in [vec![], vec![std::path::Path::new("template.hwpx")]] {
-                assert_eq!(
-                    select_worker(Some(explicit.clone()), &documents).unwrap(),
-                    explicit
-                );
-            }
+            assert_eq!(select_worker(Some(explicit.clone())).unwrap(), explicit);
         }
     }
 
@@ -551,7 +502,7 @@ mod tests {
         let directory = tempfile::tempdir().unwrap();
         fs::write(directory.path().join("md2hwp-backend.exe"), b"old worker").unwrap();
         fs::create_dir(directory.path().join("md2hwp-rhwp.exe")).unwrap();
-        let error = select_adjacent_worker(directory.path(), &[]).unwrap_err();
+        let error = select_adjacent_worker(directory.path()).unwrap_err();
         assert!(
             error.contains("md2hwp-rhwp.exe or md2hwp-hancom.exe"),
             "{error}"
@@ -564,7 +515,7 @@ mod tests {
         let rhwp = directory.path().join("md2hwp-rhwp.exe");
         fs::write(&rhwp, x64_pe_fixture()).unwrap();
         fs::write(directory.path().join("md2hwp-hancom.exe"), b"invalid").unwrap();
-        let selected = select_adjacent_worker(directory.path(), &[]).unwrap();
+        let selected = select_adjacent_worker(directory.path()).unwrap();
         assert_eq!(selected, rhwp);
         // This truncated PE passes the header check but cannot start. Its launch
         // error must remain the result even when another worker is adjacent.

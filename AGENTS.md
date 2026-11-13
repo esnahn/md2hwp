@@ -375,18 +375,30 @@ make the faster path pass. Performance and Debug/Release equivalence evidence is
 recorded in docs/performance/2026-10-09-direct-xml.md; current three-way generation
 evidence and profiles are in docs/performance/2026-10-09-generation-modes.md.
 
-The rhwp backend, md2hwp-rhwp.exe, supports HWP templates and HWP output
-only. Reject HWPX template/output paths explicitly before generation; direct users
-to the existing Hancom backend without automatic fallback. HWPX roundtrip findings
-are investigation evidence, not blockers requiring rhwp HWPX implementation.
+The rhwp backend, md2hwp-rhwp.exe, supports HWP and HWPX templates and output.
+It always composes an HWP model; HWPX exists only at the file boundary
+(backends/rhwp/src/hwpx.rs). Lower an HWPX template to HWP bytes first and compare
+them with the lowered model and the source embedded bytes. For HWPX output, finish
+every HWP check, export that saved HWP as HWPX, then reopen it and compare it with
+the HWP (upstream export comparison, package check, embedded bytes, page count).
+Publish only the format the output extension names; preserve old output on failure.
+One rhwp e4f8ff2 conversion differs from Hancom 2020 and is corrected there, checked
+after reopen: the HWPX serializer writes numberingType="EQUATION" on every equation,
+which makes Hancom number inline equations. Rewrite only that attribute, matched by
+instance id. Recheck it when the pin moves and drop the correction once upstream
+matches Hancom. Lowering an HWPX template keeps the Both/Even/Odd master page kinds
+and contents in stored order (upstream issue #9046, fixed at e4f8ff2; the 11 Hancom
+combinations match Hancom's own HWP save); fail when the lowered or reopened kinds
+differ from the source instead of correcting them. HWPX templates not saved by
+Hancom or rhwp are unverified.
 Keep the current IR and existing template syntax. See docs/rhwp-backend-strategy.md.
 Normal builds and executable ZIPs include both md2hwp-rhwp.exe and md2hwp-hancom.exe.
 The -Rhwp build switch remains accepted for compatibility. With no explicit worker,
-select the colocated rhwp worker first and Hancom only if rhwp is absent; if either
-template or output is HWPX, select only Hancom. Honor explicit --worker selections,
+select the colocated rhwp worker first and Hancom only if rhwp is absent, for HWP
+and HWPX alike. Honor explicit --worker selections,
 including incompatible ones that fail; never retry another worker after execution
 failure. Hancom, hwp2pdf and hwpeqrecalc still require Hancom/.NET and the security module.
-The rhwp worker also implements HWP-only validate-template and init-template without
+The rhwp worker also implements validate-template and init-template (HWP or HWPX) without
 COM/.NET. Strict inspection traverses metadata and all unused prototypes/conditional
 branches before lowering; do not replace it with an empty-manuscript render. Keep
 its result JSON field names and path defaults aligned with the Hancom worker.
