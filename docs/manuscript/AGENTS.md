@@ -86,7 +86,17 @@ md2hwp-heading1-start: 1
 ```
 
 - 독립 문단 전체에 이미지 하나만 둔다. 설명은 그림 캡션으로 쓰인다.
-- 실제 PNG·JPG·JPEG·EMF를 사용한다. 확장자는 대소문자를 구분하지 않는다.
+- 실제 PNG·JPG·JPEG·EMF·SVG를 사용한다. 확장자는 대소문자를 구분하지 않는다.
+  SVG는 변환 시 옆에 `<이름>.svg.emf`로 바뀌어 들어가며(기본 `--svg auto`), EMF로 표현할 수 없거나 EMF가 5 MiB를 넘고 PNG보다 크면 `.svg.png`가 된다.
+  `--svg png`·`--svg jpg`로 모든 SVG를 래스터로 넣을 수 있다. `--svg emf`는 EMF로 표현할 수 없는 SVG가 있으면 변환을 실패시킨다.
+  SVG를 새로 만들 때는 벡터(EMF)로 들어가도록 다음 범위만 쓴다: 단색 또는 패턴(빗금) 채움과 선, 도형별 투명도
+  (`fill-opacity`·`stroke-opacity`·도형 하나의 `opacity`), 변환, 텍스트, 도형 하나로 된 `clip-path`.
+  같은 색 도형 묶음(글자)의 `opacity`도 된다.
+  PNG·JPEG 이미지는 data URL로 넣으면 EMF 안에 이미지로 들어간다.
+  그라데이션·마스크·필터(그림자·흐림)·혼합 모드·GIF/WebP 이미지·색이 다른 여러 도형을 묶은 그룹의 `opacity`는 쓰지 않는다.
+  matplotlib 그래프는 `savefig("그림.svg")`로 저장하고 `shading="gouraud"`를 피한다. `imshow` 이미지는 EMF 안에 이미지로 들어간다.
+  `svg2emf 그림.svg`가 성공하면 EMF로 들어간다. 실패하면 알려 주는 기능을 SVG에서 뺀다.
+  이 생성 파일을 원고에서 직접 가리키거나 손으로 고치지 않는다. SVG 안의 외부 이미지 참조는 쓸 수 없다.
   JPEG는 8비트 일반 순차 또는 progressive 형식을 사용한다.
   EMF는 양수의 물리적 프레임과 완전한 헤더·레코드·EOF를 가진 최대 64 MiB·100만 레코드 파일을 사용한다.
 - 간편 실행에서 경로는 원고 폴더 기준이다. 이미지를 원고 폴더 안에 두고 상대 경로로 연결한다.

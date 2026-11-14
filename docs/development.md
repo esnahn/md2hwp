@@ -71,6 +71,7 @@ Release 빌드 결과는 `target/release/`의 다음 파일과 라이선스 폴�
 - `md2hwp-hancom.exe`
 - `hwp2pdf.exe`
 - `hwpeqrecalc.exe`
+- `svg2emf.exe`
 - `md2hwp-completion.ps1`
 - `template.hwp`
 - `README.md`

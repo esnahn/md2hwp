@@ -48,6 +48,7 @@ Markdown 원고를 한글 템플릿의 서식에 맞춰 HWP·HWPX 문서로 변�
 | `md2hwp --help`, `md2hwp <명령> --help`, `md2hwp --version` | 사용법과 버전을 표시합니다. |
 | `hwp2pdf 원고.hwp` | HWP를 PDF로 변환합니다. [상세](docs/hwp2pdf.md) |
 | `hwpeqrecalc 결과.hwp` | 한글이 모든 수식 크기를 다시 계산하게 하고 `결과.recalc.hwp`로 저장합니다. [상세](docs/hwpeqrecalc.md) |
+| `svg2emf 그림.svg` | SVG를 `그림.emf`(EMF+ Dual)로 바꿉니다. 출력 확장자를 `.png`·`.jpg`로 주면 그 형식으로 바꿉니다. [상세](docs/svg-figures.md#svg2emf) |
 | `. .\md2hwp-completion.ps1` | 현재 PowerShell 세션에 Tab 자동완성을 등록합니다. [상세](docs/usage.md#powershell-자동완성) |
 
 ## 원고 문법
@@ -58,7 +59,7 @@ Markdown 원고를 한글 템플릿의 서식에 맞춰 HWP·HWPX 문서로 변�
 - **글자 서식:** `**굵게**`, `*기울임*`, `~~취소선~~`, `<sup>위 첨자</sup>`, `<sub>아래 첨자</sub>`.
 - **목록:** `-` 글머리표와 `1.` 번호 목록을 쓰고, 들여써서 하위 목록을 만듭니다.
 - **수식:** 문장 안은 `$...$`, 별행은 문단 전체를 `$$...$$`로 적습니다.
-- **그림:** 독립 문단의 `![캡션](파일)`. PNG·JPG·JPEG·EMF를 지원합니다.
+- **그림:** 독립 문단의 `![캡션](파일)`. PNG·JPG·JPEG·EMF·SVG를 지원합니다. SVG는 EMF나 PNG로 자동으로 바꿔 넣으며(`--svg auto`), `--svg emf|png|jpg`로 고를 수도 있습니다.
 - **글상자:** 백틱 세 개로 감싼 블록. 첫 줄 `제목: `으로 제목을 붙입니다.
 - **표:** 파이프 표. 제목은 표 앞이나 뒤 문단에 `표: 제목`으로 적습니다.
 - **출처와 설명:** 그림·글상자·표 뒤 문단에 `출처: 내용`, `주: 내용`처럼 적습니다.
@@ -126,8 +127,8 @@ pwsh -NoProfile -File tools/development/build.ps1
 ## 문서
 
 - 사용: [설치와 실행](docs/usage.md) · [원고 작성 안내](docs/manuscript/README-MANUSCRIPT.md) · [예시](examples/README.md)
-- 원고 기능: [표](docs/tables.md) · [번호 참조](docs/cross-references.md) · [출처와 설명](docs/object-sources.md) · [캡션 안의 참조](docs/caption-inlines.md) · [메타데이터](docs/yaml-variables.md) · [날짜](docs/date-metadata.md) · [EMF 그림](docs/emf-figures.md) · [수식](docs/math.md)
-- 템플릿과 도구: [템플릿](docs/templates.md) · [HWPX](docs/hwpx.md) · [hwp2pdf](docs/hwp2pdf.md) · [hwpeqrecalc](docs/hwpeqrecalc.md)
+- 원고 기능: [표](docs/tables.md) · [번호 참조](docs/cross-references.md) · [출처와 설명](docs/object-sources.md) · [캡션 안의 참조](docs/caption-inlines.md) · [메타데이터](docs/yaml-variables.md) · [날짜](docs/date-metadata.md) · [EMF 그림](docs/emf-figures.md) · [SVG 그림](docs/svg-figures.md) · [수식](docs/math.md)
+- 템플릿과 도구: [템플릿](docs/templates.md) · [HWPX](docs/hwpx.md) · [hwp2pdf](docs/hwp2pdf.md) · [hwpeqrecalc](docs/hwpeqrecalc.md) · [svg2emf](docs/svg-figures.md#svg2emf)
 - 개발: [빌드와 검증](docs/development.md) · [로컬 파일](docs/local-files.md) · [rhwp 백엔드](docs/rhwp-backend-strategy.md)
 
 ## 라이선스

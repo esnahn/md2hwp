@@ -11,7 +11,7 @@
 | 각주·메타데이터 회귀 | [`footnotes/`](footnotes/), [`metadata/`](metadata/) — Rust 테스트가 예상 IR을 직접 포함 |
 | 번호·캡션·하단 설명 회귀 | [`cross-references/`](cross-references/), [`heading-references/`](heading-references/), [`caption-references/`](caption-references/), [`table-references/`](table-references/), [`all-features/object-sources.md`](all-features/object-sources.md) |
 | 표 회귀 | [`tables/`](tables/) |
-| 이미지 형식별 회귀·생성기 | [`jpeg/`](jpeg/), [`emf/`](emf/) |
+| 이미지 형식별 회귀·생성기 | [`jpeg/`](jpeg/), [`emf/`](emf/), [`svg/`](svg/) |
 | IR 정규화·거부 규칙 | 이 폴더 루트의 JSON — 일부는 Rust 테스트가 직접 포함 |
 
 MD·예상 IR·그림·유지 중인 생성기는 Git으로 추적합니다. 생성한 HWP/PDF와 실행 로그·페이지

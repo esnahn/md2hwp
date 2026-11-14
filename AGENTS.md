@@ -36,7 +36,7 @@ redirect ordinary builds there merely to preserve an older release.
 The JSON fixtures still tracked are included directly by Rust test compilation.
 Builds include a deployment README.md with usable versioned documentation links.
 Create release ZIPs with tools/development/build.ps1 -Configuration Release -Package;
-include md2hwp.exe, md2hwp-rhwp.exe, md2hwp-hancom.exe, hwp2pdf.exe, hwpeqrecalc.exe, the tracked default template, README.md and the manuscript guides.
+include md2hwp.exe, md2hwp-rhwp.exe, md2hwp-hancom.exe, hwp2pdf.exe, hwpeqrecalc.exe, svg2emf.exe, the tracked default template, README.md and the manuscript guides.
 Include LICENSE, THIRD-PARTY-NOTICES.txt and licenses/ in deployment
 folders and executable ZIPs. Original project code is AGPL-3.0-only; preserve
 third-party licenses. Regenerate notices with tools/development/update-third-party-notices.ps1
@@ -604,6 +604,59 @@ JPEG file directly to embedded InsertPicture, using the template width and pixel
 aspect ratio. Hancom may re-encode or deduplicate embedded image data; do not
 claim byte-for-byte preservation. Do not transcode JPEG into PNG or add format
 fields to IR.
+
+SVG figures (.svg, case-insensitive) are converted by the app during md2ir with
+crates/md2hwp-svg (usvg/resvg, no unsafe); the IR and both workers are unchanged and
+workers keep rejecting .svg paths. --svg auto|emf|png|jpg (md2ir and the shorthand,
+default auto) chooses the format for every SVG; keep help and the completion map
+aligned. auto is emf plus one size rule: when the EMF exceeds 5 MiB, also render the
+PNG and store whichever is smaller; smaller EMFs are never compared. emf skips the
+size rule and fails, naming the feature, for drawings EMF cannot hold; only auto
+falls back to PNG.
+Write `<name>.svg.<emf|png|jpg>` beside the SVG; the IR path names that file.
+emf writes EMF+ Dual: each fill is recorded as EMF+ (float path object, solid ARGB
+FillPath, antialiased) and as GDI (path bracket, solid brush, 1/64 px). Strokes are
+outlined into fills, text into glyph outlines, a one-shape clip path into
+SetClipPath/SELECTCLIPPATH. Fill/stroke opacity lives only in the EMF+ half; the GDI
+half draws it opaque. Opacity on a group holding one path (how matplotlib writes
+artist alpha) multiplies that path's colours; with both fill and an opaque stroke
+the fill is drawn under an Exclude clip of the stroke outline. Opacity over several
+shapes or a translucent stroke, gradients, masks, filters, blend
+modes and other clip paths cannot be stored (auto: PNG with the reason on
+stderr). Records were checked against [MS-EMFPLUS]/[MS-EMF] (table in
+docs/svg-figures.md): Size and DataSize are both 32-bit aligned, the header comment
+directly follows EMR_HEADER, EndOfFile directly precedes EMR_EOF, and the page unit
+is stated as pixels. Path flag 0x2000 (winding) is not in the specification; GDI+
+records and honours it. Hancom shows nothing when a record is malformed.
+Pattern paints (matplotlib hatches) are drawn by clipping to the shape and repeating
+the pattern content per tile (own tile clip only when content leaves the tile, at
+most 4096 tiles, opaque patterns only). Do not use EMF+ texture brushes for this:
+GDI+ stores bitmap tiles, and neither GDI+ nor Hancom 2020 draws a metafile-image
+texture brush. Embedded PNG/JPEG images are written twice: EMF+ image object
+holding the encoded file, DrawImagePoints with source rectangle (-0.5, -0.5, w, h)
+because GDI+ centres source pixels on whole coordinates, interpolation from
+image-rendering, and ImageAttributes TileFlipXY for smooth modes (else edges fade);
+GDI SaveDC, SETWORLDTRANSFORM and STRETCHDIBITS of a 24-bit copy of at most 1024
+pixels per side, preceded by a 1-bit SRCAND mask and painted with SRCPAINT when
+any alpha is below 128. GIF, WebP, nested SVG and images under group opacity are
+not written.
+Do not emit SetPixelOffsetMode Half: GDI+ then plays the picture half a pixel up
+and left. Group opacity over fills of one opaque colour (faded text) is drawn as
+their winding union. The matplotlib 3.11.2 gallery (777 figures, 765 as EMF, the
+rest Gouraud/truncated files) compared against resvg through GDI+ is the regression
+evidence in docs/svg-figures.md; rerun such a comparison after changing the writer.
+Dual, not Only: rhwp at 1a76570 and eb84afc plays only GDI records of .emf pictures.
+png/jpg render with resvg; jpg is placed on white. Generated files carry a marker
+(EMF description md2hwp, PNG tEXt Software md2hwp-svg, JPEG comment md2hwp-svg):
+replace or remove only marked files and fail on an unmarked file of the same name.
+apps/svg2emf builds the standalone svg2emf.exe on the same crate: the output
+extension selects emf/png/jpg and an .emf output fails with the reason instead of
+falling back. md2hwp never invokes it. Keep the SVG authoring rules in both
+manuscript guides aligned with what the writer supports.
+Never read files an SVG refers to; reject external image hrefs and text that
+produced no outlines. validate converts in memory only. See docs/svg-figures.md for
+the verified scope; the Hancom worker path, HWPX output, raster targets in Hancom
+and non-Hancom EMF viewers are unverified.
 
 EMF figures accept .emf case-insensitively without changing the IR. Inspect the
 little-endian EMR_HEADER and record/EOF boundaries in the backend before COM;
