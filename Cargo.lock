@@ -1190,6 +1190,7 @@ name = "md2hwp"
 version = "0.6.0"
 dependencies = [
  "md2hwp-core",
+ "md2hwp-svg",
  "serde_json",
  "sha2 0.10.9",
  "tempfile",
@@ -1232,6 +1233,14 @@ dependencies = [
  "serde_json",
  "tempfile",
  "unicode-segmentation",
+]
+
+[[package]]
+name = "md2hwp-svg"
+version = "0.6.0"
+dependencies = [
+ "image",
+ "resvg",
 ]
 
 [[package]]
@@ -2280,6 +2289,14 @@ name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+
+[[package]]
+name = "svg2emf"
+version = "0.6.0"
+dependencies = [
+ "md2hwp-svg",
+ "tempfile",
+]
 
 [[package]]
 name = "svg2pdf"

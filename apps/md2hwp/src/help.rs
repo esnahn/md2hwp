@@ -7,6 +7,7 @@ const WORKER: &str = "  --worker FILE       Backend executable (default: automat
 const BACKENDS: &str =
     "Backend selection: md2hwp-rhwp.exe, then md2hwp-hancom.exe; HWPX uses Hancom.";
 const HELP: &str = "  -h, --help          Show this help.";
+const SVG: &str = "  --svg FORMAT        SVG figures: auto (default: emf, or png when emf is impossible or\n                      over 5 MiB and larger than the png), emf (fail when impossible), png or jpg.";
 const FORMATS: &str = "Hancom output/template formats: .hwp or .hwpx";
 const COMMANDS: &[(&str, &str, &str)] = &[
     (
@@ -55,7 +56,7 @@ pub fn command_brief(name: &str) -> Option<String> {
 
 pub fn full() -> String {
     let mut text = format!(
-        "{FULL}\n\nOptions:\n  [--output] FILE     Optional output path (default: source.output.hwp in the source folder).\n  --template FILE     Template (default: template.hwp).\n{WORKER}\n  --verbose           Show backend details.\n  --version           Show application and selected backend versions.\n{HELP}"
+        "{FULL}\n\nOptions:\n  [--output] FILE     Optional output path (default: source.output.hwp in the source folder).\n  --template FILE     Template (default: template.hwp).\n{WORKER}\n{SVG}\n  --verbose           Show backend details.\n  --version           Show application and selected backend versions.\n{HELP}"
     );
     legacy(&mut text);
     text.push_str(&format!("\n\n{FORMATS}\n{BACKENDS}\n\nSubcommands:\n"));
@@ -87,9 +88,9 @@ pub fn command(name: &str) -> Option<String> {
     }
     text.push_str(&format!("\n{description}\n\nOptions:\n"));
     match name {
-        "md2ir" => text.push_str(
-            "  [--output] FILE     Optional output path (default: source.ir.json in the source folder).\n  --from FORMAT       commonmark (default) or pandoc-json.\n  --pandoc FILE       Pandoc executable for commonmark input.\n  --force             Replace an existing IR file.\n",
-        ),
+        "md2ir" => text.push_str(&format!(
+            "  [--output] FILE     Optional output path (default: source.ir.json in the source folder).\n  --from FORMAT       commonmark (default) or pandoc-json.\n  --pandoc FILE       Pandoc executable for commonmark input.\n{SVG}\n  --force             Replace an existing IR file.\n",
+        )),
         "ir2hwp" => {
             text.push_str(
                 "  --ir FILE           Input IR (required).\n  --output FILE       Output document (required).\n  --template FILE     Template (default: template.hwp).\n",

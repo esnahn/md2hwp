@@ -1,0 +1,11 @@
+[package]
+name = "svg2emf"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+md2hwp-svg = { path = "../../crates/md2hwp-svg" }
+tempfile = "3"

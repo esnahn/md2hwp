@@ -128,8 +128,19 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
     let ir =
         normalize_pandoc(pandoc, &rules, reader, &limits).map_err(|error| error.to_string())?;
     let mut document = ir.into_document();
+    let mut converted = std::collections::HashMap::new();
     for block in &mut document.blocks {
         if let Block::Figure { image, .. } = block {
+            if is_svg(&image.path) {
+                image.path = match converted.get(&image.path) {
+                    Some(path) => String::clone(path),
+                    None => {
+                        let path = convert_svg_figure(&image.path, &options.input, options.svg)?;
+                        converted.insert(image.path.clone(), path.clone());
+                        path
+                    }
+                };
+            }
             image.path = rebase_image_path(&image.path, &options.input, &options.output)?;
         }
     }
@@ -312,12 +323,17 @@ fn check_resources(document: &md2hwp_core::Document, input: &Path) -> Result<usi
                 .unwrap_or_default()
                 .to_ascii_lowercase();
             let resolved = root.join(path).canonicalize();
-            let message = if !matches!(extension.as_str(), "png" | "jpg" | "jpeg" | "emf") {
-                Some("image extension must be PNG/JPG/JPEG/EMF")
+            let message = if !matches!(extension.as_str(), "png" | "jpg" | "jpeg" | "emf" | "svg") {
+                Some("image extension must be PNG/JPG/JPEG/EMF/SVG".to_owned())
             } else if path.is_absolute() || matches!(&resolved, Ok(p) if !p.starts_with(&root)) {
-                Some("use a relative image path within the manuscript directory")
+                Some("use a relative image path within the manuscript directory".to_owned())
             } else if !matches!(&resolved, Ok(p) if p.is_file() && fs::File::open(p).is_ok()) {
-                Some("image file does not exist or cannot be read")
+                Some("image file does not exist or cannot be read".to_owned())
+            } else if extension == "svg" {
+                // Validation writes nothing; it only proves the conversion works.
+                read_svg(resolved.as_ref().unwrap())
+                    .and_then(|bytes| md2hwp_svg::convert(&bytes, md2hwp_svg::Target::Auto))
+                    .err()
             } else {
                 None
             };
@@ -340,6 +356,14 @@ struct ManuscriptOptions {
     output: PathBuf,
     forwarded: Vec<std::ffi::OsString>,
     protected: Vec<PathBuf>,
+    svg: Option<std::ffi::OsString>,
+}
+
+fn svg_target(value: &std::ffi::OsStr) -> Result<md2hwp_svg::Target, String> {
+    value
+        .to_str()
+        .and_then(md2hwp_svg::Target::parse)
+        .ok_or_else(|| "unsupported --svg value; expected auto, emf, png or jpg".to_owned())
 }
 
 fn manuscript_options(arguments: &[std::ffi::OsString]) -> Result<ManuscriptOptions, String> {
@@ -349,10 +373,20 @@ fn manuscript_options(arguments: &[std::ffi::OsString]) -> Result<ManuscriptOpti
     let mut output = None;
     let mut forwarded = Vec::new();
     let mut protected = Vec::new();
+    let mut svg = None;
     let mut seen = std::collections::HashSet::new();
     let mut args = arguments.iter().skip(1);
     while let Some(key) = args.next() {
         let option = key.to_str();
+        if option == Some("--svg") {
+            if !seen.insert(key.clone()) {
+                return Err("Duplicate argument: --svg".into());
+            }
+            let value = args.next().ok_or_else(usage)?;
+            svg_target(value)?;
+            svg = Some(value.clone());
+            continue;
+        }
         let flag = option == Some("--verbose");
         #[cfg(debug_assertions)]
         let flag = flag || option == Some("--legacy-com");
@@ -406,6 +440,7 @@ fn manuscript_options(arguments: &[std::ffi::OsString]) -> Result<ManuscriptOpti
         output,
         forwarded,
         protected,
+        svg,
     })
 }
 
@@ -416,6 +451,7 @@ fn convert_manuscript(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError
         output,
         forwarded,
         protected,
+        svg,
     } = manuscript_options(&arguments)?;
     // Protect source/template aliases before writing either generated file.
     for destination in [&ir, &output] {
@@ -428,7 +464,7 @@ fn convert_manuscript(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError
             ensure_distinct_paths(path, destination)?;
         }
     }
-    run(vec![
+    let mut md2ir: Vec<std::ffi::OsString> = vec![
         "md2ir".into(),
         "--from".into(),
         "commonmark".into(),
@@ -437,7 +473,11 @@ fn convert_manuscript(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError
         input.as_os_str().into(),
         "--output".into(),
         ir.as_os_str().into(),
-    ])?;
+    ];
+    if let Some(svg) = svg {
+        md2ir.extend(["--svg".into(), svg]);
+    }
+    run(md2ir)?;
     // Only the backend child receives the resource cwd; never change this process's cwd.
     // IR is retained if runtime/backend/template prerequisites or rendering fail.
     let mut backend = vec![
@@ -451,6 +491,80 @@ fn convert_manuscript(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError
     hancom::run_with_resource_root(backend, input.parent())
         .map_err(|e| format!("{e}\nValidated IR retained: {}", ir.display()))?;
     Ok(())
+}
+
+fn is_svg(resource: &str) -> bool {
+    Path::new(resource)
+        .extension()
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("svg"))
+}
+
+fn read_svg(path: &Path) -> Result<Vec<u8>, String> {
+    let file = fs::File::open(path).map_err(|e| format!("cannot open {}: {e}", path.display()))?;
+    let mut bytes = Vec::new();
+    std::io::Read::read_to_end(
+        &mut std::io::Read::take(file, md2hwp_svg::MAX_BYTES + 1),
+        &mut bytes,
+    )
+    .map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+    Ok(bytes)
+}
+
+/// Converts an SVG figure to `<name>.svg.<emf|png|jpg>` beside it and returns that
+/// file's manuscript-relative path. Backends never see the SVG.
+fn convert_svg_figure(
+    resource: &str,
+    input: &Path,
+    target: md2hwp_svg::Target,
+) -> Result<String, String> {
+    let directory = input.parent().unwrap_or_else(|| Path::new(""));
+    let source = directory.join(resource);
+    let image =
+        md2hwp_svg::convert(&read_svg(&source)?, target).map_err(|e| format!("{resource}: {e}"))?;
+    if let Some(reason) = &image.fallback {
+        eprintln!("{resource}: stored as PNG instead of EMF because {reason}");
+    }
+    // Only files this program generated earlier may be replaced or removed.
+    let sibling = |extension: &str| -> Result<(PathBuf, Option<Vec<u8>>), String> {
+        let path = directory.join(format!("{resource}.{extension}"));
+        let existing = match fs::read(&path) {
+            Ok(bytes) if md2hwp_svg::is_generated(&bytes) => Some(bytes),
+            Ok(_) => {
+                return Err(format!(
+                    "{} exists and was not generated by md2hwp; rename or remove it",
+                    path.display()
+                ));
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => return Err(format!("cannot read {}: {error}", path.display())),
+        };
+        Ok((path, existing))
+    };
+    let (target, existing) = sibling(image.extension)?;
+    let mut stale = Vec::new();
+    for extension in md2hwp_svg::EXTENSIONS {
+        if extension != image.extension
+            && let (path, Some(_)) = sibling(extension)?
+        {
+            stale.push(path);
+        }
+    }
+    if existing.as_deref() != Some(image.bytes.as_slice()) {
+        let parent = std::path::absolute(&target).map_err(|e| e.to_string())?;
+        let mut temporary =
+            tempfile::NamedTempFile::new_in(parent.parent().unwrap()).map_err(|e| e.to_string())?;
+        temporary
+            .write_all(&image.bytes)
+            .map_err(|e| e.to_string())?;
+        temporary.as_file().sync_all().map_err(|e| e.to_string())?;
+        temporary
+            .persist(&target)
+            .map_err(|e| format!("could not write {}: {}", target.display(), e.error))?;
+    }
+    for path in stale {
+        fs::remove_file(&path).map_err(|e| format!("could not remove {}: {e}", path.display()))?;
+    }
+    Ok(format!("{resource}.{}", image.extension))
 }
 
 fn rebase_image_path(resource: &str, input: &Path, output: &Path) -> Result<String, String> {
@@ -578,6 +692,7 @@ struct Options {
     input_format: InputFormat,
     pandoc: Option<PathBuf>,
     force: bool,
+    svg: md2hwp_svg::Target,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -597,13 +712,14 @@ impl Options {
         let mut pandoc = None;
         let mut input_format = None;
         let mut force = false;
+        let mut svg = md2hwp_svg::Target::default();
         let mut seen = std::collections::HashSet::new();
         while let Some(argument) = arguments.next() {
             if argument.to_string_lossy().starts_with('-') {
                 let option = argument.to_str().ok_or_else(usage)?;
                 if !matches!(
                     option,
-                    "--input" | "--output" | "--from" | "--pandoc" | "--force"
+                    "--input" | "--output" | "--from" | "--pandoc" | "--force" | "--svg"
                 ) {
                     return Err(usage());
                 }
@@ -623,6 +739,7 @@ impl Options {
                     "--output" if output.is_none() => output = Some(PathBuf::from(value)),
                     "--input" | "--output" => return Err(format!("duplicate {option}")),
                     "--pandoc" => pandoc = Some(PathBuf::from(value)),
+                    "--svg" => svg = svg_target(&value)?,
                     "--from" => {
                         input_format =
                             Some(match value.to_str() {
@@ -659,6 +776,7 @@ impl Options {
                 InputFormat::PandocJson => None,
             },
             force,
+            svg,
         })
     }
 }
@@ -928,6 +1046,63 @@ mod tests {
         assert!(!is_pandoc_version_line("other 3.10.1"));
         assert!(!is_pandoc_version_line("pandoc "));
         // Actual JSON/API compatibility is checked by read_pandoc_json, not this banner.
+    }
+
+    #[test]
+    fn svg_figures_are_converted_beside_the_source_without_touching_foreign_files() {
+        let directory = tempfile::tempdir().unwrap();
+        let input = directory.path().join("source.md");
+        fs::create_dir(directory.path().join("img")).unwrap();
+        let svg = directory.path().join("img/a.SVG");
+        let shape = r##"<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="5" height="5" fill="#123456" OPACITY/></svg>"##;
+        fs::write(&svg, shape.replace(" OPACITY", "")).unwrap();
+        assert!(is_svg("img/a.SVG") && !is_svg("img/a.svg.emf"));
+        assert_eq!(
+            convert_svg_figure("img/a.SVG", &input, md2hwp_svg::Target::Auto).unwrap(),
+            "img/a.SVG.emf"
+        );
+        let emf = directory.path().join("img/a.SVG.emf");
+        let png = directory.path().join("img/a.SVG.png");
+        let first = fs::read(&emf).unwrap();
+        assert!(md2hwp_svg::is_generated(&first) && !png.exists());
+        // A drawing that now needs PNG replaces the generated EMF.
+        fs::write(
+            &svg,
+            shape.replace("OPACITY", r#"filter="url(#f)""#).replace(
+                "<rect",
+                r#"<filter id="f"><feGaussianBlur stdDeviation="1"/></filter><rect"#,
+            ),
+        )
+        .unwrap();
+        assert_eq!(
+            convert_svg_figure("img/a.SVG", &input, md2hwp_svg::Target::Auto).unwrap(),
+            "img/a.SVG.png"
+        );
+        assert!(png.exists() && !emf.exists());
+        // The emf target never falls back and leaves the generated files alone.
+        let strict = convert_svg_figure("img/a.SVG", &input, md2hwp_svg::Target::Emf).unwrap_err();
+        assert!(strict.contains("cannot be stored as EMF"), "{strict}");
+        assert!(png.exists() && !emf.exists());
+        // Files md2hwp did not write are neither replaced nor removed.
+        fs::write(&emf, b"user file").unwrap();
+        let error = convert_svg_figure("img/a.SVG", &input, md2hwp_svg::Target::Auto).unwrap_err();
+        assert!(error.contains("not generated by md2hwp"), "{error}");
+        assert_eq!(fs::read(&emf).unwrap(), b"user file");
+        fs::remove_file(&emf).unwrap();
+        // An explicit raster target replaces the other generated formats.
+        assert_eq!(
+            convert_svg_figure("img/a.SVG", &input, md2hwp_svg::Target::Jpg).unwrap(),
+            "img/a.SVG.jpg"
+        );
+        assert!(!png.exists() && directory.path().join("img/a.SVG.jpg").exists());
+        assert!(convert_svg_figure("img/missing.svg", &input, md2hwp_svg::Target::Png).is_err());
+        let args = arguments(&["md2ir", "a.md", "--svg", "png"]);
+        assert_eq!(Options::parse(args).unwrap().svg, md2hwp_svg::Target::Png);
+        assert!(Options::parse(arguments(&["md2ir", "a.md", "--svg", "gif"])).is_err());
+        let shorthand = manuscript_options(&arguments(&["a.md", "--svg", "jpg", "b.hwp"])).unwrap();
+        assert_eq!(shorthand.svg.as_deref(), Some(std::ffi::OsStr::new("jpg")));
+        assert!(shorthand.forwarded.is_empty());
+        assert!(manuscript_options(&arguments(&["a.md", "--svg", "bmp"])).is_err());
     }
 
     #[test]

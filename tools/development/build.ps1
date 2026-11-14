@@ -21,7 +21,7 @@ Push-Location $root
 try {
     & (Join-Path $PSHOME 'pwsh.exe') -NoProfile -File (Join-Path $PSScriptRoot 'update-third-party-notices.ps1') -Check
     if ($LASTEXITCODE -ne 0) { throw 'Third-party notices need regeneration and review.' }
-    $cargoArgs = @('build', '-p', 'md2hwp', '-p', 'md2hwp-rhwp', '--target-dir', (Join-Path $root 'target'))
+    $cargoArgs = @('build', '-p', 'md2hwp', '-p', 'md2hwp-rhwp', '-p', 'svg2emf', '--target-dir', (Join-Path $root 'target'))
     if ($Configuration -eq 'Release') { $cargoArgs += '--release' }
     & cargo @cargoArgs
     if ($LASTEXITCODE -ne 0) { throw 'Rust build failed.' }
@@ -78,7 +78,7 @@ try {
         $stage = Join-Path $dist ('.package-' + [Guid]::NewGuid().ToString('N'))
         $null = New-Item -ItemType Directory -Path $stage
         try {
-            foreach ($name in @('md2hwp.exe', 'md2hwp-rhwp.exe', 'md2hwp-hancom.exe', 'hwp2pdf.exe', 'hwpeqrecalc.exe', 'md2hwp-completion.ps1', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt')) {
+            foreach ($name in @('md2hwp.exe', 'md2hwp-rhwp.exe', 'md2hwp-hancom.exe', 'hwp2pdf.exe', 'hwpeqrecalc.exe', 'svg2emf.exe', 'md2hwp-completion.ps1', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt')) {
                 Copy-Item -LiteralPath (Join-Path $destination $name) -Destination $stage
             }
             # Ship the tracked default; never adopt a user's deployment template implicitly.
@@ -86,7 +86,7 @@ try {
             Copy-Item -LiteralPath (Join-Path $root 'licenses') -Destination $stage -Recurse
             $archive = Join-Path $dist "md2hwp-v$version-windows-x64.zip"
             $temporaryArchive = Join-Path $stage 'package.zip'
-            $files = @('md2hwp.exe', 'md2hwp-rhwp.exe', 'md2hwp-hancom.exe', 'hwp2pdf.exe', 'hwpeqrecalc.exe', 'md2hwp-completion.ps1', 'template.hwp', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt', 'licenses') | ForEach-Object { Join-Path $stage $_ }
+            $files = @('md2hwp.exe', 'md2hwp-rhwp.exe', 'md2hwp-hancom.exe', 'hwp2pdf.exe', 'hwpeqrecalc.exe', 'svg2emf.exe', 'md2hwp-completion.ps1', 'template.hwp', 'README.md', 'AGENTS.md', 'README-MANUSCRIPT.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt', 'licenses') | ForEach-Object { Join-Path $stage $_ }
             Compress-Archive -LiteralPath $files -DestinationPath $temporaryArchive
             Move-Item -LiteralPath $temporaryArchive -Destination $archive -Force
             Write-Output "Package: $archive"

@@ -10,10 +10,10 @@
         $subcommands = @('md2ir', 'ir2hwp', 'validate', 'setup-pandoc',
             'check-runtime', 'validate-template', 'init-template')
         $options = @{
-            root = @('--output', '--template', '--worker', '--dotnet', '--verbose', '--version', '--help', '-h')
-            convert = @('--output', '--template', '--worker', '--dotnet', '--verbose')
+            root = @('--output', '--template', '--worker', '--dotnet', '--svg', '--verbose', '--version', '--help', '-h')
+            convert = @('--output', '--template', '--worker', '--dotnet', '--svg', '--verbose')
             version = @('--worker', '--dotnet')
-            md2ir = @('--input', '--output', '--from', '--pandoc', '--force', '--help', '-h')
+            md2ir = @('--input', '--output', '--from', '--pandoc', '--svg', '--force', '--help', '-h')
             ir2hwp = @('--ir', '--output', '--template', '--worker', '--dotnet', '--verbose', '--help', '-h')
             validate = @('--input', '--pandoc', '--require-meta', '--help', '-h')
             'setup-pandoc' = @('--help', '-h')
@@ -22,7 +22,7 @@
             'init-template' = @('--output', '--worker', '--dotnet', '--help', '-h')
         }
         $valueOptions = @('--input', '--ir', '--output', '--template', '--worker',
-            '--dotnet', '--from', '--pandoc', '--require-meta')
+            '--dotnet', '--from', '--pandoc', '--svg', '--require-meta')
         $metadata = @('title', 'subtitle', 'author', 'date', 'date-meta', 'publisher', 'md2hwp-heading1-start')
 
         # Use the current command's AST, ignoring text to the right of the cursor.
@@ -87,6 +87,8 @@
             $kind = 'ParameterValue'
             if ($pending -eq '--from') {
                 $candidates = if ($used.Contains('--pandoc')) { @('commonmark') } else { @('commonmark', 'pandoc-json') }
+            } elseif ($pending -eq '--svg') {
+                $candidates = @('auto', 'emf', 'png', 'jpg')
             } elseif ($pending -eq '--require-meta') {
                 $candidates = $metadata
             } else {
