@@ -136,6 +136,46 @@ fig.savefig("plot.svg")           # 글자는 기본값(윤곽선)으로 저장�
 
 EMF가 되는지 미리 확인하려면 `svg2emf plot.svg`를 실행하십시오. 안 되면 걸린 기능을 알려 줍니다.
 
+## 지원 기능 목록
+
+변환기가 SVG 기능을 어떻게 다루는지 정리한 목록입니다. "벡터"는 EMF+ Dual에 도형으로 남는다는 뜻입니다.
+아래 "벡터" 항목을 모두 넣은 그림이 [`vector-features.svg`](../examples/all-features/vector-features.svg)이고,
+"EMF 불가" 항목 몇 가지를 넣은 그림이 [`raster-fallback.svg`](../examples/all-features/raster-fallback.svg)입니다.
+
+| 분류 | SVG 기능 | 처리 |
+| --- | --- | --- |
+| 도형 | `rect`(`rx`·`ry`), `circle`, `ellipse`, `line`, `polyline`, `polygon` | 벡터 |
+| 경로 | `path`의 모든 명령(직선, 2·3차 곡선, 호, 닫기) | 벡터. 곡선은 3차 베지어로 기록 |
+| 채움 | 단색 `fill`, `fill-rule`(`nonzero`·`evenodd`) | 벡터 |
+| 선 | `stroke-width`, `stroke-linecap`, `stroke-linejoin`, `stroke-miterlimit`, `stroke-dasharray`, `stroke-dashoffset`, `paint-order` | 벡터. 선은 윤곽을 채운 도형으로 바뀜 |
+| 투명도 | `fill-opacity`, `stroke-opacity` | 벡터. EMF+ 쪽에만 반영되고 GDI 쪽은 불투명 |
+| 투명도 | 도형 하나의 `opacity`(채움과 불투명한 선) | 벡터. 색을 옅게 하고 채움은 선 윤곽 밖에만 그림 |
+| 투명도 | 선 없는 같은 불투명 단색 채움만 든 그룹의 `opacity`(흐린 글자 등) | 벡터. 도형을 합쳐 한 번에 채움 |
+| 글자 | `text`, `tspan`, `textPath`, 글꼴·굵기·기울임·크기, `text-anchor`, `letter-spacing`, `text-decoration`, 선만 있는 글자 | 벡터. 글리프 윤곽으로 바뀌며 변환하는 PC의 글꼴을 씀 |
+| 변환·구조 | `transform`(이동·회전·확대·기울임·행렬), 중첩 `g`, `use`, `symbol`, 중첩 `svg`, `viewBox`, `preserveAspectRatio`, `a`, `switch` | 벡터 |
+| 스타일 | `style` 요소와 속성, `class`, `currentColor`, `visibility`, `display` | 벡터. 숨긴 요소는 그리지 않음 |
+| 클리핑 | 도형 하나로 된 `clip-path`(`clip-rule`, `clipPathUnits` 포함), 클리핑한 그룹 안의 클리핑한 그룹 | 벡터 |
+| 패턴 | 불투명한 `pattern`을 채움이나 선에 사용, `patternTransform` | 벡터. 도형으로 자르고 무늬를 타일마다 반복(4096개까지) |
+| 표식 | `marker-start`·`marker-mid`·`marker-end` | 벡터 |
+| 이미지 | data URL로 넣은 PNG·JPEG `image`(투명도, 회전, `image-rendering`, `preserveAspectRatio`) | EMF 안에 이미지로 들어감([래스터 이미지](#래스터-이미지)) |
+| 채움·선 | `linearGradient`, `radialGradient` | EMF 불가 |
+| 효과 | `mask`, `filter`, `mix-blend-mode` | EMF 불가 |
+| 클리핑 | 도형 여러 개로 된 `clip-path`, `clipPath`에 건 `clip-path`, `clipPath` 안의 이미지 | EMF 불가 |
+| 투명도 | 색이 다르거나 선이 있는 도형 여러 개를 묶은 그룹의 `opacity`, 중첩된 그룹 `opacity`, 반투명 선이나 `paint-order="stroke"`가 있는 도형의 `opacity` | EMF 불가 |
+| 패턴 | 반투명 패턴, 그룹 `opacity` 아래의 패턴, 4096번 넘게 반복되는 패턴 | EMF 불가 |
+| 이미지 | GIF·WebP·SVG `image`, 그룹 `opacity` 아래의 이미지 | EMF 불가 |
+| 좌표 | EMF 좌표 범위를 넘는 도형 | EMF 불가 |
+| 이미지 | 외부 파일이나 URL을 가리키는 `image` | 거부(모든 형식) |
+| 글자 | 글리프를 하나도 만들지 못한 `text` | 거부(모든 형식) |
+
+"EMF 불가"는 `--svg auto`에서 PNG로 바뀌고 `--svg emf`와 `svg2emf`의 `.emf` 출력에서는 실패한다는 뜻입니다.
+`--svg png`·`--svg jpg`는 resvg가 그리는 범위를 모두 지원합니다.
+
+이 목록은 변환기 코드(`crates/md2hwp-svg/src/emf.rs`)의 판정과 `vector-features.svg`, 항목별 작은 시험 그림의
+변환 결과로 확인했습니다. usvg가 SVG를 미리 풀어 주므로(도형→경로, `use`·표식·CSS 전개) 여기 없는 기능도
+그 결과가 위 범위 안이면 벡터로 들어갑니다. `vector-features.svg`의 EMF는 Windows GDI+로 그려 resvg 결과와
+눈으로 비교했습니다.
+
 ## svg2emf
 
 `svg2emf.exe`는 같은 변환기를 쓰는 단독 도구입니다. `md2hwp.exe`는 이 파일을 쓰지 않습니다.

@@ -1,0 +1,173 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="720" height="540" viewBox="0 0 720 540">
+  <!-- Every SVG feature md2hwp keeps as vectors in EMF+ Dual; see docs/svg-figures.md. -->
+  <style>
+    .panel { fill: #fbfaf6; stroke: #9aa3ab; stroke-width: 1 }
+    .label { font-family: "Malgun Gothic", sans-serif; font-size: 12px; font-weight: bold; fill: #17384f }
+    .note { font-family: "Malgun Gothic", sans-serif; font-size: 10px; fill: #4a5560 }
+    .blue { fill: #2f6f9f }
+    .line { fill: none; stroke: #17384f }
+  </style>
+  <defs>
+    <g id="leaf">
+      <path d="M0 0 C10 -18 30 -18 40 0 C30 18 10 18 0 0 Z" fill="#5a8f3c"/>
+      <path d="M2 0 H38" stroke="#2c4a1c" stroke-width="2" fill="none"/>
+    </g>
+    <symbol id="badge" viewBox="0 0 20 20">
+      <circle cx="10" cy="10" r="9" fill="#e8a33d" stroke="#8a5a12" stroke-width="2"/>
+      <path d="M5 10 l4 4 l7 -8" fill="none" stroke="#17384f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <clipPath id="round">
+      <circle cx="70" cy="455" r="48"/>
+    </clipPath>
+    <clipPath id="ring">
+      <path clip-rule="evenodd" d="M130 410 h90 v90 h-90 z M150 430 v50 h50 v-50 z"/>
+    </clipPath>
+    <pattern id="hatch" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M-2 12 L12 -2 M-2 2 L2 -2 M8 12 L12 8" stroke="#17384f" stroke-width="1.5" fill="none"/>
+    </pattern>
+    <pattern id="dots" width="12" height="12" patternUnits="userSpaceOnUse">
+      <rect width="12" height="12" fill="#fff3d6"/>
+      <circle cx="6" cy="6" r="3" fill="#b03a2e"/>
+    </pattern>
+    <pattern id="weave" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(30) scale(1.5)">
+      <rect width="4" height="4" fill="#7b4fa3"/>
+      <rect x="4" y="4" width="4" height="4" fill="#7b4fa3"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#b03a2e"/>
+    </marker>
+    <marker id="dot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5">
+      <circle cx="5" cy="5" r="4" fill="#2f6f9f"/>
+    </marker>
+    <path id="arc" d="M262 322 Q345 268 428 322"/>
+  </defs>
+
+  <rect width="720" height="540" fill="#ffffff"/>
+  <g>
+    <rect class="panel" x="10" y="10" width="220" height="160"/>
+    <rect class="panel" x="250" y="10" width="220" height="160"/>
+    <rect class="panel" x="490" y="10" width="220" height="160"/>
+    <rect class="panel" x="10" y="190" width="220" height="160"/>
+    <rect class="panel" x="250" y="190" width="220" height="160"/>
+    <rect class="panel" x="490" y="190" width="220" height="160"/>
+    <rect class="panel" x="10" y="370" width="220" height="160"/>
+    <rect class="panel" x="250" y="370" width="220" height="160"/>
+    <rect class="panel" x="490" y="370" width="220" height="160"/>
+  </g>
+
+  <!-- 1. Basic shapes -->
+  <text class="label" x="18" y="27">1. 기본 도형</text>
+  <rect class="blue" x="22" y="40" width="56" height="40" rx="8" ry="12"/>
+  <circle cx="115" cy="60" r="22" fill="#e8a33d"/>
+  <ellipse cx="185" cy="60" rx="34" ry="18" fill="#5a8f3c"/>
+  <line x1="22" y1="100" x2="78" y2="150" stroke="#b03a2e" stroke-width="4"/>
+  <polyline points="92,150 104,104 118,140 132,104 146,150" fill="none" stroke="#7b4fa3" stroke-width="3"/>
+  <polygon points="190,98 199,122 224,122 204,137 212,160 190,146 168,160 176,137 156,122 181,122" fill="#17384f"/>
+
+  <!-- 2. Paths and fill rules -->
+  <text class="label" x="258" y="27">2. 경로와 채움 규칙</text>
+  <path d="M262 60 L292 40 H322 V70 C332 50 352 50 362 70 S392 90 402 70 Q417 40 432 70 T462 70" class="line" stroke-width="2.5"/>
+  <path d="M270 150 A30 22 0 1 1 330 150 A15 11 0 0 0 300 150 Z" fill="#e8a33d" stroke="#8a5a12" stroke-width="2"/>
+  <path fill-rule="nonzero" fill="#2f6f9f" d="M370 100 L393 160 L340 122 H400 L347 160 Z"/>
+  <path fill-rule="evenodd" fill="#b03a2e" d="M435 100 L458 160 L405 122 H465 L412 160 Z"/>
+  <text class="note" x="352" y="96">nonzero</text>
+  <text class="note" x="418" y="96">evenodd</text>
+
+  <!-- 3. Strokes -->
+  <text class="label" x="498" y="27">3. 선</text>
+  <g class="line">
+    <path d="M505 42 H575" stroke-width="1"/>
+    <path d="M505 54 H575" stroke-width="4"/>
+    <path d="M505 70 H575" stroke-width="9"/>
+    <path d="M600 44 H690" stroke-width="9" stroke-linecap="butt"/>
+    <path d="M600 60 H690" stroke-width="9" stroke-linecap="round"/>
+    <path d="M600 76 H690" stroke-width="9" stroke-linecap="square"/>
+    <path d="M505 122 L525 96 L545 122" stroke-width="8" stroke-linejoin="miter"/>
+    <path d="M560 122 L580 96 L600 122" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M615 122 L635 96 L655 122" stroke-width="8" stroke-linejoin="bevel"/>
+    <path d="M670 122 L682 96 L694 122" stroke-width="6" stroke-linejoin="miter" stroke-miterlimit="1.5"/>
+    <path d="M505 134 H700" stroke-width="3" stroke-dasharray="12 5"/>
+    <path d="M505 143 H700" stroke-width="3" stroke-dasharray="12 5 2 5" stroke-dashoffset="8" stroke-linecap="round"/>
+  </g>
+  <text x="612" y="165" font-family="Malgun Gothic, sans-serif" font-size="14" font-weight="bold" fill="#e8a33d" stroke="#17384f" stroke-width="3" paint-order="stroke">선 먼저</text>
+  <path d="M505 160 H590" stroke="#b03a2e" stroke-width="2" stroke-opacity="1" fill="none" marker-start="url(#dot)" marker-end="url(#arrow)"/>
+
+  <!-- 4. Opacity -->
+  <text class="label" x="18" y="207">4. 투명도</text>
+  <rect x="20" y="218" width="200" height="14" fill="#17384f"/>
+  <circle cx="50" cy="245" r="24" fill="#b03a2e" fill-opacity="0.5"/>
+  <circle cx="105" cy="245" r="20" fill="none" stroke="#2f6f9f" stroke-width="10" stroke-opacity="0.45"/>
+  <rect x="140" y="222" width="46" height="46" fill="#5a8f3c" stroke="#17384f" stroke-width="6" opacity="0.5"/>
+  <rect x="20" y="290" width="200" height="14" fill="#e8a33d"/>
+  <g opacity="0.45">
+    <text x="24" y="312" font-family="Malgun Gothic, sans-serif" font-size="26" font-weight="bold" fill="#17384f">흐린 글자 Faded</text>
+  </g>
+  <g opacity="0.6" fill="#7b4fa3">
+    <circle cx="186" cy="330" r="12"/>
+    <circle cx="200" cy="330" r="12"/>
+    <rect x="150" y="322" width="40" height="16"/>
+  </g>
+  <text class="note" x="20" y="342">도형별·같은 색 그룹</text>
+
+  <!-- 5. Text -->
+  <text class="label" x="258" y="207">5. 글자</text>
+  <text x="262" y="232" font-family="Malgun Gothic, sans-serif" font-size="15" fill="#17384f">한글 English 0123 ± ℃</text>
+  <text x="262" y="254" font-family="Malgun Gothic, sans-serif" font-size="14" fill="#17384f"><tspan font-weight="bold">굵게</tspan> <tspan font-style="italic" fill="#b03a2e">Italic</tspan> <tspan text-decoration="underline" fill="#2f6f9f">밑줄</tspan> <tspan dy="-5" font-size="9">위</tspan><tspan dy="8" font-size="9">아래</tspan></text>
+  <text x="360" y="276" text-anchor="middle" font-family="Malgun Gothic, sans-serif" font-size="12" fill="#5a8f3c">가운데 맞춤</text>
+  <text x="462" y="276" text-anchor="end" font-family="Malgun Gothic, sans-serif" font-size="12" fill="#7b4fa3">오른쪽</text>
+  <text font-family="Malgun Gothic, sans-serif" font-size="13" fill="#b03a2e" letter-spacing="1"><textPath xlink:href="#arc" href="#arc" startOffset="4%">곡선을 따라 흐르는 글자</textPath></text>
+  <text transform="translate(460 342) rotate(-90)" font-family="Malgun Gothic, sans-serif" font-size="11" fill="#17384f">세로 회전</text>
+  <text x="262" y="342" font-family="Malgun Gothic, sans-serif" font-size="20" fill="none" stroke="#2f6f9f" stroke-width="1">윤곽선 글자</text>
+
+  <!-- 6. Transforms and reuse -->
+  <text class="label" x="498" y="207">6. 변환과 재사용</text>
+  <use xlink:href="#leaf" href="#leaf" x="505" y="235"/>
+  <use xlink:href="#leaf" href="#leaf" transform="translate(570 235) rotate(35)"/>
+  <use xlink:href="#leaf" href="#leaf" transform="translate(625 225) scale(1.6 0.8)"/>
+  <use xlink:href="#leaf" href="#leaf" transform="translate(505 290) skewX(30)"/>
+  <use xlink:href="#leaf" href="#leaf" transform="matrix(-1 0 0.3 1.2 640 290)"/>
+  <g transform="translate(560 320)"><g transform="rotate(-20)"><g transform="scale(0.8)"><use xlink:href="#leaf" href="#leaf"/></g></g></g>
+  <use xlink:href="#badge" href="#badge" x="660" y="300" width="40" height="40"/>
+  <use xlink:href="#badge" href="#badge" x="505" y="312" width="24" height="24"/>
+
+  <!-- 7. Clipping -->
+  <text class="label" x="18" y="387">7. 클리핑</text>
+  <g clip-path="url(#round)">
+    <rect x="20" y="405" width="100" height="100" fill="#d9e6f2"/>
+    <path d="M20 420 H120 M20 445 H120 M20 470 H120 M20 495 H120" stroke="#2f6f9f" stroke-width="9"/>
+    <circle cx="95" cy="480" r="30" fill="#e8a33d"/>
+    <text x="34" y="462" font-family="Malgun Gothic, sans-serif" font-size="22" font-weight="bold" fill="#17384f">잘림</text>
+  </g>
+  <g clip-path="url(#ring)">
+    <rect x="130" y="410" width="90" height="90" fill="#5a8f3c"/>
+    <path d="M130 410 L220 500 M220 410 L130 500" stroke="#ffffff" stroke-width="10"/>
+  </g>
+  <text class="note" x="20" y="522">도형 하나·evenodd 클립</text>
+
+  <!-- 8. Pattern fills -->
+  <text class="label" x="258" y="387">8. 패턴</text>
+  <rect x="262" y="400" width="60" height="60" fill="#fff3d6" stroke="#17384f" stroke-width="1.5"/>
+  <rect x="262" y="400" width="60" height="60" fill="url(#hatch)"/>
+  <circle cx="366" cy="430" r="30" fill="url(#dots)" stroke="#b03a2e" stroke-width="2"/>
+  <path d="M405 400 h56 v60 h-56 z" fill="url(#weave)" stroke="#7b4fa3" stroke-width="1.5"/>
+  <path d="M268 495 C320 465 400 525 455 490" fill="none" stroke="url(#dots)" stroke-width="16" stroke-linecap="round"/>
+  <text class="note" x="262" y="522">빗금·점·회전한 무늬·선 무늬</text>
+
+  <!-- 9. Images, nested viewports, hidden content -->
+  <text class="label" x="498" y="387">9. 이미지와 중첩 뷰포트</text>
+  <image x="502" y="400" width="60" height="60" style="image-rendering: pixelated" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAATklEQVR42n3NsRFAQAAAwWUUIv9Awox+RCJDMyLUoQMNyBXwkQZeIObyu8uqYUuw1yuYYsog90ERygUc8w3OZkz/xnl1oO3fR4hv4dN4AByEEPPx4UClAAAAAElFTkSuQmCC" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAATklEQVR42n3NsRFAQAAAwWUUIv9Awox+RCJDMyLUoQMNyBXwkQZeIObyu8uqYUuw1yuYYsog90ERygUc8w3OZkz/xnl1oO3fR4hv4dN4AByEEPPx4UClAAAAAElFTkSuQmCC"/>
+  <image x="572" y="400" width="72" height="48" preserveAspectRatio="none" xlink:href="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAQDAwMDAgQDAwMEBAQFBgoGBgUFBgwICQcKDgwPDg4MDQ0PERYTDxAVEQ0NExoTFRcYGRkZDxIbHRsYHRYYGRj/2wBDAQQEBAYFBgsGBgsYEA0QGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBj/wAARCAAQABgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDCsvD/AE+SuisvD/T5P0rs7Lw/0+T9K6Ky8P8AT5K9biXO99T4zhLiL4dTjLLw/wBPk/SivVLLw/0+T9KK/EMwzv8AfPU/ofK+Iv3C1P/Z" href="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAQDAwMDAgQDAwMEBAQFBgoGBgUFBgwICQcKDgwPDg4MDQ0PERYTDxAVEQ0NExoTFRcYGRkZDxIbHRsYHRYYGRj/2wBDAQQEBAYFBgsGBgsYEA0QGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBj/wAARCAAQABgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDCsvD/AE+SuisvD/T5P0rs7Lw/0+T9K6Ky8P8AT5K9biXO99T4zhLiL4dTjLLw/wBPk/SivVLLw/0+T9KK/EMwzv8AfPU/ofK+Iv3C1P/Z"/>
+  <image width="36" height="36" transform="translate(672 398) rotate(25)" style="image-rendering: pixelated" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAATklEQVR42n3NsRFAQAAAwWUUIv9Awox+RCJDMyLUoQMNyBXwkQZeIObyu8uqYUuw1yuYYsog90ERygUc8w3OZkz/xnl1oO3fR4hv4dN4AByEEPPx4UClAAAAAElFTkSuQmCC" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAATklEQVR42n3NsRFAQAAAwWUUIv9Awox+RCJDMyLUoQMNyBXwkQZeIObyu8uqYUuw1yuYYsog90ERygUc8w3OZkz/xnl1oO3fR4hv4dN4AByEEPPx4UClAAAAAElFTkSuQmCC"/>
+  <svg x="502" y="468" width="96" height="52" viewBox="0 0 48 26" preserveAspectRatio="xMidYMid meet">
+    <rect width="48" height="26" fill="#d9e6f2"/>
+    <circle cx="24" cy="13" r="18" fill="#2f6f9f"/>
+    <path d="M4 13 H44" stroke="#ffffff" stroke-width="3"/>
+  </svg>
+  <a xlink:href="https://example.net/" href="https://example.net/">
+    <rect x="610" y="468" width="90" height="24" rx="6" fill="#17384f"/>
+    <text x="655" y="485" text-anchor="middle" font-family="Malgun Gothic, sans-serif" font-size="12" fill="#ffffff">링크 안 도형</text>
+  </a>
+  <rect x="610" y="498" width="90" height="22" fill="#b03a2e" visibility="hidden"/>
+  <rect x="610" y="498" width="90" height="22" fill="#b03a2e" display="none"/>
+  <text class="note" x="612" y="513" style="fill: currentColor" color="#5a8f3c">숨긴 도형은 없음</text>
+</svg>

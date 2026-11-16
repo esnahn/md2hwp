@@ -661,6 +661,402 @@
       "type": "paragraph",
       "inlines": [
         {
+          "type": "strikeout",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "폐기한"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "검토안"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": "은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "취소선으로,"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "면적"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "단위"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "m"
+        },
+        {
+          "type": "superscript",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "2"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": "와"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "이산화탄소"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "CO"
+        },
+        {
+          "type": "subscript",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "2"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": "는"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "위·아래"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "첨자로"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "적습니다."
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "strong",
+          "inlines": [
+            {
+              "type": "strikeout",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "굵은"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "취소선"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": "과"
+            }
+          ]
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "emph",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "기울인"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "10"
+            },
+            {
+              "type": "superscript",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "-3"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": "처럼"
+            }
+          ]
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다른"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "강조와"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "겹쳐"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "쓰고,"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "물결표"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "하나(1~2쪽)는"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "글자"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "그대로"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "둡니다."
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "완충구역의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "반지름이"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "inline_math",
+          "script": "r"
+        },
+        {
+          "type": "text",
+          "value": "이면"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "면적은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "inline_math",
+          "script": "pi r ^{2}"
+        },
+        {
+          "type": "text",
+          "value": "입니다."
+        },
+        {
+          "type": "footnote",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "각주"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "안의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "수식"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "inline_math",
+                  "script": "A = pi r ^{2}"
+                },
+                {
+                  "type": "text",
+                  "value": "과"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "strikeout",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "취소선"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": ","
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "첨자"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "x"
+                },
+                {
+                  "type": "superscript",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "2"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "·a"
+                },
+                {
+                  "type": "subscript",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "n"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "도"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "본문과"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "같이"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "처리합니다."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
           "type": "text",
           "value": "세계유산구역과"
         },
@@ -3297,6 +3693,94 @@
               "value": "확인"
             }
           ]
+        ],
+        [
+          [
+            {
+              "type": "strikeout",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "제외"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "항목"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "3"
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "10"
+            },
+            {
+              "type": "superscript",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "3"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "value": "셀"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "안의"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "취소선과"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "첨자"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "H"
+            },
+            {
+              "type": "subscript",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "2"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": "O"
+            }
+          ]
         ]
       ],
       "caption": [
@@ -4276,6 +4760,890 @@
       "source": null
     },
     {
+      "type": "figure",
+      "id": "fig:svg",
+      "image": {
+        "path": "vector-features.svg.emf",
+        "alt": [
+          {
+            "type": "text",
+            "value": "SVG"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "벡터"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "—"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "도형·선·투명도·글자·변환·클리핑·패턴·이미지"
+          }
+        ],
+        "title": null
+      },
+      "caption": [
+        {
+          "type": "text",
+          "value": "SVG"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "벡터"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "—"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "도형·선·투명도·글자·변환·클리핑·패턴·이미지"
+        }
+      ],
+      "source": [
+        {
+          "prefix": "참고",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "EMF로"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "들어가는"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "SVG"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "기능을"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "모은"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "그림입니다."
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "원고를"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "변환할"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "때"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "EMF+"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "Dual로"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "바뀝니다."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "id": "fig:svg-png",
+      "image": {
+        "path": "raster-fallback.svg.png",
+        "alt": [
+          {
+            "type": "text",
+            "value": "SVG"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "래스터"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "대체"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "—"
+          },
+          {
+            "type": "space"
+          },
+          {
+            "type": "text",
+            "value": "그라데이션·마스크·필터"
+          }
+        ],
+        "title": null
+      },
+      "caption": [
+        {
+          "type": "text",
+          "value": "SVG"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "래스터"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "대체"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "—"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "그라데이션·마스크·필터"
+        }
+      ],
+      "source": [
+        {
+          "prefix": "참고",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "EMF로"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "담지"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "못하는"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "기능을"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "쓴"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "SVG는"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "PNG로"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "바뀝니다."
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "cross_reference",
+              "kind": "figure_number",
+              "target": "fig:svg"
+            },
+            {
+              "type": "text",
+              "value": "과"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "번호를"
+            },
+            {
+              "type": "space"
+            },
+            {
+              "type": "text",
+              "value": "비교합니다."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "inlines": [
+        {
+          "type": "text",
+          "value": "수식"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "본문"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "속"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "수식은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "글줄"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "안에"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "놓입니다."
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "오일러"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "항등식"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "inline_math",
+          "script": "e ^{i pi} + 1 = 0"
+        },
+        {
+          "type": "text",
+          "value": "과"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "질량·에너지"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "관계"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "inline_math",
+          "script": "E = m c ^{2}"
+        },
+        {
+          "type": "text",
+          "value": "를"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "예로"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "듭니다."
+        },
+        {
+          "type": "footnote",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "각주"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "안의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "수식"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "inline_math",
+                  "script": "A = pi r ^{2}"
+                },
+                {
+                  "type": "text",
+                  "value": "과"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "strikeout",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "취소선"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": ","
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "첨자"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "x"
+                },
+                {
+                  "type": "superscript",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "2"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "·a"
+                },
+                {
+                  "type": "subscript",
+                  "inlines": [
+                    {
+                      "type": "text",
+                      "value": "n"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "도"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "본문과"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "같이"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "처리합니다."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "list",
+      "kind": "bullet",
+      "tight": true,
+      "items": [
+        {
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "목록"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "문단의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "수식:"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "근의"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "공식"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "inline_math",
+                  "script": "x = {{- b +- {sqrt {b ^{2} - 4 ac}}} over {2 a}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "blocks": [
+            {
+              "type": "paragraph",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "가우스"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "text",
+                  "value": "적분"
+                },
+                {
+                  "type": "space"
+                },
+                {
+                  "type": "inline_math",
+                  "script": "int _{- INFTY} ^{INFTY} e ^{- x ^{2}} ` dx = {sqrt {pi}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "별행"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "수식은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "한"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "문단을"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "차지하고"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "번호가"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "붙습니다."
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "다음은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "미분형"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "맥스웰"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "방정식입니다."
+        }
+      ]
+    },
+    {
+      "type": "display_math",
+      "script": "{eqalign {nabla CDOT {rm bold {E} it} & = {{rho} over {varepsilon _{0}}} # nabla CDOT {rm bold {B} it} & = 0 # nabla TIMES {rm bold {E} it} & = - {{PARTIAL {rm bold {B} it}} over {PARTIAL t}} # nabla TIMES {rm bold {B} it} & = mu _{0} {rm bold {J} it} + mu _{0} varepsilon _{0} {{PARTIAL {rm bold {E} it}} over {PARTIAL t}}}}"
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "두"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "번째"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "별행"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "수식은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "번호가"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "이어지는지"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "확인합니다."
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "시간"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "의존"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "슈뢰딩거"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "방정식입니다."
+        }
+      ]
+    },
+    {
+      "type": "display_math",
+      "script": "i HBAR {{PARTIAL} over {PARTIAL t}} {Psi} ( {rm bold {r} it} , t ) = {LEFT [ - {{HBAR ^{2}} over {2 m}} nabla ^{2} + V ( {rm bold {r} it} , t ) RIGHT ]} {Psi} ( {rm bold {r} it} , t )"
+    },
+    {
+      "type": "paragraph",
+      "inlines": [
+        {
+          "type": "text",
+          "value": "표준"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "모형"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "라그랑지안의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "요약형은"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "TeX로"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "되돌릴"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "때"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "h.c.의"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표기가"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "달라지지만"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "표시는"
+        },
+        {
+          "type": "space"
+        },
+        {
+          "type": "text",
+          "value": "같습니다."
+        }
+      ]
+    },
+    {
+      "type": "display_math",
+      "script": "{eqalign {LAPLACE & = - {{1} over {4}} F _{mu nu} F ^{mu nu} #  & + i {bar {psi}} not D psi + {rm \"h.c.\" it} #  & + {bar {psi}} _{i} y _{ij} psi _{j} phi + {rm \"h.c.\" it} #  & + {LEFT | D _{mu} phi RIGHT |} ^{2} - V ( phi )}}"
+    },
+    {
       "type": "heading",
       "level": 2,
       "inlines": [
@@ -4322,7 +5690,7 @@
         {
           "type": "cross_reference",
           "kind": "figure_number",
-          "target": "fig:only"
+          "target": "fig:svg-png"
         },
         {
           "type": "text",

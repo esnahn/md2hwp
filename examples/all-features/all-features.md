@@ -18,6 +18,8 @@ AURI 편집양식 수록 보고서의 주제를 축약한 시험이며, 현재 �
 
 **보존과 개발의 관계**, *주변환경(wider setting)*, ***부처 간 협의***를 함께 살펴봅니다. 관련 자료는 [AURI](https://www.auri.re.kr "건축공간연구원")와 [**자료 안내**](https://example.net/report), <https://www.auri.re.kr>에서 확인합니다. URL https://example.net/raw 및 <test@example.net>은 글자로 표시합니다. 한글·English·0123456789·© ± ℃를 보존합니다.
 
+~~폐기한 검토안~~은 취소선으로, 면적 단위 m<sup>2</sup>와 이산화탄소 CO<sub>2</sub>는 위·아래 첨자로 적습니다. **~~굵은 취소선~~과** *기울인 10<sup>-3</sup>처럼* 다른 강조와 겹쳐 쓰고, 물결표 하나(1~2쪽)는 글자 그대로 둡니다. 완충구역의 반지름이 $r$이면 면적은 $\pi r^{2}$입니다.[^math]
+
 세계유산구역과 완충구역을 검토합니다.  
 주변환경까지 관리 범위를 확장합니다.\
 검토 방법은 [다음 장](#관리-방안), [절](#협의-절차), [표](#tbl:roles), [](#fig:jpg)에서 확인합니다.
@@ -136,6 +138,7 @@ Source.: md2hwp image fixture.
 | :--- | :---: | ---: | --- |
 | 관리 범위 | 1 | 3 | **[PNG 그림](#fig:png)과** [설명](https://example.net/table) |
 | 협의 자료[^cell] | 2 | 12 | *[현재 절](#협의-절차)*, 빈 칸은 아래 표에서 확인 |
+| ~~제외 항목~~ | 3 | 10<sup>3</sup> | 셀 안의 취소선과 첨자 H<sub>2</sub>O |
 
 단위: 시험용 항목 수
 
@@ -188,9 +191,42 @@ table: 아래쪽 표 캡션
 
 ![EMF+ Only](EmfPlusOnly.emf){#fig:only}
 
+![SVG 벡터 — 도형·선·투명도·글자·변환·클리핑·패턴·이미지](vector-features.svg){#fig:svg}
+
+참고: EMF로 들어가는 SVG 기능을 모은 그림입니다. 원고를 변환할 때 EMF+ Dual로 바뀝니다.
+
+![SVG 래스터 대체 — 그라데이션·마스크·필터](raster-fallback.svg){#fig:svg-png}
+
+참고: EMF로 담지 못하는 기능을 쓴 SVG는 PNG로 바뀝니다. [벡터 그림](#fig:svg)과 번호를 비교합니다.
+
+## 수식
+
+본문 속 수식은 글줄 안에 놓입니다. 오일러 항등식 $e^{i \pi} + 1 = 0$과 질량·에너지 관계 $E = m c^{2}$를 예로 듭니다.[^math]
+
+- 목록 문단의 수식: 근의 공식 $x = \frac{- b \pm \sqrt{b^{2} - 4 ac}}{2 a}$
+- 가우스 적분 $\int_{- \infty}^{\infty} e^{- x^{2}} \, dx = \sqrt{\pi}$
+
+별행 수식은 한 문단을 차지하고 번호가 붙습니다. 다음은 미분형 맥스웰 방정식입니다.
+
+$$
+\begin{aligned}\nabla \cdot \mathbf{E}&= \frac{\rho}{\varepsilon_{0}}\\\nabla \cdot \mathbf{B}&= 0\\\nabla \times \mathbf{E}&= - \frac{\partial \mathbf{B}}{\partial t}\\\nabla \times \mathbf{B}&= \mu_{0} \mathbf{J} + \mu_{0} \varepsilon_{0} \frac{\partial \mathbf{E}}{\partial t}\end{aligned}
+$$
+
+두 번째 별행 수식은 번호가 이어지는지 확인합니다. 시간 의존 슈뢰딩거 방정식입니다.
+
+$$
+i \hbar \frac{\partial}{\partial t} \mathit{\Psi} (\mathbf{r} , t) = \left[- \frac{\hbar^{2}}{2 m} \nabla^{2} + V (\mathbf{r} , t)\right] \mathit{\Psi} (\mathbf{r} , t)
+$$
+
+표준 모형 라그랑지안의 요약형은 TeX로 되돌릴 때 h.c.의 표기가 달라지지만 표시는 같습니다.
+
+$$
+\begin{aligned}\mathcal{L}&= - \frac{1}{4} F_{\mu \nu} F^{\mu \nu}\\&+ i \bar{\psi} \not{D} \psi + \text{h.c.}\\&+ \bar{\psi}_{i} y_{ij} \psi_{j} \phi + \text{h.c.}\\&+ \left|D_{\mu} \phi\right|^{2} - V (\phi)\end{aligned}
+$$
+
 ## 종합 검토
 
-*[앞 장의 그림](#fig:png)도* 검토하고, [최종 그림](#fig:only), [표](#tbl:roles), [절](#협의-절차)을 함께 참조합니다. 개체 뒤의 본문 서식 복귀를 확인합니다.
+*[앞 장의 그림](#fig:png)도* 검토하고, [최종 그림](#fig:svg-png), [표](#tbl:roles), [절](#협의-절차)을 함께 참조합니다. 개체 뒤의 본문 서식 복귀를 확인합니다.
 
 [^scope]: 세계유산의 **OUV**와 *주변환경*을 함께 검토합니다. [자료](https://www.auri.re.kr "AURI")를 참고합니다.
 
@@ -201,6 +237,7 @@ table: 아래쪽 표 캡션
 [^list]: 글머리 목록에 붙인 각주입니다.
 [^span]: 강조 범위에 붙인 각주입니다.
 [^link]: 외부 링크 표시문에 붙인 각주입니다.
+[^math]: 각주 안의 수식 $A = \pi r^{2}$과 ~~취소선~~, 첨자 x<sup>2</sup>·a<sub>n</sub>도 본문과 같이 처리합니다.
 [^cell]: 표 셀 각주에서 **[그림](#fig:png)과** [표](#tbl:roles)를 참조합니다.
 
 [overview]: #fig:png

@@ -6,7 +6,7 @@
 
 | 목적 | 자료 |
 | --- | --- |
-| 전체 기능 빠른 검증 | [`all-features/`](all-features/) — 원고·예상 IR·PNG/JPG/JPEG/EMF |
+| 전체 기능 빠른 검증 | [`all-features/`](all-features/) — 원고·예상 IR·PNG/JPG/JPEG/EMF/SVG, 수식 |
 | 대용량·긴 표·성능 | [`korean-lorem/`](korean-lorem/) — 기존 large-5x 원고·IR·이미지와 배치 문제 재현 자료 |
 | 각주·메타데이터 회귀 | [`footnotes/`](footnotes/), [`metadata/`](metadata/) — Rust 테스트가 예상 IR을 직접 포함 |
 | 번호·캡션·하단 설명 회귀 | [`cross-references/`](cross-references/), [`heading-references/`](heading-references/), [`caption-references/`](caption-references/), [`table-references/`](table-references/), [`all-features/object-sources.md`](all-features/object-sources.md) |
