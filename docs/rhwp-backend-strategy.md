@@ -20,11 +20,11 @@ Pandoc 실행은 앱이, AST 해석과 IR 검증은 공유 코어가 담당한�
 rhwp 라이브러리를 직접 링크하는 `md2hwp-rhwp.exe`는 기존 worker CLI와
 IR+템플릿→출력 계약을 사용한다. HWPX 템플릿이나 출력은 생성 전에 거부한다.
 
-의존성은 upstream `devel` 브랜치의 커밋 `eb84afc0364c51031bb07cbbb013476293367990`에 고정한다.
+의존성은 upstream `devel` 브랜치의 커밋 `e4f8ff2d637d5b0a313211455ae3ccc53444d969`에 고정한다.
 릴리스 태그나 devel의 최신 커밋을 따라가지 않고, 필요한 수정이 생겼을 때만 고정 커밋을 올린다.
-[공개 모델·파서·저장 API](https://github.com/edwardkim/rhwp/blob/eb84afc0364c51031bb07cbbb013476293367990/src/lib.rs)의
+[공개 모델·파서·저장 API](https://github.com/edwardkim/rhwp/blob/e4f8ff2d637d5b0a313211455ae3ccc53444d969/src/lib.rs)의
 존재만으로 임의 native 구조의 보존을 보장하지 않는다.
-[MIT 라이선스](https://github.com/edwardkim/rhwp/blob/eb84afc0364c51031bb07cbbb013476293367990/LICENSE)의
+[MIT 라이선스](https://github.com/edwardkim/rhwp/blob/e4f8ff2d637d5b0a313211455ae3ccc53444d969/LICENSE)의
 저작권·허가문과 전이 의존성의 배포 고지를 보존한다.
 
 저장·재열기 후 독립적으로 구성한 예상 모델과 구조·서식·리소스·필드 관계를 비교한다.
@@ -189,3 +189,18 @@ main은 devel과 갈라져 있어 이 수정을 포함하지 않는다. 고정 �
   `1a76570`(0.8.7)에서는 생기지 않았다.
 
 고정 커밋을 올릴 때는 `Cargo.lock`, 제3자 고지, 예제의 한글 쪽 이미지 비교를 함께 갱신·확인한다.
+
+## upstream devel 고정 이동 — 2026-11-16
+
+고정 커밋을 `eb84afc`에서 devel의 `e4f8ff2`로 옮겼다(356커밋). HWPX를 HWP로 내릴 때 바탕쪽 종류가
+양쪽+홀수로 바뀌고 양쪽·짝수·홀수가 함께 있으면 양쪽 바탕쪽이 빠지던 문제(upstream 이슈 #9046)의
+수정이 이 커밋에 들어 있다. 고정 커밋은 `e4f8ff2` 이후여야 한다. 그 뒤 devel의 10커밋 가운데
+rhwp 소스를 바꾸는 것은 표 분할 셀 조판과 인쇄 출력 수정 하나뿐이어서 포함하지 않았다.
+
+- 어댑터 코드는 바꾸지 않고 빌드·테스트를 통과했다.
+- 예제 14종의 HWP 출력은 `eb84afc` 결과와 바이트가 다르다. 저장된 레코드를 비교하면 차이는 두 가지다.
+  rhwp가 저장 파일에 자체 스트림 `RhwpLineSegTags`(40바이트)를 더하고, 생성한 표의 높이를 조판 값으로
+  고쳐 쓰지 않아 어댑터가 넣은 값(셀 1, 표는 행 수)이 그대로 남는다. 표 개체 속성의 28번 비트도
+  켜지지 않는다.
+- 한글 2020에서 예제 4종(`tables`, `caption-references`, `all-features`, `footnotes`)을 PDF로 내보내
+  비교하면 21쪽 모두 `eb84afc` 결과와 픽셀까지 같다. 나머지 예제와 HWPX 출력은 한글에서 열어 보지 않았다.

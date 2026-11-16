@@ -1942,7 +1942,7 @@ dependencies = [
 [[package]]
 name = "rhwp"
 version = "0.9.0"
-source = "git+https://github.com/edwardkim/rhwp?rev=eb84afc0364c51031bb07cbbb013476293367990#eb84afc0364c51031bb07cbbb013476293367990"
+source = "git+https://github.com/edwardkim/rhwp?rev=e4f8ff2d637d5b0a313211455ae3ccc53444d969#e4f8ff2d637d5b0a313211455ae3ccc53444d969"
 dependencies = [
  "aes",
  "argon2",
@@ -2010,7 +2010,7 @@ dependencies = [
 [[package]]
 name = "rhwp-contracts"
 version = "0.1.0"
-source = "git+https://github.com/edwardkim/rhwp?rev=eb84afc0364c51031bb07cbbb013476293367990#eb84afc0364c51031bb07cbbb013476293367990"
+source = "git+https://github.com/edwardkim/rhwp?rev=e4f8ff2d637d5b0a313211455ae3ccc53444d969#e4f8ff2d637d5b0a313211455ae3ccc53444d969"
 dependencies = [
  "serde_json",
 ]
@@ -2018,12 +2018,12 @@ dependencies = [
 [[package]]
 name = "rhwp-jpeg-encoder"
 version = "0.7.1-rhwp.1"
-source = "git+https://github.com/edwardkim/rhwp?rev=eb84afc0364c51031bb07cbbb013476293367990#eb84afc0364c51031bb07cbbb013476293367990"
+source = "git+https://github.com/edwardkim/rhwp?rev=e4f8ff2d637d5b0a313211455ae3ccc53444d969#e4f8ff2d637d5b0a313211455ae3ccc53444d969"
 
 [[package]]
 name = "rhwp-ooxml-chart"
 version = "0.1.0"
-source = "git+https://github.com/edwardkim/rhwp?rev=eb84afc0364c51031bb07cbbb013476293367990#eb84afc0364c51031bb07cbbb013476293367990"
+source = "git+https://github.com/edwardkim/rhwp?rev=e4f8ff2d637d5b0a313211455ae3ccc53444d969#e4f8ff2d637d5b0a313211455ae3ccc53444d969"
 dependencies = [
  "quick-xml",
 ]
@@ -2031,7 +2031,7 @@ dependencies = [
 [[package]]
 name = "rhwp-password-crypto"
 version = "0.1.0"
-source = "git+https://github.com/edwardkim/rhwp?rev=eb84afc0364c51031bb07cbbb013476293367990#eb84afc0364c51031bb07cbbb013476293367990"
+source = "git+https://github.com/edwardkim/rhwp?rev=e4f8ff2d637d5b0a313211455ae3ccc53444d969#e4f8ff2d637d5b0a313211455ae3ccc53444d969"
 dependencies = [
  "aes",
  "base64 0.23.1",
@@ -2052,7 +2052,7 @@ dependencies = [
 [[package]]
 name = "rhwp-svg2pdf"
 version = "0.13.0-rhwp.1"
-source = "git+https://github.com/edwardkim/rhwp?rev=eb84afc0364c51031bb07cbbb013476293367990#eb84afc0364c51031bb07cbbb013476293367990"
+source = "git+https://github.com/edwardkim/rhwp?rev=e4f8ff2d637d5b0a313211455ae3ccc53444d969#e4f8ff2d637d5b0a313211455ae3ccc53444d969"
 dependencies = [
  "fontdb",
  "image",
@@ -2071,7 +2071,7 @@ dependencies = [
 [[package]]
 name = "rhwp-zune-jpeg"
 version = "0.5.15-rhwp.1"
-source = "git+https://github.com/edwardkim/rhwp?rev=eb84afc0364c51031bb07cbbb013476293367990#eb84afc0364c51031bb07cbbb013476293367990"
+source = "git+https://github.com/edwardkim/rhwp?rev=e4f8ff2d637d5b0a313211455ae3ccc53444d969#e4f8ff2d637d5b0a313211455ae3ccc53444d969"
 dependencies = [
  "zune-core 0.5.3",
 ]
@@ -2599,7 +2599,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
