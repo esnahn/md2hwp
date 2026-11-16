@@ -235,6 +235,25 @@ Gouraud 음영과 반투명 빗금이 없는 그림은 모두 EMF가 되었습�
 빠지거나 어긋난 도형은 없었습니다. 이 비교로 0.5픽셀 어긋남(고치기 전 최댓값 32.1), 이미지의 반 픽셀 밀림과
 보간 방식 차이(고치기 전 최댓값 30.1)를 찾아 고쳤습니다.
 
+### 다시 실행하기
+
+변환기(`crates/md2hwp-svg`)를 고친 뒤에는 이 시험을 다시 돌려 위 수치와 비교합니다.
+
+```powershell
+pwsh -NoProfile -File tools/development/build.ps1 -Configuration Release
+pwsh -NoProfile -File tools/development/svg-gallery/test.ps1
+```
+
+- 빌드나 `cargo test`에 포함되지 않는 수동 시험입니다. Python, Git, 네트워크가 필요합니다.
+- PyPI에서 `matplotlib==3.11.2`(와 `numpy`, `pillow`)를, GitHub에서 같은 태그의 `galleries/examples`를 받아
+  예제를 **실행**합니다. 받은 커밋이 스크립트에 적힌 것과 다르면 멈춥니다.
+- 내려받은 것과 결과는 모두 `target/svg-gallery`(Git 제외)에 둡니다. 약 1.6 GB, 수십 분이 걸립니다.
+  matplotlib 코드와 만든 그림은 저장소에 넣지 않습니다.
+- 내려받기와 SVG 생성은 한 번만 하고, 변환·GDI+ 그리기·비교는 실행할 때마다 다시 합니다.
+  `-Svg2Emf`로 다른 빌드를, `-Fresh`로 SVG 생성부터 다시 할 수 있습니다.
+- 결과는 `out/figures.json`(예제별 실행 오류), `out/convert.json`(그림별 변환 오류), `out/compare.json`(그림별 차이)에 남습니다.
+  설치된 글꼴이 다르면 SVG와 수치가 조금 달라질 수 있습니다.
+
 이 시험은 GDI+ 표시를 기준으로 합니다. 갤러리 그림 전체를 한글에서 열어 보지는 않았습니다.
 빗금 10종을 모은 그림(`hatch_style_reference`), 이미지가 든 그래프(`petroff10`), 투명도가 있는 이미지를 곧게·기울여
 넣은 시험 그림은 한글 2020에서 PDF로 바꿔 표시를 확인했습니다. EMF+ 주석을 뺀 GDI 쪽만 그려 비트맵·마스크·기울임도 확인했습니다.

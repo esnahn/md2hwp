@@ -644,7 +644,11 @@ Do not emit SetPixelOffsetMode Half: GDI+ then plays the picture half a pixel up
 and left. Group opacity over fills of one opaque colour (faded text) is drawn as
 their winding union. The matplotlib 3.11.2 gallery (777 figures, 765 as EMF, the
 rest Gouraud/truncated files) compared against resvg through GDI+ is the regression
-evidence in docs/svg-figures.md; rerun such a comparison after changing the writer.
+evidence in docs/svg-figures.md; rerun it after changing the writer with
+tools/development/svg-gallery/test.ps1. That manual check downloads the pinned
+matplotlib release and its gallery into target/svg-gallery and runs the examples;
+builds and tests never run it. Keep matplotlib code and generated figures out of
+the repository.
 Dual, not Only: rhwp at 1a76570 and eb84afc plays only GDI records of .emf pictures.
 png/jpg render with resvg; jpg is placed on white. Generated files carry a marker
 (EMF description md2hwp, PNG tEXt Software md2hwp-svg, JPEG comment md2hwp-svg):
