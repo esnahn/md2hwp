@@ -39344,7 +39344,7 @@ rhwp 0.9.0
 Declared license: MIT
 Selected license: MIT
 Upstream: https://github.com/edwardkim/rhwp
-Exact source: https://github.com/edwardkim/rhwp/archive/eb84afc0364c51031bb07cbbb013476293367990.tar.gz
+Exact source: https://github.com/edwardkim/rhwp/archive/e4f8ff2d637d5b0a313211455ae3ccc53444d969.tar.gz
 
 --- LICENSE ---
 
@@ -39424,7 +39424,7 @@ rhwp-contracts 0.1.0
 Declared license: MIT
 Selected license: MIT
 Upstream: https://github.com/edwardkim/rhwp
-Exact source: https://github.com/edwardkim/rhwp/archive/eb84afc0364c51031bb07cbbb013476293367990.tar.gz
+Exact source: https://github.com/edwardkim/rhwp/archive/e4f8ff2d637d5b0a313211455ae3ccc53444d969.tar.gz
 
 --- LICENSE ---
 
@@ -39455,7 +39455,7 @@ rhwp-jpeg-encoder 0.7.1-rhwp.1
 Declared license: (MIT OR Apache-2.0) AND IJG
 Selected license: MIT AND IJG
 Upstream: https://github.com/vstroebel/jpeg-encoder
-Exact source: https://github.com/edwardkim/rhwp/archive/eb84afc0364c51031bb07cbbb013476293367990.tar.gz
+Exact source: https://github.com/edwardkim/rhwp/archive/e4f8ff2d637d5b0a313211455ae3ccc53444d969.tar.gz
 
 --- LICENSE-APACHE ---
 
@@ -39766,7 +39766,7 @@ rhwp-ooxml-chart 0.1.0
 Declared license: MIT
 Selected license: MIT
 Upstream: https://github.com/edwardkim/rhwp
-Exact source: https://github.com/edwardkim/rhwp/archive/eb84afc0364c51031bb07cbbb013476293367990.tar.gz
+Exact source: https://github.com/edwardkim/rhwp/archive/e4f8ff2d637d5b0a313211455ae3ccc53444d969.tar.gz
 
 --- LICENSE ---
 
@@ -39797,7 +39797,7 @@ rhwp-password-crypto 0.1.0
 Declared license: MIT
 Selected license: MIT
 Upstream: https://github.com/edwardkim/rhwp
-Exact source: https://github.com/edwardkim/rhwp/archive/eb84afc0364c51031bb07cbbb013476293367990.tar.gz
+Exact source: https://github.com/edwardkim/rhwp/archive/e4f8ff2d637d5b0a313211455ae3ccc53444d969.tar.gz
 
 --- LICENSE ---
 
@@ -39828,7 +39828,7 @@ rhwp-svg2pdf 0.13.0-rhwp.1
 Declared license: MIT OR Apache-2.0
 Selected license: MIT
 Upstream: https://github.com/edwardkim/rhwp
-Exact source: https://github.com/edwardkim/rhwp/archive/eb84afc0364c51031bb07cbbb013476293367990.tar.gz
+Exact source: https://github.com/edwardkim/rhwp/archive/e4f8ff2d637d5b0a313211455ae3ccc53444d969.tar.gz
 
 --- LICENSE-APACHE ---
 
@@ -41679,7 +41679,7 @@ rhwp-zune-jpeg 0.5.15-rhwp.1
 Declared license: (MIT OR Apache-2.0 OR Zlib) AND IJG
 Selected license: MIT AND IJG
 Upstream: 
-Exact source: https://github.com/edwardkim/rhwp/archive/eb84afc0364c51031bb07cbbb013476293367990.tar.gz
+Exact source: https://github.com/edwardkim/rhwp/archive/e4f8ff2d637d5b0a313211455ae3ccc53444d969.tar.gz
 
 --- LICENSE-APACHE ---
 

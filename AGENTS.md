@@ -437,7 +437,7 @@ Use the native absolute/relative text offset and no table 1% width allowance.
 Never approximate alignment or silently add COM. Code boxes
 clone the native single-cell TreatAsChar table, independent anchor format, optional
 title and caption source paragraphs. Preserve all raw lines and prototype spacing.
-Generated paragraphs carry no line records. rhwp 0.9 (pinned devel eb84afc) derives line
+Generated paragraphs carry no line records. rhwp 0.9 (pinned devel e4f8ff2) derives line
 layout whenever DocumentCore opens a file, so compare the composed model with the
 stored records (rhwp::parser::parse_hwp), not with that derived layout; never derive
 expected content or geometry from exported/reopened bytes or relax model comparison.
@@ -445,7 +445,10 @@ Paragraphs emptied while composing must clear has_para_text: rhwp 0.9 otherwise
 writes an empty PARA_TEXT and Hancom 2020 refuses the file, while rhwp reopens it.
 Open representative outputs in Hancom after every rhwp pin change.
 The rhwp pin follows upstream devel, not main or release tags: main lacks the
-master-page kind fix (d7873c6, upstream PR #8906), so keep the pin at or after it.
+master-page kind fix (d7873c6, upstream PR #8906) and the HWPX-to-HWP master page
+fix (e4f8ff2, upstream issue #9046), so keep the pin at or after e4f8ff2.
+Since e4f8ff2 rhwp no longer writes measured heights back into generated tables and
+adds a private RhwpLineSegTags stream to saved HWP; Hancom 2020 pages are unchanged.
 Move the pin only when a needed fix appears, not to track devel routinely; then
 refresh Cargo.lock and notices and recheck the examples in Hancom.
 Branch layout while main stays on a release pin: main <- rhwp-devel <- feature
