@@ -47,14 +47,14 @@ COM 실행 전에 백엔드에서 다음을 검사합니다.
 
 ## 재현용 원고와 그림
 
-[시험 원고](../examples/emf/emf.md)는 일반 EMF·EMF+ Dual·EMF+ Only를 각각 두 번 사용합니다.
-서로 다른 장에서 같은 파일을 재사용하며, 출처 여러 문단과 본문·출처·각주의 번호 참조도 확인합니다.
-[생성 스크립트](../examples/emf/generate.ps1)는 Windows GDI+로 동일한 그림을 기록합니다.
+[전체 기능 검증 원고](../examples/all-features/all-features.md)는 일반 EMF·EMF+ Dual·EMF+ Only를 한 번씩 사용합니다.
+아래 검증은 같은 세 그림을 서로 다른 장에서 두 번씩 쓰던 이전 전용 원고(`examples/emf/emf.md`, 삭제됨)로 했습니다.
+[생성 스크립트](../examples/all-features/generate-emf.ps1)는 Windows GDI+로 동일한 그림을 기록합니다.
 선·점선·도형·한글 텍스트·클리핑·회전·반투명 겹침·비트맵을 포함합니다.
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\examples\emf\generate.ps1 -Directory .\artifacts\emf-fixtures
-.\target\release\md2hwp.exe .\examples\emf\emf.md
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\examples\all-features\generate-emf.ps1 -Directory .\artifacts\emf-fixtures
+.\target\release\md2hwp.exe .\examples\all-features\all-features.md
 ```
 
 생성 스크립트는 지정한 폴더에 EMF와 300·600dpi GDI+ 기준 PNG를 만듭니다.

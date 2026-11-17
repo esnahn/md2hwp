@@ -26,7 +26,7 @@ IR만 다시 만들려면 `md2ir` 명령과 `--force`를 사용합니다.
 PNG와 JPG/JPEG는 프로젝트 소유자를 위해 AI로 생성한 항공 시점 동네 이미지와 변환본입니다.
 소유자가 2026-10-11에 출처를 확인했습니다. [이미지 출처와 라이선스](../IMAGE-PROVENANCE.md)를
 참고하십시오. 보고서의 실제 도면·조사 사진으로 표시하지 않습니다.
-일반 EMF·EMF+ Dual·EMF+ Only는 [`generate.ps1`](../emf/generate.ps1)로 만든
+일반 EMF·EMF+ Dual·EMF+ Only는 [`generate-emf.ps1`](generate-emf.ps1)로 만든
 재현 자료를 바이트 그대로 복사했습니다. SVG 두 개는 이 저장소에서 직접 작성했습니다.
 [`vector-features.svg`](vector-features.svg)는 EMF로 들어가는 SVG 기능을 모두 모은 그림이고
 (안에 넣은 작은 PNG·JPEG도 직접 만든 색 무늬입니다), [`raster-fallback.svg`](raster-fallback.svg)는

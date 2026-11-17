@@ -7,20 +7,12 @@ the original generation prompt, model and date are not recorded here.
 The following files contain the generated image or its converted copies:
 
 - `all-features/image.png`
-- `cross-references/image.png`
 - `korean-lorem/image.png`
 - `all-features/image.jpg`
-- `jpeg/image.jpg`
 - `all-features/image.jpeg`
-- `jpeg/image.jpeg`
 
-The three PNG files are byte-identical. Each JPEG variant is byte-identical to
-its corresponding copy in the other folder. The image is illustrative test
+The two PNG files are byte-identical. The image is illustrative test
 material, not an AURI report photograph or survey image.
-
-The separate, byte-identical `caption-references/sample.png` and
-`heading-references/sample.png` fixtures are not the aerial image. Their origin
-has not yet been confirmed by the aerial-image confirmation.
 
 AURI-derived example prose and the Korean lorem word/count dataset have separate
 provenance documented in their example READMEs; reuse permissions remain unverified.

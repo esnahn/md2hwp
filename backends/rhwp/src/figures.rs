@@ -794,8 +794,8 @@ mod tests {
         }];
         for path in [
             "all-features/image.png",
-            "jpeg/image.jpg",
-            "emf/EmfOnly.emf",
+            "all-features/image.jpg",
+            "all-features/EmfOnly.emf",
             "all-features/image.png",
         ] {
             resources.insert(
@@ -847,7 +847,7 @@ mod tests {
             })
             .collect();
         assert_eq!(pictures.len(), 4);
-        // Hancom 2020 stores examples/emf/EmfOnly.emf as 41760 x 24240.
+        // Hancom 2020 stores examples/all-features/EmfOnly.emf as 41760 x 24240.
         assert_eq!(
             (pictures[2].crop.right, pictures[2].crop.bottom),
             (41760, 24240)

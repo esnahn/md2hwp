@@ -98,7 +98,7 @@ heading4~heading6도 같은 begin/end 구조로 작성합니다. 해당 양식�
 - 다른 장과 뒤쪽 제목을 참조해도 대상 헤딩의 번호를 사용합니다.
 - 제목 블록 안에서 제목이나 `each.child` 목록을 여러 번 복제해도 원고 헤딩은 한 번만 셉니다.
 
-헤딩 참조도 본문·제목·목록·각주·표 셀·캡션·출처에 사용할 수 있습니다. [여섯 수준과 다른 장 참조 검증 원고](../examples/heading-references/heading-references.md)를 참고하십시오. 원고 제목 문단에 실제 보이는 개요 번호와 참조 번호는 서로 독립적이므로, 둘을 일치시키려면 템플릿의 제목 번호 설정도 원고 순서에 맞추십시오.
+헤딩 참조도 본문·제목·목록·각주·표 셀·캡션·출처에 사용할 수 있습니다. [전체 기능 검증 원고](../examples/all-features/all-features.md)를 참고하십시오. 원고 제목 문단에 실제 보이는 개요 번호와 참조 번호는 서로 독립적이므로, 둘을 일치시키려면 템플릿의 제목 번호 설정도 원고 순서에 맞추십시오.
 
 그 밖의 대상·쪽 번호 참조는 미지원입니다. 저장·재열기 구조 검증과 그림·표의 네이티브 필드 검증은 유지합니다.
 
@@ -117,6 +117,6 @@ Table: 표 설명
 [표 참조](#tbl:example)
 ```
 
-표 ID도 접두어가 필수가 아니며 문서 전체에서 유일해야 합니다. 새 전용 문법을 추가하지 않습니다. [Pandoc attributes 설명](https://pandoc.org/MANUAL.html#extension-attributes)의 블록 앞 속성 문법을 사용합니다. [표 참조 검증 원고](../examples/table-references/table-references.md)는 앞뒤·다른 장·캡션·출처·각주·셀 참조를 포함합니다.
+표 ID도 접두어가 필수가 아니며 문서 전체에서 유일해야 합니다. 새 전용 문법을 추가하지 않습니다. [Pandoc attributes 설명](https://pandoc.org/MANUAL.html#extension-attributes)의 블록 앞 속성 문법을 사용합니다. [전체 기능 검증 원고](../examples/all-features/all-features.md)는 앞뒤·다른 장·캡션·출처·각주·셀 참조를 포함합니다.
 
 제목 블록·한 문단 제목 선언·`each.child`에서도 같은 `num:heading1`~`num:heading6` 번호를 사용합니다. 범위별 자신의 수준과 상위 수준만 지원합니다. [템플릿의 반복·번호 예시](templates.md)를 참고하십시오.

@@ -28,4 +28,4 @@
 
 표 출처는 캡션이 아니라 마지막 병합 셀입니다. 그 영역의 각주 제한은 현재 출처/주석 IR 처리 범위에 따른 것으로, 위 캡션 시험 결과와 구분합니다.
 
-실행 예제: [캡션 상호참조 원고](../examples/caption-references/caption-references.md), [IR](../examples/caption-references/caption-references.ir.json).
+실행 예제: [전체 기능 검증 원고](../examples/all-features/all-features.md), [IR](../examples/all-features/all-features.ir.json).

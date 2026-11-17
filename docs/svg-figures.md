@@ -236,7 +236,7 @@ resvg로 그립니다. 가로 2400픽셀을 기준으로 하고(원본이 더 �
 
 ## 검증 — 2026-11-13
 
-[예제](../examples/svg/svg.md)는 EMF로 바뀌는 그림(둥근 사각형, 점선 원, `evenodd` 구멍, 곡선, 회전한 한글 텍스트,
+당시 예제(`examples/svg/svg.md`, 이후 `examples/all-features/`로 합쳐 삭제)는 EMF로 바뀌는 그림(둥근 사각형, 점선 원, `evenodd` 구멍, 곡선, 회전한 한글 텍스트,
 반투명 원과 선, 클리핑)과 PNG로 바뀌는 그림(그라데이션)을 넣습니다.
 
 - 생성한 EMF를 Windows GDI+가 `EmfPlusDual`로 인식하고, 직접 그린 결과가 SVG와 같은 모양인지 눈으로 확인했습니다.

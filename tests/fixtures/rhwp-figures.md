@@ -19,7 +19,7 @@ PNG 그림과 여러 출처를 확인합니다.
 
 주1: 두 번째 설명 문단입니다.
 
-![JPEG 그림](../../examples/jpeg/image.jpg)
+![JPEG 그림](../../examples/all-features/image.jpg)
 
 ![반복한 PNG 그림](../../examples/all-features/image.png)
 
@@ -29,10 +29,10 @@ PNG 그림과 여러 출처를 확인합니다.
 
 ## 벡터 자료
 
-![EMF 벡터 그림](../../examples/emf/EmfOnly.emf)
+![EMF 벡터 그림](../../examples/all-features/EmfOnly.emf)
 
 Source: 원본 EMF 자료
 
-![JPEG 확장자 확인](../../examples/jpeg/image.jpeg)
+![JPEG 확장자 확인](../../examples/all-features/image.jpeg)
 
 그림 다음 본문이 정상 위치에 나타납니다.
