@@ -673,7 +673,8 @@ matplotlib release and its gallery into target/svg-gallery and runs the examples
 builds and tests never run it. Keep matplotlib code and generated figures out of
 the repository.
 Dual, not Only: rhwp at 1a76570 and eb84afc plays only GDI records of .emf pictures.
-png/jpg render with resvg; jpg is placed on white. Generated files carry a marker
+png/jpg render with resvg; jpg is placed on white. md2hwp-svg selects flate2's
+zlib-rs backend itself, so PNG bytes do not depend on which packages one cargo build includes. Generated files carry a marker
 (EMF description md2hwp, PNG tEXt Software md2hwp-svg, JPEG comment md2hwp-svg):
 replace or remove only marked files and fail on an unmarked file of the same name.
 apps/svg2emf builds the standalone svg2emf.exe on the same crate: the output

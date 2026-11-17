@@ -9,3 +9,7 @@ publish = false
 [dependencies]
 resvg = "0.47.0"
 image = { version = "0.25.10", default-features = false, features = ["jpeg", "png"] }
+# Not used directly. png compresses through flate2, whose backend follows the features
+# of everything built with it: zip (rhwp) selects zlib-rs, a build of this crate alone
+# would use miniz_oxide and write other PNG bytes. Select zlib-rs here so both agree.
+flate2 = { version = "1.1.10", default-features = false, features = ["zlib-rs"] }
