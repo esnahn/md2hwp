@@ -482,7 +482,9 @@ The tracked template currently uses TreatAsChar tables and can clip long tables;
 init-template creates non-TreatAsChar tables. Verify long tables with a separate
 template; do not change the tracked template implicitly. For generated floating
 tables with actual IR body rows, compare original header/first-body start pages
-and columns through rhwp's own page-items. Correct an orphan by adding an anchor
+and columns through rhwp's own page-items, read from the document serialized and
+opened again: rhwp 0.9 derives line layout only when it opens a file, so the model
+in memory can paginate differently from the saved file. Correct an orphan by adding an anchor
 page break and clearing its column break, repaginate, then reread later tables.
 Reject ambiguous/missing positions or a split persisting after one correction;
 verify again after reopen without weakening the independent model comparison.

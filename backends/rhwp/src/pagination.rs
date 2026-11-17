@@ -70,21 +70,31 @@ impl Plan {
         Ok(Self { anchors })
     }
 
+    /// Positions come from the document as it is stored and opened again: rhwp 0.9
+    /// derives line layout only when it opens a file, so the composed model in memory
+    /// can paginate differently from the saved file that `verify` reads.
     pub(crate) fn correct(&self, core: &mut DocumentCore) -> Result<usize, String> {
-        self.correct_with(core, |core, anchor| {
-            core.repaginate_if_needed();
-            positions(&core.dump_page_items_json(None), anchor)
+        if self.anchors.is_empty() {
+            return Ok(0);
+        }
+        let mut pages = None;
+        self.correct_with(core, |core, anchor, changed| {
+            if changed || pages.is_none() {
+                pages = Some(stored_pages(core)?);
+            }
+            positions(pages.as_ref().ok_or_else(invalid)?, anchor)
         })
     }
 
+    /// `read` receives true when the document changed since its previous call.
     fn correct_with(
         &self,
         core: &mut DocumentCore,
-        mut read: impl FnMut(&mut DocumentCore, &Anchor) -> Result<(Position, Position), String>,
+        mut read: impl FnMut(&mut DocumentCore, &Anchor, bool) -> Result<(Position, Position), String>,
     ) -> Result<usize, String> {
         let mut corrected = 0;
         for anchor in &self.anchors {
-            let (header, body) = read(core, anchor)?;
+            let (header, body) = read(core, anchor, false)?;
             if header == body {
                 continue;
             }
@@ -100,7 +110,7 @@ impl Plan {
             paragraph.raw_break_type = (paragraph.raw_break_type & !8) | 4;
             paragraph.page_break_synthesized = false;
             core.set_document(document);
-            let (header, body) = read(core, anchor)?;
+            let (header, body) = read(core, anchor, true)?;
             if header != body {
                 return Err(cannot_fit(anchor));
             }
@@ -123,6 +133,17 @@ impl Plan {
         }
         Ok(())
     }
+}
+
+/// Page items of the document after serialization and reopening.
+fn stored_pages(core: &DocumentCore) -> Result<Value, String> {
+    let saved = core
+        .export_hwp_with_adapter_snapshot_with_report()
+        .map_err(|e| format!("HWP serialization failed: {e:?}"))?;
+    let mut reopened = DocumentCore::from_bytes(saved.bytes())
+        .map_err(|e| format!("Serialized HWP could not be reopened: {e:?}"))?;
+    reopened.repaginate_if_needed();
+    Ok(reopened.dump_page_items_json(None))
 }
 
 fn cannot_fit(anchor: &Anchor) -> String {
@@ -387,7 +408,7 @@ mod tests {
         let before = core.document().sections[0].paragraphs[0].clone();
         let mut calls = 0;
         assert_eq!(
-            plan.correct_with(&mut core, |_, _| {
+            plan.correct_with(&mut core, |_, _, _| {
                 calls += 1;
                 Ok(if calls == 1 {
                     ((0, 0), (0, 1))
@@ -412,13 +433,13 @@ mod tests {
         };
         let mut core = core();
         assert_eq!(
-            plan.correct_with(&mut core, |_, _| Ok(((0, 0), (0, 0))))
+            plan.correct_with(&mut core, |_, _, _| Ok(((0, 0), (0, 0))))
                 .unwrap(),
             0
         );
         let mut calls = 0;
         assert!(
-            plan.correct_with(&mut core, |_, _| {
+            plan.correct_with(&mut core, |_, _, _| {
                 calls += 1;
                 Ok(((0, 0), (1, 0)))
             })
@@ -427,7 +448,7 @@ mod tests {
         assert_eq!(calls, 2);
         calls = 0;
         assert!(
-            plan.correct_with(&mut core, |_, _| {
+            plan.correct_with(&mut core, |_, _, _| {
                 calls += 1;
                 Ok(((0, 0), (1, 0)))
             })
