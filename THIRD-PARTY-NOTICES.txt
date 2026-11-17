@@ -53873,11 +53873,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 ================================================================================
-ureq 3.4.2
+ureq 3.5.1
 Declared license: MIT OR Apache-2.0
 Selected license: MIT
 Upstream: https://github.com/algesten/ureq
-Exact source: https://crates.io/api/v1/crates/ureq/3.4.2/download
+Exact source: https://crates.io/api/v1/crates/ureq/3.5.1/download
 
 --- LICENSE-APACHE ---
 
@@ -54108,11 +54108,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-ureq-proto 0.6.5
+ureq-proto 0.7.1
 Declared license: MIT OR Apache-2.0
 Selected license: MIT
 Upstream: https://github.com/algesten/ureq-proto
-Exact source: https://crates.io/api/v1/crates/ureq-proto/0.6.5/download
+Exact source: https://crates.io/api/v1/crates/ureq-proto/0.7.1/download
 
 --- LICENSE-APACHE.txt ---
 

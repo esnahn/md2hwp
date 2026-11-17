@@ -126,17 +126,7 @@ fn install_default() -> Result<(), String> {
     println!(
         "Pandoc 공식 배포본 다운로드. John MacFarlane 및 기여자, GPL-2.0-or-later. 원본 배포물과 저작권 안내를 보존합니다."
     );
-    let agent: ureq::Agent = ureq::Agent::config_builder()
-        .tls_config(
-            ureq::tls::TlsConfig::builder()
-                .provider(ureq::tls::TlsProvider::NativeTls)
-                .root_certs(ureq::tls::RootCerts::PlatformVerifier)
-                .build(),
-        )
-        .https_only(true)
-        .timeout_global(Some(Duration::from_secs(120)))
-        .build()
-        .into();
+    let agent: ureq::Agent = agent_config().build().into();
     let mut fetch = |url: &str, limit: u64| {
         let mut response = agent
             .get(url)
@@ -176,6 +166,20 @@ fn install_default() -> Result<(), String> {
         installed.display()
     );
     Ok(())
+}
+/// Windows TLS (SChannel) with the system roots. The provider chosen here must be
+/// compiled into ureq: a provider whose connector is missing panics on the first
+/// HTTPS request instead of returning an error.
+fn agent_config() -> ureq::config::ConfigBuilder<ureq::typestate::AgentScope> {
+    ureq::Agent::config_builder()
+        .tls_config(
+            ureq::tls::TlsConfig::builder()
+                .provider(ureq::tls::TlsProvider::NativeTls)
+                .root_certs(ureq::tls::RootCerts::PlatformVerifier)
+                .build(),
+        )
+        .https_only(true)
+        .timeout_global(Some(Duration::from_secs(120)))
 }
 fn install_with(
     root: &Path,
@@ -424,6 +428,37 @@ mod tests {
             assert_eq!(fs::read_dir(temp.path()).unwrap().count(), 1, "{failure}");
             assert_eq!(calls, if failure == "copyright" { 2 } else { 1 });
         }
+    }
+    #[test]
+    fn download_agent_reaches_its_tls_handshake() {
+        // ureq 3.4 compiled the NativeTls connector only under its "native-tls"
+        // feature, so "native-tls-no-default" panicked on the first HTTPS request
+        // (setup-pandoc in v0.4.2 through v0.6.0). A loopback peer that accepts and then closes must
+        // produce a handshake error, never that panic. No traffic leaves the host.
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let (accepted, connections) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            for stream in listener.incoming() {
+                if accepted.send(()).is_err() {
+                    break;
+                }
+                drop(stream);
+            }
+        });
+        let agent: ureq::Agent = agent_config()
+            .proxy(None)
+            .timeout_global(Some(Duration::from_secs(10)))
+            .build()
+            .into();
+        let error = agent
+            .get(&format!("https://127.0.0.1:{port}/"))
+            .call()
+            .expect_err("a closed loopback connection cannot complete TLS");
+        assert!(
+            connections.recv_timeout(Duration::from_secs(5)).is_ok(),
+            "TCP connection never reached the loopback peer: {error}"
+        );
     }
     #[test]
     fn unsafe_archive_and_untrusted_release_are_rejected() {
