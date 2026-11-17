@@ -1,7 +1,9 @@
 {
   "schema": "md2hwp.ir",
   "ir_version": "0.6",
-  "metadata": {},
+  "metadata": {
+    "title": "시각 문제 재현"
+  },
   "blocks": [
     {
       "type": "heading",

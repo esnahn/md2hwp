@@ -189,8 +189,8 @@ ignored `artifacts/large-manuscript/`에 보관하고 생성 HWP는 원고 옆�
 ## 시각 문제만 모은 작은 재현 원고
 
 [`layout-issues.md`](layout-issues.md)와 [`layout-issues.ir.json`](layout-issues.ir.json)은
-위 대규모 시험의 세 가지 시각 문제만 모은 축약 원고입니다. 현재 원고는 1,461바이트이며,
-참조 대상 제목·문제/대조 문장·Unicode 문장·위치 조정 19줄·본문 3행 표 하나로 구성합니다.
+위 대규모 시험의 세 가지 시각 문제만 모은 축약 원고입니다. 현재 원고는 1,498바이트이며,
+문서 제목(`title`)·참조 대상 제목·문제/대조 문장·Unicode 문장·위치 조정 19줄·본문 3행 표 하나로 구성합니다.
 외부 그림 리소스는 필요하지 않습니다.
 
 저장소 루트에서 현재 Release 빌드로 실행합니다.
