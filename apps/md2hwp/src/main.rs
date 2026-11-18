@@ -110,8 +110,9 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
     ensure_distinct_paths(&options.input, &options.output)?;
     let (pandoc_json, reader) = match options.input_format {
         InputFormat::CommonMark => {
-            std::str::from_utf8(&source)
+            let text = std::str::from_utf8(&source)
                 .map_err(|error| format!("source is not UTF-8 at byte {}", error.valid_up_to()))?;
+            reject_table_comments(text)?;
             let pandoc = options
                 .pandoc
                 .as_deref()
@@ -178,6 +179,21 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), AppError> {
     }
     println!("{}", options.output.display());
     Ok(())
+}
+
+/// Pandoc converts an HTML comment line inside a table without an error but
+/// splits the table or keeps the comment as cells, so conversion rejects it
+/// the way validate does. Other strict source checks remain validate-only.
+fn reject_table_comments(source: &str) -> Result<(), String> {
+    let issues = md2hwp_core::authoring::check_conversion_source(source);
+    if issues.is_empty() {
+        return Ok(());
+    }
+    Err(issues
+        .iter()
+        .map(|d| format!("{} at {}: {}", d.code, d.location, d.message))
+        .collect::<Vec<_>>()
+        .join("\n"))
 }
 
 struct ValidateOptions {
@@ -1216,6 +1232,33 @@ mod tests {
         .unwrap();
 
         assert_eq!(error, "--pandoc is only valid with --from commonmark");
+    }
+
+    #[test]
+    fn conversion_rejects_table_comments_before_pandoc() {
+        let temp = tempfile::tempdir().unwrap();
+        let source = temp.path().join("table.md");
+        let output = temp.path().join("table.ir.json");
+        fs::write(
+            &source,
+            "| a | b |\n| --- | --- |\n| 1 | 2 |\n<!-- | 3 | 4 | -->\n| 5 | 6 |\n",
+        )
+        .unwrap();
+        let missing_pandoc = temp.path().join("missing").join("pandoc.exe");
+        let error = run(vec![
+            "md2ir".into(),
+            source.clone().into(),
+            "--pandoc".into(),
+            missing_pandoc.into(),
+        ])
+        .err()
+        .unwrap();
+        assert!(
+            error.message.starts_with("table_comment at line 4: "),
+            "{}",
+            error.message
+        );
+        assert!(!output.exists());
     }
 
     #[test]

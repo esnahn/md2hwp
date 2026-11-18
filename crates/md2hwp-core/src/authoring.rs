@@ -35,6 +35,17 @@ fn regex(pattern: &str) -> Regex {
     Regex::new(pattern).expect("built-in authoring pattern")
 }
 
+/// The source checks that conversion enforces as well as validate. Pandoc reads
+/// an HTML comment line inside a table without an error but changes the table:
+/// a comment line between rows ends it, and a commented-out row stays as cells.
+/// Every other source check stays validate-only.
+pub fn check_conversion_source(source: &str) -> Vec<Diagnostic> {
+    check_source(source)
+        .into_iter()
+        .filter(|d| !d.warning && d.code == "table_comment")
+        .collect()
+}
+
 /// Detect syntax that may disappear or become literal text during parsing.
 /// This is intentionally a source supplement, not an alternative Markdown parser.
 pub fn check_source(source: &str) -> Vec<Diagnostic> {
@@ -745,6 +756,28 @@ mod tests {
             codes("| a | b |\n| --- | --- |\n| 1 <!-- x | y --> | 2 |\n"),
             vec![("table_columns", "line 3".to_owned())]
         );
+        // Conversion rejects only the table comments, not the other checks.
+        let conversion = |source| {
+            check_conversion_source(source)
+                .into_iter()
+                .map(|d| (d.code, d.location))
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            conversion("| a | b |\n| --- | --- |\n| 1 | 2 |\n<!-- 메모 -->\n| 3 | 4 |\n"),
+            vec![("table_comment", "line 4".to_owned())]
+        );
+        assert_eq!(
+            conversion("| a | b |\n| --- | --- |\n| 1 | 2 |\n<!-- | 3 | 4 | -->\n| 5 | 6 |\n"),
+            vec![("table_comment", "line 4".to_owned())]
+        );
+        for source in [
+            "| a | b |\n| --- | --- |\n| 1 <!-- 메모 --> | 2 |\n",
+            "<!-- 메모 -->\n\n| a | b |\n| --- | --- |\n| 1 | 2 |\n\n<!-- 메모 -->\n",
+            "| a | b |\n| --- | --- |\n| 1 | 2 | 3 |\n\n본문 <!-- 열림\n\n[^missing]\n",
+        ] {
+            assert!(conversion(source).is_empty(), "{source}");
+        }
         // A comment left open is literal text; following lines are checked,
         // and a list item ends the paragraph before '-->'.
         assert_eq!(

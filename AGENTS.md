@@ -114,7 +114,9 @@ Raw HTML with anything else (text after -->, unclosed <!--) and an attribute lin
 whose wrapper Div a comment took fail with reasons. check_source skips comment lines
 (HTML blocks after list markers/footnote labels end with their container) and reports
 unclosed comments and comment lines between table rows; check_document reports literal
-<!--. Box text keeps comment syntax. Both workers derive formats from the template character format
+<!--. Markdown conversion also rejects table_comment (check_conversion_source) before
+Pandoc, because Pandoc splits the table or keeps the comment as cells without an error;
+every other source check stays validate-only. Box text keeps comment syntax. Both workers derive formats from the template character format
 the way Hancom 2020's own 취소선/위 첨자/아래 첨자 commands store them: HWPML
 STRIKEOUT Type=Continuous Shape=Solid Color=0 (HWP attr bits 18-20=1, strike shape 0,
 underline bits 2-3=2 only without an underline, strike color 0), SUPERSCRIPT bit 15,
