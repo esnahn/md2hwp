@@ -2,9 +2,9 @@
 
 ## 사용자 환경
 
-v0.6.0은 수식을 담은 IR 0.6을 사용합니다. 프로그램 버전과 IR 버전은 독립적이며, 프로그램 버전 상향으로 IR이나 템플릿의 `ir-version`을 바꾸지 않습니다.
+v0.6.1은 v0.6.0과 같이 수식을 담은 IR 0.6을 사용합니다. 프로그램 버전과 IR 버전은 독립적이며, 프로그램 버전 상향으로 IR이나 템플릿의 `ir-version`을 바꾸지 않습니다.
 
-일반 빌드와 v0.6.0 배포 ZIP은 `md2hwp.exe`, `md2hwp-rhwp.exe`, `md2hwp-hancom.exe`, `hwp2pdf.exe`, `hwpeqrecalc.exe`, `svg2emf.exe` 여섯 실행 파일을 포함합니다. `svg2emf.exe`는 SVG를 EMF·PNG·JPG로 바꾸는 단독 도구이며 다른 프로그램이나 한글이 필요하지 않습니다. HWP 기본 경로인 `md2hwp-rhwp.exe`는 한글·.NET·보안 모듈 없이 실행합니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. Markdown 처리에는 Pandoc이 필요합니다. 다음 한글·.NET·보안 모듈 준비는 HWPX를 처리하는 `md2hwp-hancom.exe`, HWP 입력 전용 `hwp2pdf.exe`, `hwpeqrecalc.exe`에 해당합니다.
+일반 빌드와 v0.6.1 배포 ZIP은 `md2hwp.exe`, `md2hwp-rhwp.exe`, `md2hwp-hancom.exe`, `hwp2pdf.exe`, `hwpeqrecalc.exe`, `svg2emf.exe` 여섯 실행 파일을 포함합니다. `svg2emf.exe`는 SVG를 EMF·PNG·JPG로 바꾸는 단독 도구이며 다른 프로그램이나 한글이 필요하지 않습니다. HWP 기본 경로인 `md2hwp-rhwp.exe`는 한글·.NET·보안 모듈 없이 실행합니다. 표 열 폭과 목록 표식 실측에는 설치된 Windows TTF/OTF 글꼴이 필요합니다. Markdown 처리에는 Pandoc이 필요합니다. 다음 한글·.NET·보안 모듈 준비는 HWPX를 처리하는 `md2hwp-hancom.exe`, HWP 입력 전용 `hwp2pdf.exe`, `hwpeqrecalc.exe`에 해당합니다.
 
 - 한글 설치 및 로그인된 대화형 Windows 세션이 필요합니다. 기준 환경은 한글 2020 HWP 11.0.0.9136입니다.
     - 이미 실행 중인 한글이 있어도 사용자가 열어 둔 한글 창과 문서는 건드리지 않습니다.
@@ -99,8 +99,8 @@ IR 0.6의 YAML 메타데이터와 템플릿 태그는 [메타데이터 문서](y
 기본 설정에서 첫 명령 출력은 다음과 같습니다.
 
 ```text
-md2hwp 0.6.0
-md2hwp-rhwp 0.6.0 (experimental; IR 0.6; rhwp 0.8.7)
+md2hwp 0.6.1
+md2hwp-rhwp 0.6.1 (experimental; IR 0.6; rhwp 0.8.7)
 License: AGPL-3.0-only
 ```
 
