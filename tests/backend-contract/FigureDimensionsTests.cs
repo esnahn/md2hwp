@@ -8,9 +8,9 @@ internal static class FigureDimensionsTests
     {
         void Check(bool value, string message) { if (!value) throw new Exception(message); }
         var root = new DirectoryInfo(Directory.GetCurrentDirectory());
-        while (!File.Exists(Path.Combine(root.FullName,"examples","jpeg","image.jpg")))
+        while (!File.Exists(Path.Combine(root.FullName,"examples","all-features","image.jpg")))
             root = root.Parent ?? throw new Exception("Missing tracked JPEG fixtures.");
-        var resources = Path.Combine(root.FullName,"examples","jpeg");
+        var resources = Path.Combine(root.FullName,"examples","all-features");
         foreach (var name in new[] { "image.jpg", "image.jpeg" })
             Check(FigureDimensions.Read(Path.Combine(resources,name)) == (480,320), "JPEG dimensions/aspect ratio lost.");
         Check(FigureDimensions.Read(Path.Combine(root.FullName,"examples","all-features","image.png")) is { Width: > 0, Height: > 0 }, "PNG support regressed.");

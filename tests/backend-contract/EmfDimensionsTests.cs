@@ -9,9 +9,9 @@ internal static class EmfDimensionsTests
     {
         void Check(bool value, string message) { if (!value) throw new Exception(message); }
         var root = new DirectoryInfo(Directory.GetCurrentDirectory());
-        while (!File.Exists(Path.Combine(root.FullName, "examples", "emf", "EmfOnly.emf")))
+        while (!File.Exists(Path.Combine(root.FullName, "examples", "all-features", "EmfOnly.emf")))
             root = root.Parent ?? throw new Exception("Missing tracked EMF fixtures.");
-        var resources = Path.Combine(root.FullName, "examples", "emf");
+        var resources = Path.Combine(root.FullName, "examples", "all-features");
         var source = new TemplateSource(new XElement("P"), "slot", "", "");
         var profile = InvestigationTemplateProfile.FromTaggedTemplate(typeof(IrPreviewPlan).Assembly.Location, [], "reset", 142, 6, 0,
             new ProfileCaptionSelector("caption", "[", "]", "slot"), source, source,
@@ -75,7 +75,7 @@ internal static class EmfDimensionsTests
             using (var file = File.Create(temporary)) file.SetLength(EmfDimensions.MaximumFileBytes + 1);
             try { FigureDimensions.Read(temporary); throw new Exception("EMF size limit ignored."); }
             catch (InvalidDataException) { }
-            Write(File.ReadAllBytes(Path.Combine(root.FullName, "examples", "jpeg", "image.jpg")));
+            Write(File.ReadAllBytes(Path.Combine(root.FullName, "examples", "all-features", "image.jpg")));
             try { FigureDimensions.Read(temporary); throw new Exception("JPEG renamed EMF accepted."); }
             catch (InvalidDataException) { }
         }
