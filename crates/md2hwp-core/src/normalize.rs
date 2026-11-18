@@ -33,11 +33,14 @@ impl fmt::Display for NormalizeError {
 impl std::error::Error for NormalizeError {}
 
 pub fn normalize_pandoc(
-    document: PandocDocument,
+    mut document: PandocDocument,
     rules: &Ast2IrRules,
     reader: &str,
     limits: &ValidationLimits,
 ) -> Result<ValidatedDocument, NormalizeError> {
+    // HTML comments are author notes. Removing them first makes them
+    // transparent to caption and object-note attachment below.
+    crate::html_comment::strip(&mut document);
     let mut normalizer = Normalizer {
         rules,
         reader,
@@ -557,6 +560,9 @@ impl Normalizer<'_> {
 
     fn block(&mut self, node: &Value, path: &str) -> Result<Block, NormalizeError> {
         let (constructor, content) = self.node(node, path)?;
+        if let Some(error) = self.raw_block_error(constructor, content, path) {
+            return Err(error);
+        }
         let rule = self
             .rules
             .blocks
@@ -739,6 +745,9 @@ impl Normalizer<'_> {
         path: &str,
     ) -> Result<ListItemBlock, NormalizeError> {
         let (constructor, content) = self.node(node, path)?;
+        if let Some(error) = self.raw_block_error(constructor, content, path) {
+            return Err(error);
+        }
         match constructor {
             "Plain" if tight => {
                 let Some(BlockRule::ListItemParagraph { .. }) = self.rules.blocks.get("Plain")
@@ -899,7 +908,11 @@ impl Normalizer<'_> {
                 ));
             }
             for (block_index, block) in blocks.iter().enumerate() {
-                let (kind, _) = self.node(block, &format!("{path}/{item_index}/{block_index}"))?;
+                let block_path = format!("{path}/{item_index}/{block_index}");
+                let (kind, content) = self.node(block, &block_path)?;
+                if let Some(error) = self.raw_block_error(kind, content, &block_path) {
+                    return Err(error);
+                }
                 saw_plain |= kind == "Plain";
                 saw_para |= kind == "Para";
             }
@@ -1011,7 +1024,7 @@ impl Normalizer<'_> {
                 "unsupported_pandoc_node",
                 path,
                 Some("RawInline"),
-                format!("raw {format} {raw:?} is not supported; only <sup>…</sup> and <sub>…</sub> HTML tags without attributes are converted"),
+                format!("raw {format} {raw:?} is not supported; only <sup>…</sup> and <sub>…</sub> HTML tags without attributes are converted, and HTML comments are ignored"),
             )
         };
         if format != "html" {
@@ -1160,6 +1173,9 @@ impl Normalizer<'_> {
             .map(|(index, node)| {
                 let block_path = format!("{path}/c/{index}");
                 let (constructor, content) = self.node(node, &block_path)?;
+                if let Some(error) = self.raw_block_error(constructor, content, &block_path) {
+                    return Err(error);
+                }
                 if !matches!(constructor, "Para" | "Plain") {
                     return Err(self.error(
                         "unsupported_pandoc_node",
@@ -1506,6 +1522,37 @@ impl Normalizer<'_> {
                 "attributes must be exactly [\"\", [], []]",
             ))
         }
+    }
+
+    /// Explains raw blocks that remain after HTML comments were removed, and
+    /// an attribute line that a comment took from the block after it.
+    fn raw_block_error(
+        &self,
+        constructor: &str,
+        content: Option<&Value>,
+        path: &str,
+    ) -> Option<NormalizeError> {
+        let values = content.and_then(Value::as_array).map(Vec::as_slice);
+        let message = match (constructor, values) {
+            ("RawBlock", Some([format, text, ..])) => {
+                let format = format.as_str().unwrap_or_default();
+                if format == "html" && text.as_str().unwrap_or_default().trim_start().starts_with("<!--") {
+                    "an HTML comment block must contain only comments: it ends at the first line containing '-->', so nothing may follow '-->' on that line (also after a list marker or footnote label), every '<!--' must be closed, and comments cannot be nested".to_owned()
+                } else {
+                    format!("raw {format} blocks are not supported by IR {IR_VERSION}; only HTML comments are ignored")
+                }
+            }
+            ("Div", Some([attributes, blocks]))
+                if blocks.as_array().is_some_and(Vec::is_empty)
+                    && attributes[2]
+                        .as_array()
+                        .is_some_and(|pairs| pairs.contains(&serde_json::json!(["wrapper", "1"]))) =>
+            {
+                "attribute line has no block to attach to: an attribute line such as {#id} belongs to the block directly after it, so an HTML comment there takes the attribute; move the comment above the attribute line".to_owned()
+            }
+            _ => return None,
+        };
+        Some(self.error("unsupported_pandoc_node", path, Some(constructor), message))
     }
 
     fn unsupported(&self, path: &str, constructor: &str) -> NormalizeError {

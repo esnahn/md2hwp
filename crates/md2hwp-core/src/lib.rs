@@ -19,4 +19,5 @@ pub use normalize::{NormalizeError, normalize_pandoc};
 pub use pandoc_input::{PandocDocument, PandocInputError, read_pandoc_json};
 pub use validate::{SemanticError, ValidatedDocument, ValidationLimits, validate};
 
+mod html_comment;
 mod source_prefix;

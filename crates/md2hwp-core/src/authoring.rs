@@ -52,6 +52,19 @@ pub fn check_source(source: &str) -> Vec<Diagnostic> {
     let number = regex(r"^\s*\d+[.)]\s+");
     let heading = regex(r"^ {0,3}#{1,6}\s+(?:\d+(?:\.\d+)*[.)]?\s+|제\s*\d+\s*[장절])");
     let metadata_key = regex(r"^([^\s:#][^:]*):\s*(.*)$");
+    // An HTML comment at the start of a line, list item or footnote definition
+    // is an HTML block. It runs to the first line containing '-->', even
+    // across blank lines, and is skipped like the comments Pandoc drops.
+    let comment_block =
+        regex(r"^ {0,3}(?:(?:[-+*]|\d{1,9}[.)])[ \t]+|\[\^[^\]\r\n]+\]:[ \t]*)*<!--");
+    // Lines that end a paragraph, and with it an unclosed inline comment.
+    let interrupts = regex(
+        r"^ {0,3}(?:#{1,6}(?:[ \t]|$)|[-+*][ \t]|1[.)][ \t]|\[\^[^\]\r\n]+\]:|>|```|~~~|<!--)",
+    );
+    // Start line and the indentation that keeps the comment's container open.
+    let mut comment: Option<(usize, usize)> = None;
+    let mut inline_comment = false;
+    let mut table_comment: Option<usize> = None;
     let mut table_columns = None;
     let mut previous_row: Option<(usize, usize)> = None;
     for (index, line) in lines.iter().enumerate() {
@@ -99,57 +112,118 @@ pub fn check_source(source: &str) -> Vec<Diagnostic> {
             }
             continue;
         }
-        if indent <= 3 && fence_candidate.starts_with(['`', '~']) {
-            let marker = fence_candidate.chars().next().unwrap();
-            let count = fence_candidate.chars().take_while(|c| *c == marker).count();
-            if count >= 3 {
-                fence = Some((marker, count, line_number));
-                if !fence_candidate[count..].trim().is_empty() {
-                    result.push(diagnostic(
-                        &location,
-                        "box_attributes",
-                        "box fences cannot have a language or attributes",
-                    ));
+        if let Some((start, indent)) = comment {
+            if indent > 0 && !trimmed.is_empty() && line_indent(line) < indent {
+                // A less indented line closes the list item or footnote
+                // first, so Pandoc keeps the unclosed comment as raw HTML.
+                result.push(unclosed_comment(start));
+                comment = None;
+            } else {
+                if line.contains("-->") {
+                    comment = None;
                 }
-                table_columns = None;
-                previous_row = None;
                 continue;
             }
         }
-        // Indented verbatim content is checked as a CodeBlock by Pandoc, not prose.
-        // Footnote continuation paragraphs remain covered by AST/IR validation.
-        if line.starts_with("    ") || line.starts_with('\t') {
-            continue;
+        let continues_comment = inline_comment;
+        let mut comment_start = comment_block
+            .find(line)
+            .filter(|_| !continues_comment)
+            .map(|found| found.end() - "<!--".len());
+        if comment_start.is_some() && table_columns.is_some() && unescaped(line).contains('|') {
+            // Inside a table a line with '|' is a row, not an HTML block.
+            result.push(diagnostic(
+                &location,
+                "table_comment",
+                "a line with '|' inside a table is a table row, so an HTML comment there stays as cell text; delete the row instead of commenting it out",
+            ));
+            comment_start = None;
         }
-        let visible = unescaped(line);
+        if let Some(start) = comment_start {
+            if !line[start..].contains("-->") {
+                comment = Some((line_number, container_indent(&line[..start])));
+            }
+            if table_columns.is_some() {
+                table_comment = Some(line_number);
+            }
+        } else {
+            if let Some(comment_line) = table_comment.take()
+                && unescaped(line).contains('|')
+                && !lines.get(index + 1).is_some_and(|next| {
+                    unescaped(next).contains('|') && is_separator(&pipe_cells(next))
+                })
+            {
+                result.push(diagnostic(
+                    format!("line {comment_line}"),
+                    "table_comment",
+                    "an HTML comment line between table rows ends the table, so the rows after it become paragraph text; put the comment before or after the table",
+                ));
+            }
+            if !continues_comment {
+                if indent <= 3 && fence_candidate.starts_with(['`', '~']) {
+                    let marker = fence_candidate.chars().next().unwrap();
+                    let count = fence_candidate.chars().take_while(|c| *c == marker).count();
+                    if count >= 3 {
+                        fence = Some((marker, count, line_number));
+                        if !fence_candidate[count..].trim().is_empty() {
+                            result.push(diagnostic(
+                                &location,
+                                "box_attributes",
+                                "box fences cannot have a language or attributes",
+                            ));
+                        }
+                        table_columns = None;
+                        previous_row = None;
+                        continue;
+                    }
+                }
+                // Indented verbatim content is checked as a CodeBlock by Pandoc, not prose.
+                // Footnote continuation paragraphs remain covered by AST/IR validation.
+                if line.starts_with("    ") || line.starts_with('\t') {
+                    continue;
+                }
+            }
+        }
+        // Comment text is not checked. A comment line keeps only its list
+        // marker or footnote label; a continued inline comment hides the
+        // line start.
+        let text = match comment_start {
+            Some(start) => line[..start].to_owned(),
+            None => {
+                strip_inline_comments(line, &lines[index + 1..], &mut inline_comment, &interrupts)
+            }
+        };
+        let visible = unescaped(&text);
 
-        if bullets.is_match(line) && !trimmed.chars().all(|c| c == '*' || c.is_whitespace()) {
-            result.push(diagnostic(
-                &location,
-                "bullet_marker",
-                "use '-' for bullet lists",
-            ));
-        }
-        if number.is_match(line)
-            && trimmed
-                .split(['.', ')'])
-                .next()
-                .is_some_and(|s| s.bytes().all(|b| b == b'0'))
-        {
-            result.push(diagnostic(
-                &location,
-                "list_start",
-                "ordered lists require a positive decimal start",
-            ));
-        }
-        if heading.is_match(line) {
-            let mut issue = diagnostic(
-                &location,
-                "manual_heading_number",
-                "possible duplicate heading number; use generated numbering",
-            );
-            issue.warning = true;
-            result.push(issue);
+        if !continues_comment {
+            if bullets.is_match(line) && !trimmed.chars().all(|c| c == '*' || c.is_whitespace()) {
+                result.push(diagnostic(
+                    &location,
+                    "bullet_marker",
+                    "use '-' for bullet lists",
+                ));
+            }
+            if number.is_match(line)
+                && trimmed
+                    .split(['.', ')'])
+                    .next()
+                    .is_some_and(|s| s.bytes().all(|b| b == b'0'))
+            {
+                result.push(diagnostic(
+                    &location,
+                    "list_start",
+                    "ordered lists require a positive decimal start",
+                ));
+            }
+            if heading.is_match(line) {
+                let mut issue = diagnostic(
+                    &location,
+                    "manual_heading_number",
+                    "possible duplicate heading number; use generated numbering",
+                );
+                issue.warning = true;
+                result.push(issue);
+            }
         }
         if visible.contains("^[") {
             result.push(diagnostic(
@@ -158,7 +232,9 @@ pub fn check_source(source: &str) -> Vec<Diagnostic> {
                 "use reference-style footnotes, not ^[...]",
             ));
         }
-        if let Some(capture) = definition.captures(&visible) {
+        let mut definition_end = 0;
+        if !continues_comment && let Some(capture) = definition.captures(&visible) {
+            definition_end = capture.get(0).map_or(0, |m| m.end());
             let name = capture[1].to_owned();
             if definitions.insert(name.clone(), line_number).is_some() {
                 result.push(diagnostic(
@@ -168,17 +244,20 @@ pub fn check_source(source: &str) -> Vec<Diagnostic> {
                 ));
             }
         }
-        let definition_end = definition.find(&visible).map_or(0, |m| m.end());
         for capture in note.captures_iter(&visible[definition_end..]) {
             references.push((capture[1].to_owned(), line_number));
         }
+        if comment_start.is_some() || continues_comment {
+            // A comment line ends a table; a paragraph line cannot be a row.
+            previous_row = None;
+            table_columns = None;
+            continue;
+        }
         // Pipe-row counts are checked before Pandoc can pad/truncate rows.
-        if visible.contains('|') {
+        // GFM splits cells before reading inline HTML, so comments count too.
+        if unescaped(line).contains('|') {
             let cells = pipe_cells(line);
-            let separator = cells.iter().all(|c| {
-                let c = c.trim().trim_matches(':');
-                !c.is_empty() && c.chars().all(|ch| ch == '-')
-            });
+            let separator = is_separator(&cells);
             if separator {
                 if let Some((header_count, header_line)) = previous_row {
                     if header_count != cells.len() {
@@ -214,6 +293,9 @@ pub fn check_source(source: &str) -> Vec<Diagnostic> {
             "unclosed_box",
             "close the box fence explicitly",
         ));
+    }
+    if let Some((line, _)) = comment {
+        result.push(unclosed_comment(line));
     }
     if !yaml_closed {
         result.push(diagnostic(
@@ -254,6 +336,119 @@ fn unescaped(text: &str) -> String {
     result
 }
 
+fn unclosed_comment(line: usize) -> Diagnostic {
+    diagnostic(
+        format!("line {line}"),
+        "unclosed_comment",
+        "close the HTML comment with '-->'; inside a list item or footnote, indent its lines like the item's content",
+    )
+}
+
+/// Leading indentation in columns, with tabs to the next multiple of four.
+fn line_indent(line: &str) -> usize {
+    let mut column = 0;
+    for ch in line.chars() {
+        match ch {
+            ' ' => column += 1,
+            '\t' => column += 4 - column % 4,
+            _ => break,
+        }
+    }
+    column
+}
+
+/// Indentation that continues a comment opened after `prefix`: 0 at the top
+/// level, the content column after a list marker, and four columns past a
+/// footnote label.
+fn container_indent(prefix: &str) -> usize {
+    let mut indent = 0;
+    let mut column = line_indent(prefix);
+    let mut rest = prefix.trim_start();
+    while !rest.is_empty() {
+        let label = rest.starts_with("[^");
+        let marker = if label {
+            rest.find("]:").map_or(rest.len(), |end| end + 2)
+        } else {
+            rest.find([' ', '\t']).unwrap_or(rest.len())
+        };
+        let content = rest[marker..].trim_start();
+        let spaces = line_indent(&rest[marker..]);
+        indent = if label {
+            column + 4
+        } else {
+            column + marker + spaces
+        };
+        column += marker + spaces;
+        rest = content;
+    }
+    indent
+}
+
+/// Position of the first `<!--` that is not escaped with a backslash.
+fn comment_open(text: &str) -> Option<usize> {
+    let mut from = 0;
+    while let Some(found) = text[from..].find("<!--") {
+        let start = from + found;
+        let backslashes = text[..start]
+            .bytes()
+            .rev()
+            .take_while(|b| *b == b'\\')
+            .count();
+        if backslashes % 2 == 0 {
+            return Some(start);
+        }
+        from = start + 1;
+    }
+    None
+}
+
+/// Removes inline HTML comments from one prose line. `open` carries a comment
+/// continued from an earlier line. CommonMark keeps an unclosed `<!--` as
+/// literal text, so a comment opened here continues only when a later line of
+/// the same paragraph closes it; otherwise the text stays and the AST check
+/// reports the literal `<!--`.
+fn strip_inline_comments(
+    line: &str,
+    following: &[&str],
+    open: &mut bool,
+    interrupts: &Regex,
+) -> String {
+    let mut text = String::new();
+    let mut rest = line;
+    if *open {
+        let Some(end) = rest.find("-->") else {
+            return text;
+        };
+        rest = &rest[end + "-->".len()..];
+        *open = false;
+    }
+    while let Some(start) = comment_open(rest) {
+        text.push_str(&rest[..start]);
+        rest = &rest[start..];
+        if let Some(length) = crate::html_comment::comment_len(rest) {
+            rest = &rest[length..];
+            continue;
+        }
+        *open = following
+            .iter()
+            .take_while(|line| !line.trim().is_empty() && !interrupts.is_match(line))
+            .any(|line| line.contains("-->"));
+        if *open {
+            return text;
+        }
+        break;
+    }
+    text.push_str(rest);
+    text
+}
+
+fn is_separator(cells: &[String]) -> bool {
+    cells.iter().all(|c| {
+        let c = c.trim().trim_matches(':');
+        !c.is_empty() && c.chars().all(|ch| ch == '-')
+    })
+}
+
 fn pipe_cells(line: &str) -> Vec<String> {
     let visible = unescaped(line);
     let visible = visible.trim();
@@ -265,6 +460,9 @@ fn pipe_cells(line: &str) -> Vec<String> {
 /// Inspect distinctions lost during normalization (soft paragraph boundaries
 /// and footnotes in number-reference labels).
 pub fn check_pandoc(document: &PandocDocument) -> Vec<Diagnostic> {
+    // Inspect the same comment-free AST that normalization reads.
+    let mut document = document.clone();
+    crate::html_comment::strip(&mut document);
     let mut result = Vec::new();
     for (key, value) in &document.metadata {
         if contains_constructor(value, "SoftBreak") {
@@ -430,6 +628,9 @@ fn visit(value: &Value, path: &str, result: &mut Vec<Diagnostic>) {
                 if content.contains("{#") {
                     result.push(diagnostic(path, "unattached_id", "ID syntax remained literal; attach IDs only to headings, figures, or the standalone line immediately before a table"));
                 }
+                if content.contains("<!--") {
+                    result.push(diagnostic(path, "unclosed_comment", "'<!--' remained literal text; close an HTML comment with '-->' before the next blank line or block, or start it on a line of its own"));
+                }
             }
             for (key, child) in map {
                 visit(child, &format!("{path}/{key}"), result);
@@ -478,6 +679,91 @@ mod tests {
     #[test]
     fn escaped_note_is_not_a_reference() {
         assert!(check_source(r"\[^literal] and \^[literal]").is_empty());
+    }
+
+    fn codes(source: &str) -> Vec<(&'static str, String)> {
+        check_source(source)
+            .into_iter()
+            .map(|d| (d.code, d.location))
+            .collect()
+    }
+
+    #[test]
+    fn source_checks_skip_html_comments() {
+        for source in [
+            // Block comments run across blank lines, fences and indented lines.
+            "<!-- 예시\n* 별표\n\n```text\n[^a]: 하나\n\n    [^a]: 둘\n[^missing] ^[인라인]\n| A | B |\n| --- | --- |\n| a |\n-->\n",
+            "  <!-- 한 줄 --> <!-- 두 번째 -->\n",
+            // Inline comments, also continued on the next paragraph line.
+            "본문 <!-- [^missing] ^[x] --> 계속 <!-- 여러\n[^missing] | ^[y] --> 끝\n",
+            // After a list marker or footnote label the comment is a block too.
+            "- <!-- 목록 안 예시\n\n  [^missing]\n  -->\n",
+            "본문[^a]\n\n[^a]: <!-- 각주 예시\n\n    [^missing]\n    -->\n",
+            "1. <!-- 목록 예시\n   [^missing]\n   -->\n",
+            // A row after a comment that starts a new table is fine.
+            "| a | b |\n| --- | --- |\n| 1 | 2 |\n<!-- c -->\n| x | y |\n| --- | --- |\n",
+        ] {
+            assert_eq!(codes(source), vec![], "{source:?}");
+        }
+    }
+
+    #[test]
+    fn source_checks_report_comment_mistakes() {
+        assert_eq!(
+            codes("본문\n\n<!-- 닫지 않은 주석\n\n내용\n"),
+            vec![("unclosed_comment", "line 3".to_owned())]
+        );
+        // A less indented line closes the footnote before '-->'.
+        assert_eq!(
+            codes("본문[^a]\n\n[^a]: <!-- 각주 예시\n\n[^missing]\n-->\n"),
+            vec![
+                ("unclosed_comment", "line 3".to_owned()),
+                ("undefined_footnote", "line 5".to_owned())
+            ]
+        );
+        assert_eq!(
+            codes("- <!-- 목록 예시\n [^missing]\n-->\n"),
+            vec![
+                ("unclosed_comment", "line 1".to_owned()),
+                ("undefined_footnote", "line 2".to_owned())
+            ]
+        );
+        // Without '|' a comment line ends the table; with '|' it is a row.
+        assert_eq!(
+            codes("| a | b |\n| --- | --- |\n| 1 | 2 |\n<!-- 메모\n| 3 | 4 |\n-->\n| 5 | 6 |\n"),
+            vec![("table_comment", "line 4".to_owned())]
+        );
+        assert_eq!(
+            codes("| a | b |\n| --- | --- |\n| 1 | 2 |\n<!-- | 3 | 4 | -->\n| 5 | 6 |\n"),
+            vec![
+                ("table_comment", "line 4".to_owned()),
+                ("table_columns", "line 4".to_owned())
+            ]
+        );
+        // GFM splits cells before it reads inline HTML.
+        assert_eq!(
+            codes("| a | b |\n| --- | --- |\n| 1 <!-- x | y --> | 2 |\n"),
+            vec![("table_columns", "line 3".to_owned())]
+        );
+        // A comment left open is literal text; following lines are checked,
+        // and a list item ends the paragraph before '-->'.
+        assert_eq!(
+            codes("본문 <!-- 열림\n\n[^missing]\n"),
+            vec![("undefined_footnote", "line 3".to_owned())]
+        );
+        assert_eq!(
+            codes("본문 <!-- 열림\n- [^missing]\n-->\n"),
+            vec![("undefined_footnote", "line 2".to_owned())]
+        );
+        assert_eq!(
+            codes(r"\<!-- [^missing] -->"),
+            vec![("undefined_footnote", "line 1".to_owned())]
+        );
+        // A list marker before a comment is still checked.
+        assert_eq!(
+            codes("* <!-- 주석 -->\n"),
+            vec![("bullet_marker", "line 1".to_owned())]
+        );
     }
 
     fn normalized(blocks: Value) -> Document {

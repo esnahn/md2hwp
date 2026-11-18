@@ -105,7 +105,16 @@ from raw HTML <sup>/<sub> (ASCII case-insensitive, no attributes) paired by the 
 within one inline sequence, or from Pandoc JSON Superscript/Subscript; do not enable
 the superscript/subscript Markdown extensions (they clash with 1~2 ranges). Reject
 unpaired tags, other raw HTML, superscript/subscript nested in either, and inline
-math inside them. Both workers derive formats from the template character format
+math inside them. HTML comments are author notes, the one exception to explicit
+rejection: the core removes html RawBlock/RawInline nodes holding only complete
+comments and ASCII whitespace (and paragraphs left empty) from blocks and metadata
+before normalization and check_pandoc, without doubled or edge whitespace; later
+AST paths refer to that comment-free AST. Captions/object notes attach across them.
+Raw HTML with anything else (text after -->, unclosed <!--) and an attribute line
+whose wrapper Div a comment took fail with reasons. check_source skips comment lines
+(HTML blocks after list markers/footnote labels end with their container) and reports
+unclosed comments and comment lines between table rows; check_document reports literal
+<!--. Box text keeps comment syntax. Both workers derive formats from the template character format
 the way Hancom 2020's own 취소선/위 첨자/아래 첨자 commands store them: HWPML
 STRIKEOUT Type=Continuous Shape=Solid Color=0 (HWP attr bits 18-20=1, strike shape 0,
 underline bits 2-3=2 only without an underline, strike color 0), SUPERSCRIPT bit 15,
