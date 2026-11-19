@@ -20,11 +20,11 @@ Pandoc 실행은 앱이, AST 해석과 IR 검증은 공유 코어가 담당한�
 rhwp 라이브러리를 직접 링크하는 `md2hwp-rhwp.exe`는 기존 worker CLI와
 IR+템플릿→출력 계약을 사용한다. HWPX 템플릿이나 출력은 생성 전에 거부한다.
 
-의존성은 upstream `devel` 브랜치의 커밋 `e4f8ff2d637d5b0a313211455ae3ccc53444d969`에 고정한다.
-릴리스 태그나 devel의 최신 커밋을 따라가지 않고, 필요한 수정이 생겼을 때만 고정 커밋을 올린다.
-[공개 모델·파서·저장 API](https://github.com/edwardkim/rhwp/blob/e4f8ff2d637d5b0a313211455ae3ccc53444d969/src/lib.rs)의
+의존성은 upstream 릴리스 태그 `v0.9.1`의 커밋 `981ce66b4183b13c1a3b5907e04a8969c8c42034`에 고정한다.
+새 릴리스나 devel의 최신 커밋을 따라가지 않고, 필요한 수정이 생겼을 때만 고정 커밋을 올린다.
+[공개 모델·파서·저장 API](https://github.com/edwardkim/rhwp/blob/981ce66b4183b13c1a3b5907e04a8969c8c42034/src/lib.rs)의
 존재만으로 임의 native 구조의 보존을 보장하지 않는다.
-[MIT 라이선스](https://github.com/edwardkim/rhwp/blob/e4f8ff2d637d5b0a313211455ae3ccc53444d969/LICENSE)의
+[MIT 라이선스](https://github.com/edwardkim/rhwp/blob/981ce66b4183b13c1a3b5907e04a8969c8c42034/LICENSE)의
 저작권·허가문과 전이 의존성의 배포 고지를 보존한다.
 
 저장·재열기 후 독립적으로 구성한 예상 모델과 구조·서식·리소스·필드 관계를 비교한다.
@@ -204,3 +204,26 @@ rhwp 소스를 바꾸는 것은 표 분할 셀 조판과 인쇄 출력 수정 �
   켜지지 않는다.
 - 한글 2020에서 예제 4종(`tables`, `caption-references`, `all-features`, `footnotes`)을 PDF로 내보내
   비교하면 21쪽 모두 `eb84afc` 결과와 픽셀까지 같다. 나머지 예제와 HWPX 출력은 한글에서 열어 보지 않았다.
+
+## rhwp 0.9.1 릴리스 고정 — 2026-11-19
+
+고정 커밋을 devel의 `e4f8ff2`에서 릴리스 태그 `v0.9.1`(`981ce66`)로 옮겼다. 이 태그는 `e4f8ff2`보다
+306커밋 뒤이고 `d7873c6`(upstream PR #8906)과 `e4f8ff2`(upstream 이슈 #9046)를 모두 포함하므로
+devel 커밋에 고정할 이유가 없어졌다.
+
+- 어댑터 코드는 `--version`의 rhwp 버전 표시만 고쳤다. `cargo test --workspace`,
+  `cargo clippy --workspace --all-targets -- -D warnings`와 Release `build.ps1`을 통과했다.
+- `rhwp-codec-resource` 0.1.1이 새로 들어오고 `read-fonts` 0.47, `skera` 0.10, `skrifa` 0.50,
+  `write-fonts` 0.56으로 올라 제3자 고지를 다시 만들었다.
+- 추적 템플릿으로 만든 예제 6종(`all-features`, `object-sources`, `footnotes`, `metadata`,
+  `layout-issues`, `large-5x`), `init-template` 템플릿, 그 템플릿으로 만든 `all-features`·`large-5x`의
+  HWP 9개가 모두 `e4f8ff2` 결과와 바이트까지 같다. 따라서 한글의 쪽 배치도 달라지지 않는다.
+- upstream 변경 가운데 어댑터 출력에 닿을 수 있는 것은 글자 끝에서 닫히는 필드의 끝 표식 위치(#9082),
+  저장 줄 없는 표·문단의 조판(#9008, #9073, #9085, #9106), HWPX 1.4 평문 줄간격(#8676)이다.
+  위 예제에서는 출력이 바뀌지 않았다.
+- 한글 2020에서 `all-features`(17쪽)와 `init-template` 템플릿으로 만든 `all-features`(9쪽)의 100 DPI
+  쪽 이미지를 보았다. 추적 템플릿 결과는 그림·표·수식·각주가 정상으로 그려졌다.
+- `init-template` 템플릿의 떠 있는 표는 한글에서 행이 글자 높이보다 낮게 그려져 셀 글자가 테두리에 걸리고,
+  표 뒤 문단이 표와 겹친다. main 고정 커밋 `1a76570`(0.8.7)의 작업기로 같은 템플릿에서 만든 결과도
+  같은 모양이므로 이번 이동과 무관한 기존 문제다. 쪽 수만 다르다(main 8쪽, 이 고정 9쪽: 쪽 넘김 보정).
+- 나머지 7개 출력은 바이트만 비교했고 한글에서 열어 보지 않았다. PDF 내보내기도 하지 않았다.

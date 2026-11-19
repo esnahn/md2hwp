@@ -10,7 +10,7 @@ publish = false
 md2hwp-core = { path = "../../crates/md2hwp-core" }
 md2hwp-font-measurement = { path = "../../crates/md2hwp-font-measurement" }
 unicode-segmentation = "1.13.3"
-rhwp = { git = "https://github.com/edwardkim/rhwp", rev = "e4f8ff2d637d5b0a313211455ae3ccc53444d969", default-features = false }
+rhwp = { git = "https://github.com/edwardkim/rhwp", rev = "981ce66b4183b13c1a3b5907e04a8969c8c42034", default-features = false }
 serde_json = "1.0.140"
 tempfile = "3"
 

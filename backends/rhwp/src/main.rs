@@ -407,7 +407,7 @@ fn main() {
     let args: Vec<_> = env::args_os().skip(1).collect();
     if args.len() == 1 && args[0] == "--version" {
         println!(
-            "md2hwp-rhwp {} (experimental; IR {}; rhwp 0.9.0)\nLicense: AGPL-3.0-only",
+            "md2hwp-rhwp {} (experimental; IR {}; rhwp 0.9.1)\nLicense: AGPL-3.0-only",
             env!("CARGO_PKG_VERSION"),
             md2hwp_core::ir::IR_VERSION
         );

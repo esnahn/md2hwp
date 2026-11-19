@@ -37967,11 +37967,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 ================================================================================
-read-fonts 0.46.0
+read-fonts 0.47.0
 Declared license: MIT OR Apache-2.0
 Selected license: MIT
 Upstream: https://github.com/googlefonts/fontations
-Exact source: https://crates.io/api/v1/crates/read-fonts/0.46.0/download
+Exact source: https://crates.io/api/v1/crates/read-fonts/0.47.0/download
 
 --- LICENSE-APACHE ---
 
@@ -39340,11 +39340,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-rhwp 0.9.0
+rhwp 0.9.1
 Declared license: MIT
 Selected license: MIT
 Upstream: https://github.com/edwardkim/rhwp
-Exact source: https://github.com/edwardkim/rhwp/archive/e4f8ff2d637d5b0a313211455ae3ccc53444d969.tar.gz
+Exact source: https://github.com/edwardkim/rhwp/archive/981ce66b4183b13c1a3b5907e04a8969c8c42034.tar.gz
 
 --- LICENSE ---
 
@@ -39420,11 +39420,42 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
 
 ================================================================================
+rhwp-codec-resource 0.1.1
+Declared license: MIT
+Selected license: MIT
+Upstream: https://github.com/edwardkim/rhwp
+Exact source: https://github.com/edwardkim/rhwp/archive/981ce66b4183b13c1a3b5907e04a8969c8c42034.tar.gz
+
+--- LICENSE ---
+
+MIT License
+
+Copyright (c) 2025-2026 Edward Kim
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================
 rhwp-contracts 0.1.0
 Declared license: MIT
 Selected license: MIT
 Upstream: https://github.com/edwardkim/rhwp
-Exact source: https://github.com/edwardkim/rhwp/archive/e4f8ff2d637d5b0a313211455ae3ccc53444d969.tar.gz
+Exact source: https://github.com/edwardkim/rhwp/archive/981ce66b4183b13c1a3b5907e04a8969c8c42034.tar.gz
 
 --- LICENSE ---
 
@@ -39455,7 +39486,7 @@ rhwp-jpeg-encoder 0.7.1-rhwp.1
 Declared license: (MIT OR Apache-2.0) AND IJG
 Selected license: MIT AND IJG
 Upstream: https://github.com/vstroebel/jpeg-encoder
-Exact source: https://github.com/edwardkim/rhwp/archive/e4f8ff2d637d5b0a313211455ae3ccc53444d969.tar.gz
+Exact source: https://github.com/edwardkim/rhwp/archive/981ce66b4183b13c1a3b5907e04a8969c8c42034.tar.gz
 
 --- LICENSE-APACHE ---
 
@@ -39762,11 +39793,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 ================================================================================
-rhwp-ooxml-chart 0.1.0
+rhwp-ooxml-chart 0.1.1
 Declared license: MIT
 Selected license: MIT
 Upstream: https://github.com/edwardkim/rhwp
-Exact source: https://github.com/edwardkim/rhwp/archive/e4f8ff2d637d5b0a313211455ae3ccc53444d969.tar.gz
+Exact source: https://github.com/edwardkim/rhwp/archive/981ce66b4183b13c1a3b5907e04a8969c8c42034.tar.gz
 
 --- LICENSE ---
 
@@ -39797,7 +39828,7 @@ rhwp-password-crypto 0.1.0
 Declared license: MIT
 Selected license: MIT
 Upstream: https://github.com/edwardkim/rhwp
-Exact source: https://github.com/edwardkim/rhwp/archive/e4f8ff2d637d5b0a313211455ae3ccc53444d969.tar.gz
+Exact source: https://github.com/edwardkim/rhwp/archive/981ce66b4183b13c1a3b5907e04a8969c8c42034.tar.gz
 
 --- LICENSE ---
 
@@ -39828,7 +39859,7 @@ rhwp-svg2pdf 0.13.0-rhwp.1
 Declared license: MIT OR Apache-2.0
 Selected license: MIT
 Upstream: https://github.com/edwardkim/rhwp
-Exact source: https://github.com/edwardkim/rhwp/archive/e4f8ff2d637d5b0a313211455ae3ccc53444d969.tar.gz
+Exact source: https://github.com/edwardkim/rhwp/archive/981ce66b4183b13c1a3b5907e04a8969c8c42034.tar.gz
 
 --- LICENSE-APACHE ---
 
@@ -41679,7 +41710,7 @@ rhwp-zune-jpeg 0.5.15-rhwp.1
 Declared license: (MIT OR Apache-2.0 OR Zlib) AND IJG
 Selected license: MIT AND IJG
 Upstream: 
-Exact source: https://github.com/edwardkim/rhwp/archive/e4f8ff2d637d5b0a313211455ae3ccc53444d969.tar.gz
+Exact source: https://github.com/edwardkim/rhwp/archive/981ce66b4183b13c1a3b5907e04a8969c8c42034.tar.gz
 
 --- LICENSE-APACHE ---
 
@@ -48911,11 +48942,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-skera 0.9.0
+skera 0.10.0
 Declared license: MIT OR Apache-2.0
 Selected license: MIT
 Upstream: https://github.com/googlefonts/fontations
-Exact source: https://crates.io/api/v1/crates/skera/0.9.0/download
+Exact source: https://crates.io/api/v1/crates/skera/0.10.0/download
 
 --- LICENSE-APACHE ---
 
@@ -49121,11 +49152,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 ================================================================================
-skrifa 0.49.0
+skrifa 0.50.0
 Declared license: MIT OR Apache-2.0
 Selected license: MIT
 Upstream: https://github.com/googlefonts/fontations
-Exact source: https://crates.io/api/v1/crates/skrifa/0.49.0/download
+Exact source: https://crates.io/api/v1/crates/skrifa/0.50.0/download
 
 --- LICENSE-APACHE ---
 
@@ -67214,11 +67245,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 ================================================================================
-write-fonts 0.55.0
+write-fonts 0.56.0
 Declared license: MIT OR Apache-2.0
 Selected license: MIT
 Upstream: https://github.com/googlefonts/fontations
-Exact source: https://crates.io/api/v1/crates/write-fonts/0.55.0/download
+Exact source: https://crates.io/api/v1/crates/write-fonts/0.56.0/download
 
 --- LICENSE-APACHE ---
 

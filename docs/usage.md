@@ -100,7 +100,7 @@ IR 0.6의 YAML 메타데이터와 템플릿 태그는 [메타데이터 문서](y
 
 ```text
 md2hwp 0.6.1
-md2hwp-rhwp 0.6.1 (experimental; IR 0.6; rhwp 0.9.0)
+md2hwp-rhwp 0.6.1 (experimental; IR 0.6; rhwp 0.9.1)
 License: AGPL-3.0-only
 ```
 

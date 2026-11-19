@@ -440,27 +440,28 @@ Use the native absolute/relative text offset and no table 1% width allowance.
 Never approximate alignment or silently add COM. Code boxes
 clone the native single-cell TreatAsChar table, independent anchor format, optional
 title and caption source paragraphs. Preserve all raw lines and prototype spacing.
-Generated paragraphs carry no line records. rhwp 0.9 (pinned devel e4f8ff2) derives line
+Generated paragraphs carry no line records. rhwp 0.9 (pinned release v0.9.1) derives line
 layout whenever DocumentCore opens a file, so compare the composed model with the
 stored records (rhwp::parser::parse_hwp), not with that derived layout; never derive
 expected content or geometry from exported/reopened bytes or relax model comparison.
 Paragraphs emptied while composing must clear has_para_text: rhwp 0.9 otherwise
 writes an empty PARA_TEXT and Hancom 2020 refuses the file, while rhwp reopens it.
 Open representative outputs in Hancom after every rhwp pin change.
-The rhwp pin follows upstream devel, not main or release tags: main lacks the
+The rhwp pin is the upstream release tag v0.9.1 (981ce66). It contains the
 master-page kind fix (d7873c6, upstream PR #8906) and the HWPX-to-HWP master page
 fix (e4f8ff2, upstream issue #9046), so keep the pin at or after e4f8ff2.
 Since e4f8ff2 rhwp no longer writes measured heights back into generated tables and
 adds a private RhwpLineSegTags stream to saved HWP; Hancom 2020 pages are unchanged.
-Move the pin only when a needed fix appears, not to track devel routinely; then
-refresh Cargo.lock and notices and recheck the examples in Hancom.
-Branch layout while main stays on a release pin: main <- rhwp-devel <- feature
-branches. rhwp-devel differs from main only by the rhwp pin and the adapter changes
-it needs; each pin move is one commit there. Follow main by rebasing, not merging
-(git rebase --update-refs main from the feature branch); regenerate Cargo.lock and
-notices instead of hand-merging them. When an upstream release contains the needed
-fixes, pin rhwp-devel to it, fast-forward main and delete rhwp-devel. Recreate it
-from main under the same name the next time an unreleased devel commit is needed.
+Move the pin only when a needed fix appears, not to track releases or devel
+routinely; then refresh Cargo.lock and notices and recheck the examples in Hancom.
+When a needed fix exists only on upstream devel, pin it on a separate branch:
+main <- rhwp-devel <- feature branches. rhwp-devel differs from main only by the
+rhwp pin and the adapter changes it needs; each pin move is one commit there.
+Follow main by rebasing, not merging (git rebase --update-refs main from the
+feature branch); regenerate Cargo.lock and notices instead of hand-merging them.
+When an upstream release contains the needed fixes, pin rhwp-devel to it,
+fast-forward main and delete rhwp-devel. Recreate it from main under the same
+name the next time an unreleased devel commit is needed.
 Code table ZOrders are freshly allocated above all source orders (including master
 pages), with raw payload/seal updates. This differs from Hancom's allocation order;
 retain that distinction in comparison evidence. Current long TreatAsChar boxes clip
