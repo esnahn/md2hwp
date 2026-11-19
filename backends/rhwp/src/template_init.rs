@@ -300,6 +300,9 @@ fn table(cells: Vec<Cell>, rows: u16, columns: u16, id: u32, inline: bool) -> Ta
             width: WIDTH,
             height: 1282 * u32::from(rows),
             treat_as_char: inline,
+            // Hancom's '쪽 영역 안으로 제한' keeps floating tables out of the
+            // footnote area; it has no effect on inline objects.
+            flow_with_text: !inline,
             vert_rel_to: VertRelTo::Para,
             horz_rel_to: HorzRelTo::Para,
             text_wrap: TextWrap::TopAndBottom,
@@ -642,5 +645,17 @@ mod tests {
         crate::figures::Prototype::read(roots, &document.doc_info).unwrap();
         crate::tables::Prototype::read(roots, &document.doc_info).unwrap();
         crate::heading_references::Samples::read(roots).unwrap();
+        let tables: Vec<_> = roots
+            .iter()
+            .flat_map(|paragraph| &paragraph.controls)
+            .filter_map(|control| match control {
+                Control::Table(table) => Some(table),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(tables.len(), 2);
+        let (code, manuscript) = (&tables[0].common, &tables[1].common);
+        assert!(code.treat_as_char && !code.flow_with_text);
+        assert!(!manuscript.treat_as_char && manuscript.flow_with_text);
     }
 }

@@ -247,7 +247,10 @@ AUTONUM; num:heading1 is optional there. Omit the native caption when manuscript
 caption is absent. Preserve caption options and native Table numbering/restart controls;
 do not add chapter-dependent table counter restarts. Ignore prototype dimensions,
 copy its formats, and rebuild rows/columns from IR. init-template table prototypes disable
-TreatAsChar so Cell page breaks and RepeatHeader work across pages. Default alignment preserves
+TreatAsChar so Cell page breaks and RepeatHeader work across pages, and enable FlowWithText
+(Hancom '쪽 영역 안으로 제한', HWP attr bit 13): without it Hancom 2020 drew a floating table
+over the page's footnotes. Inline (TreatAsChar) tables and boxes ignore the flag; leave it
+off there. Generated tables keep the prototype's flag. Default alignment preserves
 template paragraph alignment; explicit manuscript alignment overrides it.
 
 Calculate content widths using Windows font measurements of the actual header/body

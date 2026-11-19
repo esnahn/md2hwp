@@ -230,7 +230,10 @@ internal static partial class HancomPreviewWriter
         tableSample.SetAttributeValue("RepeatHeader", "true");
         var tableShape = tableSample.Element("SHAPEOBJECT")!;
         tableShape.SetAttributeValue("NumberingType", "Table");
-        tableShape.Element("POSITION")!.SetAttributeValue("TreatAsChar", "false");
+        var tablePosition = tableShape.Element("POSITION")!;
+        tablePosition.SetAttributeValue("TreatAsChar", "false");
+        // '쪽 영역 안으로 제한' keeps the floating table out of the footnote area.
+        tablePosition.SetAttributeValue("FlowWithText", "true");
         tableShape.Element("SIZE")!.SetAttributeValue("Width", width);
         var tableCaption = tableShape.Element("CAPTION") ?? throw new InvalidDataException("Default table has no native caption.");
         tableCaption.SetAttributeValue("Side", "Top");
