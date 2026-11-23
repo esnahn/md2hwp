@@ -519,6 +519,18 @@ Replace the captions rhwp leaves out of its layout in the copy by the same space
 once when the copy is built, measured by rhwp at the caption width and ending at the
 last caption line; windows and whole readings then read the replaced copy. Keep each
 replacement in its own commit so it can be reverted once a pin lays it out.
+rhwp 0.9.1 leaves a floating table's top caption out of its page cursor when a
+full page pushes the table to the next page top, and out of the first-row check
+of a table with cell footnotes; both keep a header alone at a page end where
+Hancom moves the whole table. Tests pin both; revert only when both fail. The
+copy replaces each such caption after the section's first paragraph by a spacer
+paragraph before the anchor: fixed line spacing of caption gap plus block (stored
+at twice the HWPUNIT), the caption's character format, one character, and the
+anchor's page/column break. Corrections go on the spacer in the copy and on the
+anchor in the document. Break the spacer too when the table's first rows land on
+a later page or column, as Hancom moves the caption with its table; these spacer
+breaks never reach the document. Decide spacers and anchors as one sequence in
+document order, the spacer before its table, each judged after the breaks before it.
 Exclude static/inline tables and header-only tables even when they have a source
 row. This is rhwp layout evidence, not a general Hancom pagination guarantee;
 see docs/rhwp-integration-2026-10-22.md. Pixel equality with a clipped baseline
