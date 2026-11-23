@@ -515,6 +515,10 @@ cannot be used or a failed certification restarts on whole readings of the copy.
 Add the breaks found to the document once. Reject ambiguous/missing positions or a
 split persisting after one correction. The saved output keeps every structural check
 after reopen; its own rhwp layout is not read again.
+Replace the captions rhwp leaves out of its layout in the copy by the same space,
+once when the copy is built, measured by rhwp at the caption width and ending at the
+last caption line; windows and whole readings then read the replaced copy. Keep each
+replacement in its own commit so it can be reverted once a pin lays it out.
 Exclude static/inline tables and header-only tables even when they have a source
 row. This is rhwp layout evidence, not a general Hancom pagination guarantee;
 see docs/rhwp-integration-2026-10-22.md. Pixel equality with a clipped baseline

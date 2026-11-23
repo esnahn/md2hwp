@@ -11,7 +11,10 @@ use rhwp::{
         control::Control,
         document::Document,
         paragraph::{ColumnBreakType, Paragraph},
+        shape::Caption,
+        style::LineSpacingType,
     },
+    renderer::DEFAULT_DPI,
 };
 
 use crate::page_window;
@@ -155,6 +158,115 @@ impl Copy {
         }
         Ok(Self { document })
     }
+}
+
+/// Heights in HWPUNIT of caption paragraph blocks as rhwp lays them out at their
+/// caption text widths (HWPUNIT). Each block ends at its last caption line,
+/// without that line's trailing gap or paragraph spacing, as Hancom stacks a
+/// caption against its object: Hancom 2020 stores, for example, a picture line of
+/// 26835 + 283 + 4 × 1000 + 3 × 600 = 32918 HU for four one-line 10 pt caption
+/// paragraphs at 160% and a 283 HU caption gap.
+///
+/// The paragraphs are measured as body paragraphs, each caption followed by its
+/// last line twice: once as stored, once without the line gap and the spacing
+/// after, whose difference is the trailing part to leave out. Only the section's
+/// first paragraph, which owns its definitions, stays in the measuring copy, so
+/// measuring does not lay the document out again.
+#[cfg_attr(not(test), allow(dead_code))]
+fn caption_blocks(document: &Document, captions: &[(&Caption, u32)]) -> Result<Vec<u32>, String> {
+    let mut measuring = document.clone();
+    measuring.sections[0].paragraphs.truncate(1);
+    let mut flat_shapes = BTreeMap::new();
+    let mut plans = Vec::with_capacity(captions.len());
+    for (caption, _) in captions {
+        let roots = &mut measuring.sections[0].paragraphs;
+        let first = roots.len();
+        for paragraph in &caption.paragraphs {
+            let mut paragraph = paragraph.clone();
+            crate::template::discard_stale_layout(&mut paragraph);
+            roots.push(paragraph);
+        }
+        let last = caption.paragraphs.last().ok_or_else(invalid_caption)?;
+        let line = last_line(last)?;
+        let flat_shape = match flat_shapes.get(&last.para_shape_id) {
+            Some(id) => *id,
+            None => {
+                let shapes = &mut measuring.doc_info.para_shapes;
+                let mut shape = shapes
+                    .get(usize::from(last.para_shape_id))
+                    .ok_or_else(invalid_caption)?
+                    .clone();
+                shape.line_spacing_type = LineSpacingType::Percent;
+                shape.line_spacing = 100;
+                shape.spacing_after = 0;
+                shape.raw_data = None;
+                let id = u16::try_from(shapes.len()).map_err(|_| invalid_caption())?;
+                shapes.push(shape);
+                flat_shapes.insert(last.para_shape_id, id);
+                id
+            }
+        };
+        let mut flat = line.clone();
+        flat.para_shape_id = flat_shape;
+        let roots = &mut measuring.sections[0].paragraphs;
+        roots.push(line);
+        roots.push(flat);
+        plans.push((first, caption.paragraphs.len()));
+    }
+    let mut core = DocumentCore::new_empty();
+    core.set_document(measuring);
+    core.repaginate_if_needed();
+    captions
+        .iter()
+        .zip(plans)
+        .map(|((_, width), (first, count))| {
+            let width = f64::from(*width) * DEFAULT_DPI / 7200.0;
+            let height = |index: usize| {
+                core.production_paragraph_height(0, index, Some(width))
+                    .filter(|height| height.is_finite() && *height >= 0.0)
+                    .ok_or_else(invalid_caption)
+            };
+            let mut block = 0.0;
+            for index in first..first + count {
+                block += height(index)?;
+            }
+            let trailing = height(first + count)? - height(first + count + 1)?;
+            let block = ((block - trailing) * 7200.0 / DEFAULT_DPI).round();
+            if !(0.0..=f64::from(u32::MAX)).contains(&block) || trailing < 0.0 {
+                return Err(invalid_caption());
+            }
+            Ok(block as u32)
+        })
+        .collect()
+}
+
+/// One line with the paragraph's own formatting and its last character's format.
+#[cfg_attr(not(test), allow(dead_code))]
+fn last_line(paragraph: &Paragraph) -> Result<Paragraph, String> {
+    let last = paragraph.text.chars().last();
+    let format = paragraph
+        .char_shape_id_at(paragraph.text.chars().count().saturating_sub(1))
+        .or_else(|| {
+            paragraph
+                .char_shapes
+                .first()
+                .map(|shape| shape.char_shape_id)
+        })
+        .ok_or_else(invalid_caption)?;
+    let mut line = Paragraph::new_empty();
+    line.set_single_char_shape(format);
+    line.style_id = paragraph.style_id;
+    line.para_shape_id = paragraph.para_shape_id;
+    if let Some(last) = last {
+        line.insert_text_at(0, &last.to_string());
+    }
+    crate::template::discard_stale_layout(&mut line);
+    Ok(line)
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+fn invalid_caption() -> String {
+    "Caption could not be measured for table pagination".into()
 }
 
 impl Plan {
@@ -627,11 +739,148 @@ impl Fragments {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use md2hwp_core::{
+        ValidationLimits,
+        ir::{
+            Block, Document as Ir, IR_VERSION, ImageRef, Inline, Metadata, SCHEMA_NAME,
+            SourceParagraph, TableAlignment,
+        },
+        validate,
+    };
     use rhwp::model::{document::Document, paragraph::Paragraph};
     use serde_json::json;
 
     fn positions(pages: &Value, anchor: &Anchor) -> Result<(Position, Position), String> {
         Fragments::read(pages.clone())?.positions(anchor)
+    }
+
+    fn text(value: &str) -> Vec<Inline> {
+        vec![Inline::Text {
+            value: value.into(),
+        }]
+    }
+
+    /// Heading, a picture with a caption and `notes` source paragraphs, `fillers`
+    /// body paragraphs and a header/body table, rendered into the default
+    /// template and saved.
+    fn saved_figure_and_table(notes: usize, fillers: usize) -> (Vec<u8>, Plan) {
+        let document = crate::template_init::create().unwrap();
+        let directory = tempfile::tempdir().unwrap();
+        std::fs::write(
+            directory.path().join("image.png"),
+            document.bin_data_content[0].data.load(),
+        )
+        .unwrap();
+        let mut blocks = vec![
+            Block::Heading {
+                id: None,
+                level: 1,
+                inlines: text("장"),
+            },
+            Block::Figure {
+                id: None,
+                image: ImageRef {
+                    path: "image.png".into(),
+                    alt: vec![],
+                    title: None,
+                },
+                caption: text("그림"),
+                source: Some(
+                    (0..notes)
+                        .map(|_| SourceParagraph {
+                            prefix: "주".into(),
+                            inlines: text("설명"),
+                        })
+                        .collect(),
+                ),
+            },
+        ];
+        blocks.extend((0..fillers).map(|_| Block::Paragraph {
+            inlines: text("본문"),
+        }));
+        blocks.push(Block::Table {
+            id: None,
+            columns: vec![TableAlignment::Default],
+            header: vec![text("머리")],
+            rows: vec![vec![text("본문")]],
+            caption: None,
+            source: None,
+        });
+        rendered(blocks, &directory, "image.png")
+    }
+
+    /// `blocks` validated, rendered into the default template and saved, with the
+    /// figure image `image` in `directory`.
+    fn rendered(blocks: Vec<Block>, directory: &tempfile::TempDir, image: &str) -> (Vec<u8>, Plan) {
+        let resources: BTreeMap<_, _> = blocks
+            .iter()
+            .enumerate()
+            .filter(|(_, block)| matches!(block, Block::Figure { .. }))
+            .map(|(index, _)| {
+                (
+                    index,
+                    crate::image_resource::Resource::read(directory.path(), image).unwrap(),
+                )
+            })
+            .collect();
+        let input = validate(
+            Ir {
+                schema: SCHEMA_NAME.into(),
+                ir_version: IR_VERSION.into(),
+                metadata: Metadata::default(),
+                blocks,
+            },
+            &ValidationLimits::default(),
+        )
+        .unwrap();
+        let mut core = DocumentCore::new_empty();
+        core.set_document(crate::template_init::create().unwrap());
+        let plan = {
+            let _rendering = RENDERING.lock().unwrap_or_else(|e| e.into_inner());
+            crate::template::render(&input, &mut core, &resources)
+                .unwrap()
+                .1
+        };
+        (export(&core), plan)
+    }
+
+    /// The root paragraph and control of the only picture.
+    fn picture_at(document: &Document) -> (usize, usize) {
+        let mut found =
+            document.sections[0]
+                .paragraphs
+                .iter()
+                .enumerate()
+                .flat_map(|(paragraph, p)| {
+                    p.controls
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, c)| matches!(c, Control::Picture(_)))
+                        .map(move |(control, _)| (paragraph, control))
+                });
+        let at = found.next().expect("a picture");
+        assert!(found.next().is_none(), "expected one picture");
+        at
+    }
+
+    #[test]
+    fn measures_caption_blocks_to_their_last_line() {
+        let (saved, _) = saved_figure_and_table(1, 0);
+        let document = rhwp::parser::parse_hwp(&saved).unwrap();
+        let (paragraph, control) = picture_at(&document);
+        let Control::Picture(picture) =
+            &document.sections[0].paragraphs[paragraph].controls[control]
+        else {
+            panic!("not a picture")
+        };
+        let caption = picture.caption.as_ref().unwrap();
+        // The figure caption and one source note: two one-line 10 pt caption
+        // paragraphs at 160%, 1000 + 600 + 1000 HU without the last line's gap.
+        assert_eq!(caption.paragraphs.len(), 2);
+        assert_eq!(
+            caption_blocks(&document, &[(caption, picture.common.width)]).unwrap(),
+            vec![2600]
+        );
     }
 
     fn anchor() -> Anchor {
