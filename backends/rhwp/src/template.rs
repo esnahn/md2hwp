@@ -460,7 +460,7 @@ pub fn render(
         resize(&mut document.sections[0].paragraphs, &widths)?;
     }
     references.apply(&mut document.sections[0].paragraphs, &mut identity)?;
-    let pagination = crate::pagination::Plan::resolve(&document, &tables_with_body)?;
+    let mut pagination = crate::pagination::Plan::resolve(&document, &tables_with_body)?;
     for section in &mut document.sections {
         crate::model_tools::forget_emptied_text_records(&mut section.paragraphs)?;
     }

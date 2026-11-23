@@ -496,12 +496,25 @@ The tracked template currently uses TreatAsChar tables and can clip long tables;
 init-template creates non-TreatAsChar tables. Verify long tables with a separate
 template; do not change the tracked template implicitly. For generated floating
 tables with actual IR body rows, compare original header/first-body start pages
-and columns through rhwp's own page-items, read from the document serialized and
-opened again: rhwp 0.9 derives line layout only when it opens a file, so the model
-in memory can paginate differently from the saved file. Correct an orphan by adding an anchor
-page break and clearing its column break, repaginate, then reread later tables.
-Reject ambiguous/missing positions or a split persisting after one correction;
-verify again after reopen without weakening the independent model comparison.
+and columns through rhwp's own page-items, read from a verification-only copy: the
+composed document exported once and parsed again, its section rewritten from the
+model, never published (rhwp 0.9 derives line layout only when it opens a file, so
+the model in memory can paginate differently). Read the whole copy once. Correct an
+orphan by adding an anchor page break and clearing its column break in the copy; a
+break moves everything after it, so reread later tables before deciding them, from
+windows (backends/rhwp/src/page_window.rs): the copy's section paragraph plus its
+root paragraphs from the last break, ending after the next 1, 2, 4, … candidate
+tables until one splits. Seed windows with the page number and caption/note counters
+at the break (note counters as NEWNUM controls: the copy keeps its stored DocInfo).
+Use windows only when the section paragraph is root 0, the section has one column,
+root paragraphs hold no Page/TotalPage numbers or endnotes and rhwp's shape-ratio
+tolerance is off; check each window's numbers and list markers against the whole
+reading, the break's page number, and that nothing carries into the break's page.
+One whole reading of the copy with every break certifies the result; a window that
+cannot be used or a failed certification restarts on whole readings of the copy.
+Add the breaks found to the document once. Reject ambiguous/missing positions or a
+split persisting after one correction. The saved output keeps every structural check
+after reopen; its own rhwp layout is not read again.
 Exclude static/inline tables and header-only tables even when they have a source
 row. This is rhwp layout evidence, not a general Hancom pagination guarantee;
 see docs/rhwp-integration-2026-10-22.md. Pixel equality with a clipped baseline

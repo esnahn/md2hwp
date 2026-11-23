@@ -20,6 +20,7 @@ mod note_insert;
 mod note_plan;
 mod note_storage;
 mod object_references;
+mod page_window;
 mod pagination;
 mod reference_insert;
 mod table_layout;
@@ -189,7 +190,8 @@ fn run(options: Options) -> Result<(), String> {
     protect_image_sources(&output, &image_paths)?;
     let template_bytes = read_bounded(&template_path, 64 * 1024 * 1024)?;
     let mut doc = open_hwp_template(&template_bytes)?;
-    let (generated_notes, pagination) = template::render(&ir, &mut doc, &resources)?;
+    // Table page breaks were found and certified on a verification copy inside render.
+    let (generated_notes, _) = template::render(&ir, &mut doc, &resources)?;
     let expected = doc.document().clone();
     let serialized = doc
         .export_hwp_with_adapter_snapshot_with_report()
@@ -214,7 +216,7 @@ fn run(options: Options) -> Result<(), String> {
     if saved != serialized.bytes() {
         return Err("Saved HWP bytes differ from serialized document".into());
     }
-    let mut reopened = DocumentCore::from_bytes(&saved)
+    DocumentCore::from_bytes(&saved)
         .map_err(|e| format!("Saved HWP could not be reopened: {e:?}"))?;
     // Compare what is stored: DocumentCore adds derived line layout on open.
     let stored = rhwp::parser::parse_hwp(&saved)
@@ -230,7 +232,6 @@ fn run(options: Options) -> Result<(), String> {
             diff.differences.iter().take(5).collect::<Vec<_>>()
         ));
     }
-    pagination.verify(&mut reopened)?;
     if read_bounded(&input, limits.max_json_bytes as u64)? != ir_bytes
         || read_bounded(&template_path, 64 * 1024 * 1024)? != template_bytes
     {
