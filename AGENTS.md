@@ -382,15 +382,16 @@ them with the lowered model and the source embedded bytes. For HWPX output, fini
 every HWP check, export that saved HWP as HWPX, then reopen it and compare it with
 the HWP (upstream export comparison, package check, embedded bytes, page count).
 Publish only the format the output extension names; preserve old output on failure.
-One rhwp e4f8ff2 conversion differs from Hancom 2020 and is corrected there, checked
-after reopen: the HWPX serializer writes numberingType="EQUATION" on every equation,
-which makes Hancom number inline equations. Rewrite only that attribute, matched by
-instance id. Recheck it when the pin moves and drop the correction once upstream
-matches Hancom. Lowering an HWPX template keeps the Both/Even/Odd master page kinds
+One conversion of the pinned rhwp (e4f8ff2, unchanged in v0.9.1) differs from Hancom
+2020 and is corrected there, checked after reopen: the HWPX serializer writes
+numberingType="EQUATION" on every equation, which makes Hancom number inline equations.
+Rewrite only that attribute, matched by instance id. Recheck it when the pin moves:
+once upstream writes the stored category, the correction finds nothing to rewrite and
+fails, so drop it then. Lowering an HWPX template keeps the Both/Even/Odd master page kinds
 and contents in stored order (upstream issue #9046, fixed at e4f8ff2; the 11 Hancom
 combinations match Hancom's own HWP save); fail when the lowered or reopened kinds
 differ from the source instead of correcting them. HWPX templates not saved by
-Hancom or rhwp are unverified.
+Hancom or rhwp are unverified. See docs/rhwp-hwpx-2026-11-12.md.
 Keep the current IR and existing template syntax. See docs/rhwp-backend-strategy.md.
 Normal builds and executable ZIPs include both md2hwp-rhwp.exe and md2hwp-hancom.exe.
 The -Rhwp build switch remains accepted for compatibility. With no explicit worker,
