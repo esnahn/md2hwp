@@ -531,6 +531,9 @@ anchor in the document. Break the spacer too when the table's first rows land on
 a later page or column, as Hancom moves the caption with its table; these spacer
 breaks never reach the document. Decide spacers and anchors as one sequence in
 document order, the spacer before its table, each judged after the breaks before it.
+rhwp 0.9.1 (and 1a76570) leave a treat-as-char picture's native caption out of
+its line; Hancom includes it. The copy grows each top/bottom-captioned TAC
+picture by its caption gap and caption block and removes the caption.
 Exclude static/inline tables and header-only tables even when they have a source
 row. This is rhwp layout evidence, not a general Hancom pagination guarantee;
 see docs/rhwp-integration-2026-10-22.md. Pixel equality with a clipped baseline

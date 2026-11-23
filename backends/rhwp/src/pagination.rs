@@ -175,6 +175,7 @@ impl Copy {
     fn new(saved: &[u8]) -> Result<Self, String> {
         let mut document = rhwp::parser::parse_hwp(saved)
             .map_err(|e| format!("Serialized HWP could not be parsed: {e:?}"))?;
+        replace_captions_with_picture_height(&mut document)?;
         if let Some(section) = document.sections.first_mut() {
             section.raw_stream = None;
         }
@@ -329,6 +330,109 @@ fn last_line(paragraph: &Paragraph) -> Result<Paragraph, String> {
 
 fn invalid_caption() -> String {
     "Caption could not be measured for table pagination".into()
+}
+
+/// A body picture laid out as a character whose caption sits above or below it.
+struct CaptionedPicture {
+    paragraph: usize,
+    control: usize,
+    /// Text width of the caption paragraphs, in HWPUNIT.
+    width: u32,
+}
+
+/// rhwp 0.9 lays a treat-as-char picture's line out from the picture alone and
+/// draws its native caption over the following text. Hancom's line holds the
+/// picture, the caption gap and the caption paragraphs (see [`caption_blocks`]),
+/// so rhwp fitted about one caption more on a page and split tables that Hancom
+/// keeps whole.
+///
+/// This removes each top/bottom caption from the copy and adds its height to the
+/// picture, so the picture's line reserves the caption's place: the picture grows
+/// by the caption gap and the caption block. Left/right captions, which share the
+/// picture's band, stay as they are.
+fn replace_captions_with_picture_height(document: &mut Document) -> Result<(), String> {
+    let pictures = captioned_pictures(document)?;
+    if pictures.is_empty() {
+        return Ok(());
+    }
+    let blocks = {
+        let captions = pictures
+            .iter()
+            .map(|picture| {
+                match document.sections[0]
+                    .paragraphs
+                    .get(picture.paragraph)
+                    .and_then(|p| p.controls.get(picture.control))
+                {
+                    Some(Control::Picture(p)) => p
+                        .caption
+                        .as_ref()
+                        .map(|caption| (caption, picture.width))
+                        .ok_or_else(invalid_caption),
+                    _ => Err(invalid_caption()),
+                }
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        caption_blocks(document, &captions)?
+    };
+    for (picture, block) in pictures.iter().zip(blocks) {
+        let Some(Control::Picture(p)) = document.sections[0]
+            .paragraphs
+            .get_mut(picture.paragraph)
+            .and_then(|p| p.controls.get_mut(picture.control))
+        else {
+            return Err(invalid_caption());
+        };
+        let caption = p.caption.take().ok_or_else(invalid_caption)?;
+        let gap = u32::try_from(caption.spacing).map_err(|_| invalid_caption())?;
+        let extent = block.checked_add(gap).ok_or_else(invalid_caption)?;
+        p.common.height = p
+            .common
+            .height
+            .checked_add(extent)
+            .ok_or_else(invalid_caption)?;
+        p.shape_attr.current_height = p
+            .shape_attr
+            .current_height
+            .checked_add(extent)
+            .ok_or_else(invalid_caption)?;
+    }
+    Ok(())
+}
+
+fn captioned_pictures(document: &Document) -> Result<Vec<CaptionedPicture>, String> {
+    use rhwp::model::shape::CaptionDirection;
+    if document.sections.len() != 1 {
+        return Err("Table pagination requires one section".into());
+    }
+    let mut pictures = Vec::new();
+    for (paragraph, p) in document.sections[0].paragraphs.iter().enumerate() {
+        for (control, c) in p.controls.iter().enumerate() {
+            if let Control::Picture(picture) = c
+                && picture.common.treat_as_char
+                && let Some(caption) = &picture.caption
+                && matches!(
+                    caption.direction,
+                    CaptionDirection::Top | CaptionDirection::Bottom
+                )
+                && !caption.paragraphs.is_empty()
+            {
+                let margins = if caption.include_margin {
+                    i64::from(picture.common.margin.left) + i64::from(picture.common.margin.right)
+                } else {
+                    0
+                };
+                let width = u32::try_from(i64::from(picture.common.width) + margins)
+                    .map_err(|_| invalid_caption())?;
+                pictures.push(CaptionedPicture {
+                    paragraph,
+                    control,
+                    width,
+                });
+            }
+        }
+    }
+    Ok(pictures)
 }
 
 /// A floating table after the section's first paragraph whose caption sits above it.
@@ -1316,6 +1420,115 @@ mod tests {
         assert_eq!(plan.correct(&mut core).unwrap(), 0);
     }
 
+    fn picture(
+        document: &Document,
+        (paragraph, control): (usize, usize),
+    ) -> &rhwp::model::image::Picture {
+        let Control::Picture(picture) =
+            &document.sections[0].paragraphs[paragraph].controls[control]
+        else {
+            panic!("not a picture")
+        };
+        picture
+    }
+
+    /// rhwp's own height of a root paragraph once the file is opened.
+    fn opened_height(saved: &[u8], paragraph: usize) -> u32 {
+        let mut core = DocumentCore::from_bytes(saved).unwrap();
+        core.repaginate_if_needed();
+        hwpunit(
+            core.production_paragraph_height(0, paragraph, None)
+                .unwrap(),
+        )
+    }
+
+    #[test]
+    fn replaces_caption_with_picture_height_like_hancoms_line() {
+        let (saved, _) = saved_figure_and_table(1, 0);
+        let document = rhwp::parser::parse_hwp(&saved).unwrap();
+        let at = picture_at(&document);
+        let before = picture(&document, at);
+        let caption = before.caption.as_ref().unwrap();
+        assert!(before.common.treat_as_char);
+        assert_eq!(
+            caption.direction,
+            rhwp::model::shape::CaptionDirection::Bottom
+        );
+        assert_eq!(caption.paragraphs.len(), 2);
+        // rhwp 0.9.1 derives the picture's line without its caption. A pin that
+        // includes it would count the caption twice here: revert the picture
+        // caption replacement then.
+        assert_eq!(opened_height(&saved, at.0), before.common.height + 600);
+
+        let copy = Copy::new(&saved).unwrap();
+        // Two one-line 10 pt caption paragraphs at 160%: 1000 + 600 + 1000 HU,
+        // without the last line's gap, plus the 283 HU caption gap.
+        let extent = 283 + 2600;
+        let after = picture(&copy.document, at);
+        assert!(after.caption.is_none());
+        assert_eq!(after.common.height, before.common.height + extent);
+        assert_eq!(
+            after.shape_attr.current_height,
+            before.shape_attr.current_height + extent
+        );
+        let unrelated = |document: &Document| -> Vec<String> {
+            document.sections[0]
+                .paragraphs
+                .iter()
+                .enumerate()
+                .filter(|(index, _)| *index != at.0)
+                .map(|(_, p)| format!("{p:?}"))
+                .collect()
+        };
+        assert_eq!(unrelated(&copy.document), unrelated(&document));
+        // The copy is written and read back with the taller picture and no caption.
+        let probe = rhwp::serializer::serialize_document(&copy.document).unwrap();
+        let reopened = rhwp::parser::parse_hwp(&probe).unwrap();
+        assert!(picture(&reopened, at).caption.is_none());
+        assert_eq!(
+            opened_height(&probe, at.0),
+            before.common.height + extent + 600
+        );
+    }
+
+    #[test]
+    fn table_split_only_by_an_omitted_picture_caption_stays_whole() {
+        let (saved, plan) = saved_figure_and_table(3, 10);
+        let [anchor] = plan.anchors.as_slice() else {
+            panic!("expected one table anchor")
+        };
+        let base = rhwp::parser::parse_hwp(&saved).unwrap();
+        let at = picture_at(&base);
+        // Grow the picture in 3 px steps until rhwp's own layout, with the
+        // caption in place, leaves the header alone at the bottom of the first page.
+        let (file, header, body) = (hwpunit(560.0)..hwpunit(680.0))
+            .step_by(225)
+            .map(|height| with_picture_height(&base, at, height))
+            .find_map(|file| {
+                let (header, body) = positions(&opened_pages(&file), anchor).unwrap();
+                (header != body).then_some((file, header, body))
+            })
+            .expect("rhwp splits the table with the caption in place");
+        assert_eq!((header.0 + 1, header.1), body);
+        // The copy that the correction reads keeps it whole.
+        assert_eq!(verification_positions(&file, anchor), (body, body));
+    }
+
+    /// The saved file with the table's header alone at the bottom of the first page
+    /// in the copy, found by growing the picture in 3 px steps.
+    fn saved_with_orphaned_header(saved: &[u8], anchor: &Anchor) -> Vec<u8> {
+        let base = rhwp::parser::parse_hwp(saved).unwrap();
+        let at = picture_at(&base);
+        (hwpunit(400.0)..hwpunit(720.0))
+            .step_by(225)
+            .map(|height| with_picture_height(&base, at, height))
+            .find(|file| {
+                let (header, body) = verification_positions(file, anchor);
+                header != body
+            })
+            .expect("the copy splits the table")
+    }
+
     /// Heading, `before` body paragraphs, then, when `first` is set, a table with a
     /// header and three body rows, `between` body paragraphs, a table with a header
     /// and two body rows whose first body cell holds a footnote when `note` is set,
@@ -1764,9 +1977,12 @@ mod tests {
 
     #[test]
     fn windows_find_the_breaks_of_whole_copy_readings() {
-        let (core, plan) = all_features();
+        let (saved, mut plan) = saved_figure_and_table(3, 10);
+        let [anchor] = plan.anchors.clone().try_into().unwrap();
+        let mut core =
+            DocumentCore::from_bytes(&saved_with_orphaned_header(&saved, &anchor)).unwrap();
+        assert_eq!(plan.correct(&mut core).unwrap(), 1);
         assert_eq!(plan.method, Method::Windows);
-        assert_eq!(plan.added.len(), 1);
         // The same document corrected on whole readings of its copy only.
         let mut copy = copy_before(&core, &plan);
         let events = copy.events(&plan.anchors);
