@@ -310,7 +310,7 @@ previous protection of target/release/template.hwp. Use a separate template copy
 and explicit --template for experiments and live verification; never mutate the
 source template while rendering. Custom templates to retain belong outside target/.
 
-Version the application and IR independently. Application v0.6.0 and v0.6.1 use IR 0.6 (math); v0.5.0 used IR 0.4;
+Version the application and IR independently. Application v0.6.0, v0.6.1 and v0.7.0 use IR 0.6 (math); v0.5.0 used IR 0.4;
 do not change IR/schema/template declarations merely to match an application
 release number. Input IR and template ir-version must still match the supported
 IR exactly. A Git tag alone does not update application/package version metadata

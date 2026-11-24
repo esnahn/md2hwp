@@ -1275,7 +1275,7 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
 name = "md2hwp"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "md2hwp-core",
  "md2hwp-svg",
@@ -1288,7 +1288,7 @@ dependencies = [
 
 [[package]]
 name = "md2hwp-core"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "chrono",
  "icu_normalizer",
@@ -1301,18 +1301,18 @@ dependencies = [
 
 [[package]]
 name = "md2hwp-font-measurement"
-version = "0.6.1"
+version = "0.7.0"
 
 [[package]]
 name = "md2hwp-math"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "serde_json",
 ]
 
 [[package]]
 name = "md2hwp-rhwp"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "md2hwp-core",
  "md2hwp-font-measurement",
@@ -1326,7 +1326,7 @@ dependencies = [
 
 [[package]]
 name = "md2hwp-svg"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "flate2",
  "image",
@@ -2540,7 +2540,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "svg2emf"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "md2hwp-svg",
  "tempfile",

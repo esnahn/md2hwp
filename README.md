@@ -3,8 +3,8 @@
 Markdown 원고를 한글 템플릿의 서식에 맞춰 HWP·HWPX 문서로 변환합니다.
 원고에는 내용만 적고, 글꼴·번호·배치는 템플릿으로 자동 생성합니다.
 
-현재 버전은 v0.6.1입니다. 배포 파일은 [GitHub Releases](https://github.com/esnahn/md2hwp/releases)에서 받고,
-변경 사항은 [v0.6.1 릴리스 노트](docs/release-v0.6.1.md)를 참고하십시오.
+현재 버전은 v0.7.0입니다. 배포 파일은 [GitHub Releases](https://github.com/esnahn/md2hwp/releases)에서 받고,
+변경 사항은 [v0.7.0 릴리스 노트](docs/release-v0.7.0.md)를 참고하십시오.
 
 ## 실행
 
@@ -81,7 +81,7 @@ Markdown 원고를 한글 템플릿의 서식에 맞춰 HWP·HWPX 문서로 변�
 - `--template`을 생략하면 EXE 옆의 `template.hwp`를 사용합니다.
 - 새 템플릿은 `md2hwp init-template 새템플릿.hwp`로 만들어 한글에서 서식을 고칩니다.
 - 고친 뒤 `md2hwp validate-template 새템플릿.hwp`로 검사합니다.
-- 템플릿의 `ir-version`은 프로그램의 IR 버전(v0.6.1은 0.6)과 같아야 합니다. 이전 버전 템플릿은 새로 만들거나 선언을 직접 고칩니다.
+- 템플릿의 `ir-version`은 프로그램의 IR 버전(v0.7.0은 0.6)과 같아야 합니다. 이전 버전 템플릿은 새로 만들거나 선언을 직접 고칩니다.
 - 변환은 원본 템플릿을 수정하지 않습니다.
 
 태그와 작성 규칙은 [템플릿 만들기와 편집](docs/templates.md), HWPX는 [HWPX 템플릿과 출력](docs/hwpx.md)을 참고하십시오.
@@ -135,5 +135,5 @@ pwsh -NoProfile -File tools/development/build.ps1
 
 md2hwp는 **AGPL-3.0-only**로 제공하며 보증은 없습니다. [전문](LICENSE)을 확인하십시오.
 외부 라이브러리는 [제3자 고지](THIRD-PARTY-NOTICES.txt)와 `licenses/`의 각 라이선스를 따릅니다.
-실행 파일을 다시 배포할 때는 라이선스·고지와 대응 소스([v0.6.1 소스](https://github.com/esnahn/md2hwp/archive/refs/tags/v0.6.1.zip))의 링크를 함께 제공하십시오.
+실행 파일을 다시 배포할 때는 라이선스·고지와 대응 소스([v0.7.0 소스](https://github.com/esnahn/md2hwp/archive/refs/tags/v0.7.0.zip))의 링크를 함께 제공하십시오.
 Pandoc·한글·보안 모듈·서체·.NET 런타임은 포함하지 않는 별도 제품이며 각 제공자의 조건을 따릅니다.
