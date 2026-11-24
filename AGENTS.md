@@ -392,6 +392,12 @@ and contents in stored order (upstream issue #9046, fixed at e4f8ff2; the 11 Han
 combinations match Hancom's own HWP save); fail when the lowered or reopened kinds
 differ from the source instead of correcting them. HWPX templates not saved by
 Hancom or rhwp are unverified. See docs/rhwp-hwpx-2026-11-12.md.
+Hancom may save a template without line records (Hancom init-template HWPX); rhwp
+lowers it with /RhwpHwpxOrigin=2 and DocumentCore computes bit-31 rows on open,
+which the HWP serializer omits. The Hancom-saved file is the reference: after opening
+any template, remove computed rows only where parse_hwp of the same bytes stores none
+(backends/rhwp/src/stored_lines.rs), keep stored rows, and fail when paragraphs
+cannot be matched. Never add rows to such templates or relax the saved comparison.
 Keep the current IR and existing template syntax. See docs/rhwp-backend-strategy.md.
 Normal builds and executable ZIPs include both md2hwp-rhwp.exe and md2hwp-hancom.exe.
 The -Rhwp build switch remains accepted for compatibility. With no explicit worker,

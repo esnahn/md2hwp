@@ -24,6 +24,7 @@ mod object_references;
 mod page_window;
 mod pagination;
 mod reference_insert;
+mod stored_lines;
 mod table_layout;
 mod table_widths;
 mod tables;
@@ -309,6 +310,10 @@ fn open_hwp_template(bytes: &[u8]) -> Result<DocumentCore, String> {
     }
     let mut doc = DocumentCore::from_bytes(bytes)
         .map_err(|e| format!("Could not read HWP template: {e:?}"))?;
+    // DocumentCore can compute rows on open; keep the ones the file stores.
+    let stored = rhwp::parser::parse_hwp(bytes)
+        .map_err(|e| format!("Could not read HWP template records: {e:?}"))?;
+    stored_lines::restore(doc.document_mut(), stored)?;
     note_storage::restore_source_autonums(doc.document_mut())?;
     Ok(doc)
 }
@@ -547,6 +552,97 @@ mod tests {
         assert_eq!(core.document().doc_info.char_shapes[0].border_fill_id, 4);
         assert!(init_template_file(&output).is_err());
         assert_eq!(fs::read(&output).unwrap(), before);
+    }
+
+    /// A Hancom HWPX that Hancom never laid out (Hancom backend init-template)
+    /// stores no line records. rhwp converts it to HWP with the Hancom-HWPX
+    /// origin marker and computes a row for each paragraph when opening that.
+    #[test]
+    fn static_paragraphs_stored_without_rows_stay_without_rows() {
+        use rhwp::model::document::{HWPX_ORIGIN_SOURCE_LINES, HWPX_ORIGIN_STREAM_PATH};
+        use rhwp::model::paragraph::Paragraph;
+        const STATIC: &str = "고정 문단";
+        fn static_rows(document: &rhwp::model::document::Document) -> usize {
+            let found = document.sections[0]
+                .paragraphs
+                .iter()
+                .filter(|p| p.text == STATIC)
+                .collect::<Vec<_>>();
+            assert_eq!(found.len(), 1);
+            found[0].line_segs.len()
+        }
+        fn plain(text: &str, like: &Paragraph) -> Paragraph {
+            let mut paragraph = Paragraph::new_empty();
+            paragraph.set_single_char_shape(0);
+            paragraph.style_id = like.style_id;
+            paragraph.para_shape_id = like.para_shape_id;
+            paragraph.insert_text_at(0, text);
+            template::discard_stale_layout(&mut paragraph);
+            paragraph
+        }
+        // Hancom's layout: the section definition sits in a static paragraph
+        // before begin:template, which starts a paragraph of its own.
+        let mut model = template_init::create().unwrap();
+        let paragraphs = &mut model.sections[0].paragraphs;
+        let first = paragraphs[0].clone();
+        let mut head = plain(STATIC, &first);
+        for position in &mut head.char_offsets {
+            *position += 8;
+        }
+        head.char_count += 8;
+        head.has_para_text = true;
+        head.controls = first.controls.clone();
+        head.align_ctrl_data_records();
+        paragraphs[0] = plain(&template::tag("begin:template"), &first);
+        paragraphs.insert(0, head);
+        model.extra_streams.push((
+            HWPX_ORIGIN_STREAM_PATH.into(),
+            HWPX_ORIGIN_SOURCE_LINES.to_vec(),
+        ));
+        let mut core = DocumentCore::new_empty();
+        core.set_document(model);
+        let bytes = core
+            .export_hwp_with_adapter_snapshot_with_report()
+            .unwrap()
+            .into_bytes();
+        // The case under test: no stored row, one computed on open.
+        assert_eq!(static_rows(&rhwp::parser::parse_hwp(&bytes).unwrap()), 0);
+        assert_eq!(
+            static_rows(DocumentCore::from_bytes(&bytes).unwrap().document()),
+            1
+        );
+        assert_eq!(
+            static_rows(open_template(&bytes, hwpx::Format::Hwp).unwrap().document()),
+            0
+        );
+
+        let directory = tempfile::tempdir().unwrap();
+        let template = directory.path().join("template.hwp");
+        let input = directory.path().join("source.ir.json");
+        fs::write(&template, &bytes).unwrap();
+        fs::write(
+            &input,
+            r#"{"schema":"md2hwp.ir","ir_version":"0.6","metadata":{},"blocks":[{"type":"paragraph","inlines":[{"type":"text","value":"본문"}]}]}"#,
+        )
+        .unwrap();
+        for name in ["output.hwp", "output.hwpx"] {
+            let output = directory.path().join(name);
+            run(Options {
+                input: input.clone(),
+                output: output.clone(),
+                template: template.clone(),
+                verbose: false,
+                explicit: false,
+            })
+            .unwrap();
+            let saved = fs::read(&output).unwrap();
+            let saved = if name.ends_with(".hwpx") {
+                hwpx::lower_template(&saved).unwrap()
+            } else {
+                saved
+            };
+            assert_eq!(static_rows(&rhwp::parser::parse_hwp(&saved).unwrap()), 0);
+        }
     }
 
     #[test]

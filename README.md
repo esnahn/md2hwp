@@ -110,7 +110,6 @@ Markdown 원고를 한글 템플릿의 서식에 맞춰 HWP·HWPX 문서로 변�
 - 장·절 번호 참조는 고정된 글자입니다. 한글에서 제목을 옮겨도 바뀌지 않으므로 원고를 고쳐 다시 변환하십시오.
 - 한글은 JPEG 그림을 다시 인코딩할 수 있습니다.
 - 원고 입력은 Markdown과 Pandoc JSON만 지원합니다. `hwp2pdf.exe`는 HWP만 읽습니다.
-- 한글 백엔드의 `init-template 새템플릿.hwpx`로 만든 템플릿은 검사에 성공해도 변환에 실패할 수 있습니다. [재현 기록](docs/backend-selection-2026-10-23.md#별도-발견-새-hancom-hwpx-기본-템플릿)
 
 ## 소스에서 빌드
 
