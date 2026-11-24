@@ -1,6 +1,6 @@
 # md2hwp
 
-Markdown 원고를 한글 템플릿의 서식에 맞춰 HWP·HWPX 문서로 변환합니다. Windows x64에서 실행합니다.
+Markdown 원고를 한글 템플릿의 서식에 맞춰 HWP·HWPX 문서로 변환합니다.
 원고에는 내용만 적고, 글꼴·번호·배치는 템플릿으로 자동 생성합니다.
 
 현재 버전은 v0.6.1입니다. 배포 파일은 [GitHub Releases](https://github.com/esnahn/md2hwp/releases)에서 받고,
@@ -95,7 +95,7 @@ Markdown 원고를 한글 템플릿의 서식에 맞춰 HWP·HWPX 문서로 변�
 | `md2hwp-rhwp.exe` | HWP, HWPX | 필요 없음 |
 | `md2hwp-hancom.exe` | HWP, HWPX | 필요 |
 
-- HWP와 HWPX 모두 rhwp를 사용하고, rhwp 파일이 없을 때만 한글 백엔드를 사용합니다.
+- HWP와 HWPX 모두 기본적으로는 rhwp를 사용하고, rhwp 백엔드가 없을 때만 한글 백엔드를 사용합니다.
 - `--worker <경로>`로 직접 지정할 수 있습니다. 실행에 실패해도 다른 백엔드로 다시 시도하지 않습니다.
 - 한글을 쓰는 프로그램은 자기 한글을 따로 띄우고 닫습니다. 열어 둔 한글 창과 문서는 건드리지 않으며, 저장하지 않은 변경은 읽지 않습니다.
 - 두 백엔드의 결과가 모든 템플릿에서 같다고 보장하지는 않습니다.
