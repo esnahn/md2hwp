@@ -626,7 +626,10 @@ Reference implementation and verification scope are in docs/rhwp-references-2026
 In the Hancom backend, HWP/HWPX template and output extensions select native Open/SaveAs formats; defaults
 remain template.hwp and source.output.hwp. Normalize an HWPX template into a
 disposable HWP working file only after comparing source/reopened structure, styles
-and embedded bytes. Save final HWPX separately, reopen and verify against the same
+and embedded bytes. Read both copies only after Hancom lays them out (PageCount):
+Hancom init-template stores unlaid prototype geometry (table heights, caption
+LastWidth), Hancom lays it out in the background after Open, and the HWP save
+writes the laid-out values. Save final HWPX separately, reopen and verify against the same
 independent expected XML before publication. Only final HWPX verification may
 canonicalize RENDERINGINFO matrix coefficients through the observed Hancom 2020
 float32 storage and five-decimal HWPML export representation. Do not apply this

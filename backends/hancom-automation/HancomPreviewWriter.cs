@@ -225,6 +225,16 @@ internal static partial class HancomPreviewWriter
         }
     }
 
+    // Hancom lays a document out in the background after Open, so geometry
+    // read at once can still be the stored values of a template it never laid
+    // out (Hancom backend init-template). Reading PageCount completes the layout.
+    private static void OpenLaidOut(dynamic hwp, string path, bool visible)
+    {
+        Open(hwp, path, visible);
+        if ((int)hwp.PageCount < 1)
+            throw new InvalidOperationException($"Hancom did not lay out: {path}");
+    }
+
     private static void CloseDocument(dynamic hwp)
     {
         _ = hwp.Clear(1);

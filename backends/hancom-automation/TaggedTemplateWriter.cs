@@ -40,14 +40,17 @@ internal static partial class HancomPreviewWriter
                 // Always work in native HWP, even when the source template is HWPX.
                 // The source is opened without modification and immediately saved
                 // to a disposable working document before rendering begins.
+                // The HWP save writes laid-out geometry, so compare laid-out copies:
+                // reading before layout compared stored prototype heights and
+                // caption widths with Hancom's own, depending on timing.
                 if (NativeDocumentFormat.FromPath(source) == "HWPX")
                 {
-                    Open(hwp, snapshot!, visible);
+                    OpenLaidOut(hwp, snapshot!, visible);
                     var originalTemplate = HwpMarkup.ReadDocument((object)hwp);
                     if (!IndicatesSuccess(hwp.SaveAs(temporary, "HWP", "")))
                         throw new InvalidOperationException("Could not create the working template copy.");
                     CloseDocument(hwp);
-                    Open(hwp, temporary, visible);
+                    OpenLaidOut(hwp, temporary, visible);
                     RequireFigureDocument(originalTemplate, HwpMarkup.ReadDocument((object)hwp));
                 }
                 else Open(hwp, temporary, visible);
